@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import toast from 'react-hot-toast';
-import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '../../../context/toast';
+import { TOAST_TITLES } from '../../../components/ui/dialog/DialogConfig';
 import { ReminderRule } from '../types';
 import { reminderService } from '../services/reminderService';
 
 const resourceName = 'Recordatorio';
 
 export const useReminders = () => {
+  const { addToast } = useToast();
   const [rules, setRules] = useState<ReminderRule[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,12 +17,12 @@ export const useReminders = () => {
       const data = await reminderService.getAll();
       setRules(data);
     } catch (error: any) {
-      toast.error(TOAST_ERROR.load(resourceName));
+      addToast({ variant: 'error', title: 'Error', message: `Error al cargar ${resourceName.toLowerCase()}` });
       console.error('[useReminders] Error fetching rules:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     fetchRules();
@@ -32,9 +33,9 @@ export const useReminders = () => {
       const updated = await reminderService.toggle(id);
       setRules(updated);
       const rule = updated.find(r => r.id === id);
-      toast.success(TOAST_SUCCESS.statusChanged(resourceName, !!rule?.active));
+      addToast({ variant: 'success', title: TOAST_TITLES.updated(resourceName), message: `Estado de ${resourceName.toLowerCase()} ${rule?.active ? 'activado' : 'inactivado'} exitosamente` });
     } catch (error: any) {
-      toast.error(TOAST_ERROR.update(resourceName));
+      addToast({ variant: 'error', title: 'Error', message: `Error al actualizar ${resourceName.toLowerCase()}` });
     }
   };
 
@@ -42,9 +43,9 @@ export const useReminders = () => {
     try {
       const updated = await reminderService.create(rule);
       setRules(updated);
-      toast.success(TOAST_SUCCESS.created(resourceName));
+      addToast({ variant: 'success', title: TOAST_TITLES.created(resourceName), message: `${resourceName} creado exitosamente` });
     } catch (error: any) {
-      toast.error(TOAST_ERROR.create(resourceName));
+      addToast({ variant: 'error', title: 'Error', message: `Error al crear ${resourceName.toLowerCase()}` });
     }
   };
 
@@ -52,9 +53,9 @@ export const useReminders = () => {
     try {
       const updated = await reminderService.update(id, updates);
       setRules(updated);
-      toast.success(TOAST_SUCCESS.updated(resourceName));
+      addToast({ variant: 'success', title: TOAST_TITLES.updated(resourceName), message: `${resourceName} actualizado exitosamente` });
     } catch (error: any) {
-      toast.error(TOAST_ERROR.update(resourceName));
+      addToast({ variant: 'error', title: 'Error', message: `Error al actualizar ${resourceName.toLowerCase()}` });
     }
   };
 
@@ -62,9 +63,9 @@ export const useReminders = () => {
     try {
       const updated = await reminderService.remove(id);
       setRules(updated);
-      toast.success(TOAST_SUCCESS.deleted(resourceName));
+      addToast({ variant: 'success', title: TOAST_TITLES.deleted(resourceName), message: `${resourceName} eliminado exitosamente` });
     } catch (error: any) {
-      toast.error(TOAST_ERROR.delete(resourceName));
+      addToast({ variant: 'error', title: 'Error', message: `Error al eliminar ${resourceName.toLowerCase()}` });
     }
   };
 

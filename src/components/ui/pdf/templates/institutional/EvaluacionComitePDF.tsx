@@ -1,9 +1,9 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Text, View, StyleSheet } from '@react-pdf/renderer';
+import PDFLayout from '../../PDFLayout';
 import { formatNombreCompleto, formatCI } from '@/features/reports/utils/reportFormatters';
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
-  page: { padding: 50, fontFamily: 'Helvetica', fontSize: 11, lineHeight: 1.4 },
   title: { textAlign: 'center', fontSize: 14, fontWeight: 'bold', marginBottom: 25, textDecoration: 'underline' },
   jurorTitle: { textAlign: 'center', fontSize: 12, fontWeight: 'bold', marginBottom: 12, marginTop: 15, backgroundColor: '#f0f0f0', padding: 6 },
   paragraph: { marginBottom: 20, textAlign: 'justify' },
@@ -113,131 +113,129 @@ export function EvaluacionComitePDF({ data, textos }: Props) {
   });
 
   return (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        <Text style={styles.title}>EVALUACIÓN DEL COMITÉ EVALUADOR</Text>
-        <Text style={styles.paragraph}>{cuerpo}</Text>
+    <PDFLayout title="EVALUACIÓN DEL COMITÉ EVALUADOR">
+      <Text style={styles.title}>EVALUACIÓN DEL COMITÉ EVALUADOR</Text>
+      <Text style={styles.paragraph}>{cuerpo}</Text>
 
-        {/* Student info */}
-        <View style={styles.section}>
-          <View style={styles.row}>
-            <Text style={styles.label}>Apellidos y Nombres del Estudiante:</Text>
-            <Text style={styles.value}>{formatNombreCompleto(data.estudiante)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Cédula de Identidad:</Text>
-            <Text style={styles.value}>{formatCI(data.estudiante.ci)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Carrera:</Text>
-            <Text style={styles.value}>{data.carrera.nombre}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Periodo Académico:</Text>
-            <Text style={styles.value}>{data.periodo?.description || ''}</Text>
-          </View>
+      {/* Student info */}
+      <View style={styles.section}>
+        <View style={styles.row}>
+          <Text style={styles.label}>Apellidos y Nombres del Estudiante:</Text>
+          <Text style={styles.value}>{formatNombreCompleto(data.estudiante)}</Text>
         </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Cédula de Identidad:</Text>
+          <Text style={styles.value}>{formatCI(data.estudiante.ci)}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Carrera:</Text>
+          <Text style={styles.value}>{data.carrera.nombre}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Periodo Académico:</Text>
+          <Text style={styles.value}>{data.periodo?.description || ''}</Text>
+        </View>
+      </View>
 
-        {/* Committee members table */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Comité Evaluador</Text>
-          <View style={styles.committeeTable}>
-            <View style={styles.committeeHeader}>
-              <Text style={styles.commHeaderRol}>Rol</Text>
-              <Text style={styles.commHeaderName}>Apellidos y Nombres</Text>
-              <Text style={styles.commHeaderCi}>Cédula de Identidad</Text>
+      {/* Committee members table */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Comité Evaluador</Text>
+        <View style={styles.committeeTable}>
+          <View style={styles.committeeHeader}>
+            <Text style={styles.commHeaderRol}>Rol</Text>
+            <Text style={styles.commHeaderName}>Apellidos y Nombres</Text>
+            <Text style={styles.commHeaderCi}>Cédula de Identidad</Text>
+          </View>
+          {data.coordinadorPP && (
+            <View style={styles.committeeRow}>
+              <Text style={styles.commRol}>Coordinador PP</Text>
+              <Text style={styles.commName}>{data.coordinadorPP.nombreCompleto}</Text>
+              <Text style={styles.commCi}>{formatCI(data.coordinadorPP.ci)}</Text>
             </View>
-            {data.coordinadorPP && (
-              <View style={styles.committeeRow}>
-                <Text style={styles.commRol}>Coordinador PP</Text>
-                <Text style={styles.commName}>{data.coordinadorPP.nombreCompleto}</Text>
-                <Text style={styles.commCi}>{formatCI(data.coordinadorPP.ci)}</Text>
-              </View>
-            )}
-            {data.coordinadorCarrera && (
-              <View style={styles.committeeRow}>
-                <Text style={styles.commRol}>Coordinador Carrera</Text>
-                <Text style={styles.commName}>{data.coordinadorCarrera.nombreCompleto}</Text>
-                <Text style={styles.commCi}>{formatCI(data.coordinadorCarrera.ci)}</Text>
-              </View>
-            )}
-            {data.tutorAcademico && (
-              <View style={styles.committeeRow}>
-                <Text style={styles.commRol}>Tutor Académico</Text>
-                <Text style={styles.commName}>{formatNombreCompleto(data.tutorAcademico)}</Text>
-                <Text style={styles.commCi}>{formatCI(data.tutorAcademico.ci || '')}</Text>
-              </View>
-            )}
-          </View>
+          )}
+          {data.coordinadorCarrera && (
+            <View style={styles.committeeRow}>
+              <Text style={styles.commRol}>Coordinador Carrera</Text>
+              <Text style={styles.commName}>{data.coordinadorCarrera.nombreCompleto}</Text>
+              <Text style={styles.commCi}>{formatCI(data.coordinadorCarrera.ci)}</Text>
+            </View>
+          )}
+          {data.tutorAcademico && (
+            <View style={styles.committeeRow}>
+              <Text style={styles.commRol}>Tutor Académico</Text>
+              <Text style={styles.commName}>{formatNombreCompleto(data.tutorAcademico)}</Text>
+              <Text style={styles.commCi}>{formatCI(data.tutorAcademico.ci || '')}</Text>
+            </View>
+          )}
         </View>
+      </View>
 
-        {/* Evaluaciones de cada jurado */}
-        {data.evaluacionesComite && data.evaluacionesComite.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Evaluación del Desempeño del Estudiante por Jurado</Text>
+      {/* Evaluaciones de cada jurado */}
+      {data.evaluacionesComite && data.evaluacionesComite.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Evaluación del Desempeño del Estudiante por Jurado</Text>
 
-            {data.evaluacionesComite.map((ev, idx) => (
-              <View key={ev.evaluationId}>
-                {idx > 0 && <View style={styles.separator} />}
-                <Text style={styles.jurorTitle}>
-                  JURADO N° {idx + 1} — {ev.evaluatorName || `Miembro del Comité`}
+          {data.evaluacionesComite.map((ev, idx) => (
+            <View key={ev.evaluationId}>
+              {idx > 0 && <View style={styles.separator} />}
+              <Text style={styles.jurorTitle}>
+                JURADO N° {idx + 1} — {ev.evaluatorName || `Miembro del Comité`}
+              </Text>
+              {ev.observations && (
+                <Text style={{ fontSize: 10, marginBottom: 6, fontStyle: 'italic' }}>
+                  Observaciones: {ev.observations}
                 </Text>
-                {ev.observations && (
-                  <Text style={{ fontSize: 10, marginBottom: 6, fontStyle: 'italic' }}>
-                    Observaciones: {ev.observations}
-                  </Text>
-                )}
-                {renderCriterios(ev)}
-              </View>
-            ))}
-
-            {/* Promedio final del comité */}
-            <View style={styles.avgRow}>
-              <Text style={styles.avgText}>
-                Calificación Promedio del Comité Evaluador: {data.comiteTotalScore.toFixed(1)} / 20 pts
-              </Text>
+              )}
+              {renderCriterios(ev)}
             </View>
-          </View>
-        ) : (
-          <View style={styles.section}>
-            <Text style={{ fontSize: 10, textAlign: 'center', color: '#718096' }}>
-              No hay evaluaciones registradas del comité evaluador.
-            </Text>
-          </View>
-        )}
+          ))}
 
-        {/* Signatures */}
-        <View style={styles.firmaContainer}>
-          <View style={styles.firmaBox}>
-            <View style={styles.firmaLine} />
-            <Text style={{ fontSize: 10, textAlign: 'center' }}>
-              {data.coordinadorPP?.nombreCompleto || ''}
+          {/* Promedio final del comité */}
+          <View style={styles.avgRow}>
+            <Text style={styles.avgText}>
+              Calificación Promedio del Comité Evaluador: {data.comiteTotalScore.toFixed(1)} / 20 pts
             </Text>
-            <Text style={{ fontSize: 9, color: '#4a5568', textAlign: 'center' }}>
-              {data.coordinadorPP?.cargo || 'Coordinador de Práctica Profesional'}
-            </Text>
-            {data.coordinadorPP?.ci && (
-              <Text style={{ fontSize: 8, color: '#718096', textAlign: 'center' }}>
-                CI: {formatCI(data.coordinadorPP.ci)}
-              </Text>
-            )}
-          </View>
-          <View style={styles.firmaBox}>
-            <View style={styles.firmaLine} />
-            <Text style={{ fontSize: 10, textAlign: 'center' }}>
-              {data.coordinadorCarrera?.nombreCompleto || ''}
-            </Text>
-            <Text style={{ fontSize: 9, color: '#4a5568', textAlign: 'center' }}>
-              {data.coordinadorCarrera?.cargo || 'Coordinador de Carrera'}
-            </Text>
-            {data.coordinadorCarrera?.ci && (
-              <Text style={{ fontSize: 8, color: '#718096', textAlign: 'center' }}>
-                CI: {formatCI(data.coordinadorCarrera.ci)}
-              </Text>
-            )}
           </View>
         </View>
-      </Page>
-    </Document>
+      ) : (
+        <View style={styles.section}>
+          <Text style={{ fontSize: 10, textAlign: 'center', color: '#718096' }}>
+            No hay evaluaciones registradas del comité evaluador.
+          </Text>
+        </View>
+      )}
+
+      {/* Signatures */}
+      <View style={styles.firmaContainer}>
+        <View style={styles.firmaBox}>
+          <View style={styles.firmaLine} />
+          <Text style={{ fontSize: 10, textAlign: 'center' }}>
+            {data.coordinadorPP?.nombreCompleto || ''}
+          </Text>
+          <Text style={{ fontSize: 9, color: '#4a5568', textAlign: 'center' }}>
+            {data.coordinadorPP?.cargo || 'Coordinador de Práctica Profesional'}
+          </Text>
+          {data.coordinadorPP?.ci && (
+            <Text style={{ fontSize: 8, color: '#718096', textAlign: 'center' }}>
+              CI: {formatCI(data.coordinadorPP.ci)}
+            </Text>
+          )}
+        </View>
+        <View style={styles.firmaBox}>
+          <View style={styles.firmaLine} />
+          <Text style={{ fontSize: 10, textAlign: 'center' }}>
+            {data.coordinadorCarrera?.nombreCompleto || ''}
+          </Text>
+          <Text style={{ fontSize: 9, color: '#4a5568', textAlign: 'center' }}>
+            {data.coordinadorCarrera?.cargo || 'Coordinador de Carrera'}
+          </Text>
+          {data.coordinadorCarrera?.ci && (
+            <Text style={{ fontSize: 8, color: '#718096', textAlign: 'center' }}>
+              CI: {formatCI(data.coordinadorCarrera.ci)}
+            </Text>
+          )}
+        </View>
+      </View>
+    </PDFLayout>
   );
 }

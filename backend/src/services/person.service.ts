@@ -19,7 +19,7 @@ export interface PersonDTO {
   phone: string | null;
   gender: string | null;
   birthDate: string | null;
-  address: string | null;
+  address?: string | null;
   maritalStatus: string | null;
   status: number;
   createdAt: string;

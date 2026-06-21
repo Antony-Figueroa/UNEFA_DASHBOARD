@@ -76,6 +76,32 @@ export const useTutors = () => {
   }, [refreshTutors]);
 
   const addTutor = async (tutorData: CreateTutorPayload, tutorType?: string): Promise<Tutor | null> => {
+    // Si el payload tiene tutorId, es una actualización (ej: CI cargó tutor existente)
+    const tutorId = (tutorData as any).tutorId;
+    if (tutorId) {
+      const updated = await baseEditTutor(tutorData as UpdateTutorPayload, { silent: true });
+      if (updated) {
+        const careerNames = getCareerNames(updated.carreras || []);
+        const typeLabel = tutorType ? `Tutor ${tutorType}` : 'Tutor';
+        addToast({
+          variant: "success",
+          title: `${typeLabel} Actualizado`,
+          message: (
+            <>
+              <p>El {typeLabel.toLowerCase()} <strong>{updated.firstName} {updated.lastName}</strong> ha sido actualizado exitosamente.</p>
+              <RecordDetails
+                data={{ ...updated, carreras: careerNames } as unknown as Record<string, unknown>}
+                labels={TUTOR_LABELS}
+                fields={['identificationNumber', 'email', 'phone', 'carreras']}
+              />
+            </>
+          ),
+        });
+        return updated;
+      }
+      return null;
+    }
+
     // Validar duplicidad de cédula localmente antes de intentar crear
     const isDuplicate = tutors.some(
       t => t.identificationNumber === tutorData.identificationNumber && 
@@ -115,7 +141,7 @@ export const useTutors = () => {
     return null;
   };
 
-  const editTutor = async (tutorData: UpdateTutorPayload, tutorType?: string) => {
+  const editTutor = async (tutorData: UpdateTutorPayload, tutorType?: string): Promise<Tutor | null> => {
     const { tutorId } = tutorData;
     const oldTutor = tutors.find(t => t.tutorId === tutorId);
     const updatedTutor = await baseEditTutor(tutorData, { silent: true });
@@ -139,7 +165,9 @@ export const useTutors = () => {
           </>
         ),
       });
+      return updatedTutor;
     }
+    return null;
   };
 
   const toggleStatus = async (tutor: Tutor) => {

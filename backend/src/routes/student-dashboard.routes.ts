@@ -5,6 +5,7 @@ import {
   getStudentProfile,
   getRequestTypes,
   getStudentRequests,
+  getStudentTracking,
   createStudentRequest
 } from '../controllers/student-dashboard.controller.js';
 
@@ -16,6 +17,7 @@ router.use(authorizeRole([ROLES.ESTUDIANTE]));
 router.get('/dashboard', getStudentDashboard);
 router.get('/profile', getStudentProfile);
 router.get('/request-types', getRequestTypes);
+router.get('/tracking', getStudentTracking);
 router.get('/requests', getStudentRequests);
 router.post('/requests', createStudentRequest);
 

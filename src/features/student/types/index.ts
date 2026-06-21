@@ -94,3 +94,55 @@ export interface ActivityLogStats {
   pendingLogs: number;
   weeksCount: number;
 }
+
+// --- Tracking ---
+
+export interface StudentTrackingData {
+  internship: StudentInternshipTracking | null;
+  tracking: TrackingRecord[];
+  visits: VisitRecord[];
+  activityLogs: ActivityLogSummary;
+}
+
+export interface StudentInternshipTracking {
+  enrollmentId: number;
+  period: string;
+  status: string;
+  careerName: string;
+  practiceType: string;
+  institutionName: string;
+  startDate: string;
+  endDate: string;
+  requiredHours: number;
+  completedHours: number;
+  grade: number | null;
+  tutorName: string;
+  tutorPhone: string;
+  tutorEmail: string;
+}
+
+export interface TrackingRecord {
+  trackingId: number;
+  reportTitle: string;
+  transfer: boolean;
+  route: string;
+  observations: string;
+  creationDate: string;
+}
+
+export interface VisitRecord {
+  visitId: number;
+  visitDate: string;
+  visitType: string;
+  observations: string;
+  supervisorName: string;
+}
+
+export interface ActivityLogEntry {
+  id: number;
+  date: string;
+  hours: number;
+  description: string;
+  type: string;
+  approved: boolean;
+}

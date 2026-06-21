@@ -419,6 +419,128 @@ export const getStudentRequests = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getStudentTracking = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const supabase = dbManager.getConnection();
+
+    const { data: studentData } = await supabase
+      .from('t_students')
+      .select('STUDENTS_ID')
+      .eq('USER_ID', userId)
+      .single();
+
+    if (!studentData) {
+      return res.status(404).json({ success: false, message: 'Estudiante no encontrado' });
+    }
+
+    const studentId = studentData.STUDENTS_ID;
+
+    const { data: practice } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        START_DATE, END_DATE, GRADE, PRACTICES_STATUS, REGISTRATION_DATE,
+        t_internships_period(DESCRIPTION),
+        t_internship_type(NAME, HOURS_REQUIRED),
+        t_institution(INSTITUTION_NAME),
+        t_professional_practices_tutor(
+          TUTOR_TYPE,
+          t_tutors(t_persons!inner(first_name, last_name, phone, email))
+        )
+      `)
+      .eq('STUDENTS_ID', studentId)
+      .eq('STATUS', 1)
+      .order('REGISTRATION_DATE', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!practice) {
+      return res.json({ success: true, data: { internship: null, tracking: [], visits: [], activityLogs: { totalHours: 0, totalLogs: 0, approvedLogs: 0, pendingLogs: 0, recentLogs: [] } } });
+    }
+
+    const practiceId = (practice as any).PROFESSIONAL_PRACTICE_ID;
+    const academicTutor = (practice as any).t_professional_practices_tutor?.find((t: any) => t.TUTOR_TYPE === 'ACADEMICO');
+    const requiredHours = (practice as any).t_internship_type?.HOURS_REQUIRED || 120;
+
+    const { data: logsData } = await supabase
+      .from('t_activity_logs')
+      .select('ACTIVITY_LOG_ID, ACTIVITY_DATE, HOURS_WORKED, ACTIVITY_DESCRIPTION, ACTIVITY_TYPE, SUPERVISOR_APPROVED')
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .order('ACTIVITY_DATE', { ascending: false });
+
+    const totalHours = (logsData || []).reduce((sum: number, log: any) => sum + (parseFloat(log.HOURS_WORKED) || 0), 0);
+    const approvedLogs = (logsData || []).filter((l: any) => l.SUPERVISOR_APPROVED).length;
+
+    const { data: visitsData } = await supabase
+      .from('t_practice_visits')
+      .select('VISIT_ID, VISIT_DATE, VISIT_TYPE, OBSERVATIONS, SUPERVISOR_NAME')
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .order('VISIT_DATE', { ascending: false });
+
+    let trackingData: any[] = [];
+    try {
+      const { data: trackData } = await supabase
+        .from('t_tracking')
+        .select('*')
+        .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+        .order('CREATED_AT', { ascending: false });
+      trackingData = trackData || [];
+    } catch {
+      // t_tracking no existe
+    }
+
+    const internship = {
+      enrollmentId: practiceId,
+      period: (practice as any).t_internships_period?.DESCRIPTION || '',
+      status: (practice as any).PRACTICES_STATUS === 2 ? 'active' : 'completed',
+      careerName: '',
+      practiceType: (practice as any).t_internship_type?.NAME || '',
+      institutionName: (practice as any).t_institution?.INSTITUTION_NAME || '',
+      startDate: (practice as any).START_DATE || '',
+      endDate: (practice as any).END_DATE || '',
+      requiredHours,
+      completedHours: totalHours,
+      grade: (practice as any).GRADE || null,
+      tutorName: academicTutor ? `${academicTutor.t_tutors?.t_persons?.first_name || ''} ${academicTutor.t_tutors?.t_persons?.last_name || ''}`.trim() : '',
+      tutorPhone: academicTutor?.t_tutors?.t_persons?.phone || '',
+      tutorEmail: academicTutor?.t_tutors?.t_persons?.email || '',
+    };
+
+    res.json({
+      success: true,
+      data: {
+        internship,
+        tracking: trackingData,
+        visits: (visitsData || []).map((v: any) => ({
+          visitId: v.VISIT_ID,
+          visitDate: v.VISIT_DATE,
+          visitType: v.VISIT_TYPE,
+          observations: v.OBSERVATIONS,
+          supervisorName: v.SUPERVISOR_NAME,
+        })),
+        activityLogs: {
+          totalHours,
+          totalLogs: logsData?.length || 0,
+          approvedLogs,
+          pendingLogs: (logsData?.length || 0) - approvedLogs,
+          recentLogs: (logsData || []).slice(0, 10).map((log: any) => ({
+            id: log.ACTIVITY_LOG_ID,
+            date: log.ACTIVITY_DATE,
+            hours: parseFloat(log.HOURS_WORKED) || 0,
+            description: log.ACTIVITY_DESCRIPTION,
+            type: log.ACTIVITY_TYPE,
+            approved: log.SUPERVISOR_APPROVED || false,
+          })),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('[StudentTracking] Error:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener datos de seguimiento' });
+  }
+};
+
 export const createStudentRequest = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;

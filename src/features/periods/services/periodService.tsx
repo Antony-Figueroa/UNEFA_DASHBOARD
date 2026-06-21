@@ -3,7 +3,7 @@
  * @description Encapsula la lógica de comunicación con la API para las operaciones CRUD.
  */
 
-import { Periodo, CreatePeriodPayload, UpdatePeriodPayload, GraceDefaults } from "../types";
+import { Periodo, CreatePeriodPayload, UpdatePeriodPayload, GraceDefaults, PeriodTypeDate } from "../types";
 import apiClient from "../../../api/apiClient";
 
 /**
@@ -139,7 +139,7 @@ const fromApi = (dto: PeriodoApiDTO): Periodo => {
     evaluationGraceDays: Number(evaluationGraceDaysRaw),
     graceEndDate: graceEndDateRaw ? String(graceEndDateRaw) : undefined,
     evaluationGraceEndDate: evaluationGraceEndDateRaw ? String(evaluationGraceEndDateRaw) : undefined,
-    typeDates: typeDatesRaw ? (Array.isArray(typeDatesRaw) ? typeDatesRaw : undefined) : undefined,
+    typeDates: typeDatesRaw ? (Array.isArray(typeDatesRaw) ? (typeDatesRaw as PeriodTypeDate[]) : undefined) : undefined,
   };
 };
 

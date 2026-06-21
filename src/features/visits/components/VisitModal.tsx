@@ -63,6 +63,20 @@ const visitSchema = z.object({
   }
 ).refine(
   (data) => {
+    const d = new Date(data.visitDate);
+    const hour = d.getHours();
+    // Horario razonable: 6:00 a 22:00
+    if (hour < 6 || hour >= 22) return false;
+    // No domingos
+    if (d.getDay() === 0) return false;
+    return true;
+  },
+  {
+    message: 'La visita debe ser en horario laboral (lunes a sábado, 6:00 a 22:00)',
+    path: ['visitDate']
+  }
+).refine(
+  (data) => {
     // Validación: observaciones requeridas para casos de problemas
     // Esta validación se hace en el onSubmitForm en lugar del schema
     // porque visitCase ahora es dinámico y depende de las listas
@@ -281,35 +295,36 @@ export default function VisitModal({
     }
   }, [isOpen, fetchMultipleLists]);
 
+  // Estado para alternar entre tutores asignados y todos los tutores (suplente)
+  const [showAllTutors, setShowAllTutors] = useState(false);
+
   // Construir opciones de tutores para el selector
-  // SOLO muestra los tutores asignados a la práctica (assignedTutors)
-  // Muestra el tipo (ACADÉMICO/METODOLÓGICO) + conteo de visitas
+  // Por defecto solo los asignados; si se activa suplente, muestra todos
   useEffect(() => {
-    // Si hay tutores asignados, filtrar SOLO esos; si no, mostrar todos (fallback)
-    const tutorIds = assignedTutors && assignedTutors.length > 0
-      ? new Set(assignedTutors.map(a => String(a.tutorId)))
-      : null;
-
-    // Mapa rápido de tutorId -> tutorType
+    const assignedIds = new Set((assignedTutors || []).map(a => String(a.tutorId)));
     const tutorTypeMap = new Map<string, string>();
-    if (assignedTutors) {
-      assignedTutors.forEach(a => tutorTypeMap.set(String(a.tutorId), a.tutorType));
-    }
+    (assignedTutors || []).forEach(a => tutorTypeMap.set(String(a.tutorId), a.tutorType));
 
-    const options = tutors
-      .filter(t => !tutorIds || tutorIds.has(String(t.tutorId)))
+    const options = (showAllTutors ? tutors : tutors.filter(t => assignedIds.has(String(t.tutorId))))
       .map(t => {
+        const isAssigned = assignedIds.has(String(t.tutorId));
         const visitCount = practiceTutorVisitCounts?.find(tc => String(tc.tutorId) === String(t.tutorId))?.visitCount || 0;
         const countLabel = visitCount > 0 ? ` (${visitCount} visita${visitCount !== 1 ? 's' : ''})` : '';
         const tutorType = tutorTypeMap.get(String(t.tutorId));
         const typeLabel = tutorType ? (tutorTypeLabelMap[tutorType] || tutorType) : '';
         return {
           value: String(t.tutorId),
-          label: `${t.firstName} ${t.lastName} [${typeLabel}]${countLabel}`
+          label: `${t.firstName} ${t.lastName} [${typeLabel}]${isAssigned ? '' : countLabel}`
         };
       });
     setTutorOptions(options);
-  }, [tutors, practiceTutorVisitCounts, assignedTutors, tutorTypeLabelMap]);
+  }, [tutors, practiceTutorVisitCounts, assignedTutors, tutorTypeLabelMap, showAllTutors]);
+
+  // Toggle: cuando ninguno de los tutores asignados puede ir, se activa modo suplente
+  const handleToggleSuplente = () => {
+    setShowAllTutors(prev => !prev);
+    setValue('tutorId', '', { shouldValidate: true });
+  };
 
   // Callback cuando se guarda un nuevo tutor desde TutorModal
   const handleTutorCreated = async (tutorData: any) => {
@@ -620,6 +635,17 @@ export default function VisitModal({
                         <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
                         {errors.tutorId.message}
                       </p>
+                    )}
+                    {assignedTutors && assignedTutors.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleToggleSuplente}
+                        className="mt-1.5 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 underline underline-offset-2"
+                      >
+                        {showAllTutors
+                          ? '← Volver a tutores asignados'
+                          : '¿Ninguno disponible? Seleccionar suplente →'}
+                      </button>
                     )}
                   </div>
                 </div>

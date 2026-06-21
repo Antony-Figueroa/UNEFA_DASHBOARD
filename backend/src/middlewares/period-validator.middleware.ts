@@ -630,7 +630,7 @@ export const validateCreatePreEnrollmentPeriodWithTypeDates = validatePeriodOper
   extractInternshipTypeId: (req) => req.body.internshipTypeId,
   extractDate: () => null,
   resourceName: 'pre-inscripción',
-  preEnrollmentCreateRule,
+  ...preEnrollmentCreateRule,
   dbModule: 'pre-enrollment',
   dbOperation: 'create',
 });

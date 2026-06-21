@@ -33,10 +33,7 @@ import { cleanCedula, cleanPhone, cleanRif, formatRifDisplay, RIF_MAX_LENGTH, RI
 import { getInstitutionByRif, checkRifExists } from "../services/institutionsService";
 import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 import AddressList from "../../address/components/AddressList";
-import GeographicAddressFields from "../../address/components/GeographicAddressFields";
-import { addressService } from "../../address/services/addressService";
 import type { GeoOptionsItem } from "../../address/types";
-import type { GeographicAddressValue } from "../../address/components/GeographicAddressFields";
 
 // Lazy load para evitar dependencia circular con CareerModal
 const CareerModal = lazy(() => import("../../careers/components/CareerModal"));
@@ -209,7 +206,7 @@ export default function InstitutionModal({
       setNewlyAddedResponsibles([]);
       setRifDuplicateStatus(null);
       setSavedFormData(null);
-      setInlineAddress({ parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 4, isPrimary: true });
+      loadOptions();
     }
   }, [isOpen]);
 
@@ -277,9 +274,6 @@ export default function InstitutionModal({
 
   // State for structured address management
   const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
-  const [inlineAddress, setInlineAddress] = useState<GeographicAddressValue>({
-    parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 4, isPrimary: true,
-  });
 
   // Handle RIF number input change with formatting and auto-verify
   const handleRifNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -391,54 +385,38 @@ export default function InstitutionModal({
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateInstitutionPayload | UpdateInstitutionPayload | null>(null);
 
-  useEffect(() => {
-    const loadOptions = async () => {
-      try {
-        const listNames = [
-          "PREFIJO",
-          "Rif",
-          "Region",
-          "Nucleo",
-          "Extensión",
-          "Tipo de empresa",
-          "TIPO DE PRACTICA"
-        ];
-        const data = await fetchMultipleLists(listNames);
-        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
-        
-        Object.entries(data).forEach(([key, values]) => {
-          mappedOptions[key] = values.map(v => {
-            // Para Rif y Nacionalidad usamos la abreviación si existe
-            const useAbbr = ["Rif", "Nacionalidad"].includes(key) && v.abbreviation;
-            const displayValue = useAbbr ? v.abbreviation : v.name;
-            
-            return {
-              value: displayValue.toUpperCase(),
-              label: displayValue.toUpperCase()
-            };
-          });
+  const loadOptions = async () => {
+    try {
+      const listNames = [
+        "PREFIJO",
+        "Rif",
+        "Region",
+        "Nucleo",
+        "Extensión",
+        "Tipo de empresa",
+        "TIPO DE PRACTICA"
+      ];
+      const data = await fetchMultipleLists(listNames);
+      const mappedOptions: Record<string, { value: string; label: string }[]> = {};
+      
+      Object.entries(data).forEach(([key, values]) => {
+        mappedOptions[key] = values.map(v => {
+          // Para Rif y Nacionalidad usamos la abreviación si existe
+          const useAbbr = ["Rif", "Nacionalidad"].includes(key) && v.abbreviation;
+          const displayValue = useAbbr ? v.abbreviation : v.name;
+          
+          return {
+            value: displayValue.toUpperCase(),
+            label: displayValue.toUpperCase()
+          };
         });
-        
-        setOptions(mappedOptions);
-      } catch (error) {
-        console.error("Error loading list options:", error);
-      }
-    };
-
-    const loadGeoOptions = async () => {
-      try {
-        const response = await addressService.getGeoOptions();
-        setGeoOptions(response.data);
-      } catch (error) {
-        console.error("Error loading geo options:", error);
-      }
-    };
-
-    if (isOpen) {
-      loadOptions();
-      loadGeoOptions();
+      });
+      
+      setOptions(mappedOptions);
+    } catch (error) {
+      console.error("Error loading list options:", error);
     }
-  }, [isOpen, fetchMultipleLists]);
+  };
 
   const optionsRif = options.Rif;
   const optionsRegion = options.Region;
@@ -518,26 +496,14 @@ export default function InstitutionModal({
       const rifParts = editingInst.rif ? editingInst.rif.split("-") : ["", ""];
       const [phoneP, phoneN] = editingInst.phone ? editingInst.phone.split("-") : ["", ""];
 
-      let parsedRegion = editingInst.region;
-      let parsedNucleo = editingInst.nucleus;
-      let parsedExtension = editingInst.extension;
-      let parsedTipoEmpresa = editingInst.institutionType;
-
-      if (editingInst.fiscalAddress) {
-        const parts = editingInst.fiscalAddress.split(", ");
-        if (parts.length >= 8) {
-          parsedRegion = parts[0];
-          parsedNucleo = parts[1];
-          parsedExtension = parts[2];
-          parsedTipoEmpresa = parts[3];
-        }
-      }
-
-      const internshipTypeId = editingInst.internshipTypeId 
-        ? String(editingInst.internshipTypeId) 
-        : (editingInst.internshipTypeIds && editingInst.internshipTypeIds.length > 0 
-            ? String(editingInst.internshipTypeIds[0]) 
-            : (editingInst.practiceType ? String(editingInst.practiceType) : ""));
+      const internshipTypeId =
+        editingInst.internshipTypeId
+          ? String(editingInst.internshipTypeId)
+          : editingInst.internshipTypeIds && editingInst.internshipTypeIds.length > 0
+          ? String(editingInst.internshipTypeIds[0])
+          : editingInst.practiceType
+          ? String(editingInst.practiceType)
+          : "";
 
       reset({
         rifPrefix: rifParts[0] || "",
@@ -545,10 +511,10 @@ export default function InstitutionModal({
         name: editingInst.name,
         phonePrefix: phoneP || "",
         phoneNumber: phoneN || "",
-        region: parsedRegion?.toUpperCase() || "",
-        nucleus: parsedNucleo?.toUpperCase() || "",
-        extension: parsedExtension?.toUpperCase() || "",
-        institutionType: parsedTipoEmpresa?.toUpperCase() || "",
+        region: editingInst.region?.toUpperCase() || "",
+        nucleus: editingInst.nucleus?.toUpperCase() || "",
+        extension: editingInst.extension?.toUpperCase() || "",
+        institutionType: editingInst.institutionType?.toUpperCase() || "",
         internshipTypeId: internshipTypeId,
         careerIds: editingInst.careerIds || [],
       });
@@ -695,57 +661,30 @@ export default function InstitutionModal({
     if (isOpen) {
       if (editingInst) {
         const rifParts = editingInst.rif ? editingInst.rif.split("-") : ["", ""];
-        const [phoneP, phoneN] = editingInst.phone ? editingInst.phone.split("-") : ["", ""];
+      const [phoneP, phoneN] = editingInst.phone ? editingInst.phone.split("-") : ["", ""];
 
-        let parsedEstado = "PORTUGUESA";
-        let parsedMunicipio = "";
-        let parsedParroquia = "";
-        let parsedDireccion = editingInst.fiscalAddress || "";
-        let parsedRegion = editingInst.region;
-        let parsedNucleo = editingInst.nucleus;
-        let parsedExtension = editingInst.extension;
-        let parsedTipoEmpresa = editingInst.institutionType;
+      const internshipTypeId =
+        editingInst.internshipTypeId
+          ? String(editingInst.internshipTypeId)
+          : editingInst.internshipTypeIds && editingInst.internshipTypeIds.length > 0
+          ? String(editingInst.internshipTypeIds[0])
+          : editingInst.practiceType
+          ? String(editingInst.practiceType)
+          : "";
 
-        if (editingInst.fiscalAddress) {
-          const parts = editingInst.fiscalAddress.split(", ");
-          // Formato completo: Región, Núcleo, Extensión, Tipo, Estado, Municipio, Parroquia, Dirección
-          if (parts.length >= 8) {
-            parsedRegion = parts[0];
-            parsedNucleo = parts[1];
-            parsedExtension = parts[2];
-            parsedTipoEmpresa = parts[3];
-            parsedEstado = parts[4];
-            parsedMunicipio = parts[5];
-            parsedParroquia = parts[6];
-            parsedDireccion = parts.slice(7).join(", ");
-          } else if (parts.length >= 4) {
-            // Formato anterior/simplificado: Estado, Municipio, Parroquia, Dirección
-            parsedEstado = parts[0];
-            parsedMunicipio = parts[1];
-            parsedParroquia = parts[2];
-            parsedDireccion = parts.slice(3).join(", ");
-          }
-        }
-
-        reset({
-          rifPrefix: rifParts[0] || "",
-          rifNumber: rifParts[1] || "",
-          name: editingInst.name,
-          phonePrefix: phoneP || "",
-          phoneNumber: phoneN || "",
-          region: parsedRegion?.toUpperCase() || "",
-          nucleus: parsedNucleo?.toUpperCase() || "",
-          extension: parsedExtension?.toUpperCase() || "",
-          institutionType: parsedTipoEmpresa?.toUpperCase() || "",
-          // Legacy address fields removed — use structured address system
-          // Soportar ambos: internshipTypeId (singular), internshipTypeIds (array), o practiceType (de tabla principal)
-          internshipTypeId: editingInst.internshipTypeId 
-            ? String(editingInst.internshipTypeId) 
-            : (editingInst.internshipTypeIds && editingInst.internshipTypeIds.length > 0 
-                ? String(editingInst.internshipTypeIds[0]) 
-                : (editingInst.practiceType ? String(editingInst.practiceType) : "")),
-          careerIds: editingInst.careerIds || [],
-        });
+      reset({
+        rifPrefix: rifParts[0] || "",
+        rifNumber: rifParts[1] || "",
+        name: editingInst.name,
+        phonePrefix: phoneP || "",
+        phoneNumber: phoneN || "",
+        region: editingInst.region?.toUpperCase() || "",
+        nucleus: editingInst.nucleus?.toUpperCase() || "",
+        extension: editingInst.extension?.toUpperCase() || "",
+        institutionType: editingInst.institutionType?.toUpperCase() || "",
+        internshipTypeId: internshipTypeId,
+        careerIds: editingInst.careerIds || [],
+      });
         const formattedRif = formatRifDisplay(rifParts[1] || "");
         const formattedPhone = formatPhoneLocalDisplay(phoneN || "");
         setDisplayRifNumber(formattedRif);
@@ -782,12 +721,9 @@ export default function InstitutionModal({
   }, [editingInst, isOpen, reset, optionsTipoPractica, careerOptions, internshipTypeOptions]);
 
   const onSubmit = (data: InstFormData) => {
-    const fiscalAddress = `${data.region}, ${data.nucleus}, ${data.extension}, ${data.institutionType}`;
-
     const commonData = {
       rif: `${data.rifPrefix}-${data.rifNumber}`.toUpperCase(),
       name: data.name.toUpperCase(),
-      fiscalAddress: fiscalAddress.toUpperCase(),
       phone: `${data.phonePrefix}-${data.phoneNumber}`,
       region: data.region.toUpperCase(),
       nucleus: data.nucleus.toUpperCase(),
@@ -857,7 +793,6 @@ export default function InstitutionModal({
           <Tabs
             options={[
               { id: 'datos-generales', label: 'Datos Generales' },
-              { id: 'direccion-fiscal', label: 'Dirección Fiscal' },
               { id: 'configuracion', label: 'Configuración' },
             ]}
             {...tabsState.tabProps}
@@ -1004,23 +939,6 @@ export default function InstitutionModal({
                 {errors.phoneNumber.message}
               </p>
             )}
-          </div>
-
-          </div>
-
-          <div hidden={tabsState.activeTab !== 'direccion-fiscal'} role="tabpanel" className="contents">
-          {/* Sección de Dirección */}
-          <div className="md:col-span-2">
-            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-              <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección</h3>
-              <GeographicAddressFields
-                geoOptions={geoOptions}
-                value={inlineAddress}
-                onChange={setInlineAddress}
-                disabled={isFormDisabled}
-                showReference
-              />
-            </div>
           </div>
 
           </div>
@@ -1499,23 +1417,7 @@ export default function InstitutionModal({
                 ? (result as any).institutionId
                 : editingInst?.institutionId;
 
-              // Crear dirección estructurada si hay datos válidos
-              if (savedId && inlineAddress.parroquiaId && inlineAddress.streetAddress) {
-                try {
-                  await addressService.createAddress({
-                    entityType: 'institution',
-                    entityId: Number(savedId),
-                    addressTypeId: inlineAddress.addressTypeId || 4,
-                    parroquiaId: inlineAddress.parroquiaId,
-                    streetAddress: inlineAddress.streetAddress,
-                    reference: inlineAddress.reference,
-                    isPrimary: inlineAddress.isPrimary,
-                  });
-                } catch (addrErr) {
-                  console.error('[InstitutionModal] Error creating address:', addrErr);
-                  addToast({ variant: 'warning', title: 'Dirección no guardada', message: 'La institución se guardó, pero hubo un error al crear la dirección.' });
-                }
-              }
+
 
               // Si es nueva institución, preguntar si quiere agregar responsables
               if (!editingInst && result && typeof result === 'object' && 'institutionId' in (result as any)) {

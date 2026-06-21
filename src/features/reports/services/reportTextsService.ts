@@ -13,6 +13,22 @@ export async function getDocumentText(
   }
 }
 
+/**
+ * Merge two text data maps: fallback provides defaults, API data overrides matching keys.
+ * Keys present only in API data are added; keys only in fallback are preserved.
+ */
+export function mergeTextData(
+  fallback: Record<string, Record<string, string>>,
+  apiData: Record<string, Record<string, string>>
+): Record<string, Record<string, string>> {
+  const merged: Record<string, Record<string, string>> = {};
+  const allKeys = new Set([...Object.keys(fallback), ...Object.keys(apiData)]);
+  for (const key of allKeys) {
+    merged[key] = { ...(fallback as any)[key], ...apiData[key] };
+  }
+  return merged;
+}
+
 export async function getAllDocumentTexts(): Promise<Record<string, Record<string, string>>> {
   try {
     const response = await apiClient.get('/report-texts');
@@ -22,7 +38,8 @@ export async function getAllDocumentTexts(): Promise<Record<string, Record<strin
       if (!grouped[t.reportType]) grouped[t.reportType] = {};
       grouped[t.reportType][t.section] = t.contentTemplate;
     }
-    return grouped;
+    // Merge fallbacks with API data: API overrides where it has data, fallback fills gaps
+    return mergeTextData(FALLBACK_TEXTOS, grouped);
   } catch {
     return FALLBACK_TEXTOS;
   }

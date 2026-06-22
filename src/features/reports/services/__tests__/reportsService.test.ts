@@ -12,7 +12,7 @@ vi.mock('../../../../api/apiClient', () => ({
   },
 }));
 
-const mockApiClient = vi.mocked(apiClient);
+const mockApiClient = vi.mocked(apiClient, true);
 
 describe('reportsService — exportReportExcel (Task 4.1)', () => {
   beforeEach(() => {

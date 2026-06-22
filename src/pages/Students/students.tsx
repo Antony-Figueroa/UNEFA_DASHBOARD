@@ -12,6 +12,7 @@ import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { useTabs } from "../../hooks/useTabs";
+import { useTabs as useAppTabs } from "../../context/tab";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
@@ -140,6 +141,7 @@ export default function StudentsPage() {
     const { activeOptions: activeInternshipOptions, fetchAll: fetchInternshipTypes } = useInternshipTypes();
 
     const tabsState = useTabs({ defaultTab: 'Activas' });
+    const { openTab } = useAppTabs();
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -413,7 +415,8 @@ export default function StudentsPage() {
             variant: "info",
             onConfirm: () => {
                 setConfirmation(null);
-                // Navegar a la página de pre-inscripción pasando la cédula en el estado
+                // Abrir la pestaña de Pre-Inscripción ANTES de navegar
+                openTab("/pre-enrollment", "Pre-Inscripción");
                 navigate("/pre-enrollment", {
                     state: { exportStudentCi: student.identificationNumber }
                 });

@@ -59,11 +59,11 @@ export const gestionEstudiantesTour: DriveStep[] = [
     },
   },
   {
-    element: () => document.querySelector("table")!,
+    element: () => document.querySelector(".table-scrollbar") ?? document.querySelector("table")!,
     popover: {
       title: t("Tabla de Estudiantes"),
       description: t(
-        "Cada fila representa un estudiante. Use el icono <b>ojo</b> para ver detalles completos (informacion personal y academica) y el icono <b>morado</b> para copiar sus datos a la ventana de Pre-inscripcion."
+        "Cada fila representa un estudiante. Columnas: seleccion, cedula, nombres, telefono, estatus, correo y acciones. Use el icono <b>ojo</b> para ver detalles, <b>lapiz</b> para editar, <b>papelera</b> para eliminar y el icono <b>morado</b> para copiar a Pre-inscripcion."
       ),
       side: "top",
     },

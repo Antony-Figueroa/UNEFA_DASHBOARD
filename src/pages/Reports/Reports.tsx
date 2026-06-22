@@ -14,8 +14,6 @@ import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { ReportList } from "../../features/reports/components/ReportList";
 import { DocumentReportModal } from "../../features/reports/components/DocumentReportModal";
 import { ProyeccionModal } from "./ProyeccionModal";
-
-import { BulkImportModal } from "../../features/bulk-import/components/BulkImportModal";
 import { useReports } from "../../features/reports/hooks/useReports";
 import { getReportConfig, DOCUMENT_SECTIONS, ReportType, setCurrentTutorId, currentTutorId } from "../../features/reports/config/reportConfig";
 import { generateSimpleExcel } from "../../utils/unefaExcelReports";
@@ -50,7 +48,6 @@ export default function ReportsPage() {
 
   const [isProyeccionModalOpen, setIsProyeccionModalOpen] = useState(false);
 
-  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
 
   const [paginationInfo, setPaginationInfo] = useState<{ page: number; totalPages: number; totalRecords: number } | null>(null);
   const activeReportConfigRef = useRef<{ type: string; periodNum?: number } | null>(null);
@@ -442,25 +439,6 @@ export default function ReportsPage() {
           />
         </ComponentCard>
 
-        <ComponentCard title="Herramientas">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={() => setIsBulkImportModalOpen(true)}
-              className="flex items-center gap-4 p-5 rounded-xl border border-border-light dark:border-border-dark hover:border-brand-500 dark:hover:border-brand-400 hover:bg-brand-50/30 dark:hover:bg-brand-500/5 transition-all text-left group"
-            >
-              <div className="p-3 rounded-lg bg-brand-50 dark:bg-brand-500/10 group-hover:bg-brand-100 dark:group-hover:bg-brand-500/20 transition-colors">
-                <svg className="w-6 h-6 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-text-primary dark:text-text-emphasis">Importación Masiva</p>
-                <p className="text-xs text-text-tertiary">Importar estudiantes o inscripciones desde Excel</p>
-              </div>
-            </button>
-          </div>
-        </ComponentCard>
-
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <ComponentCard title="Reportes Recientes" className="lg:col-span-2">
             {loading ? (
@@ -542,10 +520,6 @@ export default function ReportsPage() {
           onClose={() => setIsProyeccionModalOpen(false)}
         />
 
-        <BulkImportModal
-          isOpen={isBulkImportModalOpen}
-          onClose={() => setIsBulkImportModalOpen(false)}
-        />
       </div>
     </>
   );

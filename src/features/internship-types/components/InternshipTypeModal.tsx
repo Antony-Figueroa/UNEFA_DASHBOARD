@@ -159,6 +159,7 @@ export default function InternshipTypeModal({
       name: pendingData.name.toUpperCase(),
       priority: Number(pendingData.priority),
       status: editingItem?.status ?? true,
+      hoursRequired: editingItem?.hoursRequired ?? 360,
     });
     
     setShowSaveConfirmation(false);

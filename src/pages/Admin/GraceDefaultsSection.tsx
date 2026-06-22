@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Shield, ShieldOff } from 'lucide-react';
 import ComponentCard from '../../components/common/ComponentCard';
 import AsyncButton from '../../components/ui/button/AsyncButton';
+import Switch from '../../components/form/switch/Switch';
 import { usePeriods } from '../../features/periods/hooks/usePeriods';
 import { usePermissions } from '../../features/permissions/hooks/usePermissions';
 
@@ -12,6 +13,8 @@ export default function GraceDefaultsSection() {
 
   const [enrollmentDays, setEnrollmentDays] = useState(0);
   const [evaluationDays, setEvaluationDays] = useState(0);
+  const [allowMultiple, setAllowMultiple] = useState(true);
+  const [maxPerDay, setMaxPerDay] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -26,6 +29,8 @@ export default function GraceDefaultsSection() {
     if (graceDefaults) {
       setEnrollmentDays(graceDefaults.defaultEnrollmentGraceDays);
       setEvaluationDays(graceDefaults.defaultEvaluationGraceDays);
+      setAllowMultiple(graceDefaults.allowMultipleVisitsPerDay);
+      setMaxPerDay(graceDefaults.maxVisitsPerDay);
     }
   }, [graceDefaults]);
 
@@ -35,6 +40,8 @@ export default function GraceDefaultsSection() {
       await updateGraceDefaults({
         defaultEnrollmentGraceDays: enrollmentDays,
         defaultEvaluationGraceDays: evaluationDays,
+        allowMultipleVisitsPerDay: allowMultiple,
+        maxVisitsPerDay: maxPerDay,
       });
     } finally {
       setSaving(false);
@@ -44,7 +51,9 @@ export default function GraceDefaultsSection() {
   const hasChanges =
     graceDefaults !== null &&
     (enrollmentDays !== graceDefaults.defaultEnrollmentGraceDays ||
-      evaluationDays !== graceDefaults.defaultEvaluationGraceDays);
+      evaluationDays !== graceDefaults.defaultEvaluationGraceDays ||
+      allowMultiple !== graceDefaults.allowMultipleVisitsPerDay ||
+      maxPerDay !== graceDefaults.maxVisitsPerDay);
 
   return (
     <ComponentCard
@@ -113,6 +122,59 @@ export default function GraceDefaultsSection() {
             >
               Guardar configuración
             </AsyncButton>
+          </div>
+        )}
+      </div>
+    </ComponentCard>
+
+    <ComponentCard title="Configuración de Visitas" desc="Controla las visitas de seguimiento por día">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">
+              Permitir múltiples visitas el mismo día
+            </label>
+            <p className="text-xs text-text-tertiary mt-0.5">
+              Si se desactiva, solo se permite una visita por día para cada práctica
+            </p>
+          </div>
+          <Switch
+            label=""
+            defaultChecked={allowMultiple}
+            onChange={setAllowMultiple}
+            disabled={!canEdit}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-primary dark:text-white/90 mb-1.5">
+            Máximo de visitas por día
+          </label>
+          <input
+            type="number"
+            min={0}
+            max={365}
+            value={maxPerDay ?? ''}
+            onChange={(e) => setMaxPerDay(e.target.value === '' ? null : Math.max(0, parseInt(e.target.value) || 0))}
+            disabled={!canEdit || !allowMultiple}
+            placeholder="Sin límite"
+            className={`w-full h-11 rounded-lg border px-4 py-2.5 text-sm transition-all duration-200
+              ${!canEdit || !allowMultiple
+                ? 'bg-bg-secondary text-text-disabled border-border-light cursor-not-allowed opacity-60 dark:bg-white/5 dark:border-border-dark'
+                : 'bg-bg-main text-text-primary border-border-medium focus:border-brand-300 focus:ring-3 focus:ring-brand-500/20 dark:border-border-dark dark:focus:border-brand-800'
+              }
+            `}
+          />
+          <p className="mt-1 text-[11px] text-text-tertiary">
+            Máximo de visitas permitidas por día para una misma práctica. Vacío = sin límite.
+            {!allowMultiple && ' Deshabilitado porque no se permiten múltiples visitas.'}
+          </p>
+        </div>
+
+        {!canEdit && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-white/5 border border-border-light dark:border-border-dark text-xs text-text-tertiary">
+            <ShieldOff className="w-4 h-4" />
+            No tienes permisos para modificar la configuración de visitas.
           </div>
         )}
       </div>

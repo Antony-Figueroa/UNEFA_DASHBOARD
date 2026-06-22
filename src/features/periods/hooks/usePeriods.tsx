@@ -247,7 +247,7 @@ export const usePeriods = () => {
     /**
      * Actualiza los valores por defecto globales de holgura.
      */
-    const updateGraceDefaults = async (data: { defaultEnrollmentGraceDays: number; defaultEvaluationGraceDays: number }) => {
+    const updateGraceDefaults = async (data: { defaultEnrollmentGraceDays: number; defaultEvaluationGraceDays: number; allowMultipleVisitsPerDay?: boolean; maxVisitsPerDay?: number | null }) => {
         try {
             const updated = await periodService.updateGraceDefaults(data);
             setGraceDefaults(updated);

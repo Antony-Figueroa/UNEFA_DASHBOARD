@@ -113,6 +113,12 @@ interface VisitModalProps {
   assignedTutors?: Array<{ tutorId: number; tutorName: string; tutorType: string }>;
   /** Conteo de visitas por tutor filtrado SOLO para esta práctica (no global) */
   tutorVisitCounts?: Array<{ tutorId: number; visitCount: number }>;
+  /** Lista de visitas existentes de la práctica para validación preventiva client-side */
+  existingVisits?: Visit[];
+  /** Permite múltiples visitas el mismo día (config, para validación preventiva) */
+  allowMultipleVisitsPerDay?: boolean;
+  /** Máximo de visitas por día (config, para validación preventiva) */
+  maxVisitsPerDay?: number | null;
 }
 
 export default function VisitModal({
@@ -130,7 +136,10 @@ export default function VisitModal({
   studentName,
   hoursAccumulated,
   assignedTutors,
-  tutorVisitCounts: practiceTutorVisitCounts
+  tutorVisitCounts: practiceTutorVisitCounts,
+  existingVisits,
+  allowMultipleVisitsPerDay,
+  maxVisitsPerDay
 }: VisitModalProps) {
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingData, setPendingData] = useState<VisitFormData | null>(null);
@@ -513,6 +522,36 @@ export default function VisitModal({
           title: 'Observaciones inválidas',
           message: 'Las observaciones deben contener al menos 1 palabra significativa'
         });
+        return;
+      }
+    }
+
+    // Validación preventiva client-side (backend es el guardia real)
+    if (!isEditing && existingVisits?.length) {
+      const sameDayVisits = existingVisits.filter(v => {
+        const vDate = new Date(v.visitDate).toDateString();
+        return vDate === new Date(data.visitDate).toDateString();
+      });
+
+      if (sameDayVisits.length > 0 && allowMultipleVisitsPerDay === false) {
+        addToast({ variant: 'warning', title: 'Visita duplicada', message: 'Ya existe una visita en esta fecha.' });
+        return;
+      }
+
+      if (sameDayVisits.length > 0 && maxVisitsPerDay && sameDayVisits.length >= maxVisitsPerDay) {
+        addToast({ variant: 'warning', title: 'Límite alcanzado', message: `Máximo ${maxVisitsPerDay} visitas por día.` });
+        return;
+      }
+
+      const newStart = new Date(data.visitDate).getTime();
+      const newEnd = newStart + data.hoursWorked * 3600000;
+      const hasOverlap = sameDayVisits.some(v => {
+        const vStart = new Date(v.visitDate).getTime();
+        const vEnd = vStart + (v.hoursWorked || 0) * 3600000;
+        return newStart < vEnd && newEnd > vStart;
+      });
+      if (hasOverlap) {
+        addToast({ variant: 'warning', title: 'Solapamiento', message: 'La visita se solapa con otra existente.' });
         return;
       }
     }

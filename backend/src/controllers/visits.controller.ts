@@ -257,41 +257,105 @@ export const getVisitById = async (req: Request, res: Response) => {
 };
 
 /**
- * Verifica si ya existe una visita con la misma fecha (misma hora) para la práctica.
- * Considera duplicado si existe una visita activa (STATUS=1) con exactamente la misma fecha.
+ * Lee la configuración de visitas desde t_academic_config.
  */
-const checkDuplicateVisit = async (supabase: any, practiceId: number, visitDate: string, excludeVisitId?: number): Promise<{ isDuplicate: boolean; existingVisit?: any }> => {
-  // Parsear la fecha de la visita y normalizar a UTC midnight para comparar solo fecha
-  const visitDateNormalized = new Date(visitDate).toISOString();
-  
+const getVisitsConfig = async (supabase: any): Promise<{ allowMultiple: boolean; maxPerDay: number | null }> => {
+  const { data, error } = await supabase
+    .from('t_academic_config')
+    .select('ALLOW_MULTIPLE_VISITS_PER_DAY, MAX_VISITS_PER_DAY')
+    .eq('CONFIG_ID', 1)
+    .single();
+
+  if (error || !data) {
+    return { allowMultiple: true, maxPerDay: null };
+  }
+
+  return {
+    allowMultiple: data.ALLOW_MULTIPLE_VISITS_PER_DAY ?? true,
+    maxPerDay: data.MAX_VISITS_PER_DAY ?? null,
+  };
+};
+
+/**
+ * Verifica restricciones de visitas: duplicado por fecha, máximo por día y solapamiento horario.
+ * Reemplaza a checkDuplicateVisit.
+ */
+const checkVisitConstraints = async (
+  supabase: any,
+  practiceId: number,
+  visitDate: string,
+  hoursWorked: number,
+  excludeVisitId?: number
+): Promise<{ allowed: boolean; code?: string; message?: string; existingVisit?: any }> => {
+  // 1. Leer config
+  const config = await getVisitsConfig(supabase);
+
+  // 2. Normalizar fecha a YYYY-MM-DD
+  const d = new Date(visitDate);
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  // 3. Obtener visitas activas en la misma fecha calendario para la misma práctica
   let query = supabase
     .from('t_practice_visits')
-    .select('VISIT_ID, VISIT_DATE, VISIT_TYPE')
+    .select('VISIT_ID, VISIT_DATE, HOURS_WORKED, VISIT_TYPE')
     .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+    .gte('VISIT_DATE', `${dateStr}T00:00:00`)
+    .lt('VISIT_DATE', `${dateStr}T23:59:59`)
     .eq('STATUS', 1);
-  
-  // Si estamos editando, excluir la visita actual
+
   if (excludeVisitId) {
     query = query.neq('VISIT_ID', excludeVisitId);
   }
-  
-  const { data, error } = await query;
-  
+
+  const { data: existingVisits, error } = await query;
   if (error) {
-    console.error('[checkDuplicateVisit] Error:', error);
-    return { isDuplicate: false };
+    console.error('[checkVisitConstraints] Error:', error);
+    return { allowed: true }; // fallback abierto
   }
-  
-  // Verificar si hay alguna visita con exactamente la misma fecha
-  const duplicate = (data || []).find((v: any) => {
-    const existingDate = new Date(v.VISIT_DATE).toISOString();
-    return existingDate === visitDateNormalized;
+
+  if (!existingVisits || existingVisits.length === 0) {
+    return { allowed: true };
+  }
+
+  // 4. Validar allowMultipleVisitsPerDay
+  if (!config.allowMultiple && existingVisits.length >= 1) {
+    return {
+      allowed: false,
+      code: 'DUPLICATE_VISIT_DATE',
+      message: `Ya existe una visita registrada para esta práctica en la fecha ${dateStr}. No se permiten visitas duplicadas.`,
+      existingVisit: existingVisits[0],
+    };
+  }
+
+  // 5. Validar maxVisitsPerDay
+  if (config.maxPerDay !== null && existingVisits.length >= config.maxPerDay) {
+    return {
+      allowed: false,
+      code: 'MAX_VISITS_PER_DAY_EXCEEDED',
+      message: `Se ha alcanzado el máximo de visitas permitidas para esta práctica en la fecha ${dateStr} (máximo: ${config.maxPerDay}).`,
+    };
+  }
+
+  // 6. Validar solapamiento horario
+  const newStart = new Date(visitDate).getTime();
+  const newEnd = newStart + hoursWorked * 60 * 60 * 1000;
+
+  const overlap = existingVisits.find((v: any) => {
+    const existStart = new Date(v.VISIT_DATE).getTime();
+    const existEnd = existStart + (v.HOURS_WORKED || 0) * 60 * 60 * 1000;
+    return newStart < existEnd && newEnd > existStart;
   });
-  
-  return { 
-    isDuplicate: !!duplicate, 
-    existingVisit: duplicate 
-  };
+
+  if (overlap) {
+    return {
+      allowed: false,
+      code: 'VISIT_TIME_OVERLAP',
+      message: 'La visita se solapa horariamente con una visita existente.',
+      existingVisit: overlap,
+    };
+  }
+
+  return { allowed: true };
 };
 
 /**
@@ -341,18 +405,17 @@ export const createVisit = async (req: Request, res: Response) => {
     const userId = (req as any).user?.userId;
     const supabase = dbManager.getConnection();
 
-    // Verificar duplicados
-    const { isDuplicate, existingVisit } = await checkDuplicateVisit(supabase, practiceId, visitDate);
-    if (isDuplicate) {
-      const existingDate = new Date(existingVisit.VISIT_DATE).toLocaleString('es-VE');
-      return res.status(409).json({ 
-        message: `Ya existe una visita registrada para esta práctica en la fecha ${existingDate}. No se permiten visitas duplicadas.`,
-        code: 'DUPLICATE_VISIT_DATE',
-        existingVisit: {
-          visitId: existingVisit.VISIT_ID,
-          visitDate: existingVisit.VISIT_DATE,
-          visitType: existingVisit.VISIT_TYPE
-        }
+    // Verificar restricciones de visita
+    const constraints = await checkVisitConstraints(supabase, practiceId, visitDate, hoursWorked || 0);
+    if (!constraints.allowed) {
+      return res.status(409).json({
+        message: constraints.message,
+        code: constraints.code,
+        existingVisit: constraints.existingVisit ? {
+          visitId: constraints.existingVisit.VISIT_ID,
+          visitDate: constraints.existingVisit.VISIT_DATE,
+          visitType: constraints.existingVisit.VISIT_TYPE,
+        } : undefined,
       });
     }
 
@@ -433,23 +496,23 @@ export const updateVisit = async (req: Request, res: Response) => {
         });
       }
 
-      // Verificar duplicados solo si se está cambiando la fecha
-      const { isDuplicate, existingVisit } = await checkDuplicateVisit(
-        dbManager.getConnection(), 
-        practiceId, 
+      // Verificar restricciones de visita
+      const constraints = await checkVisitConstraints(
+        dbManager.getConnection(),
+        practiceId,
         visitDate,
+        hoursWorked || 0,
         parseInt(id)
       );
-      if (isDuplicate) {
-        const existingDate = new Date(existingVisit.VISIT_DATE).toLocaleString('es-VE');
-        return res.status(409).json({ 
-          message: `Ya existe una visita registrada para esta práctica en la fecha ${existingDate}. No se permiten visitas duplicadas.`,
-          code: 'DUPLICATE_VISIT_DATE',
-          existingVisit: {
-            visitId: existingVisit.VISIT_ID,
-            visitDate: existingVisit.VISIT_DATE,
-            visitType: existingVisit.VISIT_TYPE
-          }
+      if (!constraints.allowed) {
+        return res.status(409).json({
+          message: constraints.message,
+          code: constraints.code,
+          existingVisit: constraints.existingVisit ? {
+            visitId: constraints.existingVisit.VISIT_ID,
+            visitDate: constraints.existingVisit.VISIT_DATE,
+            visitType: constraints.existingVisit.VISIT_TYPE,
+          } : undefined,
         });
       }
     }

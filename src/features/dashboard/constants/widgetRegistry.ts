@@ -238,6 +238,66 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     getProps: (data: any) => ({ stats: data, loading: data?.loading ?? false }),
   },
 
+  'tutor-pending-approvals': {
+    key: 'tutor-pending-approvals',
+    displayName: 'Aprobaciones Pendientes',
+    description: 'Actividades de bitácora pendientes de aprobación',
+    icon: 'check-square',
+    size: 'md',
+    module: 'tracking',
+    allowedRoles: [3],
+    component: lazy(() => import('../components/TutorPendingApprovalsWidget')),
+    getProps: (data: any) => ({
+      logs: data?.pendingApprovalLogs ?? [],
+      loading: data?.loading ?? false,
+    }),
+  },
+
+  'tutor-upcoming-deadlines': {
+    key: 'tutor-upcoming-deadlines',
+    displayName: 'Próximos Vencimientos',
+    description: 'Pasantías con fecha de finalización próxima',
+    icon: 'calendar',
+    size: 'md',
+    module: 'tracking',
+    allowedRoles: [3],
+    component: lazy(() => import('../components/TutorUpcomingDeadlinesWidget')),
+    getProps: (data: any) => ({
+      deadlines: data?.upcomingDeadlines ?? [],
+      loading: data?.loading ?? false,
+    }),
+  },
+
+  'tutor-student-alerts': {
+    key: 'tutor-student-alerts',
+    displayName: 'Alertas de Estudiantes',
+    description: 'Estudiantes sin actividad reciente en la bitácora',
+    icon: 'alert-triangle',
+    size: 'sm',
+    module: 'tracking',
+    allowedRoles: [3],
+    component: lazy(() => import('../components/TutorStudentAlertsWidget')),
+    getProps: (data: any) => ({
+      alerts: data?.studentAlerts ?? [],
+      loading: data?.loading ?? false,
+    }),
+  },
+
+  'tutor-notifications': {
+    key: 'tutor-notifications',
+    displayName: 'Notificaciones',
+    description: 'Notificaciones recientes del sistema',
+    icon: 'bell',
+    size: 'sm',
+    module: 'general',
+    allowedRoles: [3],
+    component: lazy(() => import('../components/TutorNotificationsWidget')),
+    getProps: (data: any) => ({
+      unreadCount: data?.unreadNotifications ?? 0,
+      loading: data?.loading ?? false,
+    }),
+  },
+
   // ═════════════════════════════════════════════════════════════════════════
   // STUDENT WIDGETS (role=4)
   // ═════════════════════════════════════════════════════════════════════════

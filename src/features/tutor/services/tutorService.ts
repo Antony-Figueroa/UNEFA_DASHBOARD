@@ -24,6 +24,27 @@ export interface TutorDashboardStats {
   activeInternships: number;
   pendingGrades: number;
   completedInternships: number;
+  pendingApprovals?: number;
+  pendingApprovalLogs?: Array<{
+    id: number;
+    date: string;
+    description: string;
+    week: number;
+    hours: number;
+    studentName: string;
+  }>;
+  upcomingDeadlines?: Array<{
+    practiceId: number;
+    endDate: string;
+    reportTitle: string;
+    studentName: string;
+  }>;
+  studentAlerts?: Array<{
+    practiceId: number;
+    studentName: string;
+    daysInactive: number;
+  }>;
+  unreadNotifications?: number;
 }
 
 export interface TutorTracking {

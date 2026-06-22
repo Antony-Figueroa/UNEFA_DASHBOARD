@@ -115,6 +115,11 @@ export const tutorService = {
   getProfile: async (): Promise<TutorProfile> => {
     const response = await apiClient.get(`${API_URL}/profile`);
     return response.data.data;
+  },
+
+  getActivityLogs: async (params?: { limit?: number; offset?: number; type?: string; status?: string }): Promise<{ data: any[]; meta: { total: number } }> => {
+    const response = await apiClient.get(`${API_URL}/activity-logs`, { params });
+    return response.data;
   }
 };
 

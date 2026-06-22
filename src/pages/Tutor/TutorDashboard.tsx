@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
+import ComponentCard from "../../components/common/ComponentCard";
+import Button from "../../components/ui/button/Button";
 import { DynamicDashboard } from "../../features/dashboard/components/DynamicDashboard";
 import { useDashboardLayout } from "../../features/dashboard/hooks/useDashboardLayout";
 import tutorService, { TutorDashboardStats } from "../../features/tutor/services/tutorService";
+import { EyeIcon, ClockIcon } from "../../icons/actions";
 
 export default function TutorDashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<TutorDashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +59,31 @@ export default function TutorDashboard() {
           data={{ ...stats, loading }}
           loading={loading}
         />
+
+        {/* ponytail: pending approvals card */}
+        {stats && !loading && (
+          <ComponentCard title="Actividades Pendientes">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-warning-50 dark:bg-warning-500/10">
+                  <ClockIcon className="w-8 h-8 text-warning-500" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-warning-500">{stats.pendingApprovals ?? 0}</p>
+                  <p className="text-sm text-text-secondary">registros por aprobar</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/tutor/activity-logs')}
+                className="flex items-center gap-2"
+              >
+                <EyeIcon className="w-4 h-4" />
+                Ver Bitácora
+              </Button>
+            </div>
+          </ComponentCard>
+        )}
       </div>
     </>
   );

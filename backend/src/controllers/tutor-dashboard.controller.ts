@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
+import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 
 interface TutorStudent {
   enrollmentId: string;
@@ -27,6 +28,7 @@ interface DashboardStats {
   activeInternships: number;
   pendingGrades: number;
   completedInternships: number;
+  pendingApprovals?: number;
 }
 
 export const getTutorDashboard = async (req: AuthRequest, res: Response) => {
@@ -65,6 +67,20 @@ export const getTutorDashboard = async (req: AuthRequest, res: Response) => {
 
     if (practicesError) throw practicesError;
 
+    const practiceIds = (practices || []).map(p => p.PROFESSIONAL_PRACTICE_ID);
+
+    // ponytail: pending approvals count from activity logs
+    let pendingApprovals = 0;
+    if (practiceIds.length > 0) {
+      const { count } = await supabase
+        .from('t_activity_logs')
+        .select('*', { count: 'exact', head: true })
+        .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+        .eq('SUPERVISOR_APPROVED', false)
+        .eq('STATUS', 1);
+      pendingApprovals = count || 0;
+    }
+
     const stats: DashboardStats = {
       totalStudents: practices?.length || 0,
       activeInternships: practices?.filter((p: any) => 
@@ -77,7 +93,8 @@ export const getTutorDashboard = async (req: AuthRequest, res: Response) => {
       ).length || 0,
       completedInternships: practices?.filter((p: any) => 
         p.t_professional_practices?.PRACTICES_STATUS === PRACTICES_STATUS.CULMINADO
-      ).length || 0
+      ).length || 0,
+      pendingApprovals
     };
 
     res.json({
@@ -594,6 +611,74 @@ export const getTutorProfile = async (req: AuthRequest, res: Response) => {
       message: 'Error al obtener perfil',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
+  }
+};
+
+export const getTutorActivityLogs = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { limit = '50', offset = '0', type, status } = req.query;
+    const supabase = dbManager.getConnection();
+
+    const { data: tutorData, error: tutorError } = await supabase
+      .from('t_tutors')
+      .select('TUTOR_ID')
+      .eq('USER_ID', userId)
+      .single();
+
+    if (tutorError || !tutorData) {
+      return res.status(404).json({ success: false, message: 'Tutor no encontrado' });
+    }
+
+    const tutorId = tutorData.TUTOR_ID;
+
+    const { data: tutorPractices } = await supabase
+      .from('t_professional_practices_tutor')
+      .select('PROFESSIONAL_PRACTICE_ID')
+      .eq('TUTOR_ID', tutorId);
+
+    const practiceIds = (tutorPractices || []).map(p => p.PROFESSIONAL_PRACTICE_ID);
+
+    if (practiceIds.length === 0) {
+      return res.json({ success: true, data: [], meta: { total: 0 } });
+    }
+
+    const { count: total, error: countError } = await supabase
+      .from('t_activity_logs')
+      .select('*', { count: 'exact', head: true })
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+      .eq('STATUS', 1);
+
+    if (countError) throw countError;
+
+    let query = supabase
+      .from('t_activity_logs')
+      .select(`
+        *,
+        t_persons!inner (ci, first_name, last_name),
+        t_professional_practices (START_DATE, END_DATE)
+      `)
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+      .eq('STATUS', 1)
+      .order('ACTIVITY_DATE', { ascending: false })
+      .range(Number(offset), Number(offset) + Number(limit) - 1);
+
+    if (type) query = query.eq('ACTIVITY_TYPE', type);
+    if (status) query = query.eq('SUPERVISOR_APPROVED', status === 'approved');
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const logs = (data || []).map((log: any) => ({
+      ...log,
+      studentName: getPersonFullName(log.t_persons) || 'Sin estudiante',
+      studentCi: getPersonField(log.t_persons, 'ci') || '',
+    }));
+
+    res.json({ success: true, data: logs, meta: { total: total || 0 } });
+  } catch (error) {
+    console.error('[TutorDashboard] Error getting activity logs:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener registros de actividad' });
   }
 };
 

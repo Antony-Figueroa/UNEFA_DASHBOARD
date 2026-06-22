@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requirePermission } from '../middlewares/auth.middleware.js';
+import { authenticateToken, requirePermission } from '../middlewares/auth.middleware.js';
 import {
   getInstitution,
   updateInstitution
@@ -7,7 +7,8 @@ import {
 
 const router = Router();
 
-router.get('/', requirePermission('system-institution:view'), getInstitution);
+// ponytail: branding data (logo, name) — any authenticated user can read
+router.get('/', authenticateToken, getInstitution);
 router.put('/', requirePermission('system-institution:edit'), updateInstitution);
 
 export default router;

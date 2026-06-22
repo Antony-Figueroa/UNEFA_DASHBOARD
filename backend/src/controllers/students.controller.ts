@@ -402,6 +402,22 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       return insertedData as unknown as DBStudent;
     }, 'createStudent');
 
+    // 4. Si la persona ya tiene usuario, vincular USER_ID en t_students
+    await dbManager.withRetry(async (supabase) => {
+      const { data: existingUser } = await supabase
+        .from('t_user')
+        .select('USER_ID')
+        .eq('person_id', data.person_id)
+        .maybeSingle();
+
+      if (existingUser) {
+        await supabase
+          .from('t_students')
+          .update({ USER_ID: existingUser.USER_ID })
+          .eq('STUDENTS_ID', data.STUDENTS_ID);
+      }
+    }).catch(() => {});
+
     // Auditoría
     await auditCreate(req, 't_students', { ...personData, ...studentData }, STUDENT_COLUMNS_TO_AUDIT);
 

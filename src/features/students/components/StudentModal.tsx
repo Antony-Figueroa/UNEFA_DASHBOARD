@@ -727,12 +727,14 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     }
   };
 
-useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       // Limpiar estados de duplicado cuando se abre el modal
       setExistingStudent(null);
       setExistingPerson(false);
       setViewOnlyMode(false);
+      // Resetear dirección inline
+      setInlineAddress({ parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true });
       
       if (editingStudent) {
         // Separar prefijo y número de teléfono (ej: 04121234567)
@@ -1189,18 +1191,37 @@ useEffect(() => {
             if (pendingSave) {
               await onSave(pendingSave);
             }
-            // Crear dirección estructurada en edición
-            if (editingStudent?.personId && inlineAddress.parroquiaId && inlineAddress.streetAddress) {
+            // Crear dirección estructurada (edición o creación)
+            if (inlineAddress.parroquiaId && inlineAddress.streetAddress) {
               try {
-                await addressService.createAddress({
-                  entityType: 'person',
-                  entityId: Number(editingStudent.personId),
-                  addressTypeId: inlineAddress.addressTypeId || 3,
-                  parroquiaId: inlineAddress.parroquiaId,
-                  streetAddress: inlineAddress.streetAddress,
-                  reference: inlineAddress.reference,
-                  isPrimary: inlineAddress.isPrimary,
-                });
+                let targetPersonId: number | null = null;
+
+                if (editingStudent?.personId) {
+                  targetPersonId = Number(editingStudent.personId);
+                } else if (
+                  pendingSave &&
+                  'identificationPrefix' in pendingSave &&
+                  'identificationNumber' in pendingSave
+                ) {
+                  // Estudiante recién creado — obtener personId consultando por CI
+                  const ci = `${pendingSave.identificationPrefix}-${pendingSave.identificationNumber}`;
+                  const result = await getStudentByCi(ci);
+                  if (result?.student?.personId) {
+                    targetPersonId = Number(result.student.personId);
+                  }
+                }
+
+                if (targetPersonId) {
+                  await addressService.createAddress({
+                    entityType: 'person',
+                    entityId: targetPersonId,
+                    addressTypeId: inlineAddress.addressTypeId || 3,
+                    parroquiaId: inlineAddress.parroquiaId,
+                    streetAddress: inlineAddress.streetAddress,
+                    reference: inlineAddress.reference,
+                    isPrimary: inlineAddress.isPrimary,
+                  });
+                }
               } catch (addrErr) {
                 console.error('[StudentModal] Error creating address:', addrErr);
               }

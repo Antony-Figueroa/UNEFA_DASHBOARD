@@ -28,6 +28,8 @@ export type ReportType =
   | "distribucion-tutores-v2"
   | "relacion-individual-docente"
   | "proyeccion-pasantias"
+  | "acta-notas-finales"
+  | "evaluaciones-consolidadas"
   | "";
 
 export interface ReportConfigEntry {
@@ -75,13 +77,6 @@ export const DOCUMENT_SECTIONS: SectionGroup[] = [
     ],
   },
   {
-    title: "Prospectos",
-    description: "Listas editables de estudiantes elegibles para pasantías",
-    reports: [
-      { id: "prospectos", title: "Reporte de Prospectos", subtitle: "Crear y Gestionar Listas de Prospectos por Período", icon: "users", type: "pdf" },
-    ],
-  },
-  {
     title: "Reportes Generales",
     description: "Reportes exportables a Excel con datos agregados",
     reports: [
@@ -92,6 +87,8 @@ export const DOCUMENT_SECTIONS: SectionGroup[] = [
       { id: "distribucion-tutores-v2", title: "Dist. Tutores (Detallada)", subtitle: "Distribución con Horario Detallado", icon: "spreadsheet", type: "excel" },
       { id: "relacion-individual-docente", title: "Relación Individual Doc.", subtitle: "Reporte Individual por Docente", icon: "spreadsheet", type: "excel" },
       { id: "proyeccion-pasantias", title: "Proyección de Pasantías", subtitle: "Proyección Prospectiva de Pasantías por Período Académico", icon: "table", type: "excel" },
+      { id: "acta-notas-finales", title: "Acta de Notas Finales", subtitle: "Notas Finales de Prácticas Profesionales por Período", icon: "spreadsheet", type: "excel" },
+      { id: "evaluaciones-consolidadas", title: "Evaluaciones Consolidadas", subtitle: "Consolidado de Evaluaciones por Estudiante", icon: "spreadsheet", type: "excel" },
     ],
   },
 ];
@@ -305,6 +302,53 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       { header: "Región", accessor: "region" },
       { header: "Carreras Cortas", accessor: "shortCareers" },
       { header: "Carreras Largas", accessor: "longCareers" },
+    ],
+  },
+  "acta-notas-finales": {
+    title: "Acta de Notas Finales",
+    subtitle: "Notas Finales de Prácticas Profesionales por Período",
+    type: "excel",
+    loadData: async (periodId, careerId, page, limit, careerIds) => {
+      const response = await reportsService.getActaNotasFinales(periodId, careerId, page, limit, careerIds);
+      return { data: response?.data || [], meta: response?.meta };
+    },
+    columns: [
+      { header: "N°", accessor: "nro" },
+      { header: "Región", accessor: "region" },
+      { header: "Núcleo", accessor: "nucleo" },
+      { header: "Extensión", accessor: "extension" },
+      { header: "Carrera", accessor: "carrera" },
+      { header: "Cédula", accessor: "estudianteCi" },
+      { header: "Apellidos", accessor: "estudianteApellido" },
+      { header: "Nombres", accessor: "estudianteNombre" },
+      { header: "Institución", accessor: "institucion" },
+      { header: "Nota Final", accessor: "notaFinal" },
+      { header: "Observaciones", accessor: "observaciones" },
+    ],
+  },
+  "evaluaciones-consolidadas": {
+    title: "Evaluaciones Consolidadas",
+    subtitle: "Consolidado de Evaluaciones por Estudiante",
+    type: "excel",
+    loadData: async (periodId, careerId, page, limit, careerIds) => {
+      const response = await reportsService.getEvaluacionesConsolidadas(periodId, careerId, page, limit, careerIds);
+      return { data: response?.data || [], meta: response?.meta };
+    },
+    columns: [
+      { header: "N°", accessor: "nro" },
+      { header: "Región", accessor: "region" },
+      { header: "Núcleo", accessor: "nucleo" },
+      { header: "Extensión", accessor: "extension" },
+      { header: "Carrera", accessor: "carrera" },
+      { header: "Cédula", accessor: "estudianteCi" },
+      { header: "Apellidos", accessor: "estudianteApellido" },
+      { header: "Nombres", accessor: "estudianteNombre" },
+      { header: "Institución", accessor: "institucion" },
+      { header: "E. Inst.", accessor: "evalInstitucional" },
+      { header: "E. Acad.", accessor: "evalAcademico" },
+      { header: "E. Comité", accessor: "evalComite" },
+      { header: "Nota Final", accessor: "notaFinal" },
+      { header: "Observaciones", accessor: "observaciones" },
     ],
   },
   "relacion-individual-docente": {

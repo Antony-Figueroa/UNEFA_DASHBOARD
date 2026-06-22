@@ -13,9 +13,8 @@ import { TablePreviewModal } from "../../components/ui/table/TablePreviewModal";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { ReportList } from "../../features/reports/components/ReportList";
 import { DocumentReportModal } from "../../features/reports/components/DocumentReportModal";
-import { ProspectListModal } from "../../features/prospectos/components/ProspectListModal";
 import { ProyeccionModal } from "./ProyeccionModal";
-import { RelacionIndividualDocenteModal } from "./RelacionIndividualDocenteModal";
+
 import { BulkImportModal } from "../../features/bulk-import/components/BulkImportModal";
 import { useReports } from "../../features/reports/hooks/useReports";
 import { getReportConfig, DOCUMENT_SECTIONS, ReportType, setCurrentTutorId, currentTutorId } from "../../features/reports/config/reportConfig";
@@ -48,9 +47,9 @@ export default function ReportsPage() {
   const [tableSearchTerm, setTableSearchTerm] = useState("");
   const [pdfSearchTerm, setPdfSearchTerm] = useState("");
   const [loadingExcelId, setLoadingExcelId] = useState<string | null>(null);
-  const [isProspectosModalOpen, setIsProspectosModalOpen] = useState(false);
+
   const [isProyeccionModalOpen, setIsProyeccionModalOpen] = useState(false);
-  const [isRelacionDocenteModalOpen, setIsRelacionDocenteModalOpen] = useState(false);
+
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
 
   const [paginationInfo, setPaginationInfo] = useState<{ page: number; totalPages: number; totalRecords: number } | null>(null);
@@ -59,6 +58,7 @@ export default function ReportsPage() {
   // State for tutor selection (relacion-individual-docente)
   const [showTutorSelector, setShowTutorSelector] = useState(false);
   const [pendingExportType, setPendingExportType] = useState<string | null>(null);
+  const [pendingViewType, setPendingViewType] = useState<string | null>(null);
 
   const { fetchData: fetchReportData, exportExcel } = useReports();
 
@@ -133,16 +133,13 @@ export default function ReportsPage() {
   }, [periodFilter, fetchReportData]);
 
   const handleViewReport = useCallback(async (type: string) => {
-    if (type === "prospectos") {
-      setIsProspectosModalOpen(true);
-      return;
-    }
     if (type === "proyeccion-pasantias") {
       setIsProyeccionModalOpen(true);
       return;
     }
-    if (type === "relacion-individual-docente") {
-      setIsRelacionDocenteModalOpen(true);
+    if (type === "relacion-individual-docente" && !currentTutorId) {
+      setPendingViewType(type);
+      setShowTutorSelector(true);
       return;
     }
     // Documentos oficiales → DocumentReportModal
@@ -227,15 +224,23 @@ export default function ReportsPage() {
     }
   }, [periodFilter, downloadBlob, careerIdsFilter]);
 
-  const handleTutorSelect = useCallback((tutor: TutorSearchResult) => {
+  const handleTutorSelect = useCallback(async (tutor: TutorSearchResult) => {
     setCurrentTutorId(tutor.tutorId);
     setShowTutorSelector(false);
+
+    if (pendingViewType) {
+      const viewType = pendingViewType;
+      setPendingViewType(null);
+      await handleViewReport(viewType);
+      return;
+    }
+
     const exportType = pendingExportType;
     setPendingExportType(null);
     if (exportType) {
       handleExportExcel(exportType, tutor.tutorId);
     }
-  }, [pendingExportType, handleExportExcel]);
+  }, [pendingViewType, pendingExportType, handleViewReport, handleExportExcel]);
 
   const exportTableToExcel = async (data: any[], fileName: string) => {
     const config = getReportConfig(activeReportId);
@@ -532,19 +537,9 @@ export default function ReportsPage() {
           documentType={selectedDocumentType}
         />
 
-        <ProspectListModal
-          isOpen={isProspectosModalOpen}
-          onClose={() => setIsProspectosModalOpen(false)}
-        />
-
         <ProyeccionModal
           isOpen={isProyeccionModalOpen}
           onClose={() => setIsProyeccionModalOpen(false)}
-        />
-
-        <RelacionIndividualDocenteModal
-          isOpen={isRelacionDocenteModalOpen}
-          onClose={() => setIsRelacionDocenteModalOpen(false)}
         />
 
         <BulkImportModal

@@ -634,6 +634,156 @@ export async function generateSimpleExcel(
 }
 
 /**
+ * Genera el reporte Excel ACTA DE NOTAS FINALES
+ * con membrete institucional, título, header y datos en UPPERCASE.
+ */
+export async function generateActaNotasFinalesExcel(data: any[], period: string, fileName: string) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Acta Notas Finales');
+  const totalCols = 11;
+
+  worksheet.columns = [
+    { key: 'nro', width: 5 }, { key: 'region', width: 12 }, { key: 'nucleo', width: 14 },
+    { key: 'extension', width: 14 }, { key: 'carrera', width: 22 },
+    { key: 'cedula', width: 14 }, { key: 'apellidos', width: 18 },
+    { key: 'nombres', width: 18 }, { key: 'institucion', width: 24 },
+    { key: 'notaFinal', width: 12 }, { key: 'observaciones', width: 20 },
+  ];
+
+  applyInstitutionalHeader(worksheet, totalCols);
+  applyTitleRow(worksheet, 7, `ACTA DE NOTAS FINALES - ${period}`, totalCols);
+
+  applyHeaderRow(worksheet, 9, [
+    { col: 1, text: 'N°' }, { col: 2, text: 'REGIÓN' }, { col: 3, text: 'NÚCLEO' },
+    { col: 4, text: 'EXTENSIÓN' }, { col: 5, text: 'CARRERA' },
+    { col: 6, text: 'CÉDULA' }, { col: 7, text: 'APELLIDOS' },
+    { col: 8, text: 'NOMBRES' }, { col: 9, text: 'INSTITUCIÓN' },
+    { col: 10, text: 'NOTA FINAL' }, { col: 11, text: 'OBSERVACIONES' },
+  ]);
+
+  let currentRow = 10;
+  data.forEach(item => {
+    applyDataRow(worksheet, currentRow, [
+      item.nro,
+      (item.region || '').toUpperCase(),
+      (item.nucleo || '').toUpperCase(),
+      (item.extension || '').toUpperCase(),
+      (item.carrera || '').toUpperCase(),
+      (item.estudianteCi || item.cedula || '').toUpperCase(),
+      (item.estudianteApellido || item.apellidos || '').toUpperCase(),
+      (item.estudianteNombre || item.nombres || '').toUpperCase(),
+      (item.institucion || '').toUpperCase(),
+      item.notaFinal ?? 0,
+      (item.observaciones || '').toUpperCase(),
+    ]);
+    currentRow++;
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  if (typeof window !== 'undefined') {
+    const { saveAs } = await import('file-saver');
+    saveAs(blob, `${fileName}.xlsx`);
+  }
+}
+
+/**
+ * Genera el reporte Excel EVALUACIONES CONSOLIDADAS
+ * con membrete institucional, título, header merge + datos en UPPERCASE.
+ */
+export async function generateEvaluacionesConsolidadasExcel(data: any[], period: string, fileName: string) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Evaluaciones Consolidadas');
+  const totalCols = 14;
+
+  worksheet.columns = [
+    { key: 'nro', width: 5 }, { key: 'region', width: 12 }, { key: 'nucleo', width: 14 },
+    { key: 'extension', width: 14 }, { key: 'carrera', width: 22 },
+    { key: 'cedula', width: 14 }, { key: 'apellidos', width: 18 },
+    { key: 'nombres', width: 18 }, { key: 'institucion', width: 24 },
+    { key: 'evalInstitucional', width: 10 }, { key: 'evalAcademico', width: 10 },
+    { key: 'evalComite', width: 10 }, { key: 'notaFinal', width: 12 },
+    { key: 'observaciones', width: 20 },
+  ];
+
+  applyInstitutionalHeader(worksheet, totalCols);
+  applyTitleRow(worksheet, 7, `EVALUACIONES CONSOLIDADAS - ${period}`, totalCols);
+
+  // Row 9-10 merged header: "EVALUACIONES" spans cols 10-12
+  const row9 = worksheet.getRow(9);
+  const row10 = worksheet.getRow(10);
+  row9.height = 20;
+  row10.height = 40;
+
+  // Merge single-column headers
+  for (let c = 1; c <= 9; c++) {
+    worksheet.mergeCells(9, c, 10, c);
+  }
+  worksheet.mergeCells(10, 13, 10, 14);
+
+  // Merge "EVALUACIONES" group header over cols 10-12
+  worksheet.mergeCells(9, 10, 9, 12);
+
+  const topHeaders = [
+    { col: 1, text: 'N°' }, { col: 2, text: 'REGIÓN' }, { col: 3, text: 'NÚCLEO' },
+    { col: 4, text: 'EXTENSIÓN' }, { col: 5, text: 'CARRERA' },
+    { col: 6, text: 'CÉDULA' }, { col: 7, text: 'APELLIDOS' },
+    { col: 8, text: 'NOMBRES' }, { col: 9, text: 'INSTITUCIÓN' },
+  ];
+  topHeaders.forEach(({ col, text }) => {
+    const cell = row9.getCell(col);
+    cell.value = text;
+    cell.style = HEADER_STYLE;
+    row10.getCell(col).style = HEADER_STYLE;
+  });
+
+  const evalGroupCell = row9.getCell(10);
+  evalGroupCell.value = 'EVALUACIONES';
+  evalGroupCell.style = HEADER_STYLE;
+  for (let c = 11; c <= 12; c++) row9.getCell(c).style = HEADER_STYLE;
+
+  // Row 10 sub-headers
+  const subHeaders = [
+    { col: 10, text: 'E. INST.' }, { col: 11, text: 'E. ACAD.' },
+    { col: 12, text: 'E. COMITÉ' },
+    { col: 13, text: 'NOTA FINAL' }, { col: 14, text: 'OBSERVACIONES' },
+  ];
+  subHeaders.forEach(({ col, text }) => {
+    const cell = row10.getCell(col);
+    cell.value = text;
+    cell.style = HEADER_STYLE;
+  });
+
+  let currentRow = 11;
+  data.forEach(item => {
+    applyDataRow(worksheet, currentRow, [
+      item.nro,
+      (item.region || '').toUpperCase(),
+      (item.nucleo || '').toUpperCase(),
+      (item.extension || '').toUpperCase(),
+      (item.carrera || '').toUpperCase(),
+      (item.estudianteCi || item.cedula || '').toUpperCase(),
+      (item.estudianteApellido || item.apellidos || '').toUpperCase(),
+      (item.estudianteNombre || item.nombres || '').toUpperCase(),
+      (item.institucion || '').toUpperCase(),
+      item.evalInstitucional ?? '',
+      item.evalAcademico ?? '',
+      item.evalComite ?? '',
+      item.notaFinal ?? 0,
+      (item.observaciones || '').toUpperCase(),
+    ]);
+    currentRow++;
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  if (typeof window !== 'undefined') {
+    const { saveAs } = await import('file-saver');
+    saveAs(blob, `${fileName}.xlsx`);
+  }
+}
+
+/**
  * Generates the Proyección Prospectiva de Pasantías Excel report.
  * Formato: membrete 6 filas, título, código Form-002-2019,
  * tabla con REGIÓN | NÚCLEO | EXTENSIÓN | CARRERAS CORTAS | CANT. PROY. | CARRERAS LARGAS | CANT. PROY.

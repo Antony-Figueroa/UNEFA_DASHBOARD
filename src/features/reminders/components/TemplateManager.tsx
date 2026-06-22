@@ -395,7 +395,7 @@ const TemplateManager = () => {
       <UnifiedDialog
         isOpen={confirmDelete !== null}
         onClose={() => setConfirmDelete(null)}
-        onConfirm={() => confirmDelete !== null && handleDelete(confirmDelete)}
+        onConfirm={() => { if (confirmDelete !== null) handleDelete(confirmDelete); }}
         title="Eliminar plantilla"
         message="¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer."
         confirmLabel="Eliminar"

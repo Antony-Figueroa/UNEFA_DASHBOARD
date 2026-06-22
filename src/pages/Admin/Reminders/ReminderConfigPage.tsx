@@ -292,7 +292,7 @@ const ReminderConfigPage = () => {
       <UnifiedDialog
         isOpen={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
-        onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
+        onConfirm={() => { if (confirmDelete) handleDelete(confirmDelete); }}
         title="Eliminar recordatorio"
         message="¿Estás seguro de eliminar esta regla? Los recordatorios ya enviados no se eliminan."
         confirmLabel="Eliminar"

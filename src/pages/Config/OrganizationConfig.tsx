@@ -38,8 +38,8 @@ export default function OrganizationConfig() {
         </div>
 
         {/* Tab content — each is a full page component */}
-        {activeTab === "institution" && <InstitutionConfig standalone={false} />}
-        {activeTab === "nuclei" && <NucleiManager standalone={false} />}
+        {activeTab === "institution" && <InstitutionConfig />}
+        {activeTab === "nuclei" && <NucleiManager />}
       </div>
     </>
   );

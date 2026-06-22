@@ -14,6 +14,9 @@ import NavBar from "../components/navbar/NavBar";
 import { useTabs } from "../context/tab";
 import { resolveComponent, preloadRoutes } from "./routeComponents";
 import { Loader } from "../components/ui/loader";
+import { TourButton } from "../features/tour/components/TourButton";
+import { getTourForPath } from "../features/tour/data/tourRoutes";
+import { useMemo } from "react";
 
 /**
  * Memoized wrapper for a single tab's content.
@@ -142,6 +145,12 @@ const LayoutContent = () => {
   const { isExpanded, isMobileOpen } = useSidebar();
   const [isDesktop, setIsDesktop] = useState(true);
   useSessionTimeout();
+  const { activeTabId, tabs } = useTabs();
+  const activePath = useMemo(() => {
+    const tab = tabs.find((t) => t.id === activeTabId);
+    return tab?.path ?? "";
+  }, [activeTabId, tabs]);
+  const tourInfo = useMemo(() => getTourForPath(activePath), [activePath]);
 
   // Preload all lazy route chunks after the initial paint
   useEffect(() => {
@@ -180,7 +189,12 @@ const LayoutContent = () => {
           <AppHeader />
           <NavBar />
         </div>
-        <main className="flex-1 mx-auto w-full max-w-(--breakpoint-1xl) p-4 pt-8 md:p-6 md:pt-10">
+        <main className="flex-1 mx-auto w-full max-w-(--breakpoint-1xl) p-4 pt-8 md:p-6 md:pt-10 relative">
+          {tourInfo && (
+            <div className="absolute top-4 right-4 z-10">
+              <TourButton steps={tourInfo.steps} moduleName={tourInfo.moduleName} />
+            </div>
+          )}
           <KeepAliveOutlet />
         </main>
       </div>

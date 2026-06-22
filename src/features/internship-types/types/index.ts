@@ -20,6 +20,8 @@ export interface InternshipType {
   status: boolean;
   /** Fecha en que fue registrado */
   creationDate: Date;
+  /** Horas mínimas requeridas para culminar (default: 360) */
+  hoursRequired: number;
 }
 
 /**
@@ -36,6 +38,7 @@ export interface InternshipTypeApiDTO {
   status?: number | boolean;
   CREATION_DATE?: string;
   createdAt?: string;
+  HOURS_REQUIRED?: number;
 }
 
 /**

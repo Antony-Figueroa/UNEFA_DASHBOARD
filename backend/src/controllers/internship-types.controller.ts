@@ -13,6 +13,7 @@ type InternshipTypeRecord = {
   STATUS: number;
   CREATION_DATE: string;
   ABBREVIATION?: string;
+  HOURS_REQUIRED?: number;
 };
 
 type CareerInternshipTypeRow = {
@@ -54,7 +55,8 @@ export const getAllInternshipTypes = async (req: Request, res: Response) => {
       
       return (data || []).map(v => ({
         ...v,
-        ABBREVIATION: v.ABBREVIATION || ''
+        ABBREVIATION: v.ABBREVIATION || '',
+        HOURS_REQUIRED: v.HOURS_REQUIRED ?? 360
       }));
     });
     cacheManager.set(cacheKey, data, CACHE_TTL);
@@ -81,7 +83,8 @@ export const getInternshipTypesByCareer = async (req: Request, res: Response) =>
             NAME,
             PRIORITY,
             STATUS,
-            CREATION_DATE
+            CREATION_DATE,
+            HOURS_REQUIRED
           )
         `)
         .eq('CAREER_ID', careerId);
@@ -92,7 +95,8 @@ export const getInternshipTypesByCareer = async (req: Request, res: Response) =>
         .flatMap((item: CareerInternshipTypeRow) => (item.t_internship_type ?? []))
         .map((type: InternshipTypeRecord) => ({
           ...type,
-          ABBREVIATION: type.ABBREVIATION ?? ''
+          ABBREVIATION: type.ABBREVIATION ?? '',
+          HOURS_REQUIRED: type.HOURS_REQUIRED ?? 360
         }));
     }, 'getInternshipTypesByCareer');
 

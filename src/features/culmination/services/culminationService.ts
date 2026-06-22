@@ -1,5 +1,6 @@
 import apiClient from '../../../api/apiClient';
 
+// --- Backward compat types (used by CertificatePDF) ---
 export interface CulminationRecord {
   id: string;
   studentCi: string;
@@ -18,16 +19,41 @@ export interface CulminationRecord {
   certifiedAt?: string;
 }
 
+// --- New grouped types ---
+
+export interface CulminationPractice {
+  id: string;
+  practiceType: string;
+  practiceTypeId: number;
+  institutionName: string;
+  totalHours: number;
+  hoursRequired: number;
+  evaluationStatus: string;
+  finalGrade: number | null;
+  result: 'approved' | 'failed' | 'pending';
+  culminationStatus: 'pending' | 'approved' | 'certified';
+  certificateNumber?: string;
+  certifiedAt?: string;
+}
+
+export interface CulminationGroup {
+  studentCi: string;
+  studentName: string;
+  careerName: string;
+  period: string;
+  practices: CulminationPractice[];
+  overallStatus: 'completed' | 'in_progress';
+}
+
 export interface CulminationMeta {
   total: number;
-  pending: number;
-  approved: number;
-  certified: number;
+  completed: number;
+  inProgress: number;
 }
 
 export interface CulminationResponse {
   success: boolean;
-  data: CulminationRecord[];
+  data: CulminationGroup[];
   meta: CulminationMeta;
 }
 
@@ -46,28 +72,14 @@ export interface CertificateResponse {
 }
 
 export const culminationService = {
-  getRecords: async (params?: { status?: string; period?: string; search?: string }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.period) queryParams.append('period', params.period);
-    if (params?.search) queryParams.append('search', params.search);
-    
-    const queryString = queryParams.toString();
-    const url = `/culmination${queryString ? `?${queryString}` : ''}`;
-    
-    const response = await apiClient.get(url);
-    return response.data as CulminationResponse;
-  },
+  getAll: (params?: { status?: string; period?: string; search?: string }) =>
+    apiClient.get<CulminationResponse>('/api/culmination', { params }).then(r => r.data),
 
-  approve: async (enrollmentId: string) => {
-    const response = await apiClient.post(`/culmination/${enrollmentId}/approve`);
-    return response.data;
-  },
+  approve: (practiceId: string) =>
+    apiClient.post(`/api/culmination/${practiceId}/approve`).then(r => r.data),
 
-  generateCertificate: async (enrollmentId: string) => {
-    const response = await apiClient.post(`/culmination/${enrollmentId}/certificate`);
-    return response.data as CertificateResponse;
-  }
+  generateCertificate: (practiceId: string) =>
+    apiClient.post<CertificateResponse>(`/api/culmination/${practiceId}/certificate`).then(r => r.data),
 };
 
 export default culminationService;

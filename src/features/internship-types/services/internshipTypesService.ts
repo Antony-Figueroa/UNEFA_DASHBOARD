@@ -31,6 +31,7 @@ const mapFromApi = (dto: InternshipTypeApiDTO): InternshipType => ({
   priority: dto.PRIORITY ?? dto.priority ?? 0,
   status: dto.STATUS === undefined ? true : (typeof dto.STATUS === "number" ? dto.STATUS === 1 : !!dto.STATUS),
   creationDate: dto.CREATION_DATE ? new Date(dto.CREATION_DATE) : (dto.createdAt ? new Date(dto.createdAt) : new Date()),
+  hoursRequired: dto.HOURS_REQUIRED ?? 360,
 });
 
 /**

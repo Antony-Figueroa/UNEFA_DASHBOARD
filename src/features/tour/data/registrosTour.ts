@@ -24,11 +24,11 @@ export const gestionEstudiantesTour: DriveStep[] = [
   },
   {
     element: () => {
-      const actions = document.querySelector("h2")?.closest("div")?.nextElementSibling;
-      return (actions?.querySelector("button")) ? actions : document.querySelector("h2")!;
+      const btn = Array.from(document.querySelectorAll("button")).find((b) => b.textContent?.includes("Nuevo Estudiante"));
+      return btn?.parentElement ?? document.querySelector("h2")!;
     },
     popover: {
-      title: t("Botones de Accion"),
+      title: t("Botones de Accion Global"),
       description: t(
         "Acciones globales: <b>Reporte</b> genera un PDF del listado, <b>Importar</b> carga estudiantes desde Excel, <b>Exportacion</b> descarga la base en JSON/SQL/CSV/Excel y <b>Nuevo Estudiante</b> abre el formulario de registro manual."
       ),
@@ -49,7 +49,7 @@ export const gestionEstudiantesTour: DriveStep[] = [
     },
   },
   {
-    element: () => document.querySelector('input[placeholder*="Buscar por cedula" i]')!,
+    element: () => document.querySelector('input[placeholder*="Buscar por cédula" i]')!,
     popover: {
       title: t("Busqueda y Filtros de Fecha"),
       description: t(

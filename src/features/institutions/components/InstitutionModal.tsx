@@ -732,6 +732,7 @@ export default function InstitutionModal({
       internshipTypeId: data.internshipTypeId,
       careerIds: data.careerIds,
       status: editingInst?.status ?? true,
+      fiscalAddress: '',
     };
     if (editingInst) {
       setPendingSave({ ...(commonData as any), institutionId: editingInst.institutionId } as UpdateInstitutionPayload);

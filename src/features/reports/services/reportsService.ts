@@ -271,6 +271,28 @@ export const reportsService = {
     return response.data;
   },
 
+  getActaNotasFinales: async (periodId?: number, careerId?: number, page?: number, limit?: number, careerIds?: number[]) => {
+    const params = new URLSearchParams();
+    if (periodId) params.append('periodId', periodId.toString());
+    if (careerId) params.append('careerId', careerId.toString());
+    if (careerIds && careerIds.length > 0) params.append('careerIds', careerIds.join(','));
+    if (page !== undefined) params.append('page', page.toString());
+    if (limit !== undefined) params.append('limit', limit.toString());
+    const response = await apiClient.get(`/reports/acta-notas-finales?${params.toString()}`);
+    return response.data;
+  },
+
+  getEvaluacionesConsolidadas: async (periodId?: number, careerId?: number, page?: number, limit?: number, careerIds?: number[]) => {
+    const params = new URLSearchParams();
+    if (periodId) params.append('periodId', periodId.toString());
+    if (careerId) params.append('careerId', careerId.toString());
+    if (careerIds && careerIds.length > 0) params.append('careerIds', careerIds.join(','));
+    if (page !== undefined) params.append('page', page.toString());
+    if (limit !== undefined) params.append('limit', limit.toString());
+    const response = await apiClient.get(`/reports/evaluaciones-consolidadas?${params.toString()}`);
+    return response.data;
+  },
+
   exportReportExcel: async (type: string, periodId?: number, careerId?: number, careerIds?: number[], tutorId?: number) => {
     const params = new URLSearchParams();
     if (periodId) params.append('periodId', periodId.toString());

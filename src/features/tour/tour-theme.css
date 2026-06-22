@@ -11,6 +11,7 @@
   max-width: 380px;
   padding: 20px 22px;
   border: 1px solid var(--color-border-light, rgba(0,0,0,0.06));
+  overflow: visible;
 }
 
 .unefa-tour-popover .driver-popover-title {
@@ -73,10 +74,20 @@
   right: 4px;
   width: 28px;
   height: 28px;
+  cursor: pointer;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .unefa-tour-popover .driver-popover-close-btn:hover {
   color: var(--color-text-primary, #1f2937);
+  opacity: 1;
+}
+
+.unefa-tour-popover .driver-popover-close-btn svg {
+  pointer-events: auto;
 }
 
 /* Arrow coloring — matches popover background */

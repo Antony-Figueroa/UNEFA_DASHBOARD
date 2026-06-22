@@ -1,18 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
-import PageMeta from "../../components/common/PageMeta";
-import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ComponentCard from "../../components/common/ComponentCard";
-import Button from "../../components/ui/button/Button";
-import Badge from "../../components/ui/badge/Badge";
-import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
-import MultiSelect from "../../components/form/MultiSelect";
-import apiClient from "../../api/apiClient";
+import { useConfirmDialog } from "../../../../hooks/useConfirmDialog";
+import PageMeta from "../../../../components/common/PageMeta";
+import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
+import ComponentCard from "../../../../components/common/ComponentCard";
+import Button from "../../../../components/ui/button/Button";
+import Badge from "../../../../components/ui/badge/Badge";
+import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../../components/ui/modal";
+import MultiSelect from "../../../../components/form/MultiSelect";
+import apiClient from "../../../../api/apiClient";
 import toast from "react-hot-toast";
-import { EditIcon, TrashIcon, PlusCircleIcon } from "../../icons/actions";
-import type { MultiSelectOption } from "../../components/form/MultiSelect";
-import { getCareers } from "../../features/careers/services/careersService";
-import { unwrapData } from "../../api/crudServiceFactory";
+import { EditIcon, TrashIcon, PlusCircleIcon } from "../../../../icons/actions";
+import type { MultiSelectOption } from "../../../../components/form/MultiSelect";
+import { getCareers } from "../../../../features/careers/services/careersService";
+import { unwrapData } from "../../../../api/crudServiceFactory";
 
 /* ─── Types ─── */
 

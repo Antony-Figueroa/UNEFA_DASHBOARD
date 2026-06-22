@@ -1,26 +1,22 @@
 import { useState, useEffect } from "react";
-import PageMeta from "../../components/common/PageMeta";
-import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ComponentCard from "../../components/common/ComponentCard";
-import Button from "../../components/ui/button/Button";
-import Badge from "../../components/ui/badge/Badge";
-import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { configService, ConfigItem, CategorizedConfig } from "../../features/config/services/configService";
+import { useConfirmDialog } from "../../../../hooks/useConfirmDialog";
+import PageMeta from "../../../../components/common/PageMeta";
+import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
+import ComponentCard from "../../../../components/common/ComponentCard";
+import Button from "../../../../components/ui/button/Button";
+import Badge from "../../../../components/ui/badge/Badge";
+import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
+import { configService, ConfigItem, CategorizedConfig } from "../../../../features/config/services/configService";
 import toast from "react-hot-toast";
+import ConfigLayout from "../../ConfigLayout";
 
-export default function SystemSettingsPage() {
+export default function ParametersPage() {
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<CategorizedConfig[]>([]);
   const [activeCategory, setActiveCategory] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [localChanges, setLocalChanges] = useState<Record<string, string | number | boolean>>({});
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-    variant?: "info" | "success" | "error" | "warning";
-  } | null>(null);
+  const { confirmDialog, showConfirm, hideConfirm } = useConfirmDialog();
 
   const fetchConfig = async () => {
     setLoading(true);
@@ -56,8 +52,7 @@ export default function SystemSettingsPage() {
   };
 
   const handleSave = async () => {
-    setConfirmDialog({
-      isOpen: true,
+    showConfirm({
       title: "Guardar Configuración",
       message: "¿Estás seguro de guardar los cambios en la configuración del sistema?",
       onConfirm: async () => {
@@ -71,7 +66,7 @@ export default function SystemSettingsPage() {
           console.error('Error saving config:', error);
           toast.error('Error al guardar la configuración');
         } finally {
-          setConfirmDialog(null);
+          hideConfirm();
         }
       },
       variant: "info",
@@ -79,14 +74,13 @@ export default function SystemSettingsPage() {
   };
 
   const handleReset = () => {
-    setConfirmDialog({
-      isOpen: true,
+    showConfirm({
       title: "Restaurar Valores",
       message: "¿Estás seguro de restaurar los valores? Los cambios no guardados se perderán.",
       onConfirm: () => {
         setLocalChanges({});
         setHasChanges(false);
-        setConfirmDialog(null);
+        hideConfirm();
       },
       variant: "warning",
     });
@@ -95,7 +89,7 @@ export default function SystemSettingsPage() {
   const activeCategoryItems = config.find((c) => c.category === activeCategory)?.items || [];
 
   return (
-    <>
+    <ConfigLayout>
       <PageMeta title="Parámetros del Sistema" description="Configuración general del sistema" />
       <PageBreadcrumb pageTitle="Parámetros del Sistema" />
 
@@ -125,7 +119,6 @@ export default function SystemSettingsPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-          {/* Sidebar de categorías */}
           <ComponentCard title="Categorías" className="lg:col-span-1">
             {loading ? (
               <div className="space-y-2 animate-pulse">
@@ -182,7 +175,6 @@ export default function SystemSettingsPage() {
             )}
           </ComponentCard>
 
-          {/* Panel de items de la categoría activa */}
           <ComponentCard title={`Configuración de ${activeCategory}`} className="lg:col-span-3">
             {loading ? (
               <div className="space-y-4 animate-pulse">
@@ -268,13 +260,13 @@ export default function SystemSettingsPage() {
 
       <UnifiedDialog
         isOpen={!!confirmDialog}
-        onClose={() => setConfirmDialog(null)}
+        onClose={hideConfirm}
         onConfirm={confirmDialog?.onConfirm || (() => {})}
         title={confirmDialog?.title || ""}
         message={confirmDialog?.message || ""}
         confirmLabel="Confirmar"
         variant={confirmDialog?.variant || "info"}
       />
-    </>
+    </ConfigLayout>
   );
 }

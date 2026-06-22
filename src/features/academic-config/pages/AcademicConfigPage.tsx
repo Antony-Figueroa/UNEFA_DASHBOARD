@@ -1,6 +1,6 @@
 import PageMeta from "../../../components/common/PageMeta";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
-import GraceDefaultsSection from "../../../pages/Admin/GraceDefaultsSection";
+import GraceDefaultsSection from "../components/GraceDefaultsSection";
 
 export default function AcademicConfigPage() {
   return (

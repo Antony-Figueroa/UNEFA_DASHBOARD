@@ -1,6 +1,7 @@
 import { useState } from "react";
-import PageMeta from "../../components/common/PageMeta";
-import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import ConfigLayout from "../../ConfigLayout";
+import PageMeta from "../../../../components/common/PageMeta";
+import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
 import InstitutionConfig from "./InstitutionConfig";
 import NucleiManager from "./NucleiManager";
 
@@ -9,11 +10,11 @@ const TABS = [
   { id: "nuclei", label: "Núcleos" },
 ];
 
-export default function OrganizationConfig() {
+export default function OrganizationPage() {
   const [activeTab, setActiveTab] = useState("institution");
 
   return (
-    <>
+    <ConfigLayout>
       <PageMeta title="Configuración de la Organización" description="Datos institucionales y núcleos" />
       <PageBreadcrumb pageTitle="Configuración de la Organización" />
 
@@ -41,6 +42,6 @@ export default function OrganizationConfig() {
         {activeTab === "institution" && <InstitutionConfig />}
         {activeTab === "nuclei" && <NucleiManager />}
       </div>
-    </>
+    </ConfigLayout>
   );
 }

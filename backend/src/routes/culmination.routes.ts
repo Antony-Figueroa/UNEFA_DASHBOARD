@@ -9,7 +9,7 @@ import {
 const router = Router();
 
 router.get('/', requirePermission('practices:view'), getCulminationRecords);
-router.post('/:enrollmentId/approve', requirePermission('culmination:approve'), approveCulmination);
-router.post('/:enrollmentId/certificate', requirePermission('practices:view'), generateCertificate);
+router.post('/:practiceId/approve', requirePermission('culmination:approve'), approveCulmination);
+router.post('/:practiceId/certificate', requirePermission('practices:view'), generateCertificate);
 
 export default router;

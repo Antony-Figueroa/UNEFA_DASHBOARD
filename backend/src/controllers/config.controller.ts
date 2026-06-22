@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import * as configService from '../services/config.service.js';
 import { getAllPeriodValidationRules } from '../services/period-validation.service.js';
+import { invalidateEvalConfigCache } from '../services/evaluation-config.service.js';
+import { evaluationConfig as fallbackEvalConfig } from '../config/evaluation.config.js';
 
 export const getConfig = async (req: Request, res: Response) => {
   try {
@@ -15,6 +17,12 @@ export const getConfig = async (req: Request, res: Response) => {
     const validationRules = config.PERIOD_VALIDATION_RULES
       ? (config.PERIOD_VALIDATION_RULES as Record<string, any>)
       : await getAllPeriodValidationRules();
+
+    const evalConfig = (config.EVALUATION_CONFIG ?? fallbackEvalConfig) as {
+      weights?: { INSTITUCIONAL?: number; ACADEMICO?: number; COMITE?: number };
+      score?: { min?: number; max?: number; displayScale?: number };
+      evaluationWindowDays?: number;
+    };
 
     const categorizedConfig = [
       {
@@ -71,6 +79,18 @@ export const getConfig = async (req: Request, res: Response) => {
           { id: 'val_evaluation_create_require_inscribed', key: 'PV_evaluation_create_requirePracticesStatusInscribed', label: 'Evaluación (crear) — requiere práctica inscrita', value: validationRules.evaluation?.create?.requirePracticesStatusInscribed ?? true, type: 'boolean', description: 'Exige que la práctica esté en estado INSCRITO para evaluar' },
           { id: 'val_evaluation_extend_days', key: 'PV_evaluation_extendEndDateDays', label: 'Evaluación — días extra después del cierre', value: validationRules.evaluation?.create?.extendEndDateDays ?? 10, type: 'number', description: 'Días adicionales después del END_DATE para permitir evaluaciones (0=estricto, -1=sin límite)' },
         ]
+      },
+      {
+        category: 'Evaluación',
+        items: [
+          { id: 'eval_weight_institucional', key: 'EVAL_WEIGHT_INSTITUCIONAL', label: 'Peso Institucional', value: evalConfig?.weights?.INSTITUCIONAL ?? 0.40, type: 'number', description: 'Peso del evaluador institucional en la nota final (0-1)' },
+          { id: 'eval_weight_academico', key: 'EVAL_WEIGHT_ACADEMICO', label: 'Peso Académico', value: evalConfig?.weights?.ACADEMICO ?? 0.30, type: 'number', description: 'Peso del evaluador académico en la nota final (0-1)' },
+          { id: 'eval_weight_comite', key: 'EVAL_WEIGHT_COMITE', label: 'Peso Comité', value: evalConfig?.weights?.COMITE ?? 0.30, type: 'number', description: 'Peso del comité evaluador en la nota final (0-1)' },
+          { id: 'eval_score_min', key: 'EVAL_SCORE_MIN', label: 'Puntaje Mínimo por Criterio', value: evalConfig?.score?.min ?? 1, type: 'number', description: 'Puntaje mínimo posible por criterio individual' },
+          { id: 'eval_score_max', key: 'EVAL_SCORE_MAX', label: 'Puntaje Máximo por Criterio', value: evalConfig?.score?.max ?? 10, type: 'number', description: 'Puntaje máximo posible por criterio individual' },
+          { id: 'eval_display_scale', key: 'EVAL_DISPLAY_SCALE', label: 'Escala de Nota Final', value: evalConfig?.score?.displayScale ?? 20, type: 'number', description: 'Escala a la que se proyecta la nota final (ej: 20)' },
+          { id: 'eval_window_days', key: 'EVAL_WINDOW_DAYS', label: 'Días Evaluación Post-Cierre', value: evalConfig?.evaluationWindowDays ?? 10, type: 'number', description: 'Días adicionales después del cierre del periodo para evaluar (-1 = sin límite)' },
+        ]
       }
     ];
 
@@ -91,6 +111,7 @@ export const updateConfig = async (req: Request, res: Response) => {
 
     const dbUpdates: Record<string, number> = {};
     let periodValidationUpdates: Record<string, any> | null = null;
+    let evalConfigUpdates: Record<string, any> | null = null;
 
     Object.entries(updates).forEach(([key, value]) => {
       // Las claves PV_ modifican el JSONB PERIOD_VALIDATION_RULES
@@ -108,6 +129,32 @@ export const updateConfig = async (req: Request, res: Response) => {
           if (!periodValidationUpdates[module]) periodValidationUpdates[module] = {};
           if (!periodValidationUpdates[module][operation]) periodValidationUpdates[module][operation] = {};
           periodValidationUpdates[module][operation][field] = value;
+        }
+      } else if (key.startsWith('EVAL_')) {
+        // Las claves EVAL_ modifican el JSONB EVALUATION_CONFIG
+        if (!evalConfigUpdates) evalConfigUpdates = {};
+        switch (key) {
+          case 'EVAL_WEIGHT_INSTITUCIONAL':
+            evalConfigUpdates.weights = { ...evalConfigUpdates.weights, INSTITUCIONAL: value };
+            break;
+          case 'EVAL_WEIGHT_ACADEMICO':
+            evalConfigUpdates.weights = { ...evalConfigUpdates.weights, ACADEMICO: value };
+            break;
+          case 'EVAL_WEIGHT_COMITE':
+            evalConfigUpdates.weights = { ...evalConfigUpdates.weights, COMITE: value };
+            break;
+          case 'EVAL_SCORE_MIN':
+            evalConfigUpdates.score = { ...evalConfigUpdates.score, min: value };
+            break;
+          case 'EVAL_SCORE_MAX':
+            evalConfigUpdates.score = { ...evalConfigUpdates.score, max: value };
+            break;
+          case 'EVAL_DISPLAY_SCALE':
+            evalConfigUpdates.score = { ...evalConfigUpdates.score, displayScale: value };
+            break;
+          case 'EVAL_WINDOW_DAYS':
+            evalConfigUpdates.evaluationWindowDays = value;
+            break;
         }
       } else if (typeof value === 'boolean') {
         dbUpdates[key.toUpperCase()] = value ? 1 : 0;
@@ -137,6 +184,30 @@ export const updateConfig = async (req: Request, res: Response) => {
       }
 
       (dbUpdates as any).PERIOD_VALIDATION_RULES = currentRules;
+    }
+
+    // Si hay cambios en evaluación, mergear con lo existente
+    if (evalConfigUpdates) {
+      const supabase = dbManager.getConnection();
+      const { data: currentConfig } = await supabase
+        .from('t_config')
+        .select('EVALUATION_CONFIG')
+        .eq('CONFIG_ID', 1)
+        .maybeSingle();
+
+      const currentEvalConfig = (currentConfig?.EVALUATION_CONFIG as Record<string, any>) || {};
+      const merged = { ...currentEvalConfig };
+
+      for (const [k, v] of Object.entries(evalConfigUpdates)) {
+        if (typeof v === 'object' && v !== null) {
+          merged[k] = { ...(merged[k] as object || {}), ...v };
+        } else {
+          merged[k] = v;
+        }
+      }
+
+      (dbUpdates as any).EVALUATION_CONFIG = merged;
+      invalidateEvalConfigCache();
     }
 
     const updated = await configService.updateConfig(dbUpdates);

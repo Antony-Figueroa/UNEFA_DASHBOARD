@@ -1,29 +1,52 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
-import { getPersonField } from '../utils/person-utils.js';
+import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 
-export interface CulminationRecord {
+// ── Tipos ─────────────────────────────────────────────────────────────────
+
+interface CulminationPractice {
   id: string;
-  studentCi: string;
-  studentName: string;
-  careerName: string;
-  institutionName: string;
-  period: string;
   practiceType: string;
-  startDate: string;
-  endDate: string;
+  practiceTypeId: number;
+  institutionName: string;
   totalHours: number;
-  status: 'pending' | 'approved' | 'certified';
+  hoursRequired: number;
+  evaluationStatus: string;
+  finalGrade: number | null;
+  result: 'approved' | 'failed' | 'pending';
+  culminationStatus: 'pending' | 'approved' | 'certified';
   certificateNumber?: string;
   certifiedAt?: string;
 }
+
+interface CulminationGroup {
+  studentCi: string;
+  studentName: string;
+  careerName: string;
+  period: string;
+  practices: CulminationPractice[];
+  overallStatus: 'completed' | 'in_progress';
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+const getCulminationStatusLabel = (status: number | null): 'pending' | 'approved' | 'certified' => {
+  if (status === 1) return 'approved';
+  if (status === 2) return 'certified';
+  return 'pending';
+};
+
+const MINIMUM_GRADE = 10; // nota mínima para aprobar
+
+// ── GET /api/culmination ──────────────────────────────────────────────────
 
 export const getCulminationRecords = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
     const { status, period, search } = req.query;
 
+    // 1. Obtener prácticas con STATUS=1 y PRACTICES_STATUS IN (INSCRITO, CULMINADO)
     const { data: practices, error: practicesError } = await supabase
       .from('t_professional_practices')
       .select(`
@@ -55,10 +78,13 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
           DESCRIPTION
         ),
         t_internship_type (
-          NAME
+          INTERNSHIP_TYPE_ID,
+          NAME,
+          HOURS_REQUIRED
         )
       `)
-      .eq('STATUS', 1);
+      .eq('STATUS', 1)
+      .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO]);
 
     if (practicesError) {
       console.error('[Culmination] Error fetching practices:', practicesError);
@@ -70,83 +96,121 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
       res.json({
         success: true,
         data: [],
-        meta: { total: 0, pending: 0, approved: 0, certified: 0 }
+        meta: { total: 0, completed: 0, inProgress: 0 }
       });
       return;
     }
 
     const practiceIds = practices.map((p: any) => p.PROFESSIONAL_PRACTICE_ID);
 
+    // 2. Obtener culminaciones existentes
+    const { data: culminations } = await supabase
+      .from('t_practice_culmination')
+      .select('PRACTICE_ID, STATUS, CERTIFICATE_NUMBER, CERTIFIED_AT')
+      .in('PRACTICE_ID', practiceIds);
+
+    const culmMap = new Map<number, any>();
+    (culminations || []).forEach((c: any) => {
+      culmMap.set(c.PRACTICE_ID, c);
+    });
+
+    // 3. Obtener horas totales por práctica
     const { data: visits } = await supabase
       .from('t_practice_visits')
-      .select('PROFESSIONAL_PRACTICE_ID, HOURS_WORKED, VISIT_DATE')
+      .select('PROFESSIONAL_PRACTICE_ID, HOURS_WORKED')
       .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
 
-    const hoursMap = new Map<number, { total: number; lastDate: string }>();
-    (visits || []).forEach((t: any) => {
-      const existing = hoursMap.get(t.PROFESSIONAL_PRACTICE_ID) || { total: 0, lastDate: '' };
-      existing.total += t.HOURS_WORKED || 0;
-      if (t.VISIT_DATE && (!existing.lastDate || t.VISIT_DATE > existing.lastDate)) {
-        existing.lastDate = t.VISIT_DATE;
-      }
-      hoursMap.set(t.PROFESSIONAL_PRACTICE_ID, existing);
+    const hoursMap = new Map<number, number>();
+    (visits || []).forEach((v: any) => {
+      const current = hoursMap.get(v.PROFESSIONAL_PRACTICE_ID) || 0;
+      hoursMap.set(v.PROFESSIONAL_PRACTICE_ID, current + (v.HOURS_WORKED || 0));
     });
 
-    let records: CulminationRecord[] = practices.map((p: any) => {
-      const career = p.t_career;
-      const trackingData = hoursMap.get(p.PROFESSIONAL_PRACTICE_ID) || { total: 0, lastDate: '' };
-      
-      const first = getPersonField(p.t_persons, 'first_name') || '';
-      const middle = getPersonField(p.t_persons, 'middle_name') || '';
-      const last = getPersonField(p.t_persons, 'last_name') || '';
-      const secondLast = getPersonField(p.t_persons, 'second_last_name') || '';
-      const studentName = [first, middle, last, secondLast].filter(Boolean).join(' ').trim();
+    // 4. Armar grupos
+    const groupsMap = new Map<string, CulminationGroup>();
 
-      let recordStatus: 'pending' | 'approved' | 'certified' = 'pending';
-      if (p.EVALUATION_STATUS === 'completed' && p.GRADE && p.GRADE > 0) {
-        recordStatus = 'approved';
-      } else if (trackingData.total >= 360) {
-        recordStatus = 'approved';
+    practices.forEach((p: any) => {
+      const practiceId = p.PROFESSIONAL_PRACTICE_ID;
+      const internshipType = p.t_internship_type || {};
+      const hoursRequired = internshipType.HOURS_REQUIRED ?? 360;
+      const totalHours = hoursMap.get(practiceId) || 0;
+      const culm = culmMap.get(practiceId);
+
+      const culminationStatus = getCulminationStatusLabel(culm?.STATUS ?? null);
+      const grade = p.GRADE;
+
+      let result: 'approved' | 'failed' | 'pending' = 'pending';
+      if (p.EVALUATION_STATUS === 'completed' && grade != null) {
+        result = grade >= MINIMUM_GRADE ? 'approved' : 'failed';
       }
 
-      return {
-        id: String(p.PROFESSIONAL_PRACTICE_ID),
-        studentCi: getPersonField(p.t_persons, 'ci') || '',
-        studentName,
-        careerName: career?.CAREER_NAME || '',
+      const practice: CulminationPractice = {
+        id: String(practiceId),
+        practiceType: internshipType.NAME || '',
+        practiceTypeId: internshipType.INTERNSHIP_TYPE_ID || 0,
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
-        period: p.t_internships_period?.DESCRIPTION || '',
-        practiceType: p.t_internship_type?.NAME || '',
-        startDate: p.START_DATE || '',
-        endDate: p.END_DATE || trackingData.lastDate || '',
-        totalHours: trackingData.total,
-        status: recordStatus
+        totalHours,
+        hoursRequired,
+        evaluationStatus: p.EVALUATION_STATUS || '',
+        finalGrade: grade,
+        result,
+        culminationStatus,
+        certificateNumber: culm?.CERTIFICATE_NUMBER || undefined,
+        certifiedAt: culm?.CERTIFIED_AT || undefined,
       };
+
+      const studentCi = getPersonField(p.t_persons, 'ci') || '';
+      const studentName = getPersonFullName(p.t_persons);
+      const careerName = p.t_career?.CAREER_NAME || '';
+      const periodDesc = p.t_internships_period?.DESCRIPTION || '';
+      const groupKey = `${studentCi}|${periodDesc}`;
+
+      if (!groupsMap.has(groupKey)) {
+        groupsMap.set(groupKey, {
+          studentCi,
+          studentName,
+          careerName,
+          period: periodDesc,
+          practices: [],
+          overallStatus: 'in_progress',
+        });
+      }
+
+      groupsMap.get(groupKey)!.practices.push(practice);
     });
 
+    // 5. Calcular overallStatus y convertir a array
+    let groups = Array.from(groupsMap.values()).map(g => ({
+      ...g,
+      overallStatus: g.practices.every(p => p.culminationStatus === 'certified')
+        ? 'completed' as const
+        : 'in_progress' as const,
+    }));
+
+    // 6. Aplicar filtros
     if (status && status !== 'all') {
-      records = records.filter(r => r.status === status);
+      groups = groups.filter(g => g.overallStatus === status);
     }
     if (period) {
-      records = records.filter(r => r.period.toLowerCase().includes((period as string).toLowerCase()));
+      groups = groups.filter(g =>
+        g.period.toLowerCase().includes((period as string).toLowerCase())
+      );
     }
     if (search) {
       const s = (search as string).toLowerCase();
-      records = records.filter(r =>
-        r.studentName.toLowerCase().includes(s) ||
-        r.studentCi.toLowerCase().includes(s) ||
-        r.institutionName.toLowerCase().includes(s)
+      groups = groups.filter(g =>
+        g.studentName.toLowerCase().includes(s) ||
+        g.studentCi.toLowerCase().includes(s)
       );
     }
 
     res.json({
       success: true,
-      data: records,
+      data: groups,
       meta: {
-        total: records.length,
-        pending: records.filter(r => r.status === 'pending').length,
-        approved: records.filter(r => r.status === 'approved').length,
-        certified: records.filter(r => r.status === 'certified').length
+        total: groups.length,
+        completed: groups.filter(g => g.overallStatus === 'completed').length,
+        inProgress: groups.filter(g => g.overallStatus === 'in_progress').length,
       }
     });
 
@@ -159,16 +223,23 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
   }
 };
 
+// ── POST /api/culmination/:practiceId/approve ────────────────────────────
+
 export const approveCulmination = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
-    const { enrollmentId } = req.params;
-    const userId = (req as any).user?.userId;
+    const { practiceId } = req.params;
 
+    // 1. Obtener práctica con tipo
     const { data: practice, error: fetchError } = await supabase
       .from('t_professional_practices')
-      .select('PROFESSIONAL_PRACTICE_ID, STUDENTS_ID')
-      .eq('PROFESSIONAL_PRACTICE_ID', enrollmentId)
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        t_internship_type (
+          HOURS_REQUIRED
+        )
+      `)
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
       .single();
 
     if (fetchError || !practice) {
@@ -176,16 +247,47 @@ export const approveCulmination = async (req: Request, res: Response) => {
       return;
     }
 
-    const { error: updateError } = await supabase
-      .from('t_professional_practices')
-      .update({ PRACTICES_STATUS: PRACTICES_STATUS.CULMINADO })
-      .eq('PROFESSIONAL_PRACTICE_ID', enrollmentId);
+    const hoursRequired = (practice as any).t_internship_type?.HOURS_REQUIRED ?? 360;
 
-    if (updateError) {
-      console.error('[Culmination] Error updating practice:', updateError);
-      res.status(500).json({ message: 'Error al aprobar práctica' });
+    // 2. Calcular horas totales
+    const { data: visits } = await supabase
+      .from('t_practice_visits')
+      .select('HOURS_WORKED')
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
+
+    const totalHours = (visits || []).reduce((sum: number, v: any) => sum + (v.HOURS_WORKED || 0), 0);
+
+    // 3. Validar horas mínimas
+    if (totalHours < hoursRequired) {
+      res.status(400).json({
+        message: `El estudiante no ha completado las horas requeridas (${totalHours}/${hoursRequired})`
+      });
       return;
     }
+
+    // 4. Upsert en t_practice_culmination
+    const { data: existing } = await supabase
+      .from('t_practice_culmination')
+      .select('PRACTICE_ID')
+      .eq('PRACTICE_ID', practiceId)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('t_practice_culmination')
+        .update({ STATUS: 1 })
+        .eq('PRACTICE_ID', practiceId);
+    } else {
+      await supabase
+        .from('t_practice_culmination')
+        .insert({ PRACTICE_ID: practiceId, STATUS: 1 });
+    }
+
+    // 5. Actualizar PRACTICES_STATUS
+    await supabase
+      .from('t_professional_practices')
+      .update({ PRACTICES_STATUS: PRACTICES_STATUS.CULMINADO })
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
 
     res.json({
       success: true,
@@ -201,18 +303,41 @@ export const approveCulmination = async (req: Request, res: Response) => {
   }
 };
 
+// ── POST /api/culmination/:practiceId/certificate ─────────────────────────
+
 export const generateCertificate = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
-    const { enrollmentId } = req.params;
+    const { practiceId } = req.params;
 
-    const { data: practice, error: fetchError } = await supabase
+    // 1. Leer culminación
+    const { data: culm, error: culmError } = await supabase
+      .from('t_practice_culmination')
+      .select('PRACTICE_ID, STATUS')
+      .eq('PRACTICE_ID', practiceId)
+      .maybeSingle();
+
+    if (culmError || !culm) {
+      res.status(404).json({ message: 'Culminación no encontrada. Apruebe la práctica primero.' });
+      return;
+    }
+
+    // 2. Verificar STATUS=1 (approved)
+    if (culm.STATUS !== 1) {
+      res.status(409).json({
+        message: culm.STATUS === 2
+          ? 'El certificado ya fue generado previamente'
+          : 'La culminación debe estar aprobada antes de generar el certificado'
+      });
+      return;
+    }
+
+    // 3. Obtener datos del estudiante para el certificado
+    const { data: practice } = await supabase
       .from('t_professional_practices')
       .select(`
         PROFESSIONAL_PRACTICE_ID,
         GRADE,
-        START_DATE,
-        END_DATE,
         t_persons!inner (
           ci,
           first_name,
@@ -224,23 +349,30 @@ export const generateCertificate = async (req: Request, res: Response) => {
         t_institution ( INSTITUTION_NAME ),
         t_internships_period ( DESCRIPTION )
       `)
-      .eq('PROFESSIONAL_PRACTICE_ID', enrollmentId)
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
       .single();
 
-    if (fetchError || !practice) {
+    if (!practice) {
       res.status(404).json({ message: 'Práctica no encontrada' });
       return;
     }
 
-    const first = getPersonField((practice as any).t_persons, 'first_name') || '';
-    const middle = getPersonField((practice as any).t_persons, 'middle_name') || '';
-    const last = getPersonField((practice as any).t_persons, 'last_name') || '';
-    const secondLast = getPersonField((practice as any).t_persons, 'second_last_name') || '';
-    const studentName = [first, middle, last, secondLast].filter(Boolean).join(' ').trim();
+    const studentName = getPersonFullName((practice as any).t_persons);
 
+    // 4. Generar número de certificado
     const year = new Date().getFullYear();
     const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
     const certificateNumber = `CERT-${year}-${random}`;
+
+    // 5. Actualizar culminación
+    await supabase
+      .from('t_practice_culmination')
+      .update({
+        STATUS: 2,
+        CERTIFICATE_NUMBER: certificateNumber,
+        CERTIFIED_AT: new Date().toISOString()
+      })
+      .eq('PRACTICE_ID', practiceId);
 
     res.json({
       success: true,

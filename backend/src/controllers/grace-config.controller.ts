@@ -5,14 +5,14 @@ import { auditUpdate } from '../utils/audit-helpers.js';
 
 const TABLE_NAME = 't_internships_period';
 const CONFIG_TABLE = 't_academic_config';
-const AUDIT_COLUMNS = ['ENROLLMENT_GRACE_DAYS', 'EVALUATION_GRACE_DAYS', 'LOCK_API_LOADED_FIELDS'];
+const AUDIT_COLUMNS = ['ENROLLMENT_GRACE_DAYS', 'EVALUATION_GRACE_DAYS', 'LOCK_API_LOADED_FIELDS', 'ALLOW_MULTIPLE_VISITS_PER_DAY', 'MAX_VISITS_PER_DAY'];
 
 // GET /api/academic-config/defaults
 export const getDefaults = async (_req: Request, res: Response) => {
   try {
     const { data, error } = await dbManager.getConnection()
       .from(CONFIG_TABLE)
-      .select('DEFAULT_ENROLLMENT_GRACE_DAYS, DEFAULT_EVALUATION_GRACE_DAYS, LOCK_API_LOADED_FIELDS')
+      .select('DEFAULT_ENROLLMENT_GRACE_DAYS, DEFAULT_EVALUATION_GRACE_DAYS, LOCK_API_LOADED_FIELDS, ALLOW_MULTIPLE_VISITS_PER_DAY, MAX_VISITS_PER_DAY')
       .eq('CONFIG_ID', 1)
       .single();
 
@@ -22,12 +22,16 @@ export const getDefaults = async (_req: Request, res: Response) => {
       defaultEnrollmentGraceDays: data.DEFAULT_ENROLLMENT_GRACE_DAYS,
       defaultEvaluationGraceDays: data.DEFAULT_EVALUATION_GRACE_DAYS,
       lockApiLoadedFields: data.LOCK_API_LOADED_FIELDS ?? true,
+      allowMultipleVisitsPerDay: data.ALLOW_MULTIPLE_VISITS_PER_DAY ?? true,
+      maxVisitsPerDay: data.MAX_VISITS_PER_DAY ?? null,
     });
   } catch (error) {
     res.json({
       defaultEnrollmentGraceDays: 21,
       defaultEvaluationGraceDays: 10,
       lockApiLoadedFields: true,
+      allowMultipleVisitsPerDay: true,
+      maxVisitsPerDay: null,
     });
   }
 };
@@ -35,7 +39,7 @@ export const getDefaults = async (_req: Request, res: Response) => {
 // PATCH /api/academic-config/defaults
 export const updateDefaults = async (req: AuthRequest, res: Response) => {
   try {
-    const { defaultEnrollmentGraceDays, defaultEvaluationGraceDays, lockApiLoadedFields } = req.body;
+    const { defaultEnrollmentGraceDays, defaultEvaluationGraceDays, lockApiLoadedFields, allowMultipleVisitsPerDay, maxVisitsPerDay } = req.body;
 
     if (defaultEnrollmentGraceDays !== undefined) {
       const val = Number(defaultEnrollmentGraceDays);
@@ -77,6 +81,24 @@ export const updateDefaults = async (req: AuthRequest, res: Response) => {
     if (lockApiLoadedFields !== undefined) {
       updateData.LOCK_API_LOADED_FIELDS = Boolean(lockApiLoadedFields);
     }
+    if (allowMultipleVisitsPerDay !== undefined) {
+      updateData.ALLOW_MULTIPLE_VISITS_PER_DAY = Boolean(allowMultipleVisitsPerDay);
+    }
+    if (maxVisitsPerDay !== undefined) {
+      if (maxVisitsPerDay !== null && maxVisitsPerDay !== '' && maxVisitsPerDay !== undefined) {
+        const val = Number(maxVisitsPerDay);
+        if (!Number.isInteger(val) || val < 0 || val > 365) {
+          return res.status(400).json({
+            success: false,
+            message: 'maxVisitsPerDay debe ser un entero entre 0 y 365, o null para sin límite',
+            code: 'INVALID_MAX_VISITS',
+          });
+        }
+        updateData.MAX_VISITS_PER_DAY = val;
+      } else {
+        updateData.MAX_VISITS_PER_DAY = null;
+      }
+    }
 
     const { error } = await dbManager.getConnection()
       .from(CONFIG_TABLE)
@@ -85,9 +107,7 @@ export const updateDefaults = async (req: AuthRequest, res: Response) => {
 
     if (error) throw error;
 
-    await auditUpdate(req, CONFIG_TABLE, oldData, updateData, [
-      'DEFAULT_ENROLLMENT_GRACE_DAYS', 'DEFAULT_EVALUATION_GRACE_DAYS', 'LOCK_API_LOADED_FIELDS',
-    ]);
+    await auditUpdate(req, CONFIG_TABLE, oldData, updateData, AUDIT_COLUMNS);
 
     res.json({
       success: true,

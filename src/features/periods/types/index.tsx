@@ -78,6 +78,8 @@ export interface GraceDefaults {
     defaultEnrollmentGraceDays: number;
     defaultEvaluationGraceDays: number;
     lockApiLoadedFields?: boolean;
+    allowMultipleVisitsPerDay: boolean;
+    maxVisitsPerDay: number | null;
     updatedAt?: string;
     updatedBy?: string;
 }

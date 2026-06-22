@@ -71,10 +71,16 @@ const moduleSteps: Record<string, PracticeStep[]> = {
       detect: () => !!document.querySelector('[role="dialog"]'),
     },
     {
-      title: "Llenar y guardar",
-      instruction: 'Complete cedula 99999999, datos personales, carrera, periodo y presione "Guardar"',
+      title: "Datos Personales",
+      instruction: 'Cedula V-12345678, nombres, apellidos, correo, telefono 0422-5645136, sexo, fecha nac., estado civil. Seleccione Estado/Municipio/Parroquia. Luego haga clic en la pestaña <b>Academico</b>',
       element: () => document.querySelector('[role="dialog"]'),
-      detect: () => !document.querySelector('[role="dialog"]'),
+      detect: () => !!document.querySelector('button[data-tab-id="academico"][aria-selected="true"]'),
+    },
+    {
+      title: "Datos Academicos",
+      instruction: 'Tipo Estudiante (ej. MILITAR), elija Rango si aplica. Presione "Guardar Estudiante" y confirme con "Guardar"',
+      element: () => document.querySelector('[role="dialog"]'),
+      detect: () => document.body.textContent?.includes("Estudiante Creado") ?? false,
     },
     {
       title: "Limpiar",

@@ -1,7 +1,7 @@
 import type { DriveStep } from "../types";
 import { gestionPeriodTour, gestionCarrerasTour } from "./gestionTour";
 import { practicasPreEnrollTour, practicasEnrollTour, practicasTrackingTour, practicasEvalTour } from "./practicasTour";
-import { registroEstudiantesTour, registroTutoresTour, registroInstitucionesTour } from "./registrosTour";
+import { gestionEstudiantesTour, registroTutoresTour, registroInstitucionesTour } from "./registrosTour";
 
 interface TourEntry {
   steps: DriveStep[];
@@ -15,7 +15,7 @@ interface TourEntry {
 const tourRouteMap: Record<string, TourEntry> = {
   "/period":       { steps: gestionPeriodTour,       moduleName: "Periodos" },
   "/careers":      { steps: gestionCarrerasTour,     moduleName: "Carreras" },
-  "/students":     { steps: registroEstudiantesTour, moduleName: "Estudiantes" },
+  "/students":     { steps: gestionEstudiantesTour,  moduleName: "Estudiantes" },
   "/tutors":       { steps: registroTutoresTour,     moduleName: "Tutores" },
   "/institutions": { steps: registroInstitucionesTour, moduleName: "Instituciones" },
   "/pre-enrollment": { steps: practicasPreEnrollTour, moduleName: "Pre-Inscripción" },

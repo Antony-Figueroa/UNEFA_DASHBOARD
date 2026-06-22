@@ -38,6 +38,7 @@ const TutorGrades = lazy(() => import("../pages/Tutor/TutorGrades"));
 const TutorReports = lazy(() => import("../pages/Tutor/TutorReports"));
 const TutorEvaluation = lazy(() => import("../pages/Tutor/Evaluations/TutorEvaluation"));
 const TutorProfile = lazy(() => import("../pages/Tutor/TutorProfile"));
+const TutorActivityLogs = lazy(() => import("../pages/Tutor/TutorActivityLogs"));
 
 const StudentDashboard = lazy(() => import("../pages/Student/StudentDashboard"));
 const StudentRequests = lazy(() => import("../pages/Student/StudentRequests"));
@@ -250,7 +251,15 @@ export const AppRoutes = () => {
                 </ProtectedRoute>
               }
             />
-
+            <Route
+              path="/tutor/activity-logs"
+              element={
+                <ProtectedRoute allowedRoles={[3]}>
+                  <TutorActivityLogs />
+                </ProtectedRoute>
+              }
+            />
+ 
             {/* Student Dashboard - Only for Student role (4) */}
             <Route
               path="/student"

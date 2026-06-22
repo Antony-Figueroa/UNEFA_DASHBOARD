@@ -7,7 +7,8 @@ import {
   updateStudentGrade,
   getTutorReports,
   getTutorProfile,
-  getTutorPractice
+  getTutorPractice,
+  getTutorActivityLogs
 } from '../controllers/tutor-dashboard.controller.js';
 
 const router = Router();
@@ -22,5 +23,6 @@ router.get('/practice/:practiceId', getTutorPractice);
 router.put('/grades/:enrollmentId', updateStudentGrade);
 router.get('/reports', getTutorReports);
 router.get('/profile', getTutorProfile);
+router.get('/activity-logs', getTutorActivityLogs);
 
 export default router;

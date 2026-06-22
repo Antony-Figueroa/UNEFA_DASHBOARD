@@ -22,11 +22,7 @@ export interface StudentImportRow {
   phoneNumber?: string;
   email: string;
   address?: string;
-  // Académico
-  careerCode: string;
-  regime: string;
-  semester: string;
-  section: string;
+  // Académico (t_students)
   studentType: string;
   militaryRank?: string;
   works?: string;
@@ -65,7 +61,6 @@ export interface ValidationResult {
   sexo?: string;
   birthDate?: string;
   email?: string;
-  career?: string;
   existingStudent?: {
     studentId: number;
     status: number;
@@ -94,17 +89,13 @@ export interface ImportResult {
  * Datos de configuración para la plantilla
  */
 export interface TemplateConfig {
-  careers: Array<{ id: string; name: string; code: string }>;
   prefixes: ValidOption[];
   phonePrefixes: ValidOption[];
   civilStatuses: ValidOption[];
-  regimes: ValidOption[];
   studentTypes: ValidOption[];
   militaryRanks: ValidOption[];
   sexes: ValidOption[];
   workOptions: ValidOption[];
-  semesters: string[];
-  sections: string[];
 }
 
 /**
@@ -209,7 +200,7 @@ export const generateTemplate = async (config: TemplateConfig): Promise<Buffer> 
   const headers = [
     'PREFIJO_CI', 'CEDULA', 'PRIMER_NOMBRE', 'SEGUNDO_NOMBRE', 'APELLIDO', 'SEGUNDO_APELLIDO',
     'SEXO', 'FECHA_NACIMIENTO', 'ESTADO_CIVIL', 'PREFIJO_TELEFONO', 'TELEFONO',
-    'CORREO', 'DIRECCION', 'CARRERA', 'REGIMEN', 'SEMESTRE', 'SECCION',
+    'CORREO', 'DIRECCION',
     'TIPO_ESTUDIANTE', 'RANGO_MILITAR', 'TRABAJA'
   ];
 
@@ -218,16 +209,11 @@ export const generateTemplate = async (config: TemplateConfig): Promise<Buffer> 
   const sex = config.sexes[0]?.abbreviation || 'M';
   const civil = config.civilStatuses[0]?.name || 'SOLTERO';
   const phonePref = config.phonePrefixes[0]?.abbreviation || '0412';
-  const career = config.careers[0]?.code || '';
-  const regime = config.regimes[0]?.abbreviation || '';
-  const semester = config.semesters[0] || '1';
-  const section = config.sections[0] || 'A';
   const tipo = config.studentTypes[0]?.abbreviation || '';
-  const trabaja = config.workOptions[0]?.abbreviation || 'NO';
 
   const example = [
     pref, '12345678', 'Juan', '', 'Pérez', '', sex, '2010-01-15', civil, phonePref, '3456789',
-    'email@ejemplo.com', '', career, regime, semester, section, tipo, '', trabaja
+    'email@ejemplo.com', '', tipo, '', 'NO'
   ];
 
   const sheet = XLSX.utils.aoa_to_sheet([headers, example]);
@@ -235,7 +221,7 @@ export const generateTemplate = async (config: TemplateConfig): Promise<Buffer> 
   sheet['!cols'] = [
     { wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
     { wch: 6 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 10 },
-    { wch: 30 }, { wch: 40 }, { wch: 15 }, { wch: 10 }, { wch: 8 }, { wch: 6 },
+    { wch: 30 }, { wch: 40 },
     { wch: 14 }, { wch: 14 }, { wch: 6 }
   ];
 
@@ -287,10 +273,6 @@ export const parseExcelFile = async (buffer: Buffer): Promise<StudentImportRow[]
     phoneNumber: getHeader(['TELEFONO']),
     email: getHeader(['CORREO', 'EMAIL']),
     address: getHeader(['DIRECCION', 'DIRECCIÓN']),
-    career: getHeader(['CARRERA']),
-    regime: getHeader(['REGIMEN', 'RÉGIMEN']),
-    semester: getHeader(['SEMESTRE']),
-    section: getHeader(['SECCION', 'SECCIÓN']),
     studentType: getHeader(['TIPO', 'ESTUDIANTE']),
     militaryRank: getHeader(['RANGO', 'MILITAR']),
     works: getHeader(['TRABAJA', 'TRABAJ'])
@@ -298,7 +280,7 @@ export const parseExcelFile = async (buffer: Buffer): Promise<StudentImportRow[]
 
   // Validar headers requeridos
   const required = [headerMap.prefixCi, headerMap.cedula, headerMap.firstName, headerMap.lastName, 
-                  headerMap.sex, headerMap.birthDate, headerMap.email, headerMap.career];
+                  headerMap.sex, headerMap.birthDate, headerMap.email];
   const missing = required.filter(h => !h);
   
   if (missing.length > 0) {
@@ -329,10 +311,6 @@ export const parseExcelFile = async (buffer: Buffer): Promise<StudentImportRow[]
       phoneNumber: getVal(headerMap.phoneNumber) || undefined,
       email: getVal(headerMap.email),
       address: getVal(headerMap.address) || undefined,
-      careerCode: getVal(headerMap.career),
-      regime: getVal(headerMap.regime),
-      semester: getVal(headerMap.semester) || '1',
-      section: getVal(headerMap.section) || 'A',
       studentType: getVal(headerMap.studentType),
       militaryRank: getVal(headerMap.militaryRank) || undefined,
       works: getVal(headerMap.works)
@@ -409,45 +387,20 @@ export const validateRow = (
     messages.push('Correo electrónico inválido');
   }
   
-  // 6. Carrera
-  const career = findCareer(row.careerCode, config.careers);
-  if (config.careers.length > 0 && !career.found) {
-    messages.push(`Carrera "${row.careerCode}" no encontrada. Códigos válidos: ${config.careers.map(c => c.code).join(', ')}`);
-  }
-  
-  // 7. Régimen
-  const validRegimes = config.regimes.map(r => (r.abbreviation || r.name).toUpperCase());
-  const regimeValue = row.regime?.toUpperCase() || '';
-  if (config.regimes.length > 0 && !validRegimes.includes(regimeValue)) {
-    messages.push(`Régimen inválido. Usar: ${validRegimes.join(', ')}`);
-  }
-  
-  // 8. Tipo estudiante
+  // 6. Tipo estudiante
   const validTypes = config.studentTypes.map(t => (t.abbreviation || t.name).toUpperCase());
   const typeValue = row.studentType?.toUpperCase() || '';
   if (config.studentTypes.length > 0 && !validTypes.includes(typeValue)) {
     messages.push(`Tipo inválido. Usar: ${validTypes.join(', ')}`);
   }
   
-  // 9. Semestre
-  const validSemesters = config.semesters.map(s => String(s));
-  const semesterValue = String(row.semester || '');
-  if (config.semesters.length > 0 && !validSemesters.includes(semesterValue)) {
-    messages.push(`Semestre inválido. Usar: ${validSemesters.join(', ')}`);
-  }
-  
-  // 10. Trabaja - solo warning si está presente
+  // 7. Trabaja
   const workValue = row.works?.toUpperCase() || 'NO';
   if (row.works) {
     const workValues = config.workOptions.map(w => (w.abbreviation || w.name).toUpperCase());
     if (workValues.length > 0 && !workValues.includes(workValue)) {
       messages.push(`Valor de TRABAJA inválido. Usar: ${workValues.join(', ')}`);
     }
-  }
-  
-  // 11. Rango militar - solo si trabaja = SI
-  if (workValue === 'SI' && !row.militaryRank) {
-    messages.push('Si TRABAJA = SI, debe especificar RANGO_MILITAR');
   }
   
   // ---- ADVERTENCIAS ----
@@ -473,7 +426,6 @@ export const validateRow = (
     sexo: row.sex,
     birthDate: row.birthDate,
     email: row.email,
-    career: row.careerCode,
     existingStudent: existingInfo,
     age
   };
@@ -486,14 +438,8 @@ export const mapToDbRecord = (
   row: StudentImportRow,
   config: TemplateConfig
 ): Record<string, unknown> => {
-  // Normalizar régimen
-  const regimeResult = normalizeValue(row.regime, config.regimes);
-  
   // Normalizar tipo estudiante
   const typeResult = normalizeValue(row.studentType, config.studentTypes);
-  
-  // Buscar carrera
-  const career = findCareer(row.careerCode, config.careers);
   
   // Normalizar trabaja
   const workResult = normalizeValue(row.works || 'NO', config.workOptions);
@@ -504,11 +450,7 @@ export const mapToDbRecord = (
     : { matched: false, value: '' };
   
   return {
-    CAREER_ID: career.id ? parseInt(career.id) : null,
-    REGIME: regimeResult.value || 'D1',
-    STUDENT_TYPE: typeResult.value || 'NUEVO',
-    SEMESTER: row.semester || '1',
-    SECTION: row.section || 'A',
+    STUDENT_TYPE: typeResult.value || 'CIV',
     MILITARY_RANK: rankResult.value || null,
     EMPLOYMENT: workResult.value === 'SI' ? 'SI' : 'NO',
     STATUS: 1,

@@ -2,7 +2,6 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 import * as listsService from '../services/lists.service.js';
-import * as careersService from '../services/careers.service.js';
 import {
   parseExcelFile,
   generateTemplate,
@@ -33,9 +32,6 @@ const getTemplateConfig = async (): Promise<TemplateConfig> => {
   // Obtener listas del sistema
   const lists = await listsService.getAllLists();
   
-  // Obtener carreras
-  const careers = await careersService.getCareers();
-  
   // Prefijos de Cédula (hardcoded porque no hay lista en BD)
   const prefixes = [
     { id: '1', name: 'Venezolano', abbreviation: 'V' },
@@ -53,7 +49,6 @@ const getTemplateConfig = async (): Promise<TemplateConfig> => {
     abbreviation: v.abbreviation
   }));
   if (phonePrefixes.length === 0) {
-    // Fallback si no hay lista
     phonePrefixes.push(
       { id: '1', name: '0412', abbreviation: '0412' },
       { id: '2', name: '0414', abbreviation: '0414' },
@@ -66,18 +61,6 @@ const getTemplateConfig = async (): Promise<TemplateConfig> => {
   // Estados civiles
   const civilList = lists.find(l => l.name.toUpperCase().includes('REGISTRO') && l.name.toUpperCase().includes('CIVIL'));
   const civilStatuses = (civilList?.values || []).map(v => ({
-    id: v.id,
-    name: v.name,
-    abbreviation: v.abbreviation
-  }));
-  
-  // Regímenes
-  const regList = lists.find(l => 
-    l.name.toUpperCase().includes('REGIMEN') || 
-    l.name.toUpperCase().includes('RÉGIMEN') ||
-    l.name.toUpperCase().includes('TURNO')
-  );
-  const regimes = (regList?.values || []).map(v => ({
     id: v.id,
     name: v.name,
     abbreviation: v.abbreviation
@@ -119,21 +102,13 @@ const getTemplateConfig = async (): Promise<TemplateConfig> => {
   }));
   
   return {
-    careers: careers.map(c => ({
-      id: String(c.careerId),
-      name: c.careerName || '',
-      code: c.careerCode ? String(c.careerCode) : ''
-    })),
     prefixes,
     phonePrefixes,
     civilStatuses,
-    regimes,
     studentTypes,
     militaryRanks,
     sexes,
-    workOptions,
-    semesters: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
-    sections: ['A', 'B', 'C', 'U']
+    workOptions
   };
 };
 
@@ -359,14 +334,9 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
         const { error: updateError } = await supabase
           .from(TABLE_NAME)
           .update({
-            CAREER_ID: dbData.CAREER_ID,
-            REGIME: dbData.REGIME,
             STUDENT_TYPE: dbData.STUDENT_TYPE,
-            SEMESTER: dbData.SEMESTER,
-            SECTION: dbData.SECTION,
             MILITARY_RANK: dbData.MILITARY_RANK,
-            EMPLOYMENT: dbData.EMPLOYMENT,
-            STATUS: 1
+            EMPLOYMENT: dbData.EMPLOYMENT
           })
           .eq('STUDENTS_ID', existing.studentId);
         
@@ -429,14 +399,10 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
           .from(TABLE_NAME)
           .insert([{
             person_id: person.person_id,
-            CAREER_ID: dbData.CAREER_ID,
-            REGIME: dbData.REGIME,
             STUDENT_TYPE: dbData.STUDENT_TYPE,
-            SEMESTER: dbData.SEMESTER,
-            SECTION: dbData.SECTION,
             MILITARY_RANK: dbData.MILITARY_RANK,
             EMPLOYMENT: dbData.EMPLOYMENT,
-            STATUS: 1
+            STATUS: dbData.STATUS
           }])
           .select();
         

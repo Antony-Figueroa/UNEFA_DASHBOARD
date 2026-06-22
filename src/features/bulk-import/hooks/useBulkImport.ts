@@ -83,6 +83,7 @@ export function useBulkImport() {
   return {
     step, type, file, preview, options, results, loading, error,
     setOptions,
+    setStep,
     selectType, downloadTemplate, uploadFile, confirmImport, reset,
   } as const;
 }

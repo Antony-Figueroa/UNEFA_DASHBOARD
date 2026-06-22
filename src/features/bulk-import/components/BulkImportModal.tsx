@@ -18,7 +18,7 @@ const TYPE_LABELS: Record<ImportType, string> = { students: 'Estudiantes', enrol
 
 export const BulkImportModal: React.FC<BulkImportModalProps> = ({ isOpen, onClose }) => {
   const {
-    step, type, preview, options, results, loading, error, setOptions,
+    step, type, preview, options, results, loading, error, setOptions, setStep,
     selectType, downloadTemplate, uploadFile, confirmImport, reset,
   } = useBulkImport();
 
@@ -383,7 +383,9 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ isOpen, onClos
               variant="primary"
               onClick={() => setOptions(prev => ({ ...prev })) /* trigger re-render */ }
               className="hidden"
-            />
+            >
+              ‍
+            </Button>
             <Button
               variant="primary"
               onClick={() => setStep('confirm')}

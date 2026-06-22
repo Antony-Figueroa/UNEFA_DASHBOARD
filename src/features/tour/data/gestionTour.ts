@@ -2,73 +2,90 @@ import type { DriveStep } from "../types";
 
 const t = (es: string) => es;
 
+/** True when the page shows the "Carreras" sub-tab (not "Tipos de Prácticas") */
+function isCarrerasTab(): boolean {
+  const btns = document.querySelectorAll("button");
+  return Array.from(btns).some((b) => b.textContent?.includes("Nueva Carrera"));
+}
+
+/** Fallback element for Carreras tour when user is on the wrong sub-tab */
+function h2OrBody(): Element {
+  return document.querySelector("h2") ?? document.body;
+}
+
 export const gestionPeriodTour: DriveStep[] = [
   {
     popover: {
-      title: t("📋 Módulo de Gestión"),
+      title: t("Modulo de Gestion"),
       description: t(
-        "Este módulo administra los datos maestros del sistema: <b>Períodos Académicos</b> y <b>Carreras</b>. Todo el flujo de prácticas depende de estos registros."
+        "Este modulo contiene los datos maestros del sistema: Periodos Academicos y Carreras. Todo el flujo de practicas profesionales (pre-inscripcion, inscripcion, seguimiento y evaluaciones) depende directamente de estos registros."
       ),
-      side: "center",
+      side: "over",
     },
   },
   {
-    element: () => document.querySelector("h2"),
+    element: () => document.querySelector("h2")!,
     popover: {
-      title: t("📅 Períodos Académicos"),
+      title: t("Pagina de Periodos"),
       description: t(
-        "Acá se definen los períodos: fechas de inicio, fin, días de gracia y estado (Pendiente / En Curso / Culminado)."
+        "Esta es la pagina principal de gestion de periodos. Desde aqui podra crear, editar, activar, culminar y desactivar los lapsos academicos del sistema."
       ),
       side: "bottom",
     },
   },
   {
-    element: () => document.querySelector('button:has(svg[class*="lucide"])') ?? document.querySelector("button:has(svg)"),
+    element: () => {
+      const btns = document.querySelectorAll("button");
+      return Array.from(btns).find((b) => b.textContent?.includes("Nuevo Per"))!;
+    },
     popover: {
-      title: t("➕ Nuevo Período"),
+      title: t("Boton Nuevo Periodo"),
       description: t(
-        "Botón para crear un nuevo período. Complete código, descripción, fechas y tipo."
+        "Haga clic aqui para abrir el formulario y crear un nuevo periodo academico. Debera completar codigo, descripcion, fechas, tipo y dias de gracia."
       ),
       side: "left",
     },
   },
   {
-    element: () => document.querySelector('[role="tablist"]'),
+    element: () => {
+      const lists = document.querySelectorAll('[role="tablist"]');
+      return Array.from(lists).find((tl) => tl.textContent?.includes("Activos"))!;
+    },
     popover: {
-      title: t("📂 Filtros"),
+      title: t("Pestanas Activos / Inactivos"),
       description: t(
-        "Alterná entre <b>Activos</b> e <b>Inactivos</b> para ver períodos vigentes o históricos."
+        "Estas pestanas permiten alternar entre los periodos Activos (los que estan vigentes) y los Inactivos (periodos archivados). Al desactivar un periodo desde la tabla, se mueve automaticamente a Inactivos."
       ),
       side: "bottom",
     },
   },
   {
-    element: () => document.querySelector('input[placeholder*="Buscar" i]'),
+    element: () => document.querySelector('input[placeholder*="Buscar periodo" i]')!,
     popover: {
-      title: t("🔍 Búsqueda"),
+      title: t("Busqueda y Filtros"),
       description: t(
-        "Filtrá períodos por código o descripción en tiempo real."
+        "Filtre los periodos escribiendo en el campo de busqueda. Tambien puede usar el selector de estado (Pendiente, En Curso, Culminado) que se encuentra a la derecha para acotar los resultados."
       ),
       side: "bottom",
     },
   },
   {
-    element: () => document.querySelector("table"),
+    element: () => document.querySelector("table")!,
     popover: {
-      title: t("📋 Tabla de Períodos"),
+      title: t("Tabla de Periodos"),
       description: t(
-        "Listado completo. Cada fila tiene acciones para <b>Ver</b>, <b>Editar</b> o <b>Desactivar</b>."
+        "Cada fila representa un periodo. Las columnas muestran: nombre del lapso, fecha de inicio, fecha de fin, barra de progreso (si esta En Curso), estado actual y las acciones disponibles.<br><br>Puede seleccionar varias filas con los checkboxes para realizar acciones masivas como eliminar o restaurar."
       ),
       side: "top",
     },
   },
   {
     popover: {
-      title: t("✅ Gestión — Completado"),
+      title: t("Fin del recorrido"),
       description: t(
-        "Exploraste la página de Períodos. Visitá también <b>Carreras</b> en el menú lateral para ver la gestión de carreras universitarias."
+        "Estos son los elementos principales de la pagina de Periodos. Puede visitar Carreras desde el menu lateral para continuar con el modulo de Gestion, o explorar Registros y Practicas Profesionales."
       ),
-      side: "center",
+      side: "over",
     },
   },
 ];
@@ -76,60 +93,71 @@ export const gestionPeriodTour: DriveStep[] = [
 export const gestionCarrerasTour: DriveStep[] = [
   {
     popover: {
-      title: t("📋 Módulo de Gestión"),
+      title: t("Modulo de Gestion"),
       description: t(
-        "Este módulo administra los datos maestros del sistema: <b>Períodos Académicos</b> y <b>Carreras</b>."
+        "Este modulo administra los datos maestros del sistema: Periodos Academicos y Carreras."
       ),
-      side: "center",
+      side: "over",
     },
   },
   {
-    element: () => document.querySelector("h2"),
+    element: () => document.querySelector("h2")!,
     popover: {
-      title: t("🎓 Carreras Universitarias"),
+      title: t("Pagina de Carreras"),
       description: t(
-        "Acá se gestionan las carreras: nombre, código, modalidad (presencial/semi-presencial), núcleo y estado."
+        "Desde esta pagina se gestionan las carreras universitarias: nombre, codigo, modalidad (presencial o semi-presencial), nucleo y estado."
       ),
       side: "bottom",
     },
   },
   {
-    element: () => document.querySelector('button:has(svg[class*="lucide"])') ?? document.querySelector("button:has(svg)"),
+    element: () => {
+      if (!isCarrerasTab()) return h2OrBody();
+      const btns = document.querySelectorAll("button");
+      return Array.from(btns).find((b) => b.textContent?.includes("Nueva Carrera")) ?? h2OrBody();
+    },
     popover: {
-      title: t("➕ Nueva Carrera"),
+      title: t("Boton Nueva Carrera"),
       description: t(
-        "Agregá una nueva carrera con su código, nombre, modalidad y núcleo."
+        "Haga clic aqui para abrir el formulario de creacion de una nueva carrera."
       ),
       side: "left",
     },
   },
   {
-    element: () => document.querySelector('[role="tablist"]'),
+    element: () => {
+      if (!isCarrerasTab()) return h2OrBody();
+      const lists = document.querySelectorAll('[role="tablist"]');
+      return Array.from(lists).find((tl) => tl.textContent?.includes("Activos")) ?? h2OrBody();
+    },
     popover: {
-      title: t("📂 Filtros"),
+      title: t("Pestanas Activas / Inactivas"),
       description: t(
-        "Alterná entre carreras <b>Activas</b> e <b>Inactivas</b>."
+        "Alterna entre carreras Activas (vigentes) e Inactivas (archivadas)."
       ),
       side: "bottom",
     },
   },
   {
-    element: () => document.querySelector("table"),
+    element: () => {
+      if (!isCarrerasTab()) return h2OrBody();
+      return document.querySelector("table") ?? h2OrBody();
+    },
     popover: {
-      title: t("📋 Tabla de Carreras"),
+      title: t("Tabla de Carreras"),
       description: t(
-        "Listado completo con nombre, código, modalidad, núcleo y acciones disponibles."
+        "Listado completo de carreras con columnas de nombre, codigo, modalidad, nucleo y acciones para editar o desactivar cada registro."
       ),
       side: "top",
     },
   },
   {
     popover: {
-      title: t("✅ Gestión — Completado"),
+      title: t("Fin del recorrido"),
       description: t(
-        "Ya conocés el módulo de Gestión. Ahora explorá <b>Registros</b> o <b>Prácticas</b> desde el menú lateral."
+        "Ha completado el recorrido del modulo de Gestion. Puede explorar Registros o Practicas Profesionales desde el menu lateral."
       ),
-      side: "center",
+      side: "over",
     },
   },
 ];

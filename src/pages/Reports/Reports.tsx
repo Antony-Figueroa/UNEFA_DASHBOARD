@@ -314,7 +314,7 @@ export default function ReportsPage() {
             </div>
             <SearchableInput<TutorSearchResult>
               placeholder="Buscar tutor por nombre o cédula..."
-              search={reportsService.searchTutors}
+              search={async (q) => { const res = await reportsService.searchTutors(q); return res.data; }}
               renderItem={(item) => (
                 <div>
                   <p className="text-sm font-medium text-text-primary dark:text-text-emphasis">

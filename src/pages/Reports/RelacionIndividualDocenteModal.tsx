@@ -79,7 +79,7 @@ export function RelacionIndividualDocenteModal({ isOpen, onClose }: RelacionIndi
     const periodId = selectedPeriodId ? parseInt(selectedPeriodId) : undefined;
     setFetching(true);
     try {
-      const res = await reportsService.getRelacionIndividualDocente(tutorId, periodId);
+      const res = await reportsService.getRelacionIndividualDocente(tutorId);
       setData(res?.data || []);
       setTutorName(res?.tutorName || "");
     } catch {
@@ -111,7 +111,7 @@ export function RelacionIndividualDocenteModal({ isOpen, onClose }: RelacionIndi
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xxl" className="p-0">
+    <Modal isOpen={isOpen} onClose={onClose} size="2xl" className="p-0">
       <div className="flex flex-col h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -127,8 +127,10 @@ export function RelacionIndividualDocenteModal({ isOpen, onClose }: RelacionIndi
         <div className="flex-shrink-0 px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div className="flex flex-wrap items-end gap-4">
             <div className="w-56">
+              <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Período
+              </label>
               <CustomSelect
-                label="Período"
                 options={periods}
                 value={selectedPeriodId}
                 onChange={setSelectedPeriodId}

@@ -471,10 +471,11 @@ export default function PeriodModal({
                 startDateToUse = periodo.startDate;
             }
 
+            const typeDatesEntries = Object.entries(typeDatesState);
+
             if (periodo) {
                 // --- Validate type dates within parent period range ---
                 const typeNameMap = new Map(internshipTypes.map(t => [t.id, t.name]));
-                const typeDatesEntries = Object.entries(typeDatesState);
                 for (const [typeIdStr, dates] of typeDatesEntries) {
                     const typeName = typeNameMap.get(parseInt(typeIdStr)) || `Tipo #${typeIdStr}`;
                     

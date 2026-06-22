@@ -694,7 +694,7 @@ export default function TutorModal({
   }, [isOpen, fetchMultipleLists]);
 
   // Funciones para agregar nuevos valores a las listas
-  const openAddValueModal = (listName: string, field: keyof TutorFormData, title: string) => {
+  const openAddValueModal = (listName: string, field: string, title: string) => {
     // Verificar si la lista está protegida
     if (isProtectedList(listName)) {
       addToast({
@@ -705,7 +705,7 @@ export default function TutorModal({
       return;
     }
     setTargetListName(listName);
-    setTargetField(field);
+    setTargetField(field as keyof TutorFormData | "");
     setValueModalTitle(title);
     setNewValueInput("");
     setIsValueModalOpen(true);
@@ -1002,7 +1002,6 @@ export default function TutorModal({
                     <AddressList
                       entityType="person"
                       entityId={currentPersonId}
-                      readOnly={viewOnlyMode}
                       geoOptions={geoOptions}
                     />
                   </div>
@@ -1012,70 +1011,93 @@ export default function TutorModal({
           <div hidden={tabsState.activeTab !== 'laboral'} role="tabpanel">
             <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Información Laboral</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <CustomSelect
+              <Controller
                 name="condition"
-                label="Condición"
-                options={CONDITION_OPTIONS}
                 control={control}
                 rules={{ required: "La condición es obligatoria" }}
-                error={errors.condition}
-                disabled={viewOnlyMode || isInUse}
-                onAddValue={() => openAddValueModal("Condición", "condition", "Agregar Condición")}
+                render={({ field: { onChange, value } }) => (
+                  <CustomSelect
+                    value={value}
+                    onChange={onChange}
+                    options={CONDITION_OPTIONS}
+                    error={!!errors.condition}
+                    disabled={viewOnlyMode || isInUse}
+                    onAddNew={() => openAddValueModal("Condición", "condition", "Agregar Condición")}
+                  />
+                )}
               />
-              <CustomSelect
+              <Controller
                 name="dedication"
-                label="Dedicación"
-                options={DEDICATION_OPTIONS}
                 control={control}
                 rules={{ required: "La dedicación es obligatoria" }}
-                error={errors.dedication}
-                disabled={viewOnlyMode || isInUse}
-                onAddValue={() => openAddValueModal("Dedicación", "dedication", "Agregar Dedicación")}
+                render={({ field: { onChange, value } }) => (
+                  <CustomSelect
+                    value={value}
+                    onChange={onChange}
+                    options={DEDICATION_OPTIONS}
+                    error={!!errors.dedication}
+                    disabled={viewOnlyMode || isInUse}
+                    onAddNew={() => openAddValueModal("Dedicación", "dedication", "Agregar Dedicación")}
+                  />
+                )}
               />
-              <CustomSelect
+              <Controller
                 name="category"
-                label="Categoría"
-                options={CATEGORY_OPTIONS}
                 control={control}
                 rules={{ required: "La categoría es obligatoria" }}
-                error={errors.category}
-                disabled={viewOnlyMode || isInUse}
-                onAddValue={() => openAddValueModal("Categoría", "category", "Agregar Categoría")}
+                render={({ field: { onChange, value } }) => (
+                  <CustomSelect
+                    value={value}
+                    onChange={onChange}
+                    options={CATEGORY_OPTIONS}
+                    error={!!errors.category}
+                    disabled={viewOnlyMode || isInUse}
+                    onAddNew={() => openAddValueModal("Categoría", "category", "Agregar Categoría")}
+                  />
+                )}
               />
               <Input
-                name="profession"
-                label="Título Profesional"
+                {...register("profession")}
                 type="text"
                 placeholder="Ingeniero/a en Sistemas"
-                register={register}
-                error={errors.profession}
+                error={!!errors.profession}
                 disabled={viewOnlyMode || isInUse}
               />
-              <CustomSelect
+              <Controller
                 name="titulo"
-                label="Grado de Instrucción"
-                options={TITULO_OPTIONS}
                 control={control}
                 rules={{ required: "El grado de instrucción es obligatorio" }}
-                error={errors.titulo}
-                disabled={viewOnlyMode || isInUse}
-                onAddValue={() => openAddValueModal("Título", "titulo", "Agregar Grado de Instrucción")}
+                render={({ field: { onChange, value } }) => (
+                  <CustomSelect
+                    value={value}
+                    onChange={onChange}
+                    options={TITULO_OPTIONS}
+                    error={!!errors.titulo}
+                    disabled={viewOnlyMode || isInUse}
+                    onAddNew={() => openAddValueModal("Título", "titulo", "Agregar Grado de Instrucción")}
+                  />
+                )}
               />
             </div>
           </div>
           <div hidden={tabsState.activeTab !== 'asignaciones'} role="tabpanel">
             <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Asignaciones</h3>
             <div className="grid grid-cols-1 gap-6">
-              <MultiSelect
+              <Controller
                 name="carreras"
-                label="Carreras que puede Asignar"
-                options={careerOptions}
                 control={control}
                 rules={{ required: "Debe seleccionar al menos una carrera" }}
-                error={errors.carreras}
-                loading={careersLoading}
-                disabled={viewOnlyMode || isInUse}
-                onAddValue={() => setIsCareerModalOpen(true)}
+                render={({ field: { onChange, value } }) => (
+                  <MultiSelect
+                    label="Carreras que puede Asignar"
+                    value={value}
+                    onChange={onChange}
+                    options={careerOptions}
+                    error={!!errors.carreras}
+                    disabled={viewOnlyMode || isInUse}
+                    onAddNew={() => setIsCareerModalOpen(true)}
+                  />
+                )}
               />
             </div>
           </div>
@@ -1151,21 +1173,23 @@ export default function TutorModal({
         }}
         onSave={(career) => {
           setCareers(prev => {
-            const existing = prev.find(c => c.careerId === career.careerId);
-            if (existing) {
-              return prev.map(c => c.careerId === career.careerId ? career : c);
+            if (editingCareer) {
+              return prev.map(c =>
+                c.careerId === editingCareer.careerId
+                  ? { ...career, careerId: editingCareer.careerId, creationDate: editingCareer.creationDate } as Career
+                  : c
+              );
             }
-            return [...prev, career];
+            return [...prev, { ...career, careerId: Date.now(), creationDate: new Date() } as Career];
           });
           setIsCareerModalOpen(false);
         }}
         editingCareer={editingCareer}
         internshipOptions={internshipOptions}
-        openInternshipTypeModal={(type) => {
-          setEditingInternshipType(type);
+        onAddInternshipType={() => {
+          setEditingInternshipType(null);
           setIsInternshipTypeModalOpen(true);
         }}
-        existingInternshipTypes={existingInternshipTypes}
       />
       <InternshipTypeModal
         isOpen={isInternshipTypeModalOpen}
@@ -1173,17 +1197,20 @@ export default function TutorModal({
           setIsInternshipTypeModalOpen(false);
           setEditingInternshipType(null);
         }}
-        onSave={(type) => {
+        onSave={(item) => {
           setExistingInternshipTypes(prev => {
-            const existing = prev.find(it => it.internshipTypeId === type.internshipTypeId);
-            if (existing) {
-              return prev.map(it => it.internshipTypeId === type.internshipTypeId ? type : it);
+            if (editingInternshipType) {
+              return prev.map(it =>
+                it.id === editingInternshipType.id
+                  ? { ...item, id: editingInternshipType.id, creationDate: editingInternshipType.creationDate }
+                  : it
+              );
             }
-            return [...prev, type];
+            return [...prev, { ...item, id: Date.now(), creationDate: new Date() }];
           });
           setIsInternshipTypeModalOpen(false);
         }}
-        editingInternshipType={editingInternshipType}
+        editingItem={editingInternshipType}
       />
     </>
   );

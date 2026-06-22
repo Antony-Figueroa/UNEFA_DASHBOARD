@@ -4,6 +4,7 @@ import { Buffer } from "buffer";
 import "./index.css";
 import "swiper/swiper-bundle.css";
 import "flatpickr/dist/flatpickr.css";
+import "./features/tour/tour-theme.css";
 import App from "./App.tsx";
 
 declare global {

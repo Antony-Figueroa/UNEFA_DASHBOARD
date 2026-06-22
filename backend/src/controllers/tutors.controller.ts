@@ -387,6 +387,22 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
       return newTutor;
     });
 
+    // 4. Si la persona ya tiene usuario, vincular USER_ID en t_tutors
+    await dbManager.withRetry(async (supabase) => {
+      const { data: existingUser } = await supabase
+        .from('t_user')
+        .select('USER_ID')
+        .eq('person_id', data.person_id)
+        .maybeSingle();
+
+      if (existingUser) {
+        await supabase
+          .from('t_tutors')
+          .update({ USER_ID: existingUser.USER_ID })
+          .eq('TUTOR_ID', data.TUTOR_ID);
+      }
+    }).catch(() => {});
+
     // Auditoría
     await auditCreate(req, 't_tutors', { ...personData, ...tutorData }, TUTOR_COLUMNS_TO_AUDIT);
 

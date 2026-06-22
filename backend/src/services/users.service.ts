@@ -338,7 +338,43 @@ export const createUser = async (userData: UserData, tempPass: string) => {
       throw roleError;
     }
 
-    // 5. Refrescar datos completos del usuario con joins (incluye t_roles)
+    // 5. Si la persona es tutor, vincular USER_ID en t_tutors
+    const { data: existingTutor } = await supabase
+      .from('t_tutors')
+      .select('TUTOR_ID')
+      .eq('person_id', personId)
+      .maybeSingle();
+
+    if (existingTutor) {
+      const { error: linkErr } = await supabase
+        .from('t_tutors')
+        .update({ USER_ID: newUser.USER_ID })
+        .eq('TUTOR_ID', existingTutor.TUTOR_ID);
+
+      if (linkErr) {
+        console.warn('[UserService] Error linking tutor USER_ID:', linkErr.message);
+      }
+    }
+
+    // 6. Si la persona es estudiante, vincular USER_ID en t_students
+    const { data: existingStudent } = await supabase
+      .from('t_students')
+      .select('STUDENTS_ID')
+      .eq('person_id', personId)
+      .maybeSingle();
+
+    if (existingStudent) {
+      const { error: linkErr } = await supabase
+        .from('t_students')
+        .update({ USER_ID: newUser.USER_ID })
+        .eq('STUDENTS_ID', existingStudent.STUDENTS_ID);
+
+      if (linkErr) {
+        console.warn('[UserService] Error linking student USER_ID:', linkErr.message);
+      }
+    }
+
+    // 7. Refrescar datos completos del usuario con joins (incluye t_roles)
     const { data: freshUser, error: fetchError } = await supabase
       .from('t_user')
       .select(`${USER_COLUMNS}, ${PERSON_JOIN}, t_user_roles(ID_ROLES, t_roles(NAME))`)

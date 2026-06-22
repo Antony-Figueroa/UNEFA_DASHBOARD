@@ -81,6 +81,107 @@ export const getTutorDashboard = async (req: AuthRequest, res: Response) => {
       pendingApprovals = count || 0;
     }
 
+    // pendientes con detalle
+    let pendingApprovalLogs: any[] = [];
+    if (practiceIds.length > 0) {
+      const { data: logs } = await supabase
+        .from('t_activity_logs')
+        .select(`
+          ACTIVITY_LOG_ID,
+          ACTIVITY_DATE,
+          ACTIVITY_DESCRIPTION,
+          WEEK_NUMBER,
+          HOURS_WORKED,
+          t_persons!student_person_id(first_name, last_name)
+        `)
+        .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+        .eq('SUPERVISOR_APPROVED', false)
+        .eq('STATUS', 1)
+        .order('ACTIVITY_DATE', { ascending: false })
+        .limit(10);
+
+      pendingApprovalLogs = (logs || []).map((log: any) => ({
+        id: log.ACTIVITY_LOG_ID,
+        date: log.ACTIVITY_DATE,
+        description: log.ACTIVITY_DESCRIPTION,
+        week: log.WEEK_NUMBER,
+        hours: log.HOURS_WORKED,
+        studentName: `${log.t_persons?.first_name || ''} ${log.t_persons?.last_name || ''}`.trim(),
+      }));
+    }
+
+    // próximas fechas límite (30 días)
+    let upcomingDeadlines: any[] = [];
+    const now = new Date().toISOString().split('T')[0];
+    const thirtyDaysLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    if (practiceIds.length > 0) {
+      const { data: practicesFull } = await supabase
+        .from('t_professional_practices')
+        .select(`
+          PROFESSIONAL_PRACTICE_ID,
+          END_DATE,
+          REPORT_TITLE,
+          student_person_id,
+          t_persons!student_person_id(first_name, last_name)
+        `)
+        .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+        .gte('END_DATE', now)
+        .lte('END_DATE', thirtyDaysLater)
+        .eq('STATUS', 1)
+        .order('END_DATE', { ascending: true });
+
+      upcomingDeadlines = (practicesFull || []).map((p: any) => ({
+        practiceId: p.PROFESSIONAL_PRACTICE_ID,
+        endDate: p.END_DATE,
+        reportTitle: p.REPORT_TITLE || 'Sin título',
+        studentName: `${p.t_persons?.first_name || ''} ${p.t_persons?.last_name || ''}`.trim(),
+      }));
+    }
+
+    // alertas: estudiantes sin actividad en últimos 15 días
+    let studentAlerts: any[] = [];
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    if (practiceIds.length > 0) {
+      const { data: allPractices } = await supabase
+        .from('t_professional_practices')
+        .select(`
+          PROFESSIONAL_PRACTICE_ID,
+          STUDENTS_ID,
+          student_person_id,
+          t_persons!student_person_id(first_name, last_name)
+        `)
+        .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+        .eq('STATUS', 1);
+
+      const alertPromises = (allPractices || []).map(async (practice: any) => {
+        const { count } = await supabase
+          .from('t_activity_logs')
+          .select('*', { count: 'exact', head: true })
+          .eq('PROFESSIONAL_PRACTICE_ID', practice.PROFESSIONAL_PRACTICE_ID)
+          .gte('CREATED_AT', fifteenDaysAgo);
+
+        if (!count || count === 0) {
+          studentAlerts.push({
+            practiceId: practice.PROFESSIONAL_PRACTICE_ID,
+            studentName: `${practice.t_persons?.first_name || ''} ${practice.t_persons?.last_name || ''}`.trim(),
+            daysInactive: 15,
+          });
+        }
+      });
+      await Promise.all(alertPromises);
+    }
+
+    // notificaciones sin leer
+    let unreadNotifications = 0;
+    const { count: notifCount } = await supabase
+      .from('t_notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('USER_ID', userId)
+      .eq('READ', false);
+    unreadNotifications = notifCount || 0;
+
     const stats: DashboardStats = {
       totalStudents: practices?.length || 0,
       activeInternships: practices?.filter((p: any) => 
@@ -99,7 +200,13 @@ export const getTutorDashboard = async (req: AuthRequest, res: Response) => {
 
     res.json({
       success: true,
-      data: stats
+      data: {
+        ...stats,
+        pendingApprovalLogs,
+        upcomingDeadlines,
+        studentAlerts,
+        unreadNotifications
+      }
     });
 
   } catch (error) {

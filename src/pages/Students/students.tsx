@@ -17,7 +17,7 @@ import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
-import { FileText, Download } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
 import { ArrowUpIcon } from "../../icons";
 import StudentTable from "../../features/students/components/StudentTable";
 import StudentModal from "../../features/students/components/StudentModal";
@@ -456,7 +456,7 @@ export default function StudentsPage() {
                                 variant="outline"
                                 onClick={() => setIsImportModalOpen(true)}
                                 disabled={selectedIds.length > 0}
-                                startIcon={<Download className="h-5 w-5" />}
+                                startIcon={<ArrowUpIcon className="h-5 w-5" />}
                             >
                                 Importar
                             </Button>
@@ -464,7 +464,7 @@ export default function StudentsPage() {
                                 variant="outline"
                                 onClick={() => setIsExportModalOpen(true)}
                                 disabled={selectedIds.length > 0}
-                                startIcon={<ArrowUpIcon className="h-5 w-5" />}
+                                startIcon={<Upload className="h-5 w-5" />}
                             >
                                 Exportación
                             </Button>

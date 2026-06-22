@@ -2,12 +2,12 @@ import type { DriveStep } from "../types";
 
 const t = (es: string) => es;
 
-export const registroEstudiantesTour: DriveStep[] = [
+export const gestionEstudiantesTour: DriveStep[] = [
   {
     popover: {
-      title: t("Registros — Estudiantes"),
+      title: t("Modulo de Estudiantes"),
       description: t(
-        "En esta seccion se gestionan los datos personales y academicos de los estudiantes. Puede crear, editar, buscar y administrar el estado de cada estudiante."
+        "Este modulo gestiona los datos personales y academicos de los estudiantes. Puede crear, editar, buscar, importar, exportar y administrar el estado de cada registro."
       ),
       side: "over",
     },
@@ -17,22 +17,64 @@ export const registroEstudiantesTour: DriveStep[] = [
     popover: {
       title: t("Pagina de Estudiantes"),
       description: t(
-        "Esta es la pagina principal de gestion de estudiantes. Cada registro incluye cedula, nombres, apellidos, correo electronico, telefono y datos de contacto. Tambien puede asociar al estudiante a una carrera y un periodo."
+        "Esta es la pagina principal de gestion de estudiantes. Desde aqui puede crear, importar y exportar registros, ademas de buscar y filtrar estudiantes."
       ),
       side: "bottom",
     },
   },
   {
     element: () => {
-      const btns = document.querySelectorAll("button");
-      return Array.from(btns).find((b) => b.textContent?.includes("Nuevo Estudiante") || b.textContent?.includes("Agregar Estudiante")) ?? document.querySelector('button:has(svg)')!;
+      const actions = document.querySelector("h2")?.closest("div")?.nextElementSibling;
+      return (actions?.querySelector("button")) ? actions : document.querySelector("h2")!;
     },
     popover: {
-      title: t("Boton Nuevo Estudiante"),
+      title: t("Botones de Accion"),
       description: t(
-        "Haga clic aqui para abrir el formulario y registrar un nuevo estudiante."
+        "Acciones globales: <b>Reporte</b> genera un PDF del listado, <b>Importar</b> carga estudiantes desde Excel, <b>Exportacion</b> descarga la base en JSON/SQL/CSV/Excel y <b>Nuevo Estudiante</b> abre el formulario de registro manual."
       ),
       side: "left",
+    },
+  },
+  {
+    element: () => {
+      const lists = document.querySelectorAll('[role="tablist"]');
+      return Array.from(lists).find((tl) => tl.textContent?.includes("Activos")) ?? document.querySelector("h2")!;
+    },
+    popover: {
+      title: t("Pestanas Activos / Inactivos"),
+      description: t(
+        "Alterna entre estudiantes Activos (vigentes) e Inactivos (archivados). Al desactivar un estudiante desde la tabla, se mueve automaticamente a Inactivos."
+      ),
+      side: "bottom",
+    },
+  },
+  {
+    element: () => document.querySelector('input[placeholder*="Buscar por cedula" i]')!,
+    popover: {
+      title: t("Busqueda y Filtros de Fecha"),
+      description: t(
+        "Busque estudiantes por cedula, nombre, telefono o correo. Use los filtros <b>Desde</b> y <b>Hasta</b> para acotar por rango de fecha de inscripcion."
+      ),
+      side: "bottom",
+    },
+  },
+  {
+    element: () => document.querySelector("table")!,
+    popover: {
+      title: t("Tabla de Estudiantes"),
+      description: t(
+        "Cada fila representa un estudiante. Use el icono <b>ojo</b> para ver detalles completos (informacion personal y academica) y el icono <b>morado</b> para copiar sus datos a la ventana de Pre-inscripcion."
+      ),
+      side: "top",
+    },
+  },
+  {
+    popover: {
+      title: t("Fin del recorrido"),
+      description: t(
+        "Ha completado el recorrido del modulo de Estudiantes. Puede explorar Tutores o Instituciones desde el menu lateral."
+      ),
+      side: "over",
     },
   },
 ];

@@ -331,18 +331,15 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
       {/* Tabla de preview con más datos */}
       {validationRows.length > 0 && (
         <div className="border rounded-lg overflow-hidden max-h-[500px] overflow-x-auto">
-          <table className="w-full text-xs min-w-[800px]">
+                      <table className="w-full text-xs min-w-[900px]">
             <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
               <tr>
                 <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">#</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Prefijo</th>
                 <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Cédula</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Nombre</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Apellido</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Nombre Completo</th>
                 <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Sexo</th>
                 <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Nacimiento</th>
                 <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Email</th>
-                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Carrera</th>
                 <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Estado</th>
               </tr>
             </thead>
@@ -353,15 +350,12 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
                   ${row.status === "warning" ? "bg-yellow-50 dark:bg-yellow-900/10" : ""}
                   ${row.status === "valid" ? "bg-green-50/30" : ""}
                 `}>
-                  <td className="px-2 py-2 text-gray-500">{row.row}</td>
-                  <td className="px-2 py-2 font-mono">{row.cedula?.split('-')[0] || ''}</td>
-                  <td className="px-2 py-2 font-mono">{row.cedula?.split('-')[1] || ''}</td>
-                  <td className="px-2 py-2">{row.nombre_apellido?.split(' ')[0] || ''}</td>
-                  <td className="px-2 py-2">{row.nombre_apellido?.split(' ').slice(1).join(' ') || ''}</td>
+                  <td className="px-2 py-2 text-gray-500">{row.rowNumber}</td>
+                  <td className="px-2 py-2 font-mono whitespace-nowrap">{row.cedula || ''}</td>
+                  <td className="px-2 py-2 whitespace-nowrap">{row.fullName || ''}</td>
                   <td className="px-2 py-2">{row.sexo || ''}</td>
-                  <td className="px-2 py-2">{row.birthDate || ''}</td>
-                  <td className="px-2 py-2">{row.email || ''}</td>
-                  <td className="px-2 py-2">{row.career || ''}</td>
+                  <td className="px-2 py-2 whitespace-nowrap">{row.birthDate || ''}</td>
+                  <td className="px-2 py-2 max-w-[200px] truncate" title={row.email}>{row.email || ''}</td>
                   <td className="px-2 py-2">{getStatusBadge(row.status)}</td>
                 </tr>
               ))}
@@ -432,19 +426,29 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {importResult.results.slice(0, 30).map((r, idx) => (
+                {importResult.results.slice(0, 50).map((r, idx) => {
+                  // Backend devuelve status 'valid'/'warning'/'error':
+                  // valid → created (si no existía) o updated (si existía)
+                  // warning → no se importó (requería confirmación)
+                  // error → falló la importación
+                  const isCreated = r.status === 'valid' && !r.existingStudent;
+                  const isUpdated = r.status === 'valid' && r.existingStudent;
+                  const isSkipped = r.status === 'warning';
+                  return (
                   <tr key={idx}>
-                    <td className="px-3 py-2 text-gray-500">{r.row}</td>
+                    <td className="px-3 py-2 text-gray-500">{r.rowNumber}</td>
                     <td className="px-3 py-2">
-                      {r.status === "created" && <Badge color="success" variant="solid">Creado</Badge>}
-                      {r.status === "updated" && <Badge color="warning" variant="solid">Actualizado</Badge>}
+                      {isCreated && <Badge color="success" variant="solid">Creado</Badge>}
+                      {isUpdated && <Badge color="warning" variant="solid">Actualizado</Badge>}
+                      {isSkipped && <Badge color="warning" variant="solid">Sin importar</Badge>}
                       {r.status === "error" && <Badge color="error" variant="solid">Error</Badge>}
                     </td>
                     <td className="px-3 py-2 text-gray-600 dark:text-gray-400">
-                      {r.message}
+                      {r.messages?.join(', ') || r.fullName || ''}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

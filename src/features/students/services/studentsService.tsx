@@ -183,16 +183,20 @@ export interface ImportResult {
 }
 
 export interface ImportValidationRow {
-  row: number;
+  rowNumber: number;
   cedula: string;
-  nombre_apellido: string;
+  fullName: string;
   status: 'valid' | 'warning' | 'error';
   messages: string[];
-  // Datos adicionales para mostrar
   sexo?: string;
   birthDate?: string;
   email?: string;
-  career?: string;
+  existingStudent?: {
+    studentId: number;
+    status: number;
+    name: string;
+  };
+  age?: number;
 }
 
 export interface ImportValidationResponse {
@@ -211,12 +215,7 @@ export interface ImportExecuteResponse {
   created: number;
   updated: number;
   failed: number;
-  results: {
-    row: number;
-    status: 'created' | 'updated' | 'error';
-    message: string;
-    studentId?: string;
-  }[];
+  results: ImportValidationRow[];
 }
 
 /**

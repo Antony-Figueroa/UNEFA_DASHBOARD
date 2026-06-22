@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import PageMeta from "../../components/common/PageMeta";
-import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ComponentCard from "../../components/common/ComponentCard";
-import Button from "../../components/ui/button/Button";
-import apiClient from "../../api/apiClient";
+import PageMeta from "../../../../components/common/PageMeta";
+import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
+import ComponentCard from "../../../../components/common/ComponentCard";
+import Button from "../../../../components/ui/button/Button";
+import apiClient from "../../../../api/apiClient";
 import toast from "react-hot-toast";
-import { EditIcon } from "../../icons/actions";
+import { EditIcon } from "../../../../icons/actions";
 
 interface InstitutionData {
   legal_name: string;

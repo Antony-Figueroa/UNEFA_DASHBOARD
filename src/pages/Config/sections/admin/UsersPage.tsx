@@ -1,24 +1,25 @@
 import { useState, useEffect } from "react";
-import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import PageMeta from "../../components/common/PageMeta";
-import ComponentCard from "../../components/common/ComponentCard";
-import Button from "../../components/ui/button/Button";
-import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
-import { PlusCircleIcon, RefreshIcon, TrashIcon } from "../../icons/actions";
-import UserTable from "../../features/users/components/UserTable";
-import UserModal from "../../features/users/components/UserModal";
-import { useUsers } from "../../features/users/hooks/useUsers";
-import { useLists } from "../../features/lists/hooks/useLists";
-import { useDebounce } from "../../hooks/useDebounce";
-import { useAuth } from "../../context/auth";
-import { useToast } from "../../context/toast";
-import { User, UserRowData, CreateUserPayload, UpdateUserPayload } from "../../features/users/types";
-import { rolesService } from "../../features/roles/services/rolesService";
-import { resetUserPassword } from "../../features/users/services/userService";
-import UserDetailModal from "../../features/users/components/UserDetailModal";
-import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
-import { toTitleCase } from "../../utils/textFormat";
+import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
+import PageMeta from "../../../../components/common/PageMeta";
+import ComponentCard from "../../../../components/common/ComponentCard";
+import Button from "../../../../components/ui/button/Button";
+import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../../../components/ui/skeleton";
+import { PlusCircleIcon, RefreshIcon, TrashIcon } from "../../../../icons/actions";
+import UserTable from "../../../../features/users/components/UserTable";
+import UserModal from "../../../../features/users/components/UserModal";
+import { useUsers } from "../../../../features/users/hooks/useUsers";
+import { useLists } from "../../../../features/lists/hooks/useLists";
+import { useDebounce } from "../../../../hooks/useDebounce";
+import { useAuth } from "../../../../context/auth";
+import { useToast } from "../../../../context/toast";
+import { User, UserRowData, CreateUserPayload, UpdateUserPayload } from "../../../../features/users/types";
+import { rolesService } from "../../../../features/roles/services/rolesService";
+import { resetUserPassword } from "../../../../features/users/services/userService";
+import UserDetailModal from "../../../../features/users/components/UserDetailModal";
+import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
+import { DialogVariant } from "../../../../components/ui/dialog/DialogConfig";
+import { toTitleCase } from "../../../../utils/textFormat";
+import ConfigLayout from "../../ConfigLayout";
 
 /**
  * Página de Gestión de Usuarios.
@@ -283,7 +284,7 @@ const UserManagementPage = () => {
   };
 
   return (
-    <>
+    <ConfigLayout>
       <PageMeta 
         title="Gestión de Usuarios | UNEFA" 
         description="Administración de usuarios del panel de control" 
@@ -429,7 +430,7 @@ const UserManagementPage = () => {
         variant={confirmation?.variant || "info"}
         isLoading={loadingAction}
       />
-    </>
+    </ConfigLayout>
   );
 };
 

@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
-import PageMeta from "../../components/common/PageMeta";
-import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ComponentCard from "../../components/common/ComponentCard";
-import Button from "../../components/ui/button/Button";
-import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import RestoreDialog from "../../components/ui/dialog/RestoreDialog";
-import { backupService, BackupRecord } from "../../features/backup/services/backupService";
+import { useConfirmDialog } from "../../../../hooks/useConfirmDialog";
+import PageMeta from "../../../../components/common/PageMeta";
+import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
+import ComponentCard from "../../../../components/common/ComponentCard";
+import Button from "../../../../components/ui/button/Button";
+import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
+import RestoreDialog from "../../../../components/ui/dialog/RestoreDialog";
+import { backupService, BackupRecord } from "../../../../features/backup/services/backupService";
 import toast from "react-hot-toast";
+import ConfigLayout from "../../ConfigLayout";
 
 export default function BackupsPage() {
   const [backups, setBackups] = useState<BackupRecord[]>([]);
@@ -18,13 +20,7 @@ export default function BackupsPage() {
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<BackupRecord | null>(null);
   const [backupName, setBackupName] = useState('');
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-    variant?: "info" | "success" | "error" | "warning";
-  } | null>(null);
+  const { confirmDialog, showConfirm, hideConfirm } = useConfirmDialog();
 
   const fetchBackups = async () => {
     setLoading(true);
@@ -112,8 +108,7 @@ export default function BackupsPage() {
   };
 
   const handleDelete = (backup: BackupRecord) => {
-    setConfirmDialog({
-      isOpen: true,
+    showConfirm({
       title: "Eliminar Respaldo",
       message: `¿Está seguro de eliminar el respaldo "${backup.name}"? Esta acción no se puede deshacer.`,
       onConfirm: async () => {
@@ -125,7 +120,7 @@ export default function BackupsPage() {
           console.error('Error deleting backup:', error);
           toast.error('Error al eliminar el respaldo');
         } finally {
-          setConfirmDialog(null);
+          hideConfirm();
         }
       },
       variant: "error",
@@ -152,7 +147,7 @@ export default function BackupsPage() {
   };
 
   return (
-    <>
+    <ConfigLayout>
       <PageMeta 
         title="Respaldos" 
         description="Gestión de respaldos de la base de datos" 
@@ -385,13 +380,13 @@ export default function BackupsPage() {
 
       <UnifiedDialog
         isOpen={!!confirmDialog}
-        onClose={() => setConfirmDialog(null)}
+        onClose={hideConfirm}
         onConfirm={confirmDialog?.onConfirm || (() => {})}
         title={confirmDialog?.title || ""}
         message={confirmDialog?.message || ""}
         confirmLabel="Confirmar"
         variant={confirmDialog?.variant || "info"}
       />
-    </>
+    </ConfigLayout>
   );
 }

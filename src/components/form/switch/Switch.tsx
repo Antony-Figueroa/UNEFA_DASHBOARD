@@ -6,7 +6,7 @@ import { cn } from "../../../utils/cn";
  */
 export interface SwitchProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   /** La etiqueta descriptiva del interruptor. */
-  label: string;
+  label?: string;
   /** El estado inicial del interruptor. */
   defaultChecked?: boolean;
   /** Indica si el interruptor está desactivado. */

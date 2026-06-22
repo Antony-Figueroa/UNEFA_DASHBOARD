@@ -303,7 +303,14 @@ const AppSidebar: React.FC = () => {
       return parentVisible;
     }).map(item => ({
       ...item,
-      subItems: item.subItems?.filter(sub => isItemVisible(sub))
+      subItems: item.subItems
+        ?.filter(sub => isItemVisible(sub))
+        // ponytail: remover headers sin items visibles después
+        ?.filter((sub, i, arr) => {
+          if (!sub.isHeader) return true;
+          // Un header es visible solo si hay al menos un item no-header después
+          return arr.slice(i + 1).some(s => !s.isHeader);
+        })
     }));
   }, [isItemVisible]);
 

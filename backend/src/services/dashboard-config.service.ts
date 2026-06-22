@@ -39,8 +39,7 @@ const DEFAULT_LAYOUTS: Record<number, DashboardWidget[]> = {
     { key: 'tutor-pending-approvals', order: 3, visible: true },
     { key: 'tutor-upcoming-deadlines', order: 4, visible: true },
     { key: 'tutor-student-alerts', order: 5, visible: true },
-    { key: 'tutor-notifications', order: 6, visible: true },
-    { key: 'tutor-grade-averages', order: 7, visible: false },
+    { key: 'tutor-grade-averages', order: 6, visible: false },
   ],
   4: [ // ESTUDIANTE
     { key: 'student-progress', order: 0, visible: true },

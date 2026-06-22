@@ -39,6 +39,8 @@ export const useAcademicConfig = (): UseAcademicConfigResult => {
           defaultEnrollmentGraceDays: 21,
           defaultEvaluationGraceDays: 10,
           lockApiLoadedFields: true,
+          allowMultipleVisitsPerDay: false,
+          maxVisitsPerDay: null,
         };
         cachedConfig = fallback;
         setConfig(fallback);

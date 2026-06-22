@@ -29,9 +29,7 @@ export default function TutorActivityLogs() {
     setLoading(true);
     try {
       const res = await tutorService.getActivityLogs({ limit: 200 });
-      if (res.success) {
-        setLogs(res.data);
-      }
+      setLogs(res.data);
     } catch {
       toast.error('Error al cargar registros de actividad');
     } finally {

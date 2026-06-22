@@ -44,6 +44,7 @@
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
+    "driver.js": "^1.4.0",
     "exceljs": "^4.4.0",
     "express": "^4.22.1",
     "file-saver": "^2.0.5",

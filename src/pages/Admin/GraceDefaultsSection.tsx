@@ -56,6 +56,7 @@ export default function GraceDefaultsSection() {
       maxPerDay !== graceDefaults.maxVisitsPerDay);
 
   return (
+    <>
     <ComponentCard
       title="Configuración de Días de Gracia"
       desc="Establece los valores por defecto para los días de gracia en inscripción y evaluación"
@@ -179,5 +180,6 @@ export default function GraceDefaultsSection() {
         )}
       </div>
     </ComponentCard>
+    </>
   );
 }

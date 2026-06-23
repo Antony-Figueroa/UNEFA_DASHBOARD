@@ -3,6 +3,7 @@ import { useForm, Controller, SubmitHandler, FieldErrors } from "react-hook-form
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
+import Label from "../../../components/form/Label";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Tabs } from "../../../components/ui/tabs/Tabs";
 import { useTabs } from "../../../hooks/useTabs";
@@ -670,6 +671,19 @@ export default function TutorModal({
 
   const TITULO_OPTIONS = options["Título"] || [];
 
+  const PROFESSION_OPTIONS = options["Profesión"] || [
+    { value: "INGENIERO/A EN SISTEMAS", label: "INGENIERO/A EN SISTEMAS" },
+    { value: "INGENIERO/A CIVIL", label: "INGENIERO/A CIVIL" },
+    { value: "INGENIERO/A INDUSTRIAL", label: "INGENIERO/A INDUSTRIAL" },
+    { value: "INGENIERO/A ELÉCTRICO", label: "INGENIERO/A ELÉCTRICO" },
+    { value: "CONTADOR/A PÚBLICO", label: "CONTADOR/A PÚBLICO" },
+    { value: "LICENCIADO/A EN ADMINISTRACIÓN", label: "LICENCIADO/A EN ADMINISTRACIÓN" },
+    { value: "LICENCIADO/A EN EDUCACIÓN", label: "LICENCIADO/A EN EDUCACIÓN" },
+    { value: "ABOGADO/A", label: "ABOGADO/A" },
+    { value: "MÉDICO/A", label: "MÉDICO/A" },
+    { value: "T.S.U.", label: "T.S.U." },
+  ];
+
   const GRADO_INSTRUCCION_OPTIONS = options["GRADO DE INSTRUCCIÓN"] || [];
 
   useEffect(() => {
@@ -683,6 +697,7 @@ export default function TutorModal({
           "Condición",
           "Dedicación",
           "Categoría",
+          "Profesión",
           "Título",
           "GRADO DE INSTRUCCIÓN",
           "Tipo de Practica"
@@ -1047,73 +1062,96 @@ export default function TutorModal({
           <div hidden={tabsState.activeTab !== 'laboral'} role="tabpanel">
             <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Información Laboral</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Controller
-                name="condition"
-                control={control}
-                rules={{ required: "La condición es obligatoria" }}
-                render={({ field: { onChange, value } }) => (
-                  <CustomSelect
-                    value={value}
-                    onChange={onChange}
-                    options={CONDITION_OPTIONS}
-                    error={!!errors.condition}
-                    disabled={viewOnlyMode || isInUse}
-                    onAddNew={() => openAddValueModal("Condición", "condition", "Agregar Condición")}
-                  />
-                )}
-              />
-              <Controller
-                name="dedication"
-                control={control}
-                rules={{ required: "La dedicación es obligatoria" }}
-                render={({ field: { onChange, value } }) => (
-                  <CustomSelect
-                    value={value}
-                    onChange={onChange}
-                    options={DEDICATION_OPTIONS}
-                    error={!!errors.dedication}
-                    disabled={viewOnlyMode || isInUse}
-                    onAddNew={() => openAddValueModal("Dedicación", "dedication", "Agregar Dedicación")}
-                  />
-                )}
-              />
-              <Controller
-                name="category"
-                control={control}
-                rules={{ required: "La categoría es obligatoria" }}
-                render={({ field: { onChange, value } }) => (
-                  <CustomSelect
-                    value={value}
-                    onChange={onChange}
-                    options={CATEGORY_OPTIONS}
-                    error={!!errors.category}
-                    disabled={viewOnlyMode || isInUse}
-                    onAddNew={() => openAddValueModal("Categoría", "category", "Agregar Categoría")}
-                  />
-                )}
-              />
-              <Input
-                {...register("profession")}
-                type="text"
-                placeholder="Ingeniero/a en Sistemas"
-                error={!!errors.profession}
-                disabled={viewOnlyMode || isInUse}
-              />
-              <Controller
-                name="titulo"
-                control={control}
-                rules={{ required: "El grado de instrucción es obligatorio" }}
-                render={({ field: { onChange, value } }) => (
-                  <CustomSelect
-                    value={value}
-                    onChange={onChange}
-                    options={TITULO_OPTIONS}
-                    error={!!errors.titulo}
-                    disabled={viewOnlyMode || isInUse}
-                    onAddNew={() => openAddValueModal("Título", "titulo", "Agregar Grado de Instrucción")}
-                  />
-                )}
-              />
+              <div>
+                <Label>Condición</Label>
+                <Controller
+                  name="condition"
+                  control={control}
+                  rules={{ required: "La condición es obligatoria" }}
+                  render={({ field: { onChange, value } }) => (
+                    <CustomSelect
+                      value={value}
+                      onChange={onChange}
+                      options={CONDITION_OPTIONS}
+                      error={!!errors.condition}
+                      disabled={viewOnlyMode || isInUse}
+                      onAddNew={() => openAddValueModal("Condición", "condition", "Agregar Condición")}
+                    />
+                  )}
+                />
+              </div>
+              <div>
+                <Label>Dedicación</Label>
+                <Controller
+                  name="dedication"
+                  control={control}
+                  rules={{ required: "La dedicación es obligatoria" }}
+                  render={({ field: { onChange, value } }) => (
+                    <CustomSelect
+                      value={value}
+                      onChange={onChange}
+                      options={DEDICATION_OPTIONS}
+                      error={!!errors.dedication}
+                      disabled={viewOnlyMode || isInUse}
+                      onAddNew={() => openAddValueModal("Dedicación", "dedication", "Agregar Dedicación")}
+                    />
+                  )}
+                />
+              </div>
+              <div>
+                <Label>Categoría</Label>
+                <Controller
+                  name="category"
+                  control={control}
+                  rules={{ required: "La categoría es obligatoria" }}
+                  render={({ field: { onChange, value } }) => (
+                    <CustomSelect
+                      value={value}
+                      onChange={onChange}
+                      options={CATEGORY_OPTIONS}
+                      error={!!errors.category}
+                      disabled={viewOnlyMode || isInUse}
+                      onAddNew={() => openAddValueModal("Categoría", "category", "Agregar Categoría")}
+                    />
+                  )}
+                />
+              </div>
+              <div>
+                <Label>Profesión / Título</Label>
+                <Controller
+                  name="profession"
+                  control={control}
+                  rules={{ required: "La profesión es obligatoria" }}
+                  render={({ field: { onChange, value } }) => (
+                    <CustomSelect
+                      value={value}
+                      onChange={onChange}
+                      options={PROFESSION_OPTIONS}
+                      error={!!errors.profession}
+                      disabled={viewOnlyMode || isInUse}
+                      onAddNew={() => openAddValueModal("Profesión", "profession", "Agregar Profesión")}
+                    />
+                  )}
+                />
+              </div>
+              <div>
+                <Label>Grado de Instrucción</Label>
+                <Controller
+                  name="titulo"
+                  control={control}
+                  rules={{ required: "El grado de instrucción es obligatorio" }}
+                  render={({ field: { onChange, value } }) => (
+                    <CustomSelect
+                      value={value}
+                      onChange={onChange}
+                      options={TITULO_OPTIONS}
+                      error={!!errors.titulo}
+                      disabled={viewOnlyMode || isInUse}
+                      onAddNew={() => openAddValueModal("Título", "titulo", "Agregar Grado de Instrucción")}
+                    />
+                  )}
+                />
+              </div>
             </div>
           </div>
           <div hidden={tabsState.activeTab !== 'asignaciones'} role="tabpanel">

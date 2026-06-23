@@ -88,6 +88,7 @@ export default function TutorModal({
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [confirmSaving, setConfirmSaving] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateTutorPayload | UpdateTutorPayload | null>(null);
+  const submittingRef = useRef(false);
 
    // State for display values with formatting
    const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
@@ -909,6 +910,9 @@ export default function TutorModal({
   }, [isOpen]);
 
   const onSubmit: SubmitHandler<TutorFormData> = (data) => {
+    // ref lock: evita doble submit por click rapido / latencia
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     try {
       const basePayload = {
         identificationPrefix: data.identificationPrefix as "V" | "E",
@@ -936,6 +940,7 @@ export default function TutorModal({
       setPendingSave(payload as CreateTutorPayload | UpdateTutorPayload);
       setConfirmSaveOpen(true);
     } catch (error) {
+      submittingRef.current = false;
       console.error("[TutorModal] Error al procesar el envío del formulario:", error);
     }
   };
@@ -1184,7 +1189,7 @@ export default function TutorModal({
       </Modal>
       <UnifiedDialog
         isOpen={confirmSaveOpen}
-        onClose={() => setConfirmSaveOpen(false)}
+        onClose={() => { submittingRef.current = false; setConfirmSaveOpen(false); }}
         onConfirm={async () => {
           if (pendingSave) {
             setConfirmSaving(true);
@@ -1198,6 +1203,7 @@ export default function TutorModal({
             } catch (error) {
               console.error("Error saving tutor:", error);
             } finally {
+              submittingRef.current = false;
               setConfirmSaving(false);
             }
           }

@@ -299,27 +299,16 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
     const personData = extractPersonData(t);
     const tutorData = extractTutorData(t);
 
-    // 2. Verificar que no exista ya un tutor para esta persona (antes de withRetry)
-    const existingCheck = await dbManager.withRetry(async (supabase) => {
-      const newPerson = await personService.findOrCreatePerson(personData, supabase);
-      const { data: existing } = await supabase
-        .from(TABLE_NAME)
-        .select('TUTOR_ID')
-        .eq('person_id', newPerson.personId)
-        .maybeSingle();
-      return { personId: newPerson.personId, existing };
-    }, 'createTutor:checkDuplicate');
-
-    if (existingCheck.existing) {
-      return res.status(409).json({ message: 'Ya existe un tutor registrado con esta cédula' });
-    }
-
+    // 2. Crear persona + insertar tutor en UNA sola operación atómica.
+    //    NO hay check previo — el UNIQUE constraint (person_id) en t_tutors
+    //    es la defensa real contra race conditions. Si dos requests llegan
+    //    al mismo tiempo, el segundo recibe error 23505 → 409.
     const data = await dbManager.withRetry(async (supabase) => {
-      const personId = existingCheck.personId;
+      const newPerson = await personService.findOrCreatePerson(personData, supabase);
 
-      // 3. Insertar tutor
+      // 3. Insertar tutor (el UNIQUE constraint evita duplicados)
       const dbRecord = {
-        person_id: personId,
+        person_id: newPerson.personId,
         PROFESSION: tutorData.PROFESSION,
         CONDITION: tutorData.CONDITION,
         DEDICATION: tutorData.DEDICATION,
@@ -344,12 +333,15 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
             )
           )
         `)
-        .single();
+        .maybeSingle();
 
+      if (tutorError?.code === '23505') {
+        throw Object.assign(new Error('Ya existe un tutor registrado con esta cédula'), { code: '409' });
+      }
       if (tutorError) throw tutorError;
       const newTutor = tutorDataInsert as unknown as DBTutor;
 
-      // 3. Insertar carreras si existen
+      // 4. Insertar carreras si existen
       if (Array.isArray(t.carreras) && t.carreras.length > 0) {
         const careerData = t.carreras.map((careerId: string | number) => ({
           TUTOR_ID: newTutor.TUTOR_ID,
@@ -378,7 +370,7 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
             )
           `)
           .eq('TUTOR_ID', newTutor.TUTOR_ID)
-          .single();
+          .maybeSingle();
 
         if (finalError) throw finalError;
         return finalData as unknown as DBTutor;
@@ -408,6 +400,8 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(mapDBToFrontend(data));
   } catch (error: unknown) {
+    const appErr = error as AppError;
+    if (appErr.code === '409') return res.status(409).json({ message: appErr.message });
     handleDbError(res, error);
   }
 };

@@ -322,27 +322,14 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
       }
     }
 
-    // 1b. Verificar que no exista ya un responsable para esta persona
-    const existingCheck = await dbManager.withRetry(async (supabase) => {
-      const np = await personService.findOrCreatePerson(personData, supabase);
-      const { data: existing } = await supabase
-        .from(TABLE_NAME)
-        .select('MANAGER_ID')
-        .eq('person_id', np.personId)
-        .maybeSingle();
-      return { personId: np.personId, existing };
-    }, 'createResp:checkDuplicate');
-
-    if (existingCheck.existing) {
-      return res.status(409).json({ message: 'Ya existe un responsable institucional registrado con esta cédula' });
-    }
-
+    // 1b. Crear persona + insertar responsable en UNA sola operación.
+    //    El UNIQUE constraint (person_id) en t_institution_manager es la defensa real.
     const data = await dbManager.withRetry(async (supabase) => {
-      const newPerson = { personId: existingCheck.personId };
+      const np = await personService.findOrCreatePerson(personData, supabase);
 
       // 2. Insertar manager
       const dbData = {
-        person_id: newPerson.personId,
+        person_id: np.personId,
         STATUS: r.status === false ? 0 : 1,
         CREATION_DATE: new Date().toISOString(),
         INSTITUTION_ID: null,
@@ -354,8 +341,11 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
         .from(TABLE_NAME)
         .insert([dbData])
         .select(`${MANAGER_COLUMNS}, ${PERSON_JOIN}`)
-        .single();
+        .maybeSingle();
 
+      if (error?.code === '23505') {
+        throw Object.assign(new Error('Ya existe un responsable institucional registrado con esta cédula'), { code: '409' });
+      }
       if (error) {
         console.error('[createInstitutionalResponsible] DB Insert Error:', error);
         throw error;
@@ -403,6 +393,8 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
 
     res.status(201).json(mapDBToFrontend(data));
   } catch (error: unknown) {
+    const appErr = error as AppError;
+    if (appErr.code === '409') return res.status(409).json({ message: appErr.message });
     handleDbError(res, error);
   }
 };

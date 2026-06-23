@@ -158,24 +158,37 @@ export const createAddress = async (req: Request, res: Response) => {
 
 export const updateAddress = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // person_address_id o institution_address_id
     const supabase = dbManager.getClient();
     const { parroquia_id, street_address, reference, address_type_id, entity_type, entity_id } = req.body;
+
+    // Resolver el address_id real desde la tabla puente
+    const bridgeTable = entity_type === 'person' ? 't_person_address' : 't_institution_address';
+    const bridgeKey = entity_type === 'person' ? 'person_address_id' : 'institution_address_id';
+    const { data: bridgeRow, error: bridgeFindError } = await supabase
+      .from(bridgeTable)
+      .select('address_id')
+      .eq(bridgeKey, id)
+      .single();
+
+    if (bridgeFindError || !bridgeRow) {
+      res.status(404).json({ message: 'Dirección no encontrada' });
+      return;
+    }
 
     const { error } = await supabase
       .from('t_address')
       .update({ parroquia_id, street_address, reference })
-      .eq('address_id', id);
+      .eq('address_id', bridgeRow.address_id);
 
     if (error) throw error;
 
     if (address_type_id && entity_type && entity_id) {
-      const bridgeTable = entity_type === 'person' ? 't_person_address' : 't_institution_address';
       const entityKey = entity_type === 'person' ? 'person_id' : 'institution_id';
       const { error: bridgeError } = await supabase
         .from(bridgeTable)
         .update({ address_type_id })
-        .eq('address_id', id)
+        .eq('address_id', bridgeRow.address_id)
         .eq(entityKey, entity_id);
 
       if (bridgeError) throw bridgeError;
@@ -189,17 +202,32 @@ export const updateAddress = async (req: Request, res: Response) => {
 
 export const deleteAddress = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // person_address_id o institution_address_id
     const { entity_type, entity_id } = req.query;
     const supabase = dbManager.getClient();
 
     const bridgeTable = entity_type === 'person' ? 't_person_address' : 't_institution_address';
+    const bridgeKey = entity_type === 'person' ? 'person_address_id' : 'institution_address_id';
 
+    // Resolver el address_id real antes de borrar
+    const { data: bridgeRow, error: findError } = await supabase
+      .from(bridgeTable)
+      .select('address_id')
+      .eq(bridgeKey, id)
+      .single();
+
+    if (findError || !bridgeRow) {
+      res.status(404).json({ message: 'Dirección no encontrada' });
+      return;
+    }
+
+    const addressId = bridgeRow.address_id;
+
+    // Borrar la fila puente por su PK
     const { error: bridgeError } = await supabase
       .from(bridgeTable)
       .delete()
-      .eq('address_id', id)
-      .eq(entity_type === 'person' ? 'person_id' : 'institution_id', entity_id);
+      .eq(bridgeKey, id);
 
     if (bridgeError) throw bridgeError;
 
@@ -207,15 +235,15 @@ export const deleteAddress = async (req: Request, res: Response) => {
     const { count: personCount } = await supabase
       .from('t_person_address')
       .select('*', { count: 'exact', head: true })
-      .eq('address_id', id);
+      .eq('address_id', addressId);
 
     const { count: instCount } = await supabase
       .from('t_institution_address')
       .select('*', { count: 'exact', head: true })
-      .eq('address_id', id);
+      .eq('address_id', addressId);
 
     if ((personCount ?? 0) === 0 && (instCount ?? 0) === 0) {
-      await supabase.from('t_address').delete().eq('address_id', id);
+      await supabase.from('t_address').delete().eq('address_id', addressId);
     }
 
     res.json({ message: 'Dirección eliminada exitosamente' });

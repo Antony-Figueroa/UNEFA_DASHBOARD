@@ -364,27 +364,14 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     const personData = extractPersonData(s);
     const studentData = extractStudentData(s);
 
-    // 2. Verificar que no exista ya un estudiante para esta persona
-    const existingCheck = await dbManager.withRetry(async (supabase) => {
-      const newPerson = await personService.findOrCreatePerson(personData, supabase);
-      const { data: existing } = await supabase
-        .from(TABLE_NAME)
-        .select('STUDENTS_ID')
-        .eq('person_id', newPerson.personId)
-        .maybeSingle();
-      return { personId: newPerson.personId, existing };
-    }, 'createStudent:checkDuplicate');
-
-    if (existingCheck.existing) {
-      return res.status(409).json({ message: 'Ya existe un estudiante registrado con esta cédula' });
-    }
-
+    // 2. Crear persona + insertar estudiante en UNA sola operación.
+    //    El UNIQUE constraint (person_id) en t_students es la defensa real.
     const data = await dbManager.withRetry(async (supabase) => {
-      const personId = existingCheck.personId;
+      const newPerson = await personService.findOrCreatePerson(personData, supabase);
 
       // 3. Insertar registro en t_students con person_id
       const dbRecord = {
-        person_id: personId,
+        person_id: newPerson.personId,
         STUDENT_TYPE: studentData.STUDENT_TYPE,
         MILITARY_RANK: studentData.MILITARY_RANK,
         EMPLOYMENT: studentData.EMPLOYMENT,
@@ -396,8 +383,11 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
         .from(TABLE_NAME)
         .insert([dbRecord])
         .select(STUDENT_FULL_COLUMNS)
-        .single();
+        .maybeSingle();
 
+      if (insertError?.code === '23505') {
+        throw Object.assign(new Error('Ya existe un estudiante registrado con esta cédula'), { code: '409' });
+      }
       if (insertError) throw insertError;
       return insertedData as unknown as DBStudent;
     }, 'createStudent');
@@ -426,6 +416,8 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(mapDBToFrontend(data));
   } catch (error: unknown) {
+    const appErr = error as AppError;
+    if (appErr.code === '409') return res.status(409).json({ message: appErr.message });
     console.error('[Students] Exception in createStudent:', error);
     handleDbError(res, error);
   }

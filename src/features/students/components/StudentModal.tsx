@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import apiClient from "../../../api/apiClient";
 import { useForm, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { checkAvailability, getStudentByCi, lookupCi } from "../services/studentsService";
@@ -111,6 +112,27 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   const [inlineAddress, setInlineAddress] = useState<GeographicAddressValue>({
     parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true,
   });
+  const [addressRefreshKey, setAddressRefreshKey] = useState(0);
+
+  const loadPrimaryAddress = useCallback(async (personId: number | string) => {
+    try {
+      const res = await addressService.getPersonAddresses(personId);
+      const addrs = res.data as any[];
+      if (addrs && addrs.length > 0) {
+        const primary = addrs[0];
+        const addr = primary.address;
+        if (addr) {
+          setInlineAddress({
+            parroquiaId: addr.parroquia?.parroquia_id ?? null,
+            streetAddress: addr.street_address ?? '',
+            reference: addr.reference ?? '',
+            addressTypeId: primary.address_type?.address_type_id ?? 3,
+            isPrimary: true,
+          });
+        }
+      }
+    } catch { /* silent */ }
+  }, []);
 
   const {
     register,
@@ -794,22 +816,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
 
         // Cargar dirección principal del estudiante
         if (editingStudent.personId) {
-          addressService.getPersonAddresses(editingStudent.personId).then(res => {
-            const addrs = res.data as any[];
-            if (addrs && addrs.length > 0) {
-              const primary = addrs[0]; // ordenado por is_primary DESC
-              const addr = primary.address;
-              if (addr) {
-                setInlineAddress({
-                  parroquiaId: addr.parroquia?.parroquia_id ?? null,
-                  streetAddress: addr.street_address ?? '',
-                  reference: addr.reference ?? '',
-                  addressTypeId: primary.address_type?.address_type_id ?? 3,
-                  isPrimary: true,
-                });
-              }
-            }
-          }).catch(() => {});
+          loadPrimaryAddress(editingStudent.personId);
         }
       } else {
         reset({
@@ -1079,9 +1086,13 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           {/* Direcciones Estructuradas */}
           <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
             <AddressList
+              key={addressRefreshKey}
               entityType="person"
               entityId={editingStudent?.personId ? Number(editingStudent.personId) : existingStudent?.personId ? Number(existingStudent.personId) : null}
               geoOptions={geoOptions}
+              onAddressesChange={() => {
+                if (editingStudent?.personId) loadPrimaryAddress(editingStudent.personId);
+              }}
             />
           </div>
           </div>
@@ -1253,7 +1264,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
             if (pendingSave) {
               await onSave(pendingSave);
             }
-            // Crear dirección estructurada (edición o creación)
+            // Guardar dirección inline: UPSERT en vez de siempre crear
             if (inlineAddress.parroquiaId && inlineAddress.streetAddress) {
               try {
                 let targetPersonId: number | null = null;
@@ -1274,18 +1285,44 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                 }
 
                 if (targetPersonId) {
-                  await addressService.createAddress({
-                    entityType: 'person',
-                    entityId: targetPersonId,
-                    addressTypeId: inlineAddress.addressTypeId || 3,
-                    parroquiaId: inlineAddress.parroquiaId,
-                    streetAddress: inlineAddress.streetAddress,
-                    reference: inlineAddress.reference,
-                    isPrimary: inlineAddress.isPrimary,
-                  });
+                  const existingRes = await addressService.getPersonAddresses(targetPersonId);
+                  const existingAddrs = existingRes.data as any[];
+                  const existingPrimary = existingAddrs?.[0];
+
+                  if (existingPrimary) {
+                    // Ya tiene dirección — ver si cambió algo
+                    const addr = existingPrimary.address;
+                    const sameParroquia = addr?.parroquia?.parroquia_id === inlineAddress.parroquiaId;
+                    const sameStreet = addr?.street_address === inlineAddress.streetAddress;
+                    if (!sameParroquia || !sameStreet) {
+                      // Actualizar dirección existente (t_address)
+                      await apiClient.put(`/address/${addr.address_id}`, {
+                        parroquia_id: inlineAddress.parroquiaId,
+                        street_address: inlineAddress.streetAddress,
+                        reference: inlineAddress.reference || '',
+                        address_type_id: inlineAddress.addressTypeId || 3,
+                        entity_type: 'person',
+                        entity_id: targetPersonId,
+                      });
+                    }
+                    // Si es igual → skip, no duplicar
+                  } else {
+                    // No tiene dirección — crear nueva
+                    await addressService.createAddress({
+                      entityType: 'person',
+                      entityId: targetPersonId,
+                      addressTypeId: inlineAddress.addressTypeId || 3,
+                      parroquiaId: inlineAddress.parroquiaId,
+                      streetAddress: inlineAddress.streetAddress,
+                      reference: inlineAddress.reference,
+                      isPrimary: inlineAddress.isPrimary,
+                    });
+                  }
+                  // Refrescar AddressList en el próximo render
+                  setAddressRefreshKey(k => k + 1);
                 }
               } catch (addrErr) {
-                console.error('[StudentModal] Error creating address:', addrErr);
+                console.error('[StudentModal] Error saving address:', addrErr);
               }
             }
           } finally {

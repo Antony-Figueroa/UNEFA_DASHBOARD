@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router";
+import { Routes, Route, Navigate } from "react-router";
 import { Analytics } from "@vercel/analytics/react";
 import AppLayout from "../layout/AppLayout";
 import ScrollToTop from "../components/common/ScrollToTop";
@@ -40,6 +40,7 @@ const TutorEvaluation = lazy(() => import("../pages/Tutor/Evaluations/TutorEvalu
 const TutorProfile = lazy(() => import("../pages/Tutor/TutorProfile"));
 const TutorActivityLogs = lazy(() => import("../pages/Tutor/TutorActivityLogs"));
 
+import StudentLayout from "../layout/StudentLayout";
 const StudentDashboard = lazy(() => import("../pages/Student/StudentDashboard"));
 const StudentRequests = lazy(() => import("../pages/Student/StudentRequests"));
 const StudentProfile = lazy(() => import("../pages/Student/StudentProfile"));
@@ -49,7 +50,6 @@ const StudentEvaluations = lazy(() => import("../pages/Student/StudentEvaluation
 const StudentTracking = lazy(() => import("../pages/Student/StudentTracking"));
 
 const AdminRequests = lazy(() => import("../pages/Admin/AdminRequests"));
-const AcademicConfigPage = lazy(() => import("../features/academic-config/pages/AcademicConfigPage"));
 
 const EvaluationsList = lazy(() => import("../pages/Evaluations/EvaluationsList"));
 const EvaluationsAndCulmination = lazy(() => import("../pages/EvaluationsAndCulmination/EvaluationsAndCulmination"));
@@ -260,63 +260,16 @@ export const AppRoutes = () => {
               }
             />
  
-            {/* Student Dashboard - Only for Student role (4) */}
-            <Route
-              path="/student"
-              element={
-                <ProtectedRoute allowedRoles={[4]}>
-                  <StudentDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/student/requests"
-              element={
-                <ProtectedRoute allowedRoles={[4]}>
-                  <StudentRequests />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/student/profile"
-              element={
-                <ProtectedRoute allowedRoles={[4]}>
-                  <StudentProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/student/activity-logs/:practiceId"
-              element={
-                <ProtectedRoute allowedRoles={[4]}>
-                  <StudentActivityLogs />
-                </ProtectedRoute>
-              }
-            />
-<Route
-              path="/student/documents"
-              element={
-                <ProtectedRoute allowedRoles={[4]}>
-                  <StudentDocuments />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/student/evaluations"
-              element={
-                <ProtectedRoute allowedRoles={[4]}>
-                  <StudentEvaluations />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/student/tracking"
-              element={
-                <ProtectedRoute allowedRoles={[4]}>
-                  <StudentTracking />
-                </ProtectedRoute>
-              }
-            />
+            {/* Student Dashboard - wrapped in StudentLayout */}
+            <Route element={<ProtectedRoute allowedRoles={[4]}><StudentLayout /></ProtectedRoute>}>
+              <Route index path="/student" element={<StudentDashboard />} />
+              <Route path="/student/requests" element={<StudentRequests />} />
+              <Route path="/student/profile" element={<StudentProfile />} />
+              <Route path="/student/activity-logs/:practiceId" element={<StudentActivityLogs />} />
+              <Route path="/student/documents" element={<StudentDocuments />} />
+              <Route path="/student/evaluations" element={<StudentEvaluations />} />
+              <Route path="/student/tracking" element={<StudentTracking />} />
+            </Route>
 
             {/* Admin Requests */}
             <Route
@@ -411,11 +364,7 @@ export const AppRoutes = () => {
             />
             <Route
               path="/configure/academic"
-              element={
-                <ProtectedRoute requiredPermissions={['academic-config:edit']}>
-                  <AcademicConfigPage />
-                </ProtectedRoute>
-              }
+              element={<Navigate to="/configure/organizacion?tab=academic" replace />}
             />
             <Route
               path="/notifications"

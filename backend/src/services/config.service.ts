@@ -44,6 +44,8 @@ export interface SystemConfig {
   TOTAL_ANSWERS: number;
   PERIOD_VALIDATION_RULES?: Record<string, unknown>;
   EVALUATION_CONFIG?: Record<string, unknown>;
+  SESSION_MAX_HOURS: number;
+  RECOVERY_LINK_EXPIRY_HOURS: number;
 }
 
 export const getConfig = async (): Promise<SystemConfig | null> => {

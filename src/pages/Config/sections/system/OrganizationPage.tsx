@@ -1,21 +1,28 @@
-import { useState } from "react";
+import { useSearchParams } from "react-router";
 import ConfigLayout from "../../ConfigLayout";
 import PageMeta from "../../../../components/common/PageMeta";
 import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
 import InstitutionConfig from "./InstitutionConfig";
 import NucleiManager from "./NucleiManager";
+import GraceDefaultsSection from "../../../../features/academic-config/components/GraceDefaultsSection";
 
 const TABS = [
   { id: "institution", label: "Institución" },
   { id: "nuclei", label: "Núcleos" },
+  { id: "academic", label: "Académico" },
 ];
 
 export default function OrganizationPage() {
-  const [activeTab, setActiveTab] = useState("institution");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "institution";
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams(tab === "institution" ? {} : { tab }, { replace: true });
+  };
 
   return (
     <ConfigLayout>
-      <PageMeta title="Configuración de la Organización" description="Datos institucionales y núcleos" />
+      <PageMeta title="Configuración de la Organización" description="Datos institucionales, núcleos y configuración académica" />
       <PageBreadcrumb pageTitle="Configuración de la Organización" />
 
       <div className="space-y-6 animate-fadeIn">
@@ -38,9 +45,14 @@ export default function OrganizationPage() {
           </nav>
         </div>
 
-        {/* Tab content — each is a full page component */}
+        {/* Tab content */}
         {activeTab === "institution" && <InstitutionConfig />}
         {activeTab === "nuclei" && <NucleiManager />}
+        {activeTab === "academic" && (
+          <div className="space-y-6 animate-fadeIn">
+            <GraceDefaultsSection />
+          </div>
+        )}
       </div>
     </ConfigLayout>
   );

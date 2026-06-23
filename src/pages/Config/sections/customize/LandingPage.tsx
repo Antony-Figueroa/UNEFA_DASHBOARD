@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PageMeta from '../../../../components/common/PageMeta';
+import PageBreadcrumb from '../../../../components/common/PageBreadCrumb';
 import { landingConfigService } from '../../../../features/landing-config/services/landingConfigService';
 import { LandingConfig, LandingCareer, LandingFAQ } from '../../../../features/landing-config/types';
 import toast from 'react-hot-toast';
@@ -183,12 +184,8 @@ const LandingConfigPage: React.FC = () => {
 
   return (
     <ConfigLayout>
-      <PageMeta title="Configuración de Landing Page | Panel Admin" description="Administra el contenido de la página principal" />
-      
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text-emphasis">Configuración de Landing Page</h1>
-        <p className="text-text-secondary">Administra el contenido visible en la página principal del sistema</p>
-      </div>
+      <PageMeta title="Configuración de Landing Page" description="Administra el contenido de la página principal" />
+      <PageBreadcrumb pageTitle="Configuración de Landing Page" />
 
       <div className="border-b border-border-light dark:border-border-dark mb-6 overflow-x-auto">
         <nav className="flex space-x-4">

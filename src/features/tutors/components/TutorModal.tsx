@@ -860,8 +860,8 @@ export default function TutorModal({
       setCurrentPersonId(editingTutor?.personId ? Number(editingTutor.personId) : undefined); // Initialize currentPersonId
       
       if (editingTutor) {
-        const areaCode = editingTutor.phone.substring(0, 4);
-        const number = editingTutor.phone.substring(4);
+        const areaCode = editingTutor.phone ? editingTutor.phone.substring(0, 4) : "";
+        const number = editingTutor.phone ? editingTutor.phone.substring(4) : "";
         reset({
           identificationPrefix: editingTutor.identificationPrefix,
           identificationNumber: editingTutor.identificationNumber,
@@ -885,7 +885,7 @@ export default function TutorModal({
         setDisplayIdentificationNumber(formatCedulaDisplay(editingTutor.identificationNumber, false));
         
         // Formatear teléfono
-        const cleanPh = cleanPhone(editingTutor.phone);
+        const cleanPh = editingTutor.phone ? cleanPhone(editingTutor.phone) : "";
         const numberOnly = cleanPh.length >= 4 ? cleanPh.substring(4) : cleanPh;
         setDisplayPhoneNumber(formatPhoneLocalDisplay(numberOnly));
       } else {

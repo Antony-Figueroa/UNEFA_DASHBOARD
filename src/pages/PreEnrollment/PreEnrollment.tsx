@@ -5,6 +5,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
+import { useTabs as useAppTabs } from "../../context/tab";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -53,6 +54,7 @@ export default function PreEnrollmentPage() {
     const [pageLoading, setPageLoading] = useState(true);
     const location = useLocation();
     const navigate = useNavigate();
+    const { openTab } = useAppTabs();
     const [initialCi, setInitialCi] = useState<string | null>(null);
     const { periodos } = usePeriods();
     const [periodOptions, setPeriodOptions] = useState<{ value: string; label: string }[]>([]);
@@ -343,6 +345,7 @@ export default function PreEnrollmentPage() {
      * @param item - Registro de pre-inscripción a exportar.
      */
     const handleExportToEnrollment = (item: PreEnrollmentRowData) => {
+        openTab("/enrollment", "Inscripción");
         navigate("/enrollment", { state: { preEnrollmentData: item } });
     };
 

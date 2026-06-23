@@ -131,6 +131,13 @@ export default function TutorModal({
   const [inlineAddress, setInlineAddress] = useState<GeographicAddressValue>({
     parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true,
   });
+  const initialAddressRef = useRef(inlineAddress);
+  const hasAddressChanged = useMemo(() => {
+    const i = initialAddressRef.current;
+    return i.parroquiaId !== inlineAddress.parroquiaId
+      || i.streetAddress !== inlineAddress.streetAddress
+      || i.reference !== inlineAddress.reference;
+  }, [inlineAddress]);
 
   const tutorSchema = useMemo(() => z.object({
     identificationPrefix: z.string().min(1, "Seleccione el tipo"),
@@ -869,7 +876,9 @@ export default function TutorModal({
       setExistingTutor(null);
       setExistingPerson(false);
       setViewOnlyMode(false);
-      setInlineAddress({ parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true });
+      const emptyAddress = { parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true };
+      setInlineAddress(emptyAddress);
+      initialAddressRef.current = emptyAddress;
       
       if (editingTutor) {
         const areaCode = editingTutor.phone ? editingTutor.phone.substring(0, 4) : "";
@@ -1229,7 +1238,7 @@ export default function TutorModal({
               <AsyncButton
                 onClick={handleFormSubmit}
                 loading={isLoading || confirmSaving}
-                disabled={!isValid || isLoading || confirmSaving}
+                disabled={(!isDirty && !hasAddressChanged) || !isValid || isLoading || confirmSaving}
               >
                 Guardar
               </AsyncButton>

@@ -36,10 +36,10 @@ import { getTutorByCi } from "../services/tutorsService";
 import { checkAvailability as checkPersonAvailability } from "../../persons/services/personService";
 import { lookupCi } from "../../students/services/studentsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/inputValidation";
-import { addressService } from "../../address/services/addressService";
-import type { GeoOptionsItem } from "../../address/types";
-import GeographicAddressFields from "../../address/components/GeographicAddressFields";
-import type { GeographicAddressValue } from "../../address/components/GeographicAddressFields";
+// import { addressService } from "../../address/services/addressService";
+// import type { GeoOptionsItem } from "../../address/types";
+// import GeographicAddressFields from "../../address/components/GeographicAddressFields";
+// import type { GeographicAddressValue } from "../../address/components/GeographicAddressFields";
 
 /**
  * Props for the TutorModal component.
@@ -127,17 +127,18 @@ export default function TutorModal({
     const [existingInternshipTypes, setExistingInternshipTypes] = useState<InternshipType[]>([]);
 
   const { config: academicConfig } = useAcademicConfig();
-  const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
-  const [inlineAddress, setInlineAddress] = useState<GeographicAddressValue>({
-    parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true,
-  });
-  const initialAddressRef = useRef(inlineAddress);
-  const hasAddressChanged = useMemo(() => {
-    const i = initialAddressRef.current;
-    return i.parroquiaId !== inlineAddress.parroquiaId
-      || i.streetAddress !== inlineAddress.streetAddress
-      || i.reference !== inlineAddress.reference;
-  }, [inlineAddress]);
+  // address: no usado por ahora — comentado
+  // const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
+  // const [inlineAddress, setInlineAddress] = useState<GeographicAddressValue>({
+  //   parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true,
+  // });
+  // const initialAddressRef = useRef(inlineAddress);
+  // const hasAddressChanged = useMemo(() => {
+  //   const i = initialAddressRef.current;
+  //   return i.parroquiaId !== inlineAddress.parroquiaId
+  //     || i.streetAddress !== inlineAddress.streetAddress
+  //     || i.reference !== inlineAddress.reference;
+  // }, [inlineAddress]);
 
   const tutorSchema = useMemo(() => z.object({
     identificationPrefix: z.string().min(1, "Seleccione el tipo"),
@@ -265,7 +266,6 @@ export default function TutorModal({
     handleSubmit,
     control,
     reset,
-    trigger,
     watch,
     setValue,
     setError,
@@ -312,17 +312,6 @@ export default function TutorModal({
     }
     return counts;
   }, [errors]);
-  const currentTabIndex = TAB_IDS.indexOf(tabsState.activeTab as typeof TAB_IDS[number]);
-  const goPrevTab = () => { if (currentTabIndex > 0) tabsState.setActiveTab(TAB_IDS[currentTabIndex - 1]); };
-  const goNextTab = async () => {
-    const currentTab = TAB_IDS[currentTabIndex];
-    const fields = TAB_FIELDS[currentTab];
-    const valid = await trigger(fields as any);
-    if (valid && currentTabIndex < TAB_IDS.length - 1) {
-      tabsState.setActiveTab(TAB_IDS[currentTabIndex + 1]);
-    }
-  };
-
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -738,18 +727,18 @@ export default function TutorModal({
       }
     };
 
-    const loadGeoOptions = async () => {
-      try {
-        const response = await addressService.getGeoOptions();
-        setGeoOptions(response.data);
-      } catch (error) {
-        console.error("Error loading geo options:", error);
-      }
-    };
+    // const loadGeoOptions = async () => {
+    //   try {
+    //     const response = await addressService.getGeoOptions();
+    //     setGeoOptions(response.data);
+    //   } catch (error) {
+    //     console.error("Error loading geo options:", error);
+    //   }
+    // };
 
     if (isOpen) {
       loadOptions();
-      loadGeoOptions();
+      // loadGeoOptions();
     }
   }, [isOpen, fetchMultipleLists]);
 
@@ -876,9 +865,10 @@ export default function TutorModal({
       setExistingTutor(null);
       setExistingPerson(false);
       setViewOnlyMode(false);
-      const emptyAddress = { parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true };
-      setInlineAddress(emptyAddress);
-      initialAddressRef.current = emptyAddress;
+      // address: no usado
+      // const emptyAddress = { parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true };
+      // setInlineAddress(emptyAddress);
+      // initialAddressRef.current = emptyAddress;
       
       if (editingTutor) {
         const areaCode = editingTutor.phone ? editingTutor.phone.substring(0, 4) : "";
@@ -968,7 +958,8 @@ export default function TutorModal({
         profession: (data.profession || "").toUpperCase(),
         titulo: data.titulo ? data.titulo.toUpperCase() : "",
         carreras: Array.isArray(data.carreras) ? data.carreras.map((c) => String(c).toUpperCase()) : data.carreras,
-        address: inlineAddress.streetAddress ? `${inlineAddress.streetAddress}${inlineAddress.reference ? ` - ${inlineAddress.reference}` : ''}` : undefined,
+        // address: no usado
+        // address: inlineAddress.streetAddress ? `${inlineAddress.streetAddress}${inlineAddress.reference ? ` - ${inlineAddress.reference}` : ''}` : undefined,
       };
       // Si se cargó un tutor existente por CI → actualizar, no crear
       const payload = existingTutor
@@ -984,7 +975,13 @@ export default function TutorModal({
 
   const onFormError = useCallback((formErrors: FieldErrors<TutorFormData>) => {
     const firstTabWithErrors = TAB_IDS.find(tab => TAB_FIELDS[tab].some(f => (formErrors as Record<string, any>)[f]));
-    if (firstTabWithErrors) tabsState.setActiveTab(firstTabWithErrors);
+    if (firstTabWithErrors) {
+      tabsState.setActiveTab(firstTabWithErrors);
+      requestAnimationFrame(() => {
+        const firstErrorEl = document.querySelector<HTMLElement>('[aria-invalid="true"]');
+        firstErrorEl?.focus();
+      });
+    }
   }, []);
   const handleFormSubmit = handleSubmit(onSubmit, onFormError);
 
@@ -1033,13 +1030,26 @@ export default function TutorModal({
           )}
           <Tabs
             options={[
-              { id: 'datos-personales', label: 'Datos Personales', errorCount: errorsByTab['datos-personales'] },
-              { id: 'laboral', label: 'Laboral', errorCount: errorsByTab['laboral'] },
-              { id: 'asignaciones', label: 'Asignaciones', errorCount: errorsByTab['asignaciones'] },
+              { 
+                id: 'datos-personales', 
+                label: 'Datos Personales', 
+                errorCount: errorsByTab['datos-personales'],
+              },
+              { 
+                id: 'laboral', 
+                label: 'Laboral', 
+                errorCount: errorsByTab['laboral'],
+              },
+              { 
+                id: 'asignaciones', 
+                label: 'Asignaciones', 
+                errorCount: errorsByTab['asignaciones'],
+              },
             ]}
             {...tabsState.tabProps}
             variant="modal"
             className="mb-6"
+            onTabChange={tabsState.setActiveTab}
           />
 
           <div className="space-y-6">
@@ -1069,8 +1079,9 @@ export default function TutorModal({
                   fieldLockOnApiLoad={ciLoadedFromApi && (academicConfig?.lockApiLoadedFields ?? true)}
                   editingId={editingTutor?.tutorId ?? existingTutor?.tutorId ?? null}
                 />
-                {/* Dirección de Residencia */}
-                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                {/* Dirección de Residencia — comentado, no se usa */}
+                {/*
+                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
                   <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección de Residencia</h3>
                   <GeographicAddressFields
                     geoOptions={geoOptions}
@@ -1083,11 +1094,12 @@ export default function TutorModal({
                     streetLabel="Dirección"
                   />
                 </div>
+                */}
               </div>
             </div>
           <div hidden={tabsState.activeTab !== 'laboral'} role="tabpanel">
             <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Información Laboral</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div>
                 <Label>Condición</Label>
                 <Controller
@@ -1202,30 +1214,10 @@ export default function TutorModal({
             </div>
           </div>
 
-          {/* Navegación entre tabs */}
-          {!viewOnlyMode && (
-            <div className="flex items-center justify-between pt-4 mt-6 border-t border-border-light dark:border-border-dark">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goPrevTab}
-                disabled={currentTabIndex === 0}
-              >
-                ← Anterior
-              </Button>
-              {currentTabIndex < TAB_IDS.length - 1 ? (
-                <Button size="sm" onClick={goNextTab}>
-                  Siguiente →
-                </Button>
-              ) : (
-                <span className="text-xs text-text-tertiary">Última sección</span>
-              )}
-            </div>
-          )}
         </form>
       </ModalBody>
 
-        <ModalFooter>
+        <ModalFooter className="sticky-footer">
           {!viewOnlyMode && (
             <>
               <Button
@@ -1238,7 +1230,7 @@ export default function TutorModal({
               <AsyncButton
                 onClick={handleFormSubmit}
                 loading={isLoading || confirmSaving}
-                disabled={(!isDirty && !hasAddressChanged) || !isValid || isLoading || confirmSaving}
+                disabled={!isDirty || isLoading || confirmSaving}
               >
                 Guardar
               </AsyncButton>

@@ -19,6 +19,28 @@ interface TableDefinition {
   has_data: boolean;
 }
 
+interface SequenceInfo {
+  seq_name: string;
+  table_name: string;
+  column_name: string;
+  current_value: number;
+}
+
+interface IndexInfo {
+  index_name: string;
+  table_name: string;
+  index_def: string;
+  is_unique: boolean;
+  is_primary: boolean;
+}
+
+interface ConstraintInfo {
+  table_name: string;
+  constraint_name: string;
+  constraint_type: string;
+  definition: string;
+}
+
 class BackupService {
   private readonly EXCLUDED_TABLES = ['t_backups'];
 
@@ -36,6 +58,51 @@ class BackupService {
       return (data || []).filter((row: TableDefinition) => !this.EXCLUDED_TABLES.includes(row.table_name));
     } catch (error) {
       console.warn('[Backup] Error obteniendo definiciones:', error);
+      return [];
+    }
+  }
+
+  async getSequences(): Promise<SequenceInfo[]> {
+    const supabaseClient = dbManager.getConnection();
+    try {
+      const { data, error } = await supabaseClient.rpc('get_all_sequences');
+      if (error) {
+        console.warn('[Backup] RPC get_all_sequences no disponible:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.warn('[Backup] Error obteniendo sequences:', error);
+      return [];
+    }
+  }
+
+  async getIndexes(): Promise<IndexInfo[]> {
+    const supabaseClient = dbManager.getConnection();
+    try {
+      const { data, error } = await supabaseClient.rpc('get_all_indexes');
+      if (error) {
+        console.warn('[Backup] RPC get_all_indexes no disponible:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.warn('[Backup] Error obteniendo índices:', error);
+      return [];
+    }
+  }
+
+  async getConstraints(): Promise<ConstraintInfo[]> {
+    const supabaseClient = dbManager.getConnection();
+    try {
+      const { data, error } = await supabaseClient.rpc('get_all_constraints');
+      if (error) {
+        console.warn('[Backup] RPC get_all_constraints no disponible:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.warn('[Backup] Error obteniendo constraints:', error);
       return [];
     }
   }
@@ -141,9 +208,17 @@ class BackupService {
     const totalRecords = Object.values(tablesData).reduce((sum: number, arr) => sum + arr.length, 0);
 
     if (format === 'sql') {
+      const [sequences, indexes, constraints] = await Promise.all([
+        this.getSequences(),
+        this.getIndexes(),
+        this.getConstraints()
+      ]);
       fileContent = this.generateFullSQL(
         backupName, 
         tableDefinitions, 
+        sequences,
+        indexes,
+        constraints,
         tablesData, 
         backedUpTables, 
         failedTables, 
@@ -224,6 +299,9 @@ class BackupService {
   private generateFullSQL(
     backupName: string, 
     tableDefinitions: TableDefinition[],
+    sequences: SequenceInfo[],
+    indexes: IndexInfo[],
+    constraints: ConstraintInfo[],
     tablesData: Record<string, any[]>, 
     backedUpTables: string[], 
     failedTables: string[],
@@ -234,24 +312,47 @@ class BackupService {
     const totalRecords = Object.values(tablesData).reduce((sum: number, arr) => sum + arr.length, 0);
     
     lines.push('-- ================================================================================');
-    lines.push(`-- UNEFA Dashboard - Respaldo COMPLETO de Base de Datos`);
+    lines.push(`-- UNEFA Dashboard - Respaldo COMPLETO para Réplica Exacta`);
     lines.push(`-- Nombre: ${backupName}`);
     lines.push(`-- Fecha: ${new Date().toISOString()}`);
-    lines.push(`-- Incluye: Estructura (CREATE TABLE) + Datos (INSERT)`);
+    lines.push('-- Incluye: Sequences + CREATE TABLE + FK + Índices + Datos');
+    lines.push('-- Compatible con: Restauración en otro proyecto Supabase');
     lines.push('-- ================================================================================');
-    lines.push(`-- Tablas detectadas: ${totalTablesDetected}`);
-    lines.push(`-- Tablas con datos: ${tablesWithData}`);
-    lines.push(`-- Tablas vacías: ${totalTablesDetected - tablesWithData}`);
-    lines.push(`-- Total de registros: ${totalRecords}`);
+    lines.push(`-- Tablas: ${totalTablesDetected} | Con datos: ${tablesWithData}`);
+    lines.push(`-- Sequences: ${sequences.length} | Índices: ${indexes.length} | FK: ${constraints.filter(c => c.constraint_type === 'FOREIGN KEY').length}`);
+    lines.push(`-- Total registros: ${totalRecords}`);
     lines.push('-- ================================================================================');
     lines.push('');
+
+    // ============================================================
+    // SECCIÓN 0: DESACTIVAR FK TEMPORALMENTE
+    // ============================================================
     lines.push('-- Desactivar verificación de foreign keys temporalmente');
     lines.push('SET session_replication_role = replica;');
     lines.push('');
 
-    // Sección 1: Estructura de tablas
+    // ============================================================
+    // SECCIÓN 1: SEQUENCES (crear antes que tablas para defaults)
+    // ============================================================
+    if (sequences.length > 0) {
+      lines.push('-- ============================================================');
+      lines.push('-- SECCIÓN 1: SEQUENCES');
+      lines.push('-- ============================================================');
+      lines.push('');
+
+      for (const seq of sequences) {
+        const seqId = `"${seq.seq_name}"`;
+        lines.push(`CREATE SEQUENCE IF NOT EXISTS ${seqId} START WITH 1;`);
+        lines.push(`SELECT setval(${this.formatSQLValue(seqId)}, ${seq.current_value}, true);`);
+        lines.push('');
+      }
+    }
+
+    // ============================================================
+    // SECCIÓN 2: TABLAS (CREATE TABLE)
+    // ============================================================
     lines.push('-- ============================================================');
-    lines.push('-- SECCIÓN 1: ESTRUCTURA DE TABLAS (CREATE TABLE)');
+    lines.push('-- SECCIÓN 2: ESTRUCTURA DE TABLAS (CREATE TABLE)');
     lines.push('-- ============================================================');
     lines.push('');
 
@@ -263,13 +364,58 @@ class BackupService {
       }
     } else {
       lines.push('-- Nota: Las definiciones de estructura no están disponibles.');
-      lines.push('-- Ejecute la migración create_table_definitions_function.sql');
       lines.push('');
     }
 
-    // Sección 2: Datos
+    // ============================================================
+    // SECCIÓN 3: CONSTRAINTS (FK, UNIQUE, CHECK)
+    // ============================================================
+    const fkConstraints = constraints.filter(c => c.constraint_type === 'FOREIGN KEY');
+    const otherConstraints = constraints.filter(c => c.constraint_type !== 'FOREIGN KEY');
+
+    if (fkConstraints.length > 0 || otherConstraints.length > 0) {
+      lines.push('-- ============================================================');
+      lines.push('-- SECCIÓN 3: CONSTRAINTS');
+      lines.push('-- ============================================================');
+      lines.push('');
+
+      if (fkConstraints.length > 0) {
+        lines.push('-- Foreign Keys');
+        for (const c of fkConstraints) {
+          lines.push(`ALTER TABLE "${c.table_name}" ADD CONSTRAINT "${c.constraint_name}" ${c.definition};`);
+        }
+        lines.push('');
+      }
+
+      if (otherConstraints.length > 0) {
+        lines.push('-- Unique / Check');
+        for (const c of otherConstraints) {
+          lines.push(`ALTER TABLE "${c.table_name}" ADD CONSTRAINT "${c.constraint_name}" ${c.definition};`);
+        }
+        lines.push('');
+      }
+    }
+
+    // ============================================================
+    // SECCIÓN 4: ÍNDICES
+    // ============================================================
+    if (indexes.length > 0) {
+      lines.push('-- ============================================================');
+      lines.push('-- SECCIÓN 4: ÍNDICES');
+      lines.push('-- ============================================================');
+      lines.push('');
+
+      for (const idx of indexes) {
+        lines.push(`${idx.index_def};`);
+      }
+      lines.push('');
+    }
+
+    // ============================================================
+    // SECCIÓN 5: DATOS (INSERT)
+    // ============================================================
     lines.push('-- ============================================================');
-    lines.push('-- SECCIÓN 2: DATOS (INSERT)');
+    lines.push('-- SECCIÓN 5: DATOS (INSERT)');
     lines.push('-- ============================================================');
     lines.push('');
 
@@ -290,9 +436,11 @@ class BackupService {
       lines.push('');
     }
 
-    // Sección 3: Tablas vacías (referencia)
+    // ============================================================
+    // SECCIÓN 6: TABLAS VACÍAS (referencia)
+    // ============================================================
     lines.push('-- ============================================================');
-    lines.push('-- SECCIÓN 3: TABLAS SIN DATOS (vacías)');
+    lines.push('-- SECCIÓN 6: TABLAS SIN DATOS (vacías)');
     lines.push('-- ============================================================');
     
     const emptyTables = backedUpTables.filter(t => !tablesData[t] || tablesData[t].length === 0);
@@ -301,23 +449,28 @@ class BackupService {
     }
     lines.push('');
 
-    // Resumen final
+    // ============================================================
+    // RESUMEN
+    // ============================================================
     lines.push('-- ============================================================');
     lines.push('-- RESUMEN DEL RESPALDO');
     lines.push('-- ============================================================');
-    lines.push(`-- Total de tablas: ${totalTablesDetected}`);
-    lines.push(`-- Tablas con datos: ${tablesWithData}`);
-    lines.push(`-- Tablas vacías: ${emptyTables.length}`);
-    lines.push(`-- Total de registros: ${totalRecords}`);
-    lines.push(`-- Tablas con error: ${failedTables.length}`);
+    lines.push(`-- Tablas: ${totalTablesDetected}`);
+    lines.push(`-- Con datos: ${tablesWithData}`);
+    lines.push(`-- Vacías: ${emptyTables.length}`);
+    lines.push(`-- Registros: ${totalRecords}`);
+    lines.push(`-- Sequences: ${sequences.length}`);
+    lines.push(`-- Índices: ${indexes.length}`);
+    lines.push(`-- Foreign Keys: ${fkConstraints.length}`);
+    lines.push(`-- Errores: ${failedTables.length}`);
     if (failedTables.length > 0) {
-      lines.push(`-- Errores en: ${failedTables.slice(0, 10).join(', ')}${failedTables.length > 10 ? '...' : ''}`);
+      lines.push(`-- Falló en: ${failedTables.slice(0, 10).join(', ')}${failedTables.length > 10 ? '...' : ''}`);
     }
     lines.push('');
     lines.push('-- Reactivar verificación de foreign keys');
     lines.push('SET session_replication_role = DEFAULT;');
     lines.push('-- ================================================================================');
-    lines.push('-- FIN DEL RESPALDO');
+    lines.push('-- FIN DEL RESPALDO — Compatible con réplica exacta en otro Supabase');
     lines.push('-- ================================================================================');
 
     return lines.join('\n');

@@ -152,10 +152,9 @@ apiClient.interceptors.response.use(
        error.code === 'ERR_NETWORK' ||    // Error de red
        !error.response ||                 // Sin respuesta del servidor
        error.response.status === 429 ||    // Too many requests
+       error.response.status === 502 ||    // Bad gateway
        error.response.status === 503 ||    // Service unavailable
-       error.response.status === 502 ||
-       error.response.status === 503 ||
-       error.response.status === 504);      // Errores de servidor
+       error.response.status === 504);     // Gateway timeout
 
     if (config && shouldRetry && !config.silent && (config._retryCount ?? 0) < MAX_RETRIES) {
       config._retryCount = (config._retryCount ?? 0) + 1;

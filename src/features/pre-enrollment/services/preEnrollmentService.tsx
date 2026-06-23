@@ -7,9 +7,13 @@
 import { PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../types";
 import { createCrudService } from "../../../api/crudServiceFactory";
 import apiClient from "../../../api/apiClient";
+import { invalidateCache } from "../../../api/requestCache";
 
 /** URL base para los endpoints de pre-inscripción */
 const API_URL = "/pre-enrollments";
+
+/** Prefijo usado para invalidar cache por endpoint */
+const crudCachePrefix = (endpoint: string) => `crud:${endpoint}:`;
 
 /**
  * Interface for PreEnrollment Data Transfer Object (API Response).
@@ -104,6 +108,9 @@ export const getPreEnrollments = preEnrollmentService.getAll;
 export const createPreEnrollment = preEnrollmentService.create;
 export const updatePreEnrollment = preEnrollmentService.update;
 export const deletePreEnrollment = preEnrollmentService.delete;
-export const togglePreEnrollmentStatus = preEnrollmentService.toggleStatus!;
+export const togglePreEnrollmentStatus = async (id: string | number, status: boolean): Promise<void> => {
+  await apiClient.put(`${API_URL}/${id}`, { status });
+  invalidateCache(crudCachePrefix(API_URL));
+};
 export const bulkDeletePreEnrollments = preEnrollmentService.bulkDelete;
 export const bulkRestorePreEnrollments = preEnrollmentService.bulkRestore;

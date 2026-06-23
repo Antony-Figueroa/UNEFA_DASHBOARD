@@ -5,7 +5,7 @@
  */
 
 import { PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../types";
-import { preEnrollmentService, batchCreate, BatchPreEnrollRequest, BatchResult } from "../services/preEnrollmentService";
+import { preEnrollmentService, batchCreate, BatchPreEnrollRequest, BatchResult, togglePreEnrollmentStatus } from "../services/preEnrollmentService";
 import { useToast } from "../../../context/toast";
 import { RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
 import { useCrud } from "../../../hooks/useCrud";
@@ -36,7 +36,7 @@ export const usePreEnrollment = () => {
     refresh: refreshPreEnrollments,
     createItem: baseAddPreEnrollment,
     updateItem: baseEditPreEnrollment,
-    toggleItemStatus: baseToggleStatus,
+    toggleItemStatus: togglePreEnrollmentStatus,
     bulkDelete: baseBulkDelete,
     bulkRestore: baseBulkRestore
   } = useCrud<PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload>(preEnrollmentService, {
@@ -121,7 +121,7 @@ export const usePreEnrollment = () => {
   const toggleStatus = async (preEnrollment: PreEnrollment) => {
     try {
       const newStatus = !preEnrollment.status;
-      await baseToggleStatus(preEnrollment.preEnrollmentId, newStatus, { silent: true });
+      await togglePreEnrollmentStatus(preEnrollment.preEnrollmentId, newStatus, { silent: true });
 
       addToast({
         variant: "success",

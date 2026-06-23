@@ -60,6 +60,10 @@ export interface Student {
   hasActivePreEnrollment?: boolean;
   /** Estado actual de práctica profesional (null si no tiene, 0=Retirado, 1=Pre-inscrito, 2=Inscrito, 3=Culminado) */
   currentPracticeStatus?: number | null;
+  /** Nombre de la carrera (desde API) */
+  careerName?: string;
+  /** Régimen académico (desde API) */
+  regime?: string;
   /** Referencia a la persona unificada en t_persons */
   personId?: string;
 }

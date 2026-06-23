@@ -4,6 +4,7 @@ import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
 import Button from '../../components/ui/button/Button';
+import Badge from '../../components/ui/badge/Badge';
 import toast from 'react-hot-toast';
 import { useDragAndDrop } from '@formkit/drag-and-drop/react';
 import {
@@ -18,15 +19,7 @@ import {
 } from '../../features/dashboard/services/dashboardLayoutService';
 import WidgetSizeSelector from '../../features/dashboard/components/widget-config/WidgetSizeSelector';
 import WidgetColorPicker from '../../features/dashboard/components/widget-config/WidgetColorPicker';
-
-// ─── Roles ───────────────────────────────────────────────────────────────────
-
-const ROLES = [
-  { id: 1, name: 'Administrador' },
-  { id: 2, name: 'Asistente' },
-  { id: 3, name: 'Tutor' },
-  { id: 4, name: 'Estudiante' },
-];
+import { rolesService, type Role } from '../../features/roles/services/rolesService';
 
 // ─── Iconos inline ───────────────────────────────────────────────────────────
 
@@ -92,6 +85,7 @@ const WidgetIcon = ({ icon, color }: { icon: string; color?: string }) => {
 // ─── Size info ───────────────────────────────────────────────────────────────
 
 const SIZE_LABELS: Record<WidgetSize, { label: string; cols: string }> = {
+  xs: { label: '1/4', cols: 'col-span-3' },
   sm: { label: '1/3', cols: 'col-span-4' },
   md: { label: '1/2', cols: 'col-span-6' },
   lg: { label: '2/3', cols: 'col-span-8' },
@@ -101,9 +95,11 @@ const SIZE_LABELS: Record<WidgetSize, { label: string; cols: string }> = {
 // ─── Componente Principal ────────────────────────────────────────────────────
 
 export default function DashboardConfigurator() {
+  const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [rolesLoading, setRolesLoading] = useState(true);
 
   // ── FormKit Drag & Drop ────────────────────────────────────────────────────
   // dndWidgets is the single source of truth — FormKit keeps display order
@@ -116,6 +112,34 @@ export default function DashboardConfigurator() {
       dropZoneClass: 'ring-2 ring-blue-300 dark:ring-blue-500',
     },
   );
+
+  // ── Carga de Roles ──────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const loadRoles = async () => {
+      setRolesLoading(true);
+      try {
+        const res = await rolesService.getAll();
+        if (res.success) {
+          // Solo roles activos, ordenados por ID
+          const active = res.data
+            .filter(r => r.status === 'active')
+            .sort((a, b) => a.id - b.id);
+          setRoles(active);
+          // Si el rol seleccionado ya no existe, resetear al primero
+          if (active.length > 0 && !active.find(r => r.id === selectedRoleId)) {
+            setSelectedRoleId(active[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('[DashboardConfig] Error loading roles:', err);
+        toast.error('Error al cargar los roles');
+      } finally {
+        setRolesLoading(false);
+      }
+    };
+    loadRoles();
+  }, []);
 
   // ── Carga ──────────────────────────────────────────────────────────────────
 
@@ -236,21 +260,32 @@ export default function DashboardConfigurator() {
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-1">
             Rol:
           </span>
-          {ROLES.map(role => (
-            <button
-              key={role.id}
-              onClick={() => setSelectedRoleId(role.id)}
-              className={`
-                rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150
-                ${selectedRoleId === role.id
-                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-200 dark:shadow-blue-900/30'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-800 dark:hover:border-gray-600'
-                }
-              `}
-            >
-              {role.name}
-            </button>
-          ))}
+          {rolesLoading ? (
+            <div className="flex gap-2">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-9 w-28 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            roles.map(role => (
+              <button
+                key={role.id}
+                onClick={() => setSelectedRoleId(role.id)}
+                className={`
+                  rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150
+                  ${selectedRoleId === role.id
+                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-200 dark:shadow-blue-900/30'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-800 dark:hover:border-gray-600'
+                  }
+                `}
+              >
+                <span>{role.name}</span>
+                {role.isSystem && (
+                  <span className="ml-1.5 text-[10px] opacity-60">&#9679;</span>
+                )}
+              </button>
+            ))
+          )}
         </div>
 
         {/* ── Loading ────────────────────────────────────────────────────── */}
@@ -270,6 +305,14 @@ export default function DashboardConfigurator() {
                 ))}
               </div>
             </div>
+          </div>
+        ) : rolesLoading ? (
+          <div className="flex items-center justify-center py-16 text-gray-400 dark:text-gray-500">
+            <svg className="w-8 h-8 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span className="text-sm">Cargando roles...</span>
           </div>
         ) : (
           <>

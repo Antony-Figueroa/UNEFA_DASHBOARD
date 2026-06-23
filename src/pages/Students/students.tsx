@@ -1,12 +1,11 @@
 /**
  * @file students.tsx
  * @description Página principal para la gestión del módulo de Estudiantes.
- * Orquesta la visualización de datos en tablas, la gestión de estados (activos/inactivos),
- * y las operaciones CRUD (Crear, Leer, Actualizar, Eliminar) mediante modales y hooks especializados.
+ * Orquesta la visualización de datos en tablas y operaciones CRUD mediante hooks especializados.
  */
 
-import { useMemo, useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -14,7 +13,6 @@ import { Tabs } from "../../components/ui/tabs/Tabs";
 import { useTabs } from "../../hooks/useTabs";
 import { useTabs as useAppTabs } from "../../context/tab";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
@@ -26,600 +24,332 @@ import StudentViewModal from "../../features/students/components/StudentViewModa
 import ImportStudentsModal from "../../features/students/components/ImportStudentsModal";
 import BatchPreEnrollModal from "../../features/pre-enrollment/components/BatchPreEnrollModal";
 import { usePreEnrollment } from "../../features/pre-enrollment/hooks/usePreEnrollment";
-import { BatchPreEnrollRequest } from "../../features/pre-enrollment/services/preEnrollmentService";
+import type { BatchPreEnrollRequest } from "../../features/pre-enrollment/services/preEnrollmentService";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { StudentPDF } from "../../components/ui/pdf/templates/StudentPDF";
 import UnifiedReportModal from "../../components/common/UnifiedReportModal";
 import { useStudents } from "../../features/students/hooks/useStudents";
-import {
-    Student,
-    StudentRowData,
-    CreateStudentPayload,
-    UpdateStudentPayload
-} from "../../features/students/types";
+import { useStudentModals } from "../../features/students/hooks/useStudentModals";
+import { useStudentFilters } from "../../features/students/hooks/useStudentFilters";
+import type { Student } from "../../features/students/types";
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
 import CareerModal from "../../features/careers/components/CareerModal";
 import { useLists } from "../../features/lists/hooks/useLists";
-import { ListValue } from "../../features/lists/types";
-import { formatDateTime } from "../../utils/date";
-import { exportToExcel, ExportColumn } from "../../utils/excel";
+import type { ListValue } from "../../features/lists/types";
+import { exportToExcel, type ExportColumn } from "../../utils/excel";
 import { matchSearch } from "../../utils/searchNormalizer";
-import ExportFormatModal, { ExportFormat } from "../../components/common/ExportFormatModal";
+import ExportFormatModal, { type ExportFormat } from "../../components/common/ExportFormatModal";
 import { exportFullStudents } from "../../features/students/services/studentsService";
+import { X } from "lucide-react";
 
-/**
- * Transforma un objeto de tipo Student (dominio) a StudentRowData (vista).
- * Realiza el formateo de fechas y concatenación de nombres.
- * 
- * @param s - Estudiante en formato de dominio.
- * @returns Estudiante en formato de fila para la tabla.
- */
-const formatStudentToRow = (s: Student): StudentRowData => ({
-    ...s,
-    enrollmentDate: formatDateTime(s.enrollmentDate),
-    fullNames: `${s.firstName} ${s.middleName ? s.middleName + " " : ""}${s.lastName} ${s.secondLastName ? s.secondLastName : ""}`.trim(),
-});
-
-/**
- * Página principal del módulo de Estudiantes.
- * Gestiona el listado, creación, edición y visualización de estudiantes.
- */
 export default function StudentsPage() {
-    const [pageLoading, setPageLoading] = useState(true);
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { fetchMultipleLists } = useLists();
-    const [dynamicLists, setDynamicLists] = useState<Record<string, ListValue[]>>({});
+  const [pageLoading, setPageLoading] = useState(true);
+  const navigate = useNavigate();
+  const { fetchMultipleLists } = useLists();
+  const [dynamicLists, setDynamicLists] = useState<Record<string, ListValue[]>>({});
 
-    // Event listener for Command Palette - open create modal
-    useEffect(() => {
-        if (location.state?.openCreateModal) {
-            setEditingStudent(null);
-            setIsModalOpen(true);
-            navigate(location.pathname, { replace: true, state: {} });
-        }
-    }, [location.state, navigate]);
+  const {
+    students,
+    status,
+    loadingAction,
+    error,
+    addStudent,
+    editStudent,
+    toggleStatus,
+    bulkRemoveStudents,
+    bulkRestoreStudents,
+    refreshStudents,
+  } = useStudents();
 
-    useEffect(() => {
-        const loadLists = async () => {
-            try {
-                const lists = await fetchMultipleLists([
-                    "Nacionalidad",
-                    "Sexo",
-                    "PREFIJO",
-                    "Registro Civil",
-                    "Regimen/Turno",
-                    "Tipo de estudiante",
-                    "Trabajo",
-                    "Rango Militar"
-                ]);
-                setDynamicLists(lists);
-            } catch (error) {
-                console.error("Error loading dynamic lists:", error);
-            } finally {
-                setPageLoading(false);
-            }
-        };
-        loadLists();
-    }, [fetchMultipleLists]);
+  const { batchAddPreEnrollment } = usePreEnrollment();
 
-    const {
-        students,
-        status,
-        loadingAction,
-        error,
-        addStudent,
-        editStudent,
-        toggleStatus,
-        bulkRemoveStudents,
-        bulkRestoreStudents,
-        refreshStudents,
-    } = useStudents();
+  const modals = useStudentModals({
+    students,
+    addStudent,
+    editStudent,
+    toggleStatus,
+    bulkRemoveStudents,
+    bulkRestoreStudents,
+    refreshStudents,
+    addCareer: async () => {},
+    loadingAction,
+  });
 
-    const { batchAddPreEnrollment } = usePreEnrollment();
+  const tabsState = useTabs({ defaultTab: 'Activas' });
+  const { openTab } = useAppTabs();
 
-    // Event listener for opening edit modal from StudentModal
-    useEffect(() => {
-        const handleOpenEditStudent = (e: Event) => {
-            const customEvent = e as CustomEvent;
-            const studentId = customEvent.detail;
-            const student = Array.isArray(students) ? students.find((s) => s.studentId === studentId) : null;
-            if (student) {
-                setEditingStudent(student);
-                setIsModalOpen(true);
-            }
-        };
+  const filters = useStudentFilters({ students, activeTab: tabsState.activeTab });
 
-        window.addEventListener('open-edit-student', handleOpenEditStudent);
-        return () => {
-            window.removeEventListener('open-edit-student', handleOpenEditStudent);
-        };
-    }, [students]);
+  const { careers, addCareer } = useCareers();
+  const { activeOptions: activeInternshipOptions, fetchAll: fetchInternshipTypes } = useInternshipTypes();
 
-    const { careers, addCareer } = useCareers();
-    const { activeOptions: activeInternshipOptions, fetchAll: fetchInternshipTypes } = useInternshipTypes();
-
-    const tabsState = useTabs({ defaultTab: 'Activas' });
-    const { openTab } = useAppTabs();
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-    const [viewStudent, setViewStudent] = useState<StudentRowData | null>(null);
-    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-    const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
-    const [batchStudentIds, setBatchStudentIds] = useState<string[]>([]);
-    const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
-    const [pdfSearchTerm, setPdfSearchTerm] = useState("");
-    const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
-    const [dateRangeFilter] = useState<{ start: string; end: string } | null>(null);
-
-    type ConfirmationInfo = {
-        isOpen: boolean;
-        title: string;
-        message: string;
-        onConfirm: () => void;
-        confirmText: string;
-        variant: DialogVariant;
+  // ── Load dynamic lists on mount ──────────────────────────────────
+  useEffect(() => {
+    const loadLists = async () => {
+      try {
+        const lists = await fetchMultipleLists([
+          "Nacionalidad", "Sexo", "PREFIJO", "Registro Civil",
+          "Regimen/Turno", "Tipo de estudiante", "Trabajo", "Rango Militar"
+        ]);
+        setDynamicLists(lists);
+      } catch (error) {
+        console.error("Error loading dynamic lists:", error);
+      } finally {
+        setPageLoading(false);
+      }
     };
+    loadLists();
+  }, [fetchMultipleLists]);
 
-    const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
+  useEffect(() => {
+    fetchInternshipTypes();
+  }, [fetchInternshipTypes]);
 
-    const filtered = useMemo(() => {
-        if (!Array.isArray(students)) return [];
+  // ── PDF data ─────────────────────────────────────────────────────
+  const pdfFilteredData = (Array.isArray(students) ? students : [])
+    .filter((s) => {
+      const fullName = `${s.firstName} ${s.middleName || ""} ${s.lastName} ${s.secondLastName || ""}`;
+      const matchesSearch = !modals.pdfSearchTerm.trim() ||
+        matchSearch(s.identificationNumber ?? '', modals.pdfSearchTerm) ||
+        matchSearch(fullName, modals.pdfSearchTerm);
+      return matchesSearch && !!s.status;
+    });
 
-        let result = students.filter((s) => (tabsState.activeTab === "Activas" ? !!s.status : !s.status));
+  // ── Export ───────────────────────────────────────────────────────
+  const handleExportExcel = () => {
+    const columns: ExportColumn<Record<string, unknown>>[] = [
+      { key: 'identificationNumber', label: 'Cédula' },
+      { key: 'fullNames', label: 'Nombre Completo' },
+      { key: 'email', label: 'Correo Electrónico' },
+      { key: 'phone', label: 'Teléfono' },
+      { key: 'careerName', label: 'Carrera' },
+      { key: 'regime', label: 'Régimen' },
+      { key: 'semester', label: 'Semestre' },
+      { key: 'enrollmentDate', label: 'Fecha de Inscripción' },
+    ];
+    exportToExcel(filters.filtered as unknown as Record<string, unknown>[], columns, 'estudiantes', 'Estudiantes');
+  };
 
-        if (dateRangeFilter && dateRangeFilter.start && dateRangeFilter.end) {
-            const startDate = new Date(dateRangeFilter.start);
-            const endDate = new Date(dateRangeFilter.end);
+  const handleBatchSubmit = async (request: BatchPreEnrollRequest) => {
+    const result = await batchAddPreEnrollment(request);
+    if (result) modals.setSelectedIds([]);
+    return result;
+  };
 
-            if (startDate <= endDate) {
-                result = result.filter((s) => {
-                    if (!s.enrollmentDate) return false;
-                    const enrollDate = new Date(s.enrollmentDate);
-                    return enrollDate >= startDate && enrollDate <= endDate;
-                });
-            }
-        }
+  return (
+    <>
+      <PageMeta title="Gestión de Estudiantes" description="Administración de estudiantes" />
 
-        return result.map(formatStudentToRow);
-    }, [students, tabsState.activeTab, dateRangeFilter]);
+      <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="students-breadcrumb">
+        <PageBreadcrumb pageTitle="Estudiantes" />
+      </SkeletonLoader>
 
-    /**
-     * Datos filtrados específicamente para el reporte PDF de Estudiantes.
-     */
-    const pdfFilteredData = useMemo(() => {
-        return (Array.isArray(students) ? students : [])
-            .filter((s) => {
-                const fullName = `${s.firstName} ${s.middleName || ""} ${s.lastName} ${s.secondLastName || ""}`;
-                const matchesSearch = !pdfSearchTerm.trim() ||
-                    matchSearch(s.identificationNumber ?? '', pdfSearchTerm) ||
-                    matchSearch(fullName, pdfSearchTerm);
-
-                const matchesStatus = !!s.status;
-
-                return matchesSearch && matchesStatus;
-            });
-    }, [students, pdfSearchTerm]);
-
-    /**
-     * Inicia el flujo de creación de un nuevo estudiante.
-     */
-    const handleCreate = () => {
-        setEditingStudent(null);
-        setIsModalOpen(true);
-    };
-
-    // Maneja la transición de "crear nuevo" a "editar existente" cuando se detecta duplicado
-    const handleEditFromExisting = (existingStudent: any) => {
-        // Cerrar el modal inmediatamente
-        setIsModalOpen(false);
-        // Delay para asegurar que el modal se cierre antes de limpiar
-        setTimeout(() => {
-            setEditingStudent(existingStudent);
-            setIsModalOpen(true);
-        }, 200);
-    };
-
-    // Cleanup del existingStudent cuando se cierra el modal
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        // Delay para asegurar que el modal se cierre antes de limpiar
-        setTimeout(() => {
-            setEditingStudent(null);
-        }, 100);
-    };
-
-    const handleExportExcel = () => {
-        const columns: ExportColumn<Record<string, unknown>>[] = [
-            { key: 'identificationNumber', label: 'Cédula' },
-            { key: 'fullNames', label: 'Nombre Completo' },
-            { key: 'email', label: 'Correo Electrónico' },
-            { key: 'phone', label: 'Teléfono' },
-            { key: 'careerName', label: 'Carrera' },
-            { key: 'regime', label: 'Régimen' },
-            { key: 'semester', label: 'Semestre' },
-            { key: 'enrollmentDate', label: 'Fecha de Inscripción' },
-        ];
-        exportToExcel(filtered as unknown as Record<string, unknown>[], columns, 'estudiantes', 'Estudiantes');
-    };
-
-    useEffect(() => {
-        const handleAddCareer = () => setIsCareerModalOpen(true);
-        window.addEventListener("students:addCareer", handleAddCareer);
-        
-        // Escuchar cuando una carrera es creada o editada para recargar la lista
-        const handleCareerSaved = () => {
-            // useCareers automatically refreshes, but we can trigger a refresh if needed
-        };
-        window.addEventListener("career:saved", handleCareerSaved);
-        
-        return () => {
-            window.removeEventListener("students:addCareer", handleAddCareer);
-            window.removeEventListener("career:saved", handleCareerSaved);
-        };
-    }, []);
-
-    useEffect(() => {
-        fetchInternshipTypes();
-    }, [fetchInternshipTypes]);
-    /**
-     * Inicia el flujo de edición para un estudiante seleccionado.
-     * 
-     * @param row - Datos del estudiante en formato de fila.
-     */
-    const handleEdit = (row: StudentRowData) => {
-        const original = Array.isArray(students) ? students.find((s) => s.studentId === row.studentId) : null;
-        setEditingStudent(original || null);
-        setIsModalOpen(true);
-    };
-
-    /**
-     * Maneja el guardado (creación o actualización) de un estudiante.
-     * 
-     * @param payload - Datos del estudiante a guardar.
-     */
-    const handleSave = async (payload: CreateStudentPayload | UpdateStudentPayload) => {
-        const isEditing = !!editingStudent;
-        try {
-            if (isEditing && editingStudent) {
-                await editStudent({
-                    ...payload,
-                    studentId: editingStudent.studentId
-                } as UpdateStudentPayload);
-            } else {
-                await addStudent(payload as CreateStudentPayload);
-            }
-            setIsModalOpen(false);
-        } catch (e) {
-            console.error("[StudentsPage] Error al guardar:", e);
-        }
-    };
-
-    /**
-     * Maneja el cambio de estado (activar/inactivar) de un estudiante.
-     * 
-     * @param student - Estudiante al que se le cambiará el estado.
-     */
-    const handleToggleStatus = (student: StudentRowData) => {
-        const original = Array.isArray(students) ? students.find((s) => s.studentId === student.studentId) : null;
-        if (!original) return;
-
-        const isDeactivating = original.status;
-        const actionVerb = isDeactivating ? "desactivar" : "activar";
-        const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación";
-        const variant = isDeactivating ? "error" : "success";
-        const confirmText = isDeactivating ? "Desactivar" : "Activar";
-
-        setConfirmation({
-            isOpen: true,
-            title: confirmTitle,
-            message: `¿Estás seguro de que deseas ${actionVerb} al estudiante "${student.fullNames}"?`,
-            onConfirm: async () => {
-                try {
-                    await toggleStatus(original);
-                } catch (error) {
-                    console.error("[StudentsPage] Error toggling status:", error);
-                } finally {
-                    setConfirmation(null);
-                }
-            },
-            confirmText: confirmText,
-            variant: variant as DialogVariant,
-        });
-    };
-
-    /**
-     * Maneja la eliminación masiva de estudiantes seleccionados.
-     * 
-     * @param ids - Listado de IDs de estudiantes a inactivar.
-     */
-    const handleBulkDelete = (ids: string[]) => {
-        setConfirmation({
-            isOpen: true,
-            title: "Confirmar Eliminación Masiva",
-            message: `¿Estás seguro de que deseas desactivar ${ids.length} estudiantes seleccionados?`,
-            onConfirm: async () => {
-                try {
-                    await bulkRemoveStudents(ids);
-                    setSelectedIds([]);
-                } catch (e) {
-                    console.error("[StudentsPage] Error en eliminación masiva:", e);
-                } finally {
-                    setConfirmation(null);
-                }
-            },
-            confirmText: "Desactivar Todos",
-            variant: "error",
-        });
-    };
-
-    /**
-     * Maneja la restauración masiva de estudiantes seleccionados.
-     * 
-     * @param ids - Listado de IDs de estudiantes a restaurar.
-     */
-    const handleBulkRestore = (ids: string[]) => {
-        setConfirmation({
-            isOpen: true,
-            title: "Confirmar Restauración Masiva",
-            message: `¿Estás seguro de que deseas restaurar ${ids.length} estudiantes seleccionados?`,
-            onConfirm: async () => {
-                try {
-                    await bulkRestoreStudents(ids);
-                    setSelectedIds([]);
-                } catch (e) {
-                    console.error("[StudentsPage] Error en restauración masiva:", e);
-                } finally {
-                    setConfirmation(null);
-                }
-            },
-            confirmText: "Restaurar Todos",
-            variant: "info",
-        });
-    };
-
-    /**
-     * Maneja la exportación de un estudiante al módulo de Pre-Inscripción.
-     * 
-     * @param student - Estudiante a exportar.
-     */
-    /**
-     * Abre el modal de pre-inscripción por lote con los IDs seleccionados.
-     */
-    const handleBatchPreEnroll = (ids: string[]) => {
-        setBatchStudentIds(ids);
-        setIsBatchModalOpen(true);
-    };
-
-    /**
-     * Ejecuta la pre-inscripción por lote.
-     */
-    const handleBatchSubmit = async (request: BatchPreEnrollRequest) => {
-        const result = await batchAddPreEnrollment(request);
-        if (result) {
-            setSelectedIds([]);
-        }
-        return result;
-    };
-
-    const handleExportToPreEnrollment = (student: StudentRowData) => {
-        setConfirmation({
-            isOpen: true,
-            title: "Exportar a Pre-Inscripción",
-            message: `¿Desea llevar los datos de ${student.fullNames} a la ventana de Pre-Inscripción?`,
-            confirmText: "Exportar",
-            variant: "info",
-            onConfirm: () => {
-                setConfirmation(null);
-                // Abrir la pestaña de Pre-Inscripción ANTES de navegar
-                openTab("/pre-enrollment", "Pre-Inscripción");
-                navigate("/pre-enrollment", {
-                    state: { exportStudentCi: student.identificationNumber }
-                });
-            }
-        });
-    };
-
-    return (
-        <>
-            <PageMeta title="Gestión de Estudiantes" description="Administración de estudiantes" />
-
-            <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="students-breadcrumb">
-                <PageBreadcrumb pageTitle="Estudiantes" />
+      <div className="stagger-delay">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="students-title">
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">Listado de Estudiantes</h2>
+              </div>
+              <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Gestiona la información y estado académico de los estudiantes.</p>
             </SkeletonLoader>
+          </div>
 
-            <div className="stagger-delay">
-
-
-                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="students-title">
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">Listado de Estudiantes</h2>
-                            </div>
-                            <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Gestiona la información y estado académico de los estudiantes.</p>
-                        </SkeletonLoader>
-                    </div>
-
-                    {!pageLoading && (
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsPDFModalOpen(true)}
-                                disabled={selectedIds.length > 0}
-                                startIcon={<FileText className="h-5 w-5" />}
-                            >
-                                Reporte
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsImportModalOpen(true)}
-                                disabled={selectedIds.length > 0}
-                                startIcon={<ArrowUpIcon className="h-5 w-5" />}
-                            >
-                                Importar
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsExportModalOpen(true)}
-                                disabled={selectedIds.length > 0}
-                                startIcon={<Upload className="h-5 w-5" />}
-                            >
-                                Exportación
-                            </Button>
-                            <Button onClick={handleCreate} disabled={selectedIds.length > 0} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
-                                Nuevo Estudiante
-                            </Button>
-                        </div>
-                    )}
-                </div>
-                {/* Contenido principal */}
-                <div className="space-y-6">
-                    {/* Tabla de Estudiantes */}
-                    <ComponentCard title={tabsState.activeTab === "Activas" ? "Estudiantes Activos" : "Estudiantes Inactivos"}>
-                        <Tabs
-                            options={[
-                                { id: 'Activas', label: 'Activos' },
-                                { id: 'Inactivas', label: 'Inactivos' },
-                            ]}
-                            {...tabsState.tabProps}
-                            variant="underline"
-                            className="mb-6"
-                        />
-
-                        <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="students-table">
-                            <StudentTable
-                                data={filtered}
-                                status={status}
-                                error={error}
-                                activeTab={tabsState.activeTab as "Activas" | "Inactivas"}
-                                onEdit={handleEdit}
-                                onToggleStatus={handleToggleStatus}
-                                onExportToPreEnrollment={handleExportToPreEnrollment}
-                                onView={setViewStudent}
-                                onBulkDelete={handleBulkDelete}
-                                onBulkRestore={handleBulkRestore}
-                                onBatchPreEnroll={handleBatchPreEnroll}
-                                selectedIds={selectedIds}
-                                onSelectionChange={setSelectedIds}
-                                inactiveMode={tabsState.activeTab === "Inactivas"}
-                                loading={loadingAction}
-                            />
-                        </SkeletonLoader>
-                    </ComponentCard>
-
-                    <StudentModal
-                        isOpen={isModalOpen}
-                        onClose={handleCloseModal}
-                        onSave={handleSave}
-                        editingStudent={editingStudent}
-                        dynamicLists={dynamicLists}
-                        isLoading={loadingAction}
-                        onEditExisting={handleEditFromExisting}
-                    />
-                    <CareerModal
-                        isOpen={isCareerModalOpen}
-                        onClose={() => setIsCareerModalOpen(false)}
-                        onSave={async (payload) => {
-                            try {
-                                const created = await addCareer(payload);
-                                if (created?.careerId !== undefined) {
-                                    const evt = new CustomEvent("students:setCareerId", { detail: String(created.careerId) });
-                                    window.dispatchEvent(evt);
-                                }
-                                setIsCareerModalOpen(false);
-                            } catch (e) {
-                                console.error("[StudentsPage] Error creando carrera:", e);
-                            }
-                        }}
-                        editingCareer={null}
-                        internshipOptions={activeInternshipOptions}
-                        isLoading={loadingAction}
-                        hasPendingEvaluations={false}
-                        isInUse={false}
-                        existingCareers={careers}
-                        onAddInternshipType={() => { }}
-                        lastCreatedInternshipTypeId={null}
-                        onConsumeLastCreatedInternshipType={() => { }}
-                    />
-
-                    <StudentViewModal
-                        isOpen={!!viewStudent}
-                        onClose={() => setViewStudent(null)}
-                        onEdit={handleEdit}
-                        student={viewStudent}
-                    />
-
-                    <BatchPreEnrollModal
-                        isOpen={isBatchModalOpen}
-                        onClose={() => setIsBatchModalOpen(false)}
-                        students={filtered.filter(s => batchStudentIds.includes(s.studentId)) as unknown as Student[]}
-                        onBatchPreEnroll={handleBatchSubmit}
-                        onComplete={() => {
-                            refreshStudents();
-                        }}
-                    />
-
-                    <ExportFormatModal
-                        isOpen={isExportModalOpen}
-                        onClose={() => setIsExportModalOpen(false)}
-                        onExport={(format: ExportFormat) => exportFullStudents(format)}
-                        entityLabel="estudiantes"
-                    />
-
-                    <ImportStudentsModal
-                        isOpen={isImportModalOpen}
-                        onClose={() => setIsImportModalOpen(false)}
-                        onImportComplete={(created, updated) => {
-                            // Refresh students after import
-                            refreshStudents();
-                        }}
-                    />
-
-                    <UnifiedReportModal
-                        isOpen={isPDFModalOpen}
-                        onClose={() => setIsPDFModalOpen(false)}
-                        onExportExcel={handleExportExcel}
-                    />
-
-                    {/* Modal de Previsualización PDF */}
-                    <PDFPreviewModal
-                        isOpen={isPDFModalOpen}
-                        onClose={() => setIsPDFModalOpen(false)}
-                        title="Reporte de Estudiantes Activos"
-                        data={pdfFilteredData}
-                        template={(data) => <StudentPDF data={data} />}
-                        fileName={`estudiantes-activos-${new Date().toISOString().split('T')[0]}.pdf`}
-                        searchTerm={pdfSearchTerm}
-                        onSearchChange={setPdfSearchTerm}
-                        renderFilters={() => (
-                            <div className="space-y-4">
-                                <p className="text-sm text-text-tertiary">Filtre por nombre o cédula usando el campo de búsqueda.</p>
-                            </div>
-                        )}
-                        columns={[
-                            { header: "Cédula", accessor: (s) => `${s.identificationPrefix}-${s.identificationNumber}` },
-                            { header: "Estudiante", accessor: (s) => `${s.firstName} ${s.lastName}` },
-                        ]}
-                    />
-
-                    {/* Modal de Confirmación Global */}
-                    <UnifiedDialog
-                        isOpen={!!confirmation}
-                        onClose={() => !loadingAction && setConfirmation(null)}
-                        onConfirm={confirmation?.onConfirm || (() => { })}
-                        title={confirmation?.title || ""}
-                        message={confirmation?.message || ""}
-                        confirmLabel={confirmation?.confirmText || "Confirmar"}
-                        variant={confirmation?.variant || "info"}
-                        isLoading={loadingAction}
-                    />
-                </div>
+          {!pageLoading && (
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => modals.setIsPDFModalOpen(true)} disabled={modals.selectedIds.length > 0} startIcon={<FileText className="h-5 w-5" />}>Reporte</Button>
+              <Button variant="outline" onClick={() => modals.setIsImportModalOpen(true)} disabled={modals.selectedIds.length > 0} startIcon={<ArrowUpIcon className="h-5 w-5" />}>Importar</Button>
+              <Button variant="outline" onClick={() => modals.setIsExportModalOpen(true)} disabled={modals.selectedIds.length > 0} startIcon={<Upload className="h-5 w-5" />}>Exportación</Button>
+              <Button onClick={modals.handleCreate} disabled={modals.selectedIds.length > 0} startIcon={<PlusCircleIcon className="h-5 w-5" />}>Nuevo Estudiante</Button>
             </div>
-        </>
-    );
+          )}
+        </div>
+
+        <div className="space-y-6">
+          {/* ── Filter toolbar ──────────────────────────────────── */}
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={filters.filters.careerId}
+              onChange={(e) => filters.setFilter("careerId", e.target.value)}
+              className="px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
+              aria-label="Filtrar por carrera"
+            >
+              <option value="">Todas las carreras</option>
+              {filters.availableCareers.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+
+            <select
+              value={filters.filters.regime}
+              onChange={(e) => filters.setFilter("regime", e.target.value)}
+              className="px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
+              aria-label="Filtrar por régimen"
+            >
+              <option value="">Todos los regímenes</option>
+              {filters.availableRegimes.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+
+            <select
+              value={filters.filters.studentType}
+              onChange={(e) => filters.setFilter("studentType", e.target.value)}
+              className="px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
+              aria-label="Filtrar por tipo"
+            >
+              <option value="">Todos los tipos</option>
+              {filters.availableStudentTypes.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+
+            <select
+              value={filters.filters.periodId}
+              onChange={(e) => filters.setFilter("periodId", e.target.value)}
+              className="px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
+              aria-label="Filtrar por período"
+            >
+              <option value="">Todos los períodos</option>
+              {filters.availablePeriods.map((p) => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+
+            {filters.hasActiveFilters && (
+              <button
+                onClick={filters.clearFilters}
+                className="inline-flex items-center gap-1 px-3 py-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+
+          {/* ── Table ─────────────────────────────────────────────── */}
+          <ComponentCard title={tabsState.activeTab === "Activas" ? "Estudiantes Activos" : "Estudiantes Inactivos"}>
+            <Tabs
+              options={[{ id: 'Activas', label: 'Activos' }, { id: 'Inactivas', label: 'Inactivos' }]}
+              {...tabsState.tabProps}
+              variant="underline"
+              className="mb-6"
+            />
+
+            <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="students-table">
+              <StudentTable
+                data={filters.filtered}
+                status={status}
+                error={error}
+                activeTab={tabsState.activeTab as "Activas" | "Inactivas"}
+                onEdit={modals.handleEdit}
+                onToggleStatus={modals.handleToggleStatus}
+                onExportToPreEnrollment={(row) => modals.handleExportToPreEnrollment(row, openTab)}
+                onView={modals.setViewStudent}
+                onBulkDelete={modals.handleBulkDelete}
+                onBulkRestore={modals.handleBulkRestore}
+                onBatchPreEnroll={modals.handleBatchPreEnroll}
+                selectedIds={modals.selectedIds}
+                onSelectionChange={modals.setSelectedIds}
+                inactiveMode={tabsState.activeTab === "Inactivas"}
+                loading={loadingAction}
+              />
+            </SkeletonLoader>
+          </ComponentCard>
+
+          {/* ── Modals ────────────────────────────────────────────── */}
+          <StudentModal
+            isOpen={modals.isModalOpen}
+            onClose={modals.handleCloseModal}
+            onSave={modals.handleSave}
+            editingStudent={modals.editingStudent}
+            dynamicLists={dynamicLists}
+            isLoading={loadingAction}
+            onEditExisting={modals.handleEditFromExisting}
+          />
+
+          <CareerModal
+            isOpen={modals.isCareerModalOpen}
+            onClose={() => modals.setIsCareerModalOpen(false)}
+            onSave={modals.handleCareerSave}
+            editingCareer={null}
+            internshipOptions={activeInternshipOptions}
+            isLoading={loadingAction}
+            hasPendingEvaluations={false}
+            isInUse={false}
+            existingCareers={careers}
+            onAddInternshipType={() => {}}
+            lastCreatedInternshipTypeId={null}
+            onConsumeLastCreatedInternshipType={() => {}}
+          />
+
+          <StudentViewModal
+            isOpen={!!modals.viewStudent}
+            onClose={() => modals.setViewStudent(null)}
+            onEdit={modals.handleEdit}
+            student={modals.viewStudent}
+          />
+
+          <BatchPreEnrollModal
+            isOpen={modals.isBatchModalOpen}
+            onClose={() => modals.setIsBatchModalOpen(false)}
+            students={filters.filtered.filter(s => modals.batchStudentIds.includes(s.studentId)) as unknown as Student[]}
+            onBatchPreEnroll={handleBatchSubmit}
+            onComplete={() => refreshStudents()}
+          />
+
+          <ExportFormatModal
+            isOpen={modals.isExportModalOpen}
+            onClose={() => modals.setIsExportModalOpen(false)}
+            onExport={(format: ExportFormat) => exportFullStudents(format)}
+            entityLabel="estudiantes"
+          />
+
+          <ImportStudentsModal
+            isOpen={modals.isImportModalOpen}
+            onClose={() => modals.setIsImportModalOpen(false)}
+            onImportComplete={() => refreshStudents()}
+          />
+
+          <UnifiedReportModal
+            isOpen={modals.isPDFModalOpen}
+            onClose={() => modals.setIsPDFModalOpen(false)}
+            onExportExcel={handleExportExcel}
+          />
+
+          <PDFPreviewModal
+            isOpen={modals.isPDFModalOpen}
+            onClose={() => modals.setIsPDFModalOpen(false)}
+            title="Reporte de Estudiantes Activos"
+            data={pdfFilteredData}
+            template={(data) => <StudentPDF data={data} />}
+            fileName={`estudiantes-activos-${new Date().toISOString().split('T')[0]}.pdf`}
+            searchTerm={modals.pdfSearchTerm}
+            onSearchChange={modals.setPdfSearchTerm}
+            renderFilters={() => (
+              <div className="space-y-4">
+                <p className="text-sm text-text-tertiary">Filtre por nombre o cédula usando el campo de búsqueda.</p>
+              </div>
+            )}
+            columns={[
+              { header: "Cédula", accessor: (s: any) => `${s.identificationPrefix}-${s.identificationNumber}` },
+              { header: "Estudiante", accessor: (s: any) => `${s.firstName} ${s.lastName}` },
+            ]}
+          />
+
+          <UnifiedDialog
+            isOpen={!!modals.confirmation}
+            onClose={() => !loadingAction && modals.setConfirmation(null)}
+            onConfirm={modals.confirmation?.onConfirm || (() => {})}
+            title={modals.confirmation?.title || ""}
+            message={modals.confirmation?.message || ""}
+            confirmLabel={modals.confirmation?.confirmText || "Confirmar"}
+            variant={modals.confirmation?.variant || "info"}
+            isLoading={loadingAction}
+          />
+        </div>
+      </div>
+    </>
+  );
 }

@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import PageMeta from '../../components/common/PageMeta';
-import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
 import Button from '../../components/ui/button/Button';
 import Badge from '../../components/ui/badge/Badge';
@@ -130,98 +128,80 @@ export default function StudentDocuments() {
   };
 
   return (
-    <>
-      <PageMeta 
-        title="Mis Documentos | UNEFA" 
-        description="Gestion de documentos de pasantia" 
-      />
-
-      <PageBreadcrumb pageTitle="Mis Documentos" />
-
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-text-primary dark:text-white">
-              Mis Documentos
-            </h1>
-            <p className="text-text-secondary dark:text-text-tertiary">
-              Sube y gestiona tus documentos de pasantia
-            </p>
-          </div>
-          <Button
-            variant="primary"
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Upload className="w-4 h-4" />
-            Subir Documento
-          </Button>
-        </div>
-
-        <ComponentCard title="Documentos Subidos">
-          {loading ? (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="animate-pulse h-20 bg-gray-200 dark:bg-gray-700 rounded-lg" />
-              ))}
-            </div>
-          ) : documents.length === 0 ? (
-            <div className="text-center py-8 text-text-secondary">
-              <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No has subido documentos</p>
-              <p className="text-sm mt-1">Sube tu primera carta o informe</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
-                >
-                  <div className="p-3 bg-brand-100 dark:bg-brand-900/30 rounded-lg">
-                    <FileText className="w-6 h-6 text-brand-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{doc.title}</p>
-                      <Badge 
-                        color={doc.status === 'approved' ? 'success' : doc.status === 'rejected' ? 'error' : 'warning'}
-                        size="sm"
-                      >
-                        {doc.status === 'approved' ? 'Aprobado' : doc.status === 'rejected' ? 'Rechazado' : 'Pendiente'}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-text-secondary">
-                      {getTypeLabel(doc.type)} - {doc.fileName}
-                    </p>
-                    <p className="text-xs text-text-secondary">
-                      {formatDate(doc.uploadedAt)} - {formatFileSize(doc.fileSize)}
-                    </p>
-                    {doc.rejectionReason && (
-                      <p className="text-xs text-error-500 mt-1">
-                        Motivo: {doc.rejectionReason}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(doc.status)}
-                    {doc.status === 'pending' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(doc.id)}
-                        className="text-error-500 hover:text-error-600"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </ComponentCard>
+    <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button
+          variant="primary"
+          onClick={() => setIsModalOpen(true)}
+        >
+          <Upload className="w-4 h-4" />
+          Subir Documento
+        </Button>
       </div>
+
+      <ComponentCard title="Documentos Subidos">
+        {loading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="animate-pulse h-20 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+            ))}
+          </div>
+        ) : documents.length === 0 ? (
+          <div className="text-center py-8 text-text-secondary">
+            <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>No has subido documentos</p>
+            <p className="text-sm mt-1">Sube tu primera carta o informe</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {documents.map((doc) => (
+              <div
+                key={doc.id}
+                className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
+              >
+                <div className="p-3 bg-brand-100 dark:bg-brand-900/30 rounded-lg">
+                  <FileText className="w-6 h-6 text-brand-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{doc.title}</p>
+                    <Badge
+                      color={doc.status === 'approved' ? 'success' : doc.status === 'rejected' ? 'error' : 'warning'}
+                      size="sm"
+                    >
+                      {doc.status === 'approved' ? 'Aprobado' : doc.status === 'rejected' ? 'Rechazado' : 'Pendiente'}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-text-secondary">
+                    {getTypeLabel(doc.type)} - {doc.fileName}
+                  </p>
+                  <p className="text-xs text-text-secondary">
+                    {formatDate(doc.uploadedAt)} - {formatFileSize(doc.fileSize)}
+                  </p>
+                  {doc.rejectionReason && (
+                    <p className="text-xs text-error-500 mt-1">
+                      Motivo: {doc.rejectionReason}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {getStatusIcon(doc.status)}
+                  {doc.status === 'pending' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(doc.id)}
+                      className="text-error-500 hover:text-error-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </ComponentCard>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="md">
         <ModalHeader>Subir Documento</ModalHeader>
@@ -292,8 +272,8 @@ export default function StudentDocuments() {
           <Button variant="outline" onClick={() => setIsModalOpen(false)}>
             Cancelar
           </Button>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={handleUpload}
             disabled={uploading || !selectedFile || !formData.documentType || !formData.title}
             loading={uploading}
@@ -303,6 +283,6 @@ export default function StudentDocuments() {
           </Button>
         </ModalFooter>
       </Modal>
-    </>
+    </div>
   );
 }

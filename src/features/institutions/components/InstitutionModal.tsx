@@ -3,8 +3,8 @@
  * @description Modal con formulario para crear y editar instituciones.
  */
 
-import { useEffect, useState, useMemo, lazy, Suspense } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useEffect, useState, useMemo, useCallback, lazy, Suspense } from "react";
+import { useForm, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
@@ -386,6 +386,25 @@ export default function InstitutionModal({
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateInstitutionPayload | UpdateInstitutionPayload | null>(null);
 
+  const TAB_IDS = ['datos-generales', 'configuracion'] as const;
+  const TAB_FIELDS: Record<string, string[]> = {
+    'datos-generales': ['rifPrefix', 'rifNumber', 'name', 'phonePrefix', 'phoneNumber', 'region', 'nucleus', 'extension', 'institutionType'],
+    'configuracion': ['internshipTypeId', 'careerIds'],
+  };
+  const errorsByTab = useMemo(() => {
+    const keys = Object.keys(errors);
+    const counts: Record<string, number> = {};
+    for (const tab of TAB_IDS) counts[tab] = keys.filter(k => TAB_FIELDS[tab].includes(k)).length;
+    return counts;
+  }, [errors]);
+  const currentTabIndex = TAB_IDS.indexOf(tabsState.activeTab as typeof TAB_IDS[number]);
+  const goPrevTab = () => { if (currentTabIndex > 0) tabsState.setActiveTab(TAB_IDS[currentTabIndex - 1]); };
+  const goNextTab = () => { if (currentTabIndex < TAB_IDS.length - 1) tabsState.setActiveTab(TAB_IDS[currentTabIndex + 1]); };
+  const onFormError = useCallback((formErrors: FieldErrors<InstFormData>) => {
+    const firstTab = TAB_IDS.find(tab => TAB_FIELDS[tab].some(f => (formErrors as Record<string, any>)[f]));
+    if (firstTab) tabsState.setActiveTab(firstTab);
+  }, []);
+
   const loadOptions = async () => {
     try {
       const listNames = [
@@ -743,6 +762,8 @@ export default function InstitutionModal({
     setConfirmSaveOpen(true);
   };
 
+  const handleFormSubmit = handleSubmit(onSubmit, onFormError);
+
   const handleClose = () => {
     setExistingInstitution(null);
     setViewOnlyMode(false);
@@ -782,7 +803,7 @@ export default function InstitutionModal({
             </div>
           </div>
         )}
-        <form onSubmit={handleSubmit(onSubmit)} className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${isLoading && editingInst ? 'opacity-50 pointer-events-none' : ''}`}>
+        <form onSubmit={handleFormSubmit} className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${isLoading && editingInst ? 'opacity-50 pointer-events-none' : ''}`}>
           {existingInstitution && (
             <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg md:col-span-2">
               <p className="text-sm text-warning-700 dark:text-warning-300">
@@ -794,8 +815,8 @@ export default function InstitutionModal({
           
           <Tabs
             options={[
-              { id: 'datos-generales', label: 'Datos Generales' },
-              { id: 'configuracion', label: 'Configuración' },
+              { id: 'datos-generales', label: 'Datos Generales', errorCount: errorsByTab['datos-generales'] },
+              { id: 'configuracion', label: 'Configuración', errorCount: errorsByTab['configuracion'] },
             ]}
             {...tabsState.tabProps}
             variant="modal"
@@ -1363,6 +1384,20 @@ export default function InstitutionModal({
           
           {/* Botón oculto para permitir submit con Enter */}
           <button type="submit" className="hidden" />
+
+          {/* Navegación entre tabs */}
+          <div className="md:col-span-2 flex items-center justify-between pt-4 mt-6 border-t border-border-light dark:border-border-dark">
+            <Button variant="outline" size="sm" onClick={goPrevTab} disabled={currentTabIndex === 0}>
+              ← Anterior
+            </Button>
+            {currentTabIndex < TAB_IDS.length - 1 ? (
+              <Button size="sm" onClick={goNextTab}>
+                Siguiente →
+              </Button>
+            ) : (
+              <span className="text-xs text-text-tertiary">Última sección</span>
+            )}
+          </div>
         </form>
       </ModalBody>
       <ModalFooter>
@@ -1389,16 +1424,16 @@ export default function InstitutionModal({
                   Habilitar Edición
                 </AsyncButton>
               ) : (
-                <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isValid}>
+                <AsyncButton onClick={handleFormSubmit} loading={isLoading} disabled={!isValid}>
                   Guardar Cambios
                 </AsyncButton>
               )
             ) : editingInst ? (
-              <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isDirty}>
+              <AsyncButton onClick={handleFormSubmit} loading={isLoading} disabled={!isDirty}>
                 Guardar Cambios
               </AsyncButton>
             ) : (
-              <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isValid}>
+              <AsyncButton onClick={handleFormSubmit} loading={isLoading} disabled={!isValid}>
                 Registrar Empresa o Institución
               </AsyncButton>
             )}

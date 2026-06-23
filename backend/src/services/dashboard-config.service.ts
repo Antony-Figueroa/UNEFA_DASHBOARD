@@ -21,16 +21,23 @@ export interface DashboardLayout {
 }
 
 const DEFAULT_LAYOUTS: Record<number, DashboardWidget[]> = {
-  1: [ // ADMIN
+  1: [ // ADMIN — Guía: 12-column grid, 5 filas
+    // Fila 1: WelcomeBanner (fuera del DynamicDashboard, 12 cols en Home.tsx)
+    // Fila 2: 4 tarjetas métricas (3+3+3+3 = 12 cols)
     { key: 'quick-stats', order: 0, visible: true },
+    // Fila 3: Registro estudiantes (8 cols) + Crecimiento mensual (4 cols)
     { key: 'registration-stats', order: 1, visible: true },
     { key: 'growth-metrics', order: 2, visible: true },
-    { key: 'career-distribution', order: 3, visible: true },
-    { key: 'evaluations', order: 4, visible: true },
-    { key: 'tutor-distribution', order: 5, visible: true },
-    { key: 'institution-distribution', order: 6, visible: true },
-    { key: 'monthly-enrollments', order: 7, visible: true },
-    { key: 'pending-requests', order: 8, visible: false },
+    // Fila 4: Inscripciones mensuales (8 cols) + Distribución por carrera (4 cols)
+    { key: 'monthly-enrollments', order: 3, visible: true },
+    { key: 'career-distribution', order: 4, visible: true },
+    // Fila 5: 4 métricas secundarias (3+3+3+3 = 12 cols)
+    { key: 'evaluations', order: 5, visible: true },
+    { key: 'tutor-distribution', order: 6, visible: true },
+    { key: 'institution-distribution', order: 7, visible: true },
+    { key: 'geo-coincidence', order: 8, visible: true },
+    // Extra: ocultos por defecto
+    { key: 'pending-requests', order: 9, visible: false },
   ],
   3: [ // TUTOR
     { key: 'tutor-quick-stats', order: 0, visible: true },
@@ -89,14 +96,43 @@ export const getLayoutByRole = async (roleId: number): Promise<DashboardLayout> 
 };
 
 export const getAllLayouts = async (): Promise<DashboardLayout[]> => {
-  const roleIds = Object.keys(DEFAULT_LAYOUTS).map(Number);
-  const results = await Promise.allSettled(
-    roleIds.map(id => getLayoutByRole(id))
-  );
+  // Traer todos los layouts guardados en DB (incluye roles custom)
+  try {
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from('t_landing_config')
+        .select('config_key, config_value')
+        .like('config_key', 'dashboard_layout_%');
 
-  return results
-    .filter((r): r is PromiseFulfilledResult<DashboardLayout> => r.status === 'fulfilled')
-    .map(r => r.value);
+      if (error) throw error;
+      return data || [];
+    }, 'getAllLayouts');
+
+    const savedRoleIds = data
+      .map((row: any) => parseInt(row.config_key.replace('dashboard_layout_', ''), 10))
+      .filter((id: number) => !isNaN(id));
+
+    // Combinar con los default layouts conocidos, sin duplicar
+    const allRoleIds = [...new Set([...Object.keys(DEFAULT_LAYOUTS).map(Number), ...savedRoleIds])];
+
+    const results = await Promise.allSettled(
+      allRoleIds.map(id => getLayoutByRole(id))
+    );
+
+    return results
+      .filter((r): r is PromiseFulfilledResult<DashboardLayout> => r.status === 'fulfilled')
+      .map(r => r.value);
+  } catch (error) {
+    console.error('[DashboardConfig] Error getting all layouts, falling back to defaults:', error);
+    // Fallback: solo layouts por defecto
+    const roleIds = Object.keys(DEFAULT_LAYOUTS).map(Number);
+    const results = await Promise.allSettled(
+      roleIds.map(id => getLayoutByRole(id))
+    );
+    return results
+      .filter((r): r is PromiseFulfilledResult<DashboardLayout> => r.status === 'fulfilled')
+      .map(r => r.value);
+  }
 };
 
 export const saveLayout = async (roleId: number, widgets: DashboardWidget[], userId: string): Promise<DashboardLayout> => {
@@ -123,8 +159,29 @@ export const saveLayout = async (roleId: number, widgets: DashboardWidget[], use
   return layout;
 };
 
-export const getAvailableRoleIds = (): number[] => {
-  return Object.keys(DEFAULT_LAYOUTS).map(Number);
+export const getAvailableRoleIds = async (): Promise<number[]> => {
+  // Roles del sistema + roles custom con layouts guardados
+  const systemIds = Object.keys(DEFAULT_LAYOUTS).map(Number);
+
+  try {
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from('t_landing_config')
+        .select('config_key')
+        .like('config_key', 'dashboard_layout_%');
+
+      if (error) throw error;
+      return data || [];
+    }, 'getAvailableRoleIds');
+
+    const savedIds = data
+      .map((row: any) => parseInt(row.config_key.replace('dashboard_layout_', ''), 10))
+      .filter((id: number) => !isNaN(id));
+
+    return [...new Set([...systemIds, ...savedIds])].sort((a, b) => a - b);
+  } catch {
+    return systemIds;
+  }
 };
 
 export const resetLayout = async (roleId: number): Promise<DashboardLayout> => {

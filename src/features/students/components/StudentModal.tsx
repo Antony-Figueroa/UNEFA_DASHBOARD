@@ -97,6 +97,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   
   // State for tabs in the form
   const tabsState = useTabs({ defaultTab: 'datos-personales' });
+  useEffect(() => { if (isOpen) tabsState.setActiveTab('datos-personales'); }, [isOpen]);
 
   // State for existing record (when duplicate is found)
   const [existingStudent, setExistingStudent] = useState<any | null>(null);

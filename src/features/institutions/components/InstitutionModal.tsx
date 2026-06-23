@@ -31,7 +31,7 @@ import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
 import { useToast } from "../../../context/toast";
 import { cleanCedula, cleanPhone, cleanRif, formatRifDisplay, RIF_MAX_LENGTH, RIF_INPUT_CLASS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { getInstitutionByRif, checkRifExists } from "../services/institutionsService";
-import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
+import { SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 import AddressList from "../../address/components/AddressList";
 import type { GeoOptionsItem } from "../../address/types";
 
@@ -87,7 +87,7 @@ const baseInstSchema = z.object({
   name: z.string()
     .min(1, "El nombre es obligatorio")
     .max(200, "El nombre no puede exceder 200 caracteres")
-    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .regex(SAFE_TEXT_PATTERN, "Caracteres no permitidos")
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   phonePrefix: z.string().min(1, "Seleccione un prefijo"),
   phoneNumber: z.string()
@@ -266,6 +266,7 @@ export default function InstitutionModal({
 
   // State for tabs in the form
   const tabsState = useTabs({ defaultTab: 'datos-generales' });
+  useEffect(() => { if (isOpen) tabsState.setActiveTab('datos-generales'); }, [isOpen]);
 
   // State for duplicate detection
   const [isCheckingRif, setIsCheckingRif] = useState(false);

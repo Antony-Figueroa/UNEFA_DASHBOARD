@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef, lazy } from "react";
-import { useForm, Controller, SubmitHandler } from "react-hook-form";
+import { useForm, Controller, SubmitHandler, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
@@ -99,6 +99,14 @@ export default function TutorModal({
     const [isCheckingEmail, setIsCheckingEmail] = useState(false);
     const tabsState = useTabs({ defaultTab: 'datos-personales' });
     useEffect(() => { if (isOpen) tabsState.setActiveTab('datos-personales'); }, [isOpen]);
+
+    const TAB_IDS = ['datos-personales', 'laboral', 'asignaciones'] as const;
+    const TAB_FIELDS: Record<string, string[]> = {
+      'datos-personales': ['identificationPrefix', 'identificationNumber', 'firstName', 'middleName', 'lastName', 'secondLastName', 'sex', 'birthDate', 'civilStatus', 'phoneAreaCode', 'phoneNumber', 'email'],
+      'laboral': ['condition', 'dedication', 'category', 'profession', 'titulo'],
+      'asignaciones': ['carreras'],
+    };
+
     const [existingTutor, setExistingTutor] = useState<any | null>(null);
     const [existingPerson, setExistingPerson] = useState(false);
     const [viewOnlyMode, setViewOnlyMode] = useState(false);
@@ -280,6 +288,19 @@ export default function TutorModal({
     confirmClose,
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
+
+  // -- Tab state derived from form errors --
+  const errorsByTab = useMemo(() => {
+    const keys = Object.keys(errors);
+    const counts: Record<string, number> = {};
+    for (const tab of TAB_IDS) {
+      counts[tab] = keys.filter(k => TAB_FIELDS[tab].includes(k)).length;
+    }
+    return counts;
+  }, [errors]);
+  const currentTabIndex = TAB_IDS.indexOf(tabsState.activeTab as typeof TAB_IDS[number]);
+  const goPrevTab = () => { if (currentTabIndex > 0) tabsState.setActiveTab(TAB_IDS[currentTabIndex - 1]); };
+  const goNextTab = () => { if (currentTabIndex < TAB_IDS.length - 1) tabsState.setActiveTab(TAB_IDS[currentTabIndex + 1]); };
 
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -919,6 +940,12 @@ export default function TutorModal({
     }
   };
 
+  const onFormError = useCallback((formErrors: FieldErrors<TutorFormData>) => {
+    const firstTabWithErrors = TAB_IDS.find(tab => TAB_FIELDS[tab].some(f => (formErrors as Record<string, any>)[f]));
+    if (firstTabWithErrors) tabsState.setActiveTab(firstTabWithErrors);
+  }, []);
+  const handleFormSubmit = handleSubmit(onSubmit, onFormError);
+
   const isInUse = editingTutor?.isInUse;
 
   const handleClose = () => {
@@ -951,7 +978,7 @@ export default function TutorModal({
         </ModalHeader>
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
-        <form id="tutor-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto py-2">
+        <form id="tutor-form" onSubmit={handleFormSubmit} className="space-y-8 max-w-4xl mx-auto py-2">
           {existingTutor && (
             <div className="flex items-center space-x-3 p-3 bg-info-50 dark:bg-info-500/10 border border-info-200 dark:border-info-500/20 rounded-lg mb-4">
               <svg className="h-5 w-5 text-info-700 dark:text-info-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -964,9 +991,9 @@ export default function TutorModal({
           )}
           <Tabs
             options={[
-              { id: 'datos-personales', label: 'Datos Personales' },
-              { id: 'laboral', label: 'Laboral' },
-              { id: 'asignaciones', label: 'Asignaciones' },
+              { id: 'datos-personales', label: 'Datos Personales', errorCount: errorsByTab['datos-personales'] },
+              { id: 'laboral', label: 'Laboral', errorCount: errorsByTab['laboral'] },
+              { id: 'asignaciones', label: 'Asignaciones', errorCount: errorsByTab['asignaciones'] },
             ]}
             {...tabsState.tabProps}
             variant="modal"
@@ -1105,6 +1132,27 @@ export default function TutorModal({
               />
             </div>
           </div>
+
+          {/* Navegación entre tabs */}
+          {!viewOnlyMode && (
+            <div className="flex items-center justify-between pt-4 mt-6 border-t border-border-light dark:border-border-dark">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goPrevTab}
+                disabled={currentTabIndex === 0}
+              >
+                ← Anterior
+              </Button>
+              {currentTabIndex < TAB_IDS.length - 1 ? (
+                <Button size="sm" onClick={goNextTab}>
+                  Siguiente →
+                </Button>
+              ) : (
+                <span className="text-xs text-text-tertiary">Última sección</span>
+              )}
+            </div>
+          )}
         </form>
       </ModalBody>
 
@@ -1119,7 +1167,7 @@ export default function TutorModal({
                 Cancelar
               </Button>
               <AsyncButton
-                onClick={handleSubmit(onSubmit)}
+                onClick={handleFormSubmit}
                 loading={isLoading || confirmSaving}
                 disabled={!isDirty || !isValid || isLoading || confirmSaving}
               >

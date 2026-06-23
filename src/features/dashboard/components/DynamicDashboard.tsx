@@ -23,7 +23,7 @@ interface DynamicDashboardProps {
 const WidgetSkeleton = ({ size }: { size: WidgetSize }) => {
   const height = size === 'xl' ? 280 : size === 'lg' ? 260 : 240;
   return (
-    <div className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
+    <div className="h-full rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
       <Skeleton height={24} width="50%" className="mb-4" />
       <Skeleton height={height} className="rounded-xl" />
     </div>
@@ -88,12 +88,14 @@ export const DynamicDashboard = ({ widgets, data, loading }: DynamicDashboardPro
         return (
           <div
             key={widget.key}
-            className={sizeClass}
+            className={`${sizeClass} flex`}
             style={widget.color ? { '--widget-accent': widget.color } as React.CSSProperties : undefined}
           >
-            <Suspense fallback={<WidgetSkeleton size={effectiveSize} />}>
-              <WidgetComponent {...widgetProps} data-widget-accent={widget.color} />
-            </Suspense>
+            <div className="w-full flex flex-col">
+              <Suspense fallback={<WidgetSkeleton size={effectiveSize} />}>
+                <WidgetComponent {...widgetProps} data-widget-accent={widget.color} />
+              </Suspense>
+            </div>
           </div>
         );
       })}

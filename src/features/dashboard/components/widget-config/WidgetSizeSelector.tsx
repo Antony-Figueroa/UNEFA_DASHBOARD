@@ -15,7 +15,8 @@ interface SizeOption {
 }
 
 const SIZES: SizeOption[] = [
-  { value: 'sm', label: '1/3', desc: 'Columna angosta', previewWidth: 'w-[25%]' },
+  { value: 'xs', label: '1/4', desc: 'Columna angosta', previewWidth: 'w-[18%]' },
+  { value: 'sm', label: '1/3', desc: 'Columna estrecha', previewWidth: 'w-[25%]' },
   { value: 'md', label: '1/2', desc: 'Media columna', previewWidth: 'w-[50%]' },
   { value: 'lg', label: '2/3', desc: 'Columna amplia', previewWidth: 'w-[75%]' },
   { value: 'xl', label: 'Full', desc: 'Ancho completo', previewWidth: 'w-full' },

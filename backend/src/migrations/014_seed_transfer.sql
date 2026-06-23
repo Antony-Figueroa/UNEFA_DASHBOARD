@@ -1418,7 +1418,6 @@ VALUES
 (1, 'ÚNICA', 0, NOW(), 1),
 (2, 'HOSPITALARIA', 1, NOW(), 1),
 (3, 'COMUNITARIA', 2, NOW(), 1),
-(5, 'EMPRESARIAL', 0, NOW(), 0),
 (6, 'TEST', 0, NOW(), 0),
 (7, 'TESTT', 2, NOW(), 0),
 (8, 'UAC', 0, NOW(), 0),

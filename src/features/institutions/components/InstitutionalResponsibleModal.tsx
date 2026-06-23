@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState, useCallback, useMemo, useRef, lazy, Suspense } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "../../../components/ui/modal";
@@ -253,6 +253,25 @@ export default function InstitutionalResponsibleModal({
       institutions: [],
     },
   });
+
+  const TAB_IDS = ['datos-personales', 'instituciones'] as const;
+  const TAB_FIELDS: Record<string, string[]> = {
+    'datos-personales': ['identificationPrefix', 'identificationNumber', 'firstName', 'middleName', 'lastName', 'secondLastName', 'phonePrefix', 'phoneNumber', 'email', 'title'],
+    'instituciones': ['institutions'],
+  };
+  const errorsByTab = useMemo(() => {
+    const keys = Object.keys(errors);
+    const counts: Record<string, number> = {};
+    for (const tab of TAB_IDS) counts[tab] = keys.filter(k => TAB_FIELDS[tab].includes(k)).length;
+    return counts;
+  }, [errors]);
+  const currentTabIndex = TAB_IDS.indexOf(tabsState.activeTab as typeof TAB_IDS[number]);
+  const goPrevTab = () => { if (currentTabIndex > 0) tabsState.setActiveTab(TAB_IDS[currentTabIndex - 1]); };
+  const goNextTab = () => { if (currentTabIndex < TAB_IDS.length - 1) tabsState.setActiveTab(TAB_IDS[currentTabIndex + 1]); };
+  const onFormError = useCallback((formErrors: FieldErrors<RespFormData>) => {
+    const firstTab = TAB_IDS.find(tab => TAB_FIELDS[tab].some(f => (formErrors as Record<string, any>)[f]));
+    if (firstTab) tabsState.setActiveTab(firstTab);
+  }, []);
 
   // Fill form fields with existing responsible data
   const fillFormWithExistingData = (responsible: any) => {
@@ -778,6 +797,8 @@ export default function InstitutionalResponsibleModal({
     setConfirmSaveOpen(true);
   };
 
+  const handleFormSubmit = handleSubmit(onSubmit, onFormError);
+
    const handleClose = () => {
      setExistingResponsible(null);
      setExistingPerson(false);
@@ -805,7 +826,7 @@ export default function InstitutionalResponsibleModal({
         </ModalHeader>
 
          <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
-           <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto py-6">
+           <form onSubmit={handleFormSubmit} className="max-w-5xl mx-auto py-6">
               {existingResponsible && (
                 <div className="mb-4 flex items-center space-x-3 p-3 bg-info-50 dark:bg-info-500/10 border border-info-200 dark:border-info-500/20 rounded-lg">
                   <svg className="h-5 w-5 text-info-700 dark:text-info-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -819,8 +840,8 @@ export default function InstitutionalResponsibleModal({
 
             <Tabs
               options={[
-                { id: "datos-personales", label: "Datos Personales" },
-                { id: "instituciones", label: "Instituciones y Cargo" }
+                { id: "datos-personales", label: "Datos Personales", errorCount: errorsByTab['datos-personales'] },
+                { id: "instituciones", label: "Instituciones y Cargo", errorCount: errorsByTab['instituciones'] }
               ]}
               {...tabsState.tabProps}
               variant="modal"
@@ -1001,6 +1022,20 @@ onChange={(val) => {
                 )}
               </div>
             </div>
+
+          {/* Navegación entre tabs */}
+          <div className="flex items-center justify-between pt-4 mt-6 border-t border-border-light dark:border-border-dark">
+            <Button variant="outline" size="sm" onClick={goPrevTab} disabled={currentTabIndex === 0}>
+              ← Anterior
+            </Button>
+            {currentTabIndex < TAB_IDS.length - 1 ? (
+              <Button size="sm" onClick={goNextTab}>
+                Siguiente →
+              </Button>
+            ) : (
+              <span className="text-xs text-text-tertiary">Última sección</span>
+            )}
+          </div>
           </form>
         </ModalBody>
 
@@ -1039,7 +1074,7 @@ onChange={(val) => {
                   loading={isLoading}
                   disabled={!isValid}
                   onClick={() => {
-                    handleSubmit(onSubmit)().catch(err => {
+                    handleFormSubmit().catch(err => {
                       console.error("[InstitutionalResponsibleModal] Error en validación:", err);
                     });
                   }}

@@ -11,6 +11,8 @@ interface TabOption {
   label: string;
   /** Optional count badge to show next to the label. */
   count?: number;
+  /** Optional error count — shows a red badge when > 0. */
+  errorCount?: number;
 }
 
 /**
@@ -121,6 +123,14 @@ export const Tabs: React.FC<TabsProps> = ({
               )}
             >
               {tab.label}
+              {tab.errorCount !== undefined && tab.errorCount > 0 && (
+                <span className={cn(
+                  "ml-1.5 px-1.5 py-0.5 text-[10px] rounded-full font-semibold",
+                  isActive ? "bg-red-400 text-white" : "bg-red-500 text-white"
+                )}>
+                  {tab.errorCount}
+                </span>
+              )}
               {tab.count !== undefined && (
                 <span className={cn(
                   "ml-2 px-1.5 py-0.5 text-[10px] rounded-full",
@@ -174,6 +184,11 @@ export const Tabs: React.FC<TabsProps> = ({
             title={isModal ? tab.label : undefined}
           >
             {tab.label}
+            {tab.errorCount !== undefined && tab.errorCount > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 text-[10px] rounded-full font-semibold bg-red-500 text-white">
+                {tab.errorCount}
+              </span>
+            )}
             {tab.count !== undefined && (
               <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-bg-secondary dark:bg-white/10 rounded-full">
                 {tab.count}

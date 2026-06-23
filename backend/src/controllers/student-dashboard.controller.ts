@@ -541,6 +541,119 @@ export const getStudentTracking = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { email, phone, address } = req.body;
+    const supabase = dbManager.getConnection();
+
+    // Basic field validation
+    const errors: string[] = [];
+    if (email !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.push('Correo electrónico inválido');
+    }
+    if (phone !== undefined && !/^0\d{3}-?\d{7}$/.test(phone)) {
+      errors.push('Formato de teléfono inválido (ej: 0412-1234567)');
+    }
+    if (address !== undefined && address.length < 10) {
+      errors.push('Dirección debe tener al menos 10 caracteres');
+    }
+    if (errors.length > 0) {
+      return res.status(400).json({ success: false, message: errors.join('. ') });
+    }
+
+    // Build allowed fields only — no unexpected mutations
+    const updates: Record<string, string> = {};
+    if (email !== undefined) updates.email = email;
+    if (phone !== undefined) updates.phone = phone;
+    if (address !== undefined) updates.address = address;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe enviar al menos un campo para actualizar (email, phone, address)'
+      });
+    }
+
+    // Find student's person record
+    const { data: student, error: studentError } = await supabase
+      .from('t_students')
+      .select('PERSON_ID')
+      .eq('USER_ID', userId)
+      .single();
+
+    if (studentError || !student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Estudiante no encontrado'
+      });
+    }
+
+    // Update person record
+    const { error: updateError } = await supabase
+      .from('t_persons')
+      .update(updates)
+      .eq('PERSON_ID', student.PERSON_ID);
+
+    if (updateError) throw updateError;
+
+    // Re-fetch updated profile to return consistent shape
+    const { data: updated } = await supabase
+      .from('t_students')
+      .select(`
+        STUDENTS_ID,
+        SEMESTER, SECTION, REGIME, STUDENT_TYPE,
+        MILITARY_RANK, EMPLOYMENT, STATUS, REGISTRATION_DATE,
+        CAREER_ID,
+        t_career (CAREER_NAME),
+        t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birth_date, address, marital_status)
+      `)
+      .eq('USER_ID', userId)
+      .single();
+
+    if (!updated) {
+      return res.status(500).json({ success: false, message: 'Error al recuperar perfil actualizado' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Perfil actualizado exitosamente',
+      data: {
+        id: updated.STUDENTS_ID,
+        ci: (updated as any).t_persons?.ci || '',
+        name: (updated as any).t_persons?.first_name || '',
+        secondName: (updated as any).t_persons?.middle_name || '',
+        surname: (updated as any).t_persons?.last_name || '',
+        secondSurname: (updated as any).t_persons?.second_last_name || '',
+        fullName: `${(updated as any).t_persons?.first_name || ''} ${(updated as any).t_persons?.middle_name || ''} ${(updated as any).t_persons?.last_name || ''} ${(updated as any).t_persons?.second_last_name || ''}`.replace(/\s+/g, ' ').trim(),
+        email: (updated as any)?.t_persons?.email,
+        phone: (updated as any)?.t_persons?.phone,
+        gender: (updated as any)?.t_persons?.gender,
+        birthdate: (updated as any)?.t_persons?.birth_date,
+        address: (updated as any)?.t_persons?.address,
+        maritalStatus: (updated as any)?.t_persons?.marital_status,
+        semester: updated.SEMESTER,
+        section: updated.SECTION,
+        regime: updated.REGIME,
+        studentType: updated.STUDENT_TYPE,
+        militaryRank: updated.MILITARY_RANK,
+        employment: updated.EMPLOYMENT,
+        careerName: (updated as any).t_career?.CAREER_NAME || '',
+        status: updated.STATUS,
+        registrationDate: updated.REGISTRATION_DATE
+      }
+    });
+
+  } catch (error) {
+    console.error('[StudentDashboard] Error updating profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar perfil',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
 export const createStudentRequest = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;

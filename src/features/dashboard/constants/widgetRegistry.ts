@@ -2,7 +2,7 @@ import { lazy, LazyExoticComponent, ComponentType } from 'react';
 
 // ─── Tipos ─────────────────────────────────────────────────────────────────
 
-export type WidgetSize = 'sm' | 'md' | 'lg' | 'xl';
+export type WidgetSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 export interface WidgetDefinition {
   key: string;
@@ -23,6 +23,7 @@ export interface WidgetDefinition {
 // ─── Grid classes según tamaño ──────────────────────────────────────────────
 
 export const WIDGET_SIZE_CLASSES: Record<WidgetSize, string> = {
+  xs: 'lg:col-span-3',  // 1/4 del ancho
   sm: 'lg:col-span-4',  // 1/3 del ancho
   md: 'lg:col-span-6',  // 1/2 del ancho
   lg: 'lg:col-span-8',  // 2/3 del ancho
@@ -89,7 +90,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     displayName: 'Distribución por Carrera',
     description: 'Distribución de estudiantes por carrera universitaria',
     icon: 'pie-chart',
-    size: 'xl',
+    size: 'sm',
     module: 'students',
     allowedRoles: [1, 2],
     component: lazy(() => import('../components/CareerDistributionChart')),
@@ -104,7 +105,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     displayName: 'Evaluaciones',
     description: 'Gráfico de dona con evaluaciones completadas vs pendientes',
     icon: 'check-circle',
-    size: 'sm',
+    size: 'xs',
     module: 'evaluations',
     allowedRoles: [1, 2],
     component: lazy(() => import('../components/EvaluationStatsChart')),
@@ -120,7 +121,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     displayName: 'Distribución por Tutor',
     description: 'Barras horizontales con cantidad de estudiantes por tutor',
     icon: 'users',
-    size: 'sm',
+    size: 'xs',
     module: 'tutors',
     allowedRoles: [1, 2],
     component: lazy(() => import('../components/TutorDistributionChart')),
@@ -135,7 +136,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     displayName: 'Distribución por Institución',
     description: 'Gráfico de dona con distribución de estudiantes por institución',
     icon: 'building',
-    size: 'sm',
+    size: 'xs',
     module: 'institutions',
     allowedRoles: [1, 2],
     component: lazy(() => import('../components/InstitutionDistributionChart')),
@@ -164,7 +165,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     displayName: 'Coincidencia Geográfica',
     description: 'Distribución de coincidencias geográficas estudiante-institución en inscripciones',
     icon: 'map-pin',
-    size: 'sm',
+    size: 'xs',
     module: 'general',
     allowedRoles: [1, 2],
     component: lazy(() => import('../components/GeoCoincidenceWidget')),
@@ -377,8 +378,14 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-export const getWidgetsByRole = (roleId: number): WidgetDefinition[] =>
-  Object.values(WIDGET_REGISTRY).filter(w => w.allowedRoles.includes(roleId));
+export const getWidgetsByRole = (roleId: number): WidgetDefinition[] => {
+  // Roles del sistema conocidos: 1=ADMIN, 2=ASISTENTE, 3=TUTOR, 4=ESTUDIANTE
+  // Para roles custom (creados por usuario), mostrar todos los widgets disponibles
+  if (![1, 2, 3, 4].includes(roleId)) {
+    return Object.values(WIDGET_REGISTRY);
+  }
+  return Object.values(WIDGET_REGISTRY).filter(w => w.allowedRoles.includes(roleId));
+};
 
 export const getWidgetsByModule = (roleId: number): Record<string, WidgetDefinition[]> => {
   const widgets = getWidgetsByRole(roleId);

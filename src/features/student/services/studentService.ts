@@ -23,6 +23,10 @@ export const studentService = {
     return response.data.data;
   },
 
+  updateProfile: async (data: { email?: string; phone?: string; address?: string }): Promise<StudentProfile> => {
+    const response = await apiClient.patch(`${API_URL}/profile`, data);
+    return response.data.data;
+  },
 };
 
 export default studentService;

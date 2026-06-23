@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { checkAvailability, getStudentByCi, lookupCi } from "../services/studentsService";
 import Input from "../../../components/form/input/InputField";
@@ -144,6 +144,25 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       works: "",
     },
   });
+
+  const TAB_IDS = ['datos-personales', 'academico'] as const;
+  const TAB_FIELDS: Record<string, string[]> = {
+    'datos-personales': ['identificationPrefix', 'identificationNumber', 'firstName', 'middleName', 'lastName', 'secondLastName', 'sex', 'birthDate', 'civilStatus', 'phonePrefix', 'phoneNumber', 'email', 'address'],
+    'academico': ['studentType', 'militaryRank', 'works'],
+  };
+  const errorsByTab = useMemo(() => {
+    const keys = Object.keys(errors);
+    const counts: Record<string, number> = {};
+    for (const tab of TAB_IDS) counts[tab] = keys.filter(k => TAB_FIELDS[tab].includes(k)).length;
+    return counts;
+  }, [errors]);
+  const currentTabIndex = TAB_IDS.indexOf(tabsState.activeTab as typeof TAB_IDS[number]);
+  const goPrevTab = () => { if (currentTabIndex > 0) tabsState.setActiveTab(TAB_IDS[currentTabIndex - 1]); };
+  const goNextTab = () => { if (currentTabIndex < TAB_IDS.length - 1) tabsState.setActiveTab(TAB_IDS[currentTabIndex + 1]); };
+  const scrollToErrorTab = useCallback(() => {
+    const firstTab = TAB_IDS.find(tab => TAB_FIELDS[tab].some(f => (errors as Record<string, any>)[f]));
+    if (firstTab) tabsState.setActiveTab(firstTab);
+  }, [errors]);
 
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -772,6 +791,26 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         });
         setDisplayIdentificationNumber(formatCedulaDisplay(editingStudent.identificationNumber, false));
         setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+
+        // Cargar dirección principal del estudiante
+        if (editingStudent.personId) {
+          addressService.getPersonAddresses(editingStudent.personId).then(res => {
+            const addrs = res.data as any[];
+            if (addrs && addrs.length > 0) {
+              const primary = addrs[0]; // ordenado por is_primary DESC
+              const addr = primary.address;
+              if (addr) {
+                setInlineAddress({
+                  parroquiaId: addr.parroquia?.parroquia_id ?? null,
+                  streetAddress: addr.street_address ?? '',
+                  reference: addr.reference ?? '',
+                  addressTypeId: primary.address_type?.address_type_id ?? 3,
+                  isPrimary: true,
+                });
+              }
+            }
+          }).catch(() => {});
+        }
       } else {
         reset({
           identificationPrefix: "V",
@@ -873,7 +912,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         </ModalHeader>
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
-        <form id="student-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 w-full">
+        <form id="student-form" onSubmit={handleSubmit(onSubmit, scrollToErrorTab)} className="space-y-8 w-full">
           {existingStudent && (
             <div className="flex items-center space-x-3 p-3 bg-info-50 dark:bg-info-500/10 border border-info-200 dark:border-info-500/20 rounded-lg mb-4">
               <svg className="h-5 w-5 text-info-700 dark:text-info-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -887,8 +926,8 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           
           <Tabs
             options={[
-              { id: 'datos-personales', label: 'Datos Personales' },
-              { id: 'academico', label: 'Académico' },
+              { id: 'datos-personales', label: 'Datos Personales', errorCount: errorsByTab['datos-personales'] },
+              { id: 'academico', label: 'Académico', errorCount: errorsByTab['academico'] },
             ]}
             {...tabsState.tabProps}
             variant="modal"
@@ -1046,6 +1085,25 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
             />
           </div>
           </div>
+
+          {/* Navegación entre tabs */}
+          <div className="flex items-center justify-between pt-4 mt-6 border-t border-border-light dark:border-border-dark">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goPrevTab}
+              disabled={currentTabIndex === 0}
+            >
+              ← Anterior
+            </Button>
+            {currentTabIndex < TAB_IDS.length - 1 ? (
+              <Button size="sm" onClick={goNextTab}>
+                Siguiente →
+              </Button>
+            ) : (
+              <span className="text-xs text-text-tertiary">Última sección</span>
+            )}
+          </div>
         </form>
       </ModalBody>
 
@@ -1070,6 +1128,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                     title: "Error de Validación",
                     message: "Por favor, complete todos los campos obligatorios correctamente.",
                   });
+                  scrollToErrorTab();
                 }
               }}
             >
@@ -1080,7 +1139,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
               type="submit" 
               form="student-form" 
               loading={isLoading} 
-              disabled={!isDirty}
+              disabled={!isDirty && !(inlineAddress.parroquiaId && inlineAddress.streetAddress)}
               className="w-full sm:w-auto min-h-12 shadow-none"
               onClick={async () => {
                 if (!isValid) {
@@ -1091,6 +1150,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                     title: "Error de Validación",
                     message: "Por favor, complete todos los campos obligatorios correctamente.",
                   });
+                  scrollToErrorTab();
                 }
               }}
             >
@@ -1112,6 +1172,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                     title: "Error de Validación",
                     message: "Por favor, complete todos los campos obligatorios correctamente.",
                   });
+                  scrollToErrorTab();
                 }
               }}
             >

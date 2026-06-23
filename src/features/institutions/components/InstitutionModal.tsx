@@ -33,7 +33,10 @@ import { cleanCedula, cleanPhone, cleanRif, formatRifDisplay, RIF_MAX_LENGTH, RI
 import { getInstitutionByRif, checkRifExists } from "../services/institutionsService";
 import { SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 import AddressList from "../../address/components/AddressList";
+import GeographicAddressFields from "../../address/components/GeographicAddressFields";
+import type { GeographicAddressValue } from "../../address/components/GeographicAddressFields";
 import type { GeoOptionsItem } from "../../address/types";
+import { addressService } from "../../address/services/addressService";
 
 // Lazy load para evitar dependencia circular con CareerModal
 const CareerModal = lazy(() => import("../../careers/components/CareerModal"));
@@ -207,8 +210,18 @@ export default function InstitutionModal({
       setRifDuplicateStatus(null);
       setSavedFormData(null);
       loadOptions();
+      loadGeoOptions();
     }
   }, [isOpen]);
+
+  const loadGeoOptions = async () => {
+    try {
+      const response = await addressService.getGeoOptions();
+      setGeoOptions(response.data);
+    } catch (error) {
+      console.error("Error loading geo options:", error);
+    }
+  };
 
   // Estado para el modal de nueva carrera
   const [isNewCareerModalOpen, setIsNewCareerModalOpen] = useState(false);
@@ -272,6 +285,11 @@ export default function InstitutionModal({
   const [isCheckingRif, setIsCheckingRif] = useState(false);
   const [existingInstitution, setExistingInstitution] = useState<any | null>(null);
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
+
+  // State for inline address capture
+  const [inlineAddress, setInlineAddress] = useState<GeographicAddressValue>({
+    parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true,
+  });
 
   // State for structured address management
   const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
@@ -752,7 +770,7 @@ export default function InstitutionModal({
       internshipTypeId: data.internshipTypeId,
       careerIds: data.careerIds,
       status: editingInst?.status ?? true,
-      fiscalAddress: '',
+      fiscalAddress: inlineAddress.streetAddress ? `${inlineAddress.streetAddress}${inlineAddress.reference ? ` - ${inlineAddress.reference}` : ''}` : editingInst?.fiscalAddress || '',
     };
     if (editingInst) {
       setPendingSave({ ...(commonData as any), institutionId: editingInst.institutionId } as UpdateInstitutionPayload);
@@ -964,6 +982,18 @@ export default function InstitutionModal({
             )}
           </div>
 
+          {/* Dirección Fiscal */}
+          <div className="md:col-span-2">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+              <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección Fiscal</h3>
+              <GeographicAddressFields
+                geoOptions={geoOptions}
+                value={inlineAddress}
+                onChange={setInlineAddress}
+                showReference
+              />
+            </div>
+          </div>
           </div>
 
           <div hidden={tabsState.activeTab !== 'configuracion'} role="tabpanel" className="contents">

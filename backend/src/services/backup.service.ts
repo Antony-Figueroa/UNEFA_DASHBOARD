@@ -41,6 +41,22 @@ interface ConstraintInfo {
   definition: string;
 }
 
+interface RlsPolicyInfo {
+  table_name: string;
+  definition: string;
+}
+
+interface FunctionInfo {
+  function_name: string;
+  definition: string;
+}
+
+interface TriggerInfo {
+  table_name: string;
+  trigger_name: string;
+  definition: string;
+}
+
 class BackupService {
   private readonly EXCLUDED_TABLES = ['t_backups'];
 
@@ -107,6 +123,51 @@ class BackupService {
     }
   }
 
+  async getRlsPolicies(): Promise<RlsPolicyInfo[]> {
+    const supabaseClient = dbManager.getConnection();
+    try {
+      const { data, error } = await supabaseClient.rpc('get_rls_policies');
+      if (error) {
+        console.warn('[Backup] RPC get_rls_policies no disponible:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.warn('[Backup] Error obteniendo RLS policies:', error);
+      return [];
+    }
+  }
+
+  async getFunctions(): Promise<FunctionInfo[]> {
+    const supabaseClient = dbManager.getConnection();
+    try {
+      const { data, error } = await supabaseClient.rpc('get_all_functions');
+      if (error) {
+        console.warn('[Backup] RPC get_all_functions no disponible:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.warn('[Backup] Error obteniendo funciones:', error);
+      return [];
+    }
+  }
+
+  async getTriggers(): Promise<TriggerInfo[]> {
+    const supabaseClient = dbManager.getConnection();
+    try {
+      const { data, error } = await supabaseClient.rpc('get_all_triggers');
+      if (error) {
+        console.warn('[Backup] RPC get_all_triggers no disponible:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (error) {
+      console.warn('[Backup] Error obteniendo triggers:', error);
+      return [];
+    }
+  }
+
   async getAllTables(): Promise<string[]> {
     const supabaseClient = dbManager.getConnection();
     
@@ -141,7 +202,7 @@ class BackupService {
       't_password_history', 't_permissions', 't_person_address', 't_person_merge_log',
       't_persons', 't_practice_visits', 't_preset_questions',
       't_professional_practices', 't_professional_practices_tutor',
-      't_prospect_list_items', 't_prospect_lists', 't_recovery_tokens',
+      't_practice_culmination', 't_prospect_list_items', 't_prospect_lists', 't_recovery_tokens',
       't_report_text_templates', 't_request_types', 't_roles', 't_roles_permissions',
       't_security_questions', 't_session', 't_session_attempts', 't_session_history',
       't_student_documents', 't_student_requests', 't_students', 't_system_institution',
@@ -208,10 +269,13 @@ class BackupService {
     const totalRecords = Object.values(tablesData).reduce((sum: number, arr) => sum + arr.length, 0);
 
     if (format === 'sql') {
-      const [sequences, indexes, constraints] = await Promise.all([
+      const [sequences, indexes, constraints, rlsPolicies, functions, triggers] = await Promise.all([
         this.getSequences(),
         this.getIndexes(),
-        this.getConstraints()
+        this.getConstraints(),
+        this.getRlsPolicies(),
+        this.getFunctions(),
+        this.getTriggers()
       ]);
       fileContent = this.generateFullSQL(
         backupName, 
@@ -219,6 +283,9 @@ class BackupService {
         sequences,
         indexes,
         constraints,
+        rlsPolicies,
+        functions,
+        triggers,
         tablesData, 
         backedUpTables, 
         failedTables, 
@@ -302,6 +369,9 @@ class BackupService {
     sequences: SequenceInfo[],
     indexes: IndexInfo[],
     constraints: ConstraintInfo[],
+    rlsPolicies: RlsPolicyInfo[],
+    functions: FunctionInfo[],
+    triggers: TriggerInfo[],
     tablesData: Record<string, any[]>, 
     backedUpTables: string[], 
     failedTables: string[],
@@ -310,29 +380,33 @@ class BackupService {
     const lines: string[] = [];
     const tablesWithData = Object.entries(tablesData).filter(([, rows]) => rows.length > 0).length;
     const totalRecords = Object.values(tablesData).reduce((sum: number, arr) => sum + arr.length, 0);
+    const fkConstraints = constraints.filter(c => c.constraint_type === 'FOREIGN KEY');
     
     lines.push('-- ================================================================================');
     lines.push(`-- UNEFA Dashboard - Respaldo COMPLETO para Réplica Exacta`);
     lines.push(`-- Nombre: ${backupName}`);
     lines.push(`-- Fecha: ${new Date().toISOString()}`);
-    lines.push('-- Incluye: Sequences + CREATE TABLE + FK + Índices + Datos');
+    lines.push('-- Incluye: Sequences + Funciones + CREATE TABLE + FK + Índices + Triggers + RLS + Datos');
     lines.push('-- Compatible con: Restauración en otro proyecto Supabase');
     lines.push('-- ================================================================================');
     lines.push(`-- Tablas: ${totalTablesDetected} | Con datos: ${tablesWithData}`);
-    lines.push(`-- Sequences: ${sequences.length} | Índices: ${indexes.length} | FK: ${constraints.filter(c => c.constraint_type === 'FOREIGN KEY').length}`);
+    lines.push(`-- Sequences: ${sequences.length} | Índices: ${indexes.length} | FK: ${fkConstraints.length}`);
+    lines.push(`-- Triggers: ${triggers.length} | RLS: ${rlsPolicies.length} | Funciones: ${functions.length}`);
     lines.push(`-- Total registros: ${totalRecords}`);
     lines.push('-- ================================================================================');
     lines.push('');
 
     // ============================================================
-    // SECCIÓN 0: DESACTIVAR FK TEMPORALMENTE
+    // EXTENSIONES REQUERIDAS
     // ============================================================
-    lines.push('-- Desactivar verificación de foreign keys temporalmente');
-    lines.push('SET session_replication_role = replica;');
+    lines.push('-- Extensiones requeridas');
+    lines.push('CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA public SCHEMA pg_catalog;');
+    lines.push('CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public SCHEMA pg_catalog;');
+    lines.push('CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA public;');
     lines.push('');
 
     // ============================================================
-    // SECCIÓN 1: SEQUENCES (crear antes que tablas para defaults)
+    // SECCIÓN 1: SEQUENCES
     // ============================================================
     if (sequences.length > 0) {
       lines.push('-- ============================================================');
@@ -349,10 +423,26 @@ class BackupService {
     }
 
     // ============================================================
-    // SECCIÓN 2: TABLAS (CREATE TABLE)
+    // SECCIÓN 2: FUNCIONES (antes que tablas por si hay defaults)
+    // ============================================================
+    if (functions.length > 0) {
+      lines.push('-- ============================================================');
+      lines.push('-- SECCIÓN 2: FUNCIONES (RPCs)');
+      lines.push('-- ============================================================');
+      lines.push('');
+
+      for (const fn of functions) {
+        const def = fn.definition.replace(/^CREATE OR REPLACE FUNCTION/m, 'CREATE OR REPLACE FUNCTION');
+        lines.push(def);
+        lines.push('');
+      }
+    }
+
+    // ============================================================
+    // SECCIÓN 3: TABLAS (CREATE TABLE)
     // ============================================================
     lines.push('-- ============================================================');
-    lines.push('-- SECCIÓN 2: ESTRUCTURA DE TABLAS (CREATE TABLE)');
+    lines.push('-- SECCIÓN 3: ESTRUCTURA DE TABLAS (CREATE TABLE)');
     lines.push('-- ============================================================');
     lines.push('');
 
@@ -367,55 +457,28 @@ class BackupService {
       lines.push('');
     }
 
-    // ============================================================
-    // SECCIÓN 3: CONSTRAINTS (FK, UNIQUE, CHECK)
-    // ============================================================
-    const fkConstraints = constraints.filter(c => c.constraint_type === 'FOREIGN KEY');
-    const otherConstraints = constraints.filter(c => c.constraint_type !== 'FOREIGN KEY');
-
-    if (fkConstraints.length > 0 || otherConstraints.length > 0) {
-      lines.push('-- ============================================================');
-      lines.push('-- SECCIÓN 3: CONSTRAINTS');
-      lines.push('-- ============================================================');
-      lines.push('');
-
-      if (fkConstraints.length > 0) {
-        lines.push('-- Foreign Keys');
-        for (const c of fkConstraints) {
-          lines.push(`ALTER TABLE "${c.table_name}" ADD CONSTRAINT "${c.constraint_name}" ${c.definition};`);
-        }
-        lines.push('');
-      }
-
-      if (otherConstraints.length > 0) {
-        lines.push('-- Unique / Check');
-        for (const c of otherConstraints) {
-          lines.push(`ALTER TABLE "${c.table_name}" ADD CONSTRAINT "${c.constraint_name}" ${c.definition};`);
-        }
-        lines.push('');
-      }
-    }
+    // Tablas excluidas del backup de datos pero necesarias para la estructura
+    lines.push('-- Tablas excluidas del backup (solo estructura)');
+    lines.push('CREATE TABLE IF NOT EXISTS "t_backups" (');
+    lines.push('  "id" UUID NOT NULL DEFAULT gen_random_uuid(),');
+    lines.push('  "name" VARCHAR(255) NOT NULL,');
+    lines.push('  "description" TEXT,');
+    lines.push('  "file_name" VARCHAR(255) NOT NULL,');
+    lines.push('  "size" BIGINT,');
+    lines.push('  "tables" TEXT[],');
+    lines.push('  "created_by" INTEGER,');
+    lines.push('  "data" JSONB,');
+    lines.push('  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),');
+    lines.push('  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()');
+    lines.push(');');
+    lines.push('ALTER TABLE "t_backups" OWNER TO postgres;');
+    lines.push('');
 
     // ============================================================
-    // SECCIÓN 4: ÍNDICES
-    // ============================================================
-    if (indexes.length > 0) {
-      lines.push('-- ============================================================');
-      lines.push('-- SECCIÓN 4: ÍNDICES');
-      lines.push('-- ============================================================');
-      lines.push('');
-
-      for (const idx of indexes) {
-        lines.push(`${idx.index_def};`);
-      }
-      lines.push('');
-    }
-
-    // ============================================================
-    // SECCIÓN 5: DATOS (INSERT)
+    // SECCIÓN 4: DATOS (INSERT)
     // ============================================================
     lines.push('-- ============================================================');
-    lines.push('-- SECCIÓN 5: DATOS (INSERT)');
+    lines.push('-- SECCIÓN 4: DATOS (INSERT)');
     lines.push('-- ============================================================');
     lines.push('');
 
@@ -437,10 +500,91 @@ class BackupService {
     }
 
     // ============================================================
-    // SECCIÓN 6: TABLAS VACÍAS (referencia)
+    // SECCIÓN 5: CONSTRAINTS (FK, UNIQUE, CHECK)
+    // ============================================================
+    if (constraints.length > 0) {
+      lines.push('-- ============================================================');
+      lines.push('-- SECCIÓN 5: CONSTRAINTS');
+      lines.push('-- ============================================================');
+      lines.push('');
+
+      const fks = constraints.filter(c => c.constraint_type === 'FOREIGN KEY');
+      const others = constraints.filter(c => c.constraint_type !== 'FOREIGN KEY');
+
+      if (fks.length > 0) {
+        lines.push('-- Foreign Keys');
+        for (const c of fks) {
+          lines.push(`ALTER TABLE "${c.table_name}" ADD CONSTRAINT "${c.constraint_name}" ${c.definition};`);
+        }
+        lines.push('');
+      }
+
+      if (others.length > 0) {
+        lines.push('-- Unique / Check');
+        for (const c of others) {
+          lines.push(`ALTER TABLE "${c.table_name}" ADD CONSTRAINT "${c.constraint_name}" ${c.definition};`);
+        }
+        lines.push('');
+      }
+    }
+
+    // ============================================================
+    // SECCIÓN 6: ÍNDICES
+    // ============================================================
+    if (indexes.length > 0) {
+      lines.push('-- ============================================================');
+      lines.push('-- SECCIÓN 6: ÍNDICES');
+      lines.push('-- ============================================================');
+      lines.push('');
+
+      for (const idx of indexes) {
+        lines.push(`${idx.index_def};`);
+      }
+      lines.push('');
+    }
+
+    // ============================================================
+    // SECCIÓN 7: TRIGGERS
+    // ============================================================
+    if (triggers.length > 0) {
+      lines.push('-- ============================================================');
+      lines.push('-- SECCIÓN 7: TRIGGERS');
+      lines.push('-- ============================================================');
+      lines.push('');
+
+      for (const trg of triggers) {
+        lines.push(trg.definition + ';');
+      }
+      lines.push('');
+    }
+
+    // ============================================================
+    // SECCIÓN 8: RLS POLICIES
+    // ============================================================
+    if (rlsPolicies.length > 0) {
+      lines.push('-- ============================================================');
+      lines.push('-- SECCIÓN 8: RLS POLICIES');
+      lines.push('-- ============================================================');
+      lines.push('');
+
+      // Group by table to emit ENABLE ROW LEVEL SECURITY once per table
+      const tablesWithRls = [...new Set(rlsPolicies.map(p => p.table_name))].sort();
+      for (const tname of tablesWithRls) {
+        lines.push(`ALTER TABLE "${tname}" ENABLE ROW LEVEL SECURITY;`);
+      }
+      lines.push('');
+
+      for (const policy of rlsPolicies) {
+        lines.push(policy.definition);
+      }
+      lines.push('');
+    }
+
+    // ============================================================
+    // SECCIÓN 9: TABLAS VACÍAS (referencia)
     // ============================================================
     lines.push('-- ============================================================');
-    lines.push('-- SECCIÓN 6: TABLAS SIN DATOS (vacías)');
+    lines.push('-- SECCIÓN 9: TABLAS SIN DATOS (vacías)');
     lines.push('-- ============================================================');
     
     const emptyTables = backedUpTables.filter(t => !tablesData[t] || tablesData[t].length === 0);
@@ -460,17 +604,17 @@ class BackupService {
     lines.push(`-- Vacías: ${emptyTables.length}`);
     lines.push(`-- Registros: ${totalRecords}`);
     lines.push(`-- Sequences: ${sequences.length}`);
+    lines.push(`-- Funciones: ${functions.length}`);
     lines.push(`-- Índices: ${indexes.length}`);
     lines.push(`-- Foreign Keys: ${fkConstraints.length}`);
+    lines.push(`-- RLS Policies: ${rlsPolicies.length}`);
     lines.push(`-- Errores: ${failedTables.length}`);
     if (failedTables.length > 0) {
       lines.push(`-- Falló en: ${failedTables.slice(0, 10).join(', ')}${failedTables.length > 10 ? '...' : ''}`);
     }
     lines.push('');
-    lines.push('-- Reactivar verificación de foreign keys');
-    lines.push('SET session_replication_role = DEFAULT;');
     lines.push('-- ================================================================================');
-    lines.push('-- FIN DEL RESPALDO — Compatible con réplica exacta en otro Supabase');
+    lines.push('-- FIN DEL RESPALDO — Réplica exacta lista para otro proyecto Supabase');
     lines.push('-- ================================================================================');
 
     return lines.join('\n');

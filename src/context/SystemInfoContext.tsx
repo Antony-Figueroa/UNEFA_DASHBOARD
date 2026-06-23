@@ -22,7 +22,7 @@ export function SystemInfoProvider({ children }: { children: ReactNode }) {
 
   const fetchInfo = useCallback(async () => {
     try {
-      const res = await apiClient.get('/system-institution');
+      const res = await apiClient.get('/system-institution', { silent: true } as any);
       const d = res.data?.data || res.data;
       if (d && d.legal_name) {
         setInfo({

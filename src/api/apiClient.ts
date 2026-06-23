@@ -155,7 +155,7 @@ apiClient.interceptors.response.use(
        error.response.status === 503 ||    // Service unavailable
        error.response.status >= 500);      // Errores de servidor
 
-    if (config && shouldRetry && (config._retryCount ?? 0) < MAX_RETRIES) {
+    if (config && shouldRetry && !config.silent && (config._retryCount ?? 0) < MAX_RETRIES) {
       config._retryCount = (config._retryCount ?? 0) + 1;
       
       const delay = Math.pow(2, config._retryCount) * 1000;

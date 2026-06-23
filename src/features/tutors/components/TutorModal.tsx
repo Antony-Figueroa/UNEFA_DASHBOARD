@@ -36,9 +36,10 @@ import { getTutorByCi } from "../services/tutorsService";
 import { checkAvailability as checkPersonAvailability } from "../../persons/services/personService";
 import { lookupCi } from "../../students/services/studentsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/inputValidation";
-import AddressList from "../../address/components/AddressList";
 import { addressService } from "../../address/services/addressService";
 import type { GeoOptionsItem } from "../../address/types";
+import GeographicAddressFields from "../../address/components/GeographicAddressFields";
+import type { GeographicAddressValue } from "../../address/components/GeographicAddressFields";
 
 /**
  * Props for the TutorModal component.
@@ -113,7 +114,7 @@ export default function TutorModal({
     const [existingPerson, setExistingPerson] = useState(false);
     const [viewOnlyMode, setViewOnlyMode] = useState(false);
     const [ciLoadedFromApi, setCiLoadedFromApi] = useState(false);
-    const [currentPersonId, setCurrentPersonId] = useState<number | undefined>(editingTutor?.personId ? Number(editingTutor.personId) : undefined);
+    // ponytail: currentPersonId no es necesario sin AddressList
 
     // State for career modal
     const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
@@ -127,6 +128,9 @@ export default function TutorModal({
 
   const { config: academicConfig } = useAcademicConfig();
   const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
+  const [inlineAddress, setInlineAddress] = useState<GeographicAddressValue>({
+    parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true,
+  });
 
   const tutorSchema = useMemo(() => z.object({
     identificationPrefix: z.string().min(1, "Seleccione el tipo"),
@@ -857,7 +861,6 @@ export default function TutorModal({
       setExistingTutor(null);
       setExistingPerson(false);
       setViewOnlyMode(false);
-      setCurrentPersonId(editingTutor?.personId ? Number(editingTutor.personId) : undefined); // Initialize currentPersonId
       
       if (editingTutor) {
         const areaCode = editingTutor.phone ? editingTutor.phone.substring(0, 4) : "";
@@ -947,6 +950,7 @@ export default function TutorModal({
         profession: (data.profession || "").toUpperCase(),
         titulo: data.titulo ? data.titulo.toUpperCase() : "",
         carreras: Array.isArray(data.carreras) ? data.carreras.map((c) => String(c).toUpperCase()) : data.carreras,
+        address: inlineAddress.streetAddress ? `${inlineAddress.streetAddress}${inlineAddress.reference ? ` - ${inlineAddress.reference}` : ''}` : undefined,
       };
       // Si se cargó un tutor existente por CI → actualizar, no crear
       const payload = existingTutor
@@ -1047,16 +1051,16 @@ export default function TutorModal({
                   fieldLockOnApiLoad={ciLoadedFromApi && (academicConfig?.lockApiLoadedFields ?? true)}
                   editingId={editingTutor?.tutorId ?? existingTutor?.tutorId ?? null}
                 />
-                {currentPersonId && (
-                  <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Direcciones</h3>
-                    <AddressList
-                      entityType="person"
-                      entityId={currentPersonId}
-                      geoOptions={geoOptions}
-                    />
-                  </div>
-                )}
+                {/* Dirección de Residencia */}
+                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                  <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección de Residencia</h3>
+                  <GeographicAddressFields
+                    geoOptions={geoOptions}
+                    value={inlineAddress}
+                    onChange={setInlineAddress}
+                    showReference
+                  />
+                </div>
               </div>
             </div>
           <div hidden={tabsState.activeTab !== 'laboral'} role="tabpanel">

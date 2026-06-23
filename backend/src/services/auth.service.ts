@@ -2,6 +2,7 @@ import { dbManager } from '../lib/db-manager.js';
 import { comparePassword, hashPassword, generateToken, verifyToken as verifyJWT } from '../utils/auth.utils.js';
 import { sendLoginNotification, sendSecurityAlert, sendPasswordRecoveryEmail, sendPasswordChangedNotification } from '../utils/email.utils.js';
 import { nowStringVenezuela, nowInVenezuela } from '../utils/date.utils.js';
+import { getConfig } from '../services/config.service.js';
 import crypto from 'crypto';
 
 const tokenBlacklist = new Map<string, { userId: number; userCi: string; expiresAt: number }>();
@@ -117,7 +118,7 @@ const getDeviceFingerprint = (userAgent: string): string => {
 
 // ─── Session Tracking (DB-backed) ───
 
-const MAX_SESSION_HOURS = 24; // Timeout absoluto: 24h desde creación de sesión
+// ponytail: MAX_SESSION_HOURS leído desde config (default 24h en DB)
 
 /**
  * Calcula el SHA-256 hash de un token para usar como identificador de sesión.
@@ -188,9 +189,11 @@ export const verifySessionInDB = async (
     return { valid: false, reason: 'SESSION_REVOKED' };
   }
 
-  // Timeout absoluto: si la sesión se creó hace más de 24h, expirar
+  // Timeout absoluto: configurable desde SESSION_MAX_HOURS (default 24h)
   const createdAt = new Date(session.CREATED_AT).getTime();
-  const maxAge = MAX_SESSION_HOURS * 60 * 60 * 1000;
+  const config = await getConfig();
+  const sessionMaxHours = config?.SESSION_MAX_HOURS || 24;
+  const maxAge = sessionMaxHours * 60 * 60 * 1000;
   if (Date.now() - createdAt > maxAge) {
     await supabase
       .from('t_user_sessions')
@@ -623,7 +626,9 @@ export const requestPasswordReset = async (email: string, ip: string, userAgent:
 
       if (user && user.STATUS !== 0) {
         const token = crypto.randomBytes(32).toString('hex');
-        const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const config = await getConfig();
+        const linkExpiryHours = config?.RECOVERY_LINK_EXPIRY_HOURS || 48;
+        const expiry = new Date(Date.now() + linkExpiryHours * 60 * 60 * 1000).toISOString();
 
         await supabase.from('t_recovery_tokens').insert({
           USER_ID: user.USER_ID,
@@ -989,7 +994,9 @@ export const requestPasswordResetByCi = async (userCi: string, ip: string, userA
 
       if (user && user.STATUS !== 0 && user.EMAIL) {
         const token = crypto.randomBytes(32).toString('hex');
-        const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const config = await getConfig();
+        const linkExpiryHours = config?.RECOVERY_LINK_EXPIRY_HOURS || 48;
+        const expiry = new Date(Date.now() + linkExpiryHours * 60 * 60 * 1000).toISOString();
 
         await supabase.from('t_recovery_tokens').insert({
           USER_ID: user.USER_ID,

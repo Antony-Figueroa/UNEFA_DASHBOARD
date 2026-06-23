@@ -28,7 +28,8 @@ export const getConfig = async (req: Request, res: Response) => {
       {
         category: 'Recuperación',
         items: [
-          { id: 'recovery_email', key: 'RECOVERY_EMAIL', label: 'Recuperación por Email', value: config.RECOVERY_EMAIL === 1, type: 'boolean', description: 'Permitir recuperación de contraseña por correo electrónico' }
+          { id: 'recovery_email', key: 'RECOVERY_EMAIL', label: 'Recuperación por Email', value: config.RECOVERY_EMAIL === 1, type: 'boolean', description: 'Permitir recuperación de contraseña por correo electrónico' },
+          { id: 'recovery_link_expiry', key: 'RECOVERY_LINK_EXPIRY_HOURS', label: 'Expiración de Enlace de Recuperación (horas)', value: config.RECOVERY_LINK_EXPIRY_HOURS || 48, type: 'number', description: 'Horas hasta que un enlace de recuperación de contraseña expire' }
         ]
       },
       {
@@ -57,7 +58,8 @@ export const getConfig = async (req: Request, res: Response) => {
       {
         category: 'Sesiones',
         items: [
-          { id: 'session_timeout', key: 'KEY_LEGTH', label: 'Tiempo de Sesión (minutos)', value: config.KEY_LEGTH || 60, type: 'number', description: 'Tiempo en minutos antes de que la sesión expire por inactividad' }
+          { id: 'session_timeout', key: 'KEY_LEGTH', label: 'Tiempo de Sesión (minutos)', value: config.KEY_LEGTH || 60, type: 'number', description: 'Tiempo en minutos antes de que la sesión expire por inactividad' },
+          { id: 'session_max_hours', key: 'SESSION_MAX_HOURS', label: 'Duración Máxima de Sesión (horas)', value: config.SESSION_MAX_HOURS || 24, type: 'number', description: 'Tiempo máximo absoluto que una sesión puede estar activa desde su creación' }
         ]
       },
       {

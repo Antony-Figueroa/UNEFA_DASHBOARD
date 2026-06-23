@@ -1,0 +1,5 @@
+-- Migration: Add SESSION_MAX_HOURS and RECOVERY_LINK_EXPIRY_HOURS to t_config
+-- Allows admins to configure absolute session lifetime and recovery link expiry from UI
+
+ALTER TABLE t_config ADD COLUMN IF NOT EXISTS "SESSION_MAX_HOURS" INTEGER NOT NULL DEFAULT 24;
+ALTER TABLE t_config ADD COLUMN IF NOT EXISTS "RECOVERY_LINK_EXPIRY_HOURS" INTEGER NOT NULL DEFAULT 48;

@@ -258,6 +258,7 @@ export default function TutorModal({
     handleSubmit,
     control,
     reset,
+    trigger,
     watch,
     setValue,
     setError,
@@ -861,6 +862,7 @@ export default function TutorModal({
       setExistingTutor(null);
       setExistingPerson(false);
       setViewOnlyMode(false);
+      setInlineAddress({ parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true });
       
       if (editingTutor) {
         const areaCode = editingTutor.phone ? editingTutor.phone.substring(0, 4) : "";
@@ -891,6 +893,7 @@ export default function TutorModal({
         const cleanPh = editingTutor.phone ? cleanPhone(editingTutor.phone) : "";
         const numberOnly = cleanPh.length >= 4 ? cleanPh.substring(4) : cleanPh;
         setDisplayPhoneNumber(formatPhoneLocalDisplay(numberOnly));
+        trigger();
       } else {
         reset({
           identificationPrefix: "V",
@@ -914,9 +917,10 @@ export default function TutorModal({
         });
         setDisplayIdentificationNumber("");
         setDisplayPhoneNumber("");
+        trigger();
       }
     }
-  }, [isOpen, editingTutor, reset]);
+  }, [isOpen, editingTutor, reset, trigger]);
 
   // Cleanup adicional cuando se cierra el modal
   useEffect(() => {
@@ -1059,6 +1063,10 @@ export default function TutorModal({
                     value={inlineAddress}
                     onChange={setInlineAddress}
                     showReference
+                    estadoLabel="Estado"
+                    municipioLabel="Municipio"
+                    parroquiaLabel="Parroquia"
+                    streetLabel="Dirección"
                   />
                 </div>
               </div>
@@ -1216,7 +1224,7 @@ export default function TutorModal({
               <AsyncButton
                 onClick={handleFormSubmit}
                 loading={isLoading || confirmSaving}
-                disabled={!isDirty || !isValid || isLoading || confirmSaving}
+                disabled={!isValid || isLoading || confirmSaving}
               >
                 Guardar
               </AsyncButton>

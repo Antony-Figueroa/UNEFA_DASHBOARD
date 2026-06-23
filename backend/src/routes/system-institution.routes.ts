@@ -7,8 +7,8 @@ import {
 
 const router = Router();
 
-// ponytail: branding data (logo, name) — any authenticated user can read
-router.get('/', authenticateToken, getInstitution);
+// ponytail: branding data (logo, name) — any authenticated user can read, no auth needed for GET
+router.get('/', getInstitution);
 router.put('/', requirePermission('system-institution:edit'), updateInstitution);
 
 export default router;

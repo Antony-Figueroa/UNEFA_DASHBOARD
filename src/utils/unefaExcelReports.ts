@@ -586,7 +586,7 @@ export async function generateRelacionIndividualDocenteExcel(data: any[], period
 
 /**
  * Genera un Excel simple a partir de columnas y datos.
- * Útil para reportes que no tienen un formato institucional específico.
+ * Incluye membrete institucional, header verde y datos en UPPERCASE.
  */
 export async function generateSimpleExcel(
   data: any[],
@@ -602,11 +602,17 @@ export async function generateSimpleExcel(
     width: 20,
   }));
 
+  // Membrete institucional
+  applyInstitutionalHeader(worksheet, totalCols);
+  await addLogos(workbook, worksheet);
+
+  const titleRow = 7;
   if (title) {
-    applyTitleRow(worksheet, 1, title, totalCols);
+    applyTitleRow(worksheet, titleRow, title, totalCols);
   }
 
-  const headerRow = title ? 3 : 1;
+  const blankRow = title ? 8 : 7;
+  const headerRow = blankRow + 1;
   applyHeaderRow(worksheet, headerRow, columns.map((col, i) => ({
     col: i + 1,
     text: col.header,
@@ -615,11 +621,14 @@ export async function generateSimpleExcel(
   let currentRow = headerRow + 1;
   data.forEach((item) => {
     const values = columns.map((col) => {
+      let v: unknown;
       if (typeof col.accessor === 'function') {
-        const v = col.accessor(item);
-        return v ?? '';
+        v = col.accessor(item) ?? '';
+      } else {
+        v = (item as any)[col.accessor] ?? '';
       }
-      return (item as any)[col.accessor] ?? '';
+      // UPPERCASE for strings
+      return typeof v === 'string' ? v.toUpperCase() : v;
     });
     applyDataRow(worksheet, currentRow, values);
     currentRow++;

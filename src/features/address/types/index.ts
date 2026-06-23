@@ -71,6 +71,8 @@ export interface CreateAddressPayload {
 }
 
 export interface UpdateAddressPayload {
+  entityType?: "person" | "institution";
+  entityId?: number;
   parroquiaId?: number;
   streetAddress?: string;
   reference?: string;

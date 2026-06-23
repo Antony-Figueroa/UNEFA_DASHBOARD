@@ -10,7 +10,9 @@ import type { GeoOptionsItem, InstitutionAddress, PersonAddress, AddressType } f
 type AddressRow = InstitutionAddress | PersonAddress;
 
 const getAddrId = (addr: AddressRow, entityType: 'person' | 'institution'): number =>
-  entityType === 'institution' ? (addr as InstitutionAddress).institutionAddressId : (addr as PersonAddress).personAddressId;
+  entityType === 'institution'
+    ? (addr as InstitutionAddress).institutionAddressId ?? 0
+    : (addr as PersonAddress).personAddressId ?? 0;
 
 interface AddressListProps {
   entityType: 'person' | 'institution';
@@ -77,8 +79,10 @@ export default function AddressList({
     reference?: string;
     isPrimary?: boolean;
   }) => {
-    if (!editingAddress) return;
+    if (!editingAddress || !entityId) return;
     await updateAddress(getAddrId(editingAddress, entityType), {
+      entityType,
+      entityId,
       parroquiaId: data.parroquiaId,
       streetAddress: data.streetAddress,
       reference: data.reference,
@@ -103,13 +107,13 @@ export default function AddressList({
     setShowForm(true);
   };
 
-  const initialFormData = editingAddress
+  const initialFormData = editingAddress?.address
     ? {
         parroquiaId: editingAddress.address.parroquiaId,
         streetAddress: editingAddress.address.streetAddress,
         reference: editingAddress.address.reference || undefined,
         isPrimary: editingAddress.isPrimary,
-        addressTypeId: editingAddress.addressType.addressTypeId,
+        addressTypeId: editingAddress.addressType?.addressTypeId,
       }
     : undefined;
 

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { addressService } from '../services/addressService';
 import type {
@@ -63,16 +63,21 @@ export const useAddresses = ({ entityType, entityId }: UseAddressesOptions) => {
   const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
+  const fetchIdRef = useRef(0);
 
   const fetchAddresses = useCallback(async () => {
     if (!entityId) return;
+    const id = ++fetchIdRef.current;
     setLoading(true);
     try {
       const endpoint = entityType === 'institution'
         ? addressService.getInstitutionAddresses(entityId)
         : addressService.getPersonAddresses(entityId);
       const response = await endpoint;
-      const camelized = camelizeKeys<any[]>(response.data);
+      if (id !== fetchIdRef.current) return; // ponytail: stale fetch guard
+      const raw = response.data;
+      if (!Array.isArray(raw)) { setAddresses([]); return; }
+      const camelized = camelizeKeys<any[]>(raw);
       const flattened = camelized.map(flattenAddress);
       setAddresses(flattened);
     } catch (error: any) {

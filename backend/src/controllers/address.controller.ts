@@ -103,7 +103,7 @@ export const createAddress = async (req: Request, res: Response) => {
       is_primary,
     } = req.body;
 
-    if (!entity_type || !entity_id || !address_type_id || !parroquia_id || !street_address) {
+    if (!entity_type || entity_id == null || address_type_id == null || parroquia_id == null || !street_address) {
       res.status(400).json({ message: 'Faltan campos requeridos: entity_type, entity_id, address_type_id, parroquia_id, street_address' });
       return;
     }

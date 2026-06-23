@@ -181,6 +181,7 @@ export default function InstitutionalResponsibleModal({
    const apiLoadedCiRef = useRef("");
    const { config: academicConfig } = useAcademicConfig();
    const tabsState = useTabs({ defaultTab: "datos-personales" });
+   useEffect(() => { if (isOpen) tabsState.setActiveTab("datos-personales"); }, [isOpen]);
 
 // Check if institutional responsible exists by CI
     const checkInstitutionalResponsibleByCi = async (ci: string) => {

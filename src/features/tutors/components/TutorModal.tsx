@@ -98,9 +98,11 @@ export default function TutorModal({
     const [isLookingUpCi, setIsLookingUpCi] = useState(false);
     const [isCheckingEmail, setIsCheckingEmail] = useState(false);
     const tabsState = useTabs({ defaultTab: 'datos-personales' });
+    useEffect(() => { if (isOpen) tabsState.setActiveTab('datos-personales'); }, [isOpen]);
     const [existingTutor, setExistingTutor] = useState<any | null>(null);
     const [existingPerson, setExistingPerson] = useState(false);
     const [viewOnlyMode, setViewOnlyMode] = useState(false);
+    const [ciLoadedFromApi, setCiLoadedFromApi] = useState(false);
     const [currentPersonId, setCurrentPersonId] = useState<number | undefined>(editingTutor?.personId ? Number(editingTutor.personId) : undefined);
 
     // State for career modal
@@ -297,6 +299,7 @@ export default function TutorModal({
       if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits || !existingTutor) {
         setExistingTutor(null);
         setExistingPerson(false);
+        setCiLoadedFromApi(false);
         setViewOnlyMode(false);
         clearErrors("identificationNumber");
         // Resetear los campos del formulario
@@ -511,6 +514,7 @@ export default function TutorModal({
     try {
       const externalData = await lookupCi(fullCi);
       if (externalData) {
+        setCiLoadedFromApi(true);
         setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
         setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
         setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
@@ -993,7 +997,7 @@ export default function TutorModal({
                   age={age}
                   maxDate={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
                   viewOnlyMode={viewOnlyMode}
-                  fieldLockOnApiLoad={academicConfig?.lockApiLoadedFields ?? true}
+                  fieldLockOnApiLoad={ciLoadedFromApi && (academicConfig?.lockApiLoadedFields ?? true)}
                   editingId={editingTutor?.tutorId ?? existingTutor?.tutorId ?? null}
                 />
                 {currentPersonId && (

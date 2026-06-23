@@ -18,6 +18,9 @@ const tryGmail = async (opts: { to: string; subject: string; html: string; text?
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user, pass },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
 
     await transporter.sendMail({
@@ -84,13 +87,13 @@ const trySimulation = (opts: { to: string; subject: string; html: string; text?:
  * Prioridad: Gmail SMTP → Resend → Simulación en consola.
  */
 export const sendEmail = async (options: { to: string; subject: string; html: string; text?: string }): Promise<SendResult> => {
-  // 1. Gmail SMTP (si está configurado)
+  // 1. Gmail SMTP
   const gmailResult = await tryGmail(options);
-  if (gmailResult !== null) return gmailResult;
+  if (gmailResult?.success) return gmailResult;
 
-  // 2. Resend API (fallback para serverless/producción)
+  // 2. Resend API (fallback)
   const resendResult = await tryResend(options);
-  if (resendResult !== null) return resendResult;
+  if (resendResult?.success) return resendResult;
 
   // 3. Último recurso: simulación en consola
   return trySimulation(options);

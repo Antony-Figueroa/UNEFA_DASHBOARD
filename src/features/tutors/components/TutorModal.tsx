@@ -266,7 +266,7 @@ export default function TutorModal({
     formState: { errors, isDirty, isValid },
   } = useForm<TutorFormData>({
     resolver: zodResolver(tutorSchema),
-    mode: "onChange",
+    mode: "onTouched",
     defaultValues: {
       identificationPrefix: "V",
       identificationNumber: "",
@@ -307,7 +307,14 @@ export default function TutorModal({
   }, [errors]);
   const currentTabIndex = TAB_IDS.indexOf(tabsState.activeTab as typeof TAB_IDS[number]);
   const goPrevTab = () => { if (currentTabIndex > 0) tabsState.setActiveTab(TAB_IDS[currentTabIndex - 1]); };
-  const goNextTab = () => { if (currentTabIndex < TAB_IDS.length - 1) tabsState.setActiveTab(TAB_IDS[currentTabIndex + 1]); };
+  const goNextTab = async () => {
+    const currentTab = TAB_IDS[currentTabIndex];
+    const fields = TAB_FIELDS[currentTab];
+    const valid = await trigger(fields as any);
+    if (valid && currentTabIndex < TAB_IDS.length - 1) {
+      tabsState.setActiveTab(TAB_IDS[currentTabIndex + 1]);
+    }
+  };
 
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -893,7 +900,6 @@ export default function TutorModal({
         const cleanPh = editingTutor.phone ? cleanPhone(editingTutor.phone) : "";
         const numberOnly = cleanPh.length >= 4 ? cleanPh.substring(4) : cleanPh;
         setDisplayPhoneNumber(formatPhoneLocalDisplay(numberOnly));
-        trigger();
       } else {
         reset({
           identificationPrefix: "V",
@@ -917,10 +923,9 @@ export default function TutorModal({
         });
         setDisplayIdentificationNumber("");
         setDisplayPhoneNumber("");
-        trigger();
       }
     }
-  }, [isOpen, editingTutor, reset, trigger]);
+  }, [isOpen, editingTutor, reset]);
 
   // Cleanup adicional cuando se cierra el modal
   useEffect(() => {

@@ -48,7 +48,7 @@ export const rateLimit = (limit: number, windowMs: number) => {
 
     if (store[ip].count >= limit) {
       return res.status(429).json({
-        message: 'Too many requests, please try again later.'
+        message: 'Demasiadas solicitudes, intente de nuevo en un minuto.'
       });
     }
 

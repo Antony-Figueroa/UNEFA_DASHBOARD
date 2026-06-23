@@ -12,11 +12,21 @@ import { usePasswordPolicy } from "../../features/auth/hooks/usePasswordPolicy";
 
 interface ApiError {
   response?: {
+    status?: number;
     data?: {
       message?: string;
     };
   };
 }
+
+// ponytail: centraliza el mapeo error→toast, 4 catch blocks idénticos
+const getErrorToast = (err: unknown) => {
+  const apiError = err as ApiError;
+  const status = apiError.response?.status;
+  const msg = apiError.response?.data?.message || "No se pudo establecer conexión con el servidor.";
+  if (status === 429) return { title: "Muchas Solicitudes", message: msg };
+  return { title: "Error de Conexión", message: msg };
+};
 
 interface SecurityQuestion {
   id: number;
@@ -92,12 +102,7 @@ export default function PasswordRecovery() {
         });
       }
     } catch (err) {
-      const apiError = err as ApiError;
-      addToast({
-        variant: "error",
-        title: "Error de Conexión",
-        message: apiError.response?.data?.message || "No se pudo establecer conexión con el servidor."
-      });
+      addToast({ variant: "error", ...getErrorToast(err) });
     } finally {
       setLoading(false);
     }
@@ -131,12 +136,7 @@ export default function PasswordRecovery() {
         });
       }
     } catch (err) {
-      const apiError = err as ApiError;
-      addToast({
-        variant: "error",
-        title: "Error de Conexión",
-        message: apiError.response?.data?.message || "No se pudo establecer conexión con el servidor."
-      });
+      addToast({ variant: "error", ...getErrorToast(err) });
     } finally {
       setLoading(false);
     }
@@ -191,12 +191,7 @@ export default function PasswordRecovery() {
         });
       }
     } catch (err) {
-      const apiError = err as ApiError;
-      addToast({
-        variant: "error",
-        title: "Error de Conexión",
-        message: apiError.response?.data?.message || "No se pudo establecer conexión con el servidor."
-      });
+      addToast({ variant: "error", ...getErrorToast(err) });
     } finally {
       setLoading(false);
     }
@@ -232,12 +227,7 @@ export default function PasswordRecovery() {
         });
       }
     } catch (err) {
-      const apiError = err as ApiError;
-      addToast({
-        variant: "error",
-        title: "Error de Conexión",
-        message: apiError.response?.data?.message || "No se pudo establecer conexión con el servidor."
-      });
+      addToast({ variant: "error", ...getErrorToast(err) });
     } finally {
       setLoading(false);
     }

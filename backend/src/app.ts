@@ -248,6 +248,8 @@ app.use('/api/system-institution', systemInstitutionRoutes);
 // Apply protection to all subsequent /api routes
 app.use('/api', authenticateToken, restrictAsistente);
 
+app.use('/api/system-nucleus', systemNucleusRoutes);
+
 app.use('/api/careers', careersRoutes);
 app.use('/api/internship-types', internshipTypesRoutes);
 app.use('/api/persons', personsRoutes);

@@ -919,6 +919,29 @@ export default function InstitutionModal({
                disabled={isFormDisabled || !!editingInst}
             />
           </div>
+          <div>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">Tipo de Empresa o Institución <span className="text-red-500">*</span></label>
+            <Controller
+              name="institutionType"
+              control={control}
+              render={({ field }) => (
+                <CustomSelect
+                  id="institutionType"
+                  options={INSTITUTION_TYPE_OPTIONS}
+                  onChange={field.onChange}
+                  value={String(field.value ?? "")}
+                  placeholder="Seleccione el tipo"
+                  error={!!errors.institutionType}
+                  disabled={isFormDisabled}
+                  onAddNew={() => openAddValueModal("Tipo de empresa", "institutionType", "Agregar Tipo de Empresa")}
+                  addNewLabel="Nueva opción"
+                />
+              )}
+            />
+            {errors.institutionType && (
+              <p className="mt-1 text-xs text-red-500">{errors.institutionType.message}</p>
+            )}
+          </div>
           </div>
           
           <div hidden={tabsState.activeTab !== 'contacto'} role="tabpanel" className="contents">

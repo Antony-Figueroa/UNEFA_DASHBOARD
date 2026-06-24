@@ -4,6 +4,9 @@ import Button from "../../../../components/ui/button/Button";
 import apiClient from "../../../../api/apiClient";
 import toast from "react-hot-toast";
 import { EditIcon } from "../../../../icons/actions";
+import * as listsService from "../../../../features/lists/services/listsService";
+import type { ListValue } from "../../../../features/lists/types";
+import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
 
 interface InstitutionData {
   legal_name: string;
@@ -33,18 +36,89 @@ const DEFAULT_FORM: InstitutionData = {
   extension: "",
 };
 
+const LIST_NAMES = { region: "REGION", nucleus: "NUCLEO", extension: "EXTENSIÓN" } as const;
+
 export default function InstitutionConfig() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<InstitutionData>(DEFAULT_FORM);
   const [hasChanges, setHasChanges] = useState(false);
   const [hasData, setHasData] = useState(false);
+  const [listOptions, setListOptions] = useState<Record<string, ListValue[]>>({});
+
+  // Add-value inline
+  const [addValueOpen, setAddValueOpen] = useState(false);
+  const [addValueListName, setAddValueListName] = useState("");
+  const [addValueField, setAddValueField] = useState<keyof InstitutionData>("region");
+  const [addValueInput, setAddValueInput] = useState("");
+  const [savingNewValue, setSavingNewValue] = useState(false);
+
+  const openAddValue = (listName: string, field: keyof InstitutionData) => {
+    setAddValueListName(listName);
+    setAddValueField(field);
+    setAddValueInput("");
+    setAddValueOpen(true);
+  };
+
+  const handleAddNewValue = async () => {
+    const raw = addValueInput.trim().toUpperCase();
+    if (!raw) return;
+    setSavingNewValue(true);
+    try {
+      let list: any = null;
+      try {
+        list = await listsService.getListByName(addValueListName);
+      } catch { /* fallback */ }
+      if (!list) {
+        const allLists = await listsService.getAllLists();
+        list = allLists.find(l => l.name === addValueListName);
+      }
+      if (!list) {
+        list = await listsService.createList(addValueListName);
+      }
+      const created = await listsService.createValue(list.id, raw);
+      const opt: ListValue = {
+        ...created,
+        name: raw,
+        status: true,
+      };
+      setListOptions(prev => ({
+        ...prev,
+        [addValueListName]: [...(prev[addValueListName] || []), opt],
+      }));
+      updateField(addValueField, raw);
+      setAddValueOpen(false);
+      setAddValueInput("");
+    } catch {
+      toast.error("Error al crear el valor");
+    } finally {
+      setSavingNewValue(false);
+    }
+  };
+
+  const fetchLists = useCallback(async () => {
+    try {
+      const [regionList, nucleusList, extensionList] = await Promise.all([
+        listsService.getListByName(LIST_NAMES.region),
+        listsService.getListByName(LIST_NAMES.nucleus),
+        listsService.getListByName(LIST_NAMES.extension),
+      ]);
+      setListOptions({
+        [LIST_NAMES.region]: regionList.values.filter(v => v.status),
+        [LIST_NAMES.nucleus]: nucleusList.values.filter(v => v.status),
+        [LIST_NAMES.extension]: extensionList.values.filter(v => v.status),
+      });
+    } catch { /* las listas se crean desde /configure/lists */ }
+  }, []);
 
   const fetchInstitution = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get("/system-institution");
-      const data = res.data?.data;
+      const [res] = await Promise.all([
+        apiClient.get("/system-institution"),
+        fetchLists(),
+      ]);
+      const data = res.data;
       if (data) {
         setForm({
           legal_name: data.legal_name || "",
@@ -77,6 +151,14 @@ export default function InstitutionConfig() {
   const updateField = (field: keyof InstitutionData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setHasChanges(true);
+  };
+
+  const handleSelectChange = (field: keyof InstitutionData, listName: string, value: string) => {
+    if (value === "__new__") {
+      openAddValue(listName, field);
+    } else {
+      updateField(field, value);
+    }
   };
 
   const handleSave = async () => {
@@ -212,33 +294,45 @@ export default function InstitutionConfig() {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div>
                   <label className={labelClass}>Región</label>
-                  <input
-                    type="text"
+                  <select
                     value={form.region}
-                    onChange={(e) => updateField("region", e.target.value)}
+                    onChange={(e) => handleSelectChange("region", LIST_NAMES.region, e.target.value)}
                     className={inputClass}
-                    placeholder="Ej: Capital"
-                  />
+                  >
+                    <option value="">Seleccionar región...</option>
+                    <option value="__new__">+ Nuevo</option>
+                    {(listOptions[LIST_NAMES.region] || []).map((opt) => (
+                      <option key={opt.id} value={opt.name}>{opt.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Núcleo</label>
-                  <input
-                    type="text"
+                  <select
                     value={form.nucleus}
-                    onChange={(e) => updateField("nucleus", e.target.value)}
+                    onChange={(e) => handleSelectChange("nucleus", LIST_NAMES.nucleus, e.target.value)}
                     className={inputClass}
-                    placeholder="Ej: Núcleo Caracas"
-                  />
+                  >
+                    <option value="">Seleccionar núcleo...</option>
+                    <option value="__new__">+ Nuevo</option>
+                    {(listOptions[LIST_NAMES.nucleus] || []).map((opt) => (
+                      <option key={opt.id} value={opt.name}>{opt.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Extensión</label>
-                  <input
-                    type="text"
+                  <select
                     value={form.extension}
-                    onChange={(e) => updateField("extension", e.target.value)}
+                    onChange={(e) => handleSelectChange("extension", LIST_NAMES.extension, e.target.value)}
                     className={inputClass}
-                    placeholder="Ej: Extensión Cagua"
-                  />
+                  >
+                    <option value="">Seleccionar extensión...</option>
+                    <option value="__new__">+ Nuevo</option>
+                    {(listOptions[LIST_NAMES.extension] || []).map((opt) => (
+                      <option key={opt.id} value={opt.name}>{opt.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </ComponentCard>
@@ -292,8 +386,39 @@ export default function InstitutionConfig() {
               </div>
             )}
           </>
-        )}
+            )}
       </div>
+
+      {/* Modal para agregar nuevo valor a lista */}
+      <UnifiedDialog
+        isOpen={addValueOpen}
+        onClose={() => setAddValueOpen(false)}
+        title="Agregar nuevo valor"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary dark:text-text-tertiary">
+            Ingrese el nombre del nuevo valor para <strong>{addValueListName}</strong>:
+          </p>
+          <input
+            type="text"
+            value={addValueInput}
+            onChange={(e) => setAddValueInput(e.target.value)}
+            placeholder="Nombre del valor..."
+            className={inputClass}
+            autoFocus
+            onKeyDown={(e) => e.key === "Enter" && handleAddNewValue()}
+          />
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setAddValueOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAddNewValue} loading={savingNewValue}>
+              Agregar
+            </Button>
+          </div>
+        </div>
+      </UnifiedDialog>
     </>
   );
 }

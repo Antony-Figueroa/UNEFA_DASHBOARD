@@ -685,7 +685,7 @@ if (student) {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-text-primary dark:text-white tracking-tight">
-                  {editingEntry ? "Gestión de Preinscripción" : "Nueva Preinscripción"}
+                  {editingEntry ? "Gestión de Pre-Inscripción" : "Nueva Pre-Inscripción"}
                 </h2>
                 <p className="text-xs text-text-tertiary font-medium">
                   {editingEntry ? "Actualiza los detalles académicos del registro seleccionado." : "Registra a un estudiante en un período académico y genera su matrícula inicial."}
@@ -727,7 +727,7 @@ if (student) {
                   </div>
 
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-bold text-text-tertiary uppercase tracking-widest">Documento de Identidad *</label>
+                    <label className="block text-[10px] font-bold text-text-tertiary uppercase tracking-widest">Documento de Identidad <span className="text-red-500">*</span></label>
                     <div className="flex gap-3">
                       <div className="w-28 shrink-0">
                         <Controller
@@ -877,7 +877,7 @@ if (student) {
                   <div className="space-y-6">
                     {/* Carrera */}
                     <div className="space-y-3">
-                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Carrera *</label>
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Carrera <span className="text-red-500">*</span></label>
                       <Controller
                         name="careerId"
                         control={control}
@@ -899,7 +899,7 @@ if (student) {
                     {/* Semestre */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Semestre *</label>
+                        <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Semestre <span className="text-red-500">*</span></label>
                         <Badge color="info" variant="light" size="sm" className="font-bold text-[9px] px-1.5 backdrop-blur-sm">AUTO</Badge>
                       </div>
                       <Controller
@@ -923,7 +923,7 @@ if (student) {
 
                     {/* Sección */}
                     <div className="space-y-3">
-                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Sección *</label>
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Sección <span className="text-red-500">*</span></label>
                       <Controller
                         name="section"
                         control={control}
@@ -946,7 +946,7 @@ if (student) {
 
                     {/* Régimen */}
                     <div className="space-y-3">
-                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Régimen *</label>
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Régimen <span className="text-red-500">*</span></label>
                       <Controller
                         name="regime"
                         control={control}
@@ -968,7 +968,7 @@ if (student) {
                     {/* Tipo de Práctica */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Tipo de Práctica *</label>
+                        <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Tipo de Práctica <span className="text-red-500">*</span></label>
                         <Badge color="info" variant="light" size="sm" className="font-bold text-[9px] px-1.5 backdrop-blur-sm">AUTO</Badge>
                       </div>
                       <Controller
@@ -992,7 +992,7 @@ if (student) {
 
                     {/* Período */}
                     <div className="space-y-3">
-                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Período Académico *</label>
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Período Académico <span className="text-red-500">*</span></label>
                       <Controller
                         name="period"
                         control={control}
@@ -1074,7 +1074,7 @@ if (student) {
                 className="flex-1 sm:flex-none h-11 px-10 rounded-xl font-bold bg-brand-600 hover:bg-brand-700 transition-all duration-200" 
                 disabled={editingEntry ? !isDirty || !isValid : !isValid}
               >
-                {editingEntry ? "Actualizar Preinscripción" : "Guardar Registro"}
+                {editingEntry ? "Actualizar Pre-Inscripción" : "Guardar Registro"}
               </AsyncButton>
             </div>
           </div>

@@ -399,7 +399,7 @@ export default function EnrollmentModal({
       );
 
       if (culminatedEnrollment) {
-        setPreEnrollmentError("El estudiante ya possui uma inscrição concluída. Não é possível registrar uma nova inscrição.");
+        setPreEnrollmentError("El estudiante ya posee una inscripción culminada. No es posible registrar una nueva inscripción.");
         return;
       }
 
@@ -667,7 +667,7 @@ export default function EnrollmentModal({
                 className="text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold"
               >
                 <PlusIcon className="w-4 h-4 mr-1" />
-                Nueva Preinscripción
+                Nueva Pre-inscripción
               </Button>
             </div>
           )}
@@ -687,7 +687,7 @@ export default function EnrollmentModal({
                 </div>
 
                 <div className="space-y-4">
-                  <label className="block text-[10px] font-bold text-text-tertiary uppercase tracking-widest">Documento de Identidad *</label>
+                  <label className="block text-[10px] font-bold text-text-tertiary uppercase tracking-widest">Documento de Identidad <span className="text-red-500">*</span></label>
                   <div className="flex gap-3">
                     <div className="w-28 shrink-0">
                       <Controller
@@ -783,7 +783,7 @@ export default function EnrollmentModal({
                   {/* Período */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Período *</label>
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Período <span className="text-red-500">*</span></label>
                       {!editingEntry && <Badge color="info" variant="light" size="sm" className="font-bold text-[9px] px-1.5 backdrop-blur-sm">AUTO</Badge>}
                     </div>
                     <Input
@@ -797,7 +797,7 @@ export default function EnrollmentModal({
 
                   {/* Tipo Práctica */}
                   <div className="space-y-3">
-                    <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Tipo Práctica *</label>
+                    <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Tipo Práctica <span className="text-red-500">*</span></label>
                     {editingEntry ? (
                       <div className={cn(
                         "h-[48px] px-4 rounded-xl border flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50",
@@ -1004,7 +1004,7 @@ export default function EnrollmentModal({
                 <div className="space-y-4">
                   {/* Institución */}
                   <div className="space-y-3">
-                    <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Institución *</label>
+                    <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Institución <span className="text-red-500">*</span></label>
                     <Controller
                       name="institutionId"
                       control={control}
@@ -1135,7 +1135,7 @@ export default function EnrollmentModal({
                   {/* Responsable */}
                   <div className="space-y-3 pt-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Responsable Institucional *</label>
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Responsable Institucional <span className="text-red-500">*</span></label>
                     </div>
                     <Controller
                       name="institutionResponsibleId"

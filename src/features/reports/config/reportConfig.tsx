@@ -176,7 +176,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
     ],
   },
   "institutions": {
-    title: "Reporte De Instituciones",
+    title: "Reporte de Instituciones",
     subtitle: "Listado de Empresas o Instituciones Registradas",
     type: "pdf",
     loadData: async () => {

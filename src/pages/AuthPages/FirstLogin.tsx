@@ -508,7 +508,7 @@ export default function FirstLogin() {
                      id="newPassword"
                      type={showNewPassword ? "text" : "password"}
                      isPassword={true}
-                     placeholder={showNewPassword ? "Minimo 12 caracteres" : "Minimo 12 caracteres"}
+                     placeholder={`Mínimo ${rules.minLength} caracteres`}
                      {...register("newPassword")}
                      error={!!errors.newPassword}
                      className="h-12 text-base"
@@ -555,7 +555,7 @@ export default function FirstLogin() {
                        id="confirmPassword"
                        type={showConfirmPassword ? "text" : "password"}
                        isPassword={true}
-                       placeholder={showConfirmPassword ? "Repita su contrasena" : "Repita su contrasena"}
+                       placeholder="Repita su contraseña"
                        {...register("confirmPassword")}
                        error={!!errors.confirmPassword}
                        className="h-12 text-base"

@@ -33,7 +33,7 @@ export const useReminders = () => {
       const updated = await reminderService.toggle(id);
       setRules(updated);
       const rule = updated.find(r => r.id === id);
-      addToast({ variant: 'success', title: TOAST_TITLES.updated(resourceName), message: `Estado de ${resourceName.toLowerCase()} ${rule?.active ? 'activado' : 'inactivado'} exitosamente` });
+      addToast({ variant: 'success', title: TOAST_TITLES.updated(resourceName), message: `Estado de ${resourceName.toLowerCase()} ${rule?.active ? 'activado' : 'desactivado'} exitosamente` });
     } catch (error: any) {
       addToast({ variant: 'error', title: 'Error', message: `Error al actualizar ${resourceName.toLowerCase()}` });
     }

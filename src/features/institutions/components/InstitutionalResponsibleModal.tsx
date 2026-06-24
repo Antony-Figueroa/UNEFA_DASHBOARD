@@ -858,7 +858,7 @@ export default function InstitutionalResponsibleModal({
                     <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                   </svg>
                   <span className="text-sm font-medium text-info-700 dark:text-info-400">
-                    Persona ya registrada — datos precargados. Podés modificarlos antes de guardar.
+                    Persona ya registrada — datos precargados. Puedes modificarlos antes de guardar.
                   </span>
                 </div>
               )}
@@ -1122,41 +1122,41 @@ export default function InstitutionalResponsibleModal({
               </div>
             </div>
 
-            {/* ======================== Instituciones ======================== */}
-            <div hidden={tabsState.activeTab !== "instituciones"} role="tabpanel">
-               <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Empresas o Instituciones *</label>
-              {preselectedInstitutionId ? (
-                <div className="space-y-2">
-                  <div className="px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-lg flex items-center justify-between">
-                    <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">
-                      {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Empresa o Institución seleccionada"}
-                    </p>
-                  </div>
-                      <Controller
-                    name="institutions"
-                    control={control}
-                    render={({ field }) => {
-                      const { value, onChange } = field;
-                      const inst = (value || []).find((i: any) => String(i.institutionId) === String(preselectedInstitutionId));
-                      const currentCargo = inst?.cargo || "";
-                      return (
-                        <Input
-                          placeholder="Cargo en esta empresa (ej: Gerente, Supervisor)"
-                          className="uppercase"
-                          value={currentCargo}
-                          
-                          onChange={(e) => {
-                            const newValue = (value || []).map((i: any) => 
-                              String(i.institutionId) === String(preselectedInstitutionId)
-                                ? { ...i, cargo: e.target.value.toUpperCase() }
-                                : i
-                            );
-                            onChange(newValue);
-                          }}
-                        />
-                      );
-                    }}
-                  />
+              {/* Tab 2: Instituciones */}
+              <div hidden={tabsState.activeTab !== "instituciones"} role="tabpanel">
+                 <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Empresas o Instituciones <span className="text-red-500">*</span></label>
+                {preselectedInstitutionId ? (
+                  <div className="space-y-2">
+                    <div className="px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-lg flex items-center justify-between">
+                      <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">
+                        {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Empresa o Institución seleccionada"}
+                      </p>
+                    </div>
+                        <Controller
+                      name="institutions"
+                      control={control}
+                      render={({ field }) => {
+                        const { value, onChange } = field;
+                        const inst = (value || []).find((i: any) => String(i.institutionId) === String(preselectedInstitutionId));
+                        const currentCargo = inst?.cargo || "";
+                        return (
+                          <Input
+                            placeholder="Cargo en esta empresa (ej: Gerente, Supervisor)"
+                            className="uppercase"
+                            value={currentCargo}
+                            
+                            onChange={(e) => {
+                              const newValue = (value || []).map((i: any) => 
+                                String(i.institutionId) === String(preselectedInstitutionId)
+                                  ? { ...i, cargo: e.target.value.toUpperCase() }
+                                  : i
+                              );
+                              onChange(newValue);
+                            }}
+                          />
+                        );
+                      }}
+                    />
                 </div>
               ) : (
                 <Controller

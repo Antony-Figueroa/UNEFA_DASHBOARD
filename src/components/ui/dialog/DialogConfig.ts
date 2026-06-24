@@ -141,7 +141,7 @@ export const STANDARD_TEXTS = {
   },
   ERROR_GENERIC: {
     title: 'Ha ocurrido un error',
-    message: 'No se pudo completar la operación. Intentá de nuevo.',
+    message: 'No se pudo completar la operación. Intenta de nuevo.',
   },
 };
 

@@ -302,7 +302,7 @@ export default function BackupsPage() {
                 </h4>
                 <ul className="mt-2 text-xs text-amber-600 dark:text-amber-400 space-y-1">
                   <li>• <strong>Restaurar eliminará todos los datos actuales</strong></li>
-                  <li>• Se creará un backup automático antes de restaurar</li>
+                  <li>• Se creará un respaldo automático antes de restaurar</li>
                   <li>• Solo use esta opción en caso de emergencia</li>
                   <li>• Alternativa segura: Descargar SQL y ejecutar manualmente en Supabase</li>
                 </ul>

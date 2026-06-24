@@ -186,7 +186,7 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, per
             {title}
           </h3>
           <p className="text-sm text-text-tertiary mt-1">
-            Seleccioná un registro de la lista
+            Selecciona un registro de la lista
           </p>
         </div>
 

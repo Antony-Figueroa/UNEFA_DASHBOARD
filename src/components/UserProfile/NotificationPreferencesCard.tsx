@@ -48,7 +48,7 @@ export default function NotificationPreferencesCard() {
             Notificaciones
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Administrá tus preferencias de notificación
+              Administra tus preferencias de notificación
           </p>
         </div>
       </div>

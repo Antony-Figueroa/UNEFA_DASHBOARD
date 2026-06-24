@@ -6,9 +6,9 @@ export const FALLBACK_TEXTOS: Record<string, Record<string, string>> = {
   solicitud_institucion: {
     destinatario: 'MSc. Marbelys del Valle Rivero',
     cargo: 'Decana del Núcleo Portuguesa',
-    orden: 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022',
+    orden: 'Según Orden administrativa N° 0005 de fecha 18 de marzo de 2022',
     cuerpo: 'Yo, {{estudianteNombreCompleto}}, titular de la C.I. {{estudianteCi}}, cursante de la carrera {{carrera}}, ante usted ocurro para solicitar formalmente la asignación de la institución {{institucionNombre}} para la realización de mis Prácticas Profesionales correspondientes al lapso académico {{lapsoInicio}} - {{lapsoFin}}.',
-    firma: '___________________________________\nMSc. Marbelys del Valle Rivero\nDecana del Núcleo Portuguesa\nSegún Orden administrativa N° 0005 de fecha 18 de Marzo 2022',
+    firma: '___________________________________\nMSc. Marbelys del Valle Rivero\nDecana del Núcleo Portuguesa\nSegún Orden administrativa N° 0005 de fecha 18 de marzo de 2022',
   },
   carta_postulacion: {
     cuerpo: 'Por medio de la presente, se solicita formalmente la Carta de Postulación para el(la) estudiante {{estudianteNombreCompleto}}, titular de la C.I. {{estudianteCi}}, cursante de la carrera {{carrera}}, {{semestre}} semestre, sección {{seccion}}, a fin de que pueda realizar sus Prácticas Profesionales en la institución {{institucionNombre}}. El(la) estudiante se encuentra en régimen {{regimen}} y {{empleo}} labora actualmente.',
@@ -30,10 +30,10 @@ export const FALLBACK_TEXTOS: Record<string, Record<string, string>> = {
   },
   constancia_tutor_academico: {
     cuerpo: 'Por medio de la presente se hace constar que el(la) ciudadano(a) {{tutorTitulo}} {{tutorNombreCompleto}}, portador(a) de la C.I. {{tutorCi}}, se desempeña como Tutor(a) Académico(a) de Prácticas Profesionales, en condición {{tutorCondicion}}, con dedicación {{tutorDedicacion}}, cumpliendo un total de {{totalHours}} horas académicas, durante el período {{periodo}}.',
-    firma: '___________________________________\nMSc. Marbelys del Valle Rivero\nDecana del Núcleo Portuguesa\nSegún Orden administrativa N° 0005 de fecha 18 de Marzo 2022',
+    firma: '___________________________________\nMSc. Marbelys del Valle Rivero\nDecana del Núcleo Portuguesa\nSegún Orden administrativa N° 0005 de fecha 18 de marzo de 2022',
   },
   constancia_tutor_institucional: {
     cuerpo: 'Por medio de la presente se hace constar que el(la) ciudadano(a) {{tutorTitulo}} {{tutorNombreCompleto}}, portador(a) de la C.I. {{tutorCi}}, se desempeñó como Tutor(a) Institucional de Prácticas Profesionales en la institución {{institucionNombre}}, cumpliendo un total de {{totalHours}} horas de tutoría, durante el período {{periodo}}.',
-    firma: '___________________________________\nMSc. Marbelys del Valle Rivero\nDecana del Núcleo Portuguesa\nSegún Orden administrativa N° 0005 de fecha 18 de Marzo 2022',
+    firma: '___________________________________\nMSc. Marbelys del Valle Rivero\nDecana del Núcleo Portuguesa\nSegún Orden administrativa N° 0005 de fecha 18 de marzo de 2022',
   },
 };

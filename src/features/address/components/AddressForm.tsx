@@ -136,7 +136,7 @@ export default function AddressForm({
       <ModalBody>
         <div className="space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Tipo de Dirección *</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Tipo de Dirección <span className="text-red-500">*</span></label>
             <CustomSelect
               options={addressTypes}
               value={addressTypeId}
@@ -146,7 +146,7 @@ export default function AddressForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Estado *</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Estado <span className="text-red-500">*</span></label>
             <CustomSelect
               options={estadoOptions}
               value={selectedEstadoId ? String(selectedEstadoId) : ''}
@@ -161,7 +161,7 @@ export default function AddressForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Municipio *</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Municipio <span className="text-red-500">*</span></label>
             <CustomSelect
               options={municipioOptions}
               value={selectedMunicipioId ? String(selectedMunicipioId) : ''}
@@ -176,7 +176,7 @@ export default function AddressForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Parroquia *</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Parroquia <span className="text-red-500">*</span></label>
             <CustomSelect
               options={parroquiaOptions}
               value={selectedParroquiaId ? String(selectedParroquiaId) : ''}
@@ -188,7 +188,7 @@ export default function AddressForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Dirección *</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Dirección <span className="text-red-500">*</span></label>
             <TextArea
               placeholder="Calle, número, sector, urbanización..."
               value={streetAddress}

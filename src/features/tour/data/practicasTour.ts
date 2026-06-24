@@ -5,9 +5,9 @@ const t = (es: string) => es;
 export const practicasPreEnrollTour: DriveStep[] = [
   {
     popover: {
-      title: t("Practicas Profesionales"),
+      title: t("Prácticas Profesionales"),
       description: t(
-        "Este modulo abarca el ciclo completo: Pre-Inscripcion, Inscripcion, Seguimiento y Evaluacion de las practicas profesionales. Comenzaremos por la primera etapa."
+        "Este módulo abarca el ciclo completo: Pre-Inscripción, Inscripción, Seguimiento y Evaluación de las prácticas profesionales. Comenzaremos por la primera etapa."
       ),
       side: "over",
     },
@@ -15,9 +15,9 @@ export const practicasPreEnrollTour: DriveStep[] = [
   {
     element: () => document.querySelector("h2")!,
     popover: {
-      title: t("Pagina de Pre-Inscripcion"),
+      title: t("Página de Pre-Inscripción"),
       description: t(
-        "Los estudiantes registran su intencion de cursar las practicas profesionales seleccionando el periodo academico, el tipo de practica y la carrera."
+        "Los estudiantes registran su intención de cursar las prácticas profesionales seleccionando el período académico, el tipo de práctica y la carrera."
       ),
       side: "bottom",
     },
@@ -28,9 +28,9 @@ export const practicasPreEnrollTour: DriveStep[] = [
       return Array.from(btns).find((b) => b.textContent?.includes("Pre-Inscrip") || b.textContent?.includes("Nuevo")) ?? document.querySelector("table")!;
     },
     popover: {
-      title: t("Boton Nueva Pre-Inscripcion"),
+      title: t("Botón Nueva Pre-Inscripción"),
       description: t(
-        "Haga clic aqui para abrir el formulario y crear una nueva pre-inscripcion."
+        "Haga clic aquí para abrir el formulario y crear una nueva pre-inscripción."
       ),
       side: "left",
     },
@@ -49,7 +49,7 @@ export const practicasPreEnrollTour: DriveStep[] = [
     popover: {
       title: t("Etapa siguiente"),
       description: t(
-        "Una vez aprobada la pre-inscripcion, continue con la Inscripcion desde el menu lateral."
+        "Una vez aprobada la pre-inscripción, continúe con la Inscripción desde el menú lateral."
       ),
       side: "over",
     },
@@ -59,9 +59,9 @@ export const practicasPreEnrollTour: DriveStep[] = [
 export const practicasEnrollTour: DriveStep[] = [
   {
     popover: {
-      title: t("Inscripcion"),
+      title: t("Inscripción"),
       description: t(
-        "En esta etapa se formaliza la inscripcion del estudiante. Se asigna el tutor academico, la institucion y las fechas definitivas de la practica."
+        "En esta etapa se formaliza la inscripción del estudiante. Se asigna el tutor académico, la institución y las fechas definitivas de la práctica."
       ),
       side: "over",
     },
@@ -69,9 +69,9 @@ export const practicasEnrollTour: DriveStep[] = [
   {
     element: () => document.querySelector("h2")!,
     popover: {
-      title: t("Pagina de Inscripcion"),
+      title: t("Página de Inscripción"),
       description: t(
-        "Una vez aprobada la pre-inscripcion, aqui se completa el registro formal de la practica."
+        "Una vez aprobada la pre-inscripción, aquí se completa el registro formal de la práctica."
       ),
       side: "bottom",
     },
@@ -82,7 +82,7 @@ export const practicasEnrollTour: DriveStep[] = [
       return Array.from(btns).find((b) => b.textContent?.includes("Nueva Inscrip") || b.textContent?.includes("Nuevo")) ?? document.querySelector("table")!;
     },
     popover: {
-      title: t("Boton Nueva Inscripcion"),
+      title: t("Botón Nueva Inscripción"),
       description: t(
         "Haga clic aqui para abrir el formulario e inscribir a un nuevo estudiante."
       ),
@@ -115,7 +115,7 @@ export const practicasTrackingTour: DriveStep[] = [
     popover: {
       title: t("Seguimiento"),
       description: t(
-        "En esta seccion se controla el avance de cada practica: las visitas del tutor a la empresa y la bitacora de actividades del estudiante."
+        "En esta sección se controla el avance de cada práctica: las visitas del tutor a la empresa y la bitácora de actividades del estudiante."
       ),
       side: "over",
     },
@@ -123,9 +123,9 @@ export const practicasTrackingTour: DriveStep[] = [
   {
     element: () => document.querySelector("h2")!,
     popover: {
-      title: t("Pagina de Seguimiento"),
+      title: t("Página de Seguimiento"),
       description: t(
-        "Tabla de todas las practicas en curso con enlaces a las visitas y al registro de actividades."
+        "Tabla de todas las prácticas en curso con enlaces a las visitas y al registro de actividades."
       ),
       side: "bottom",
     },
@@ -135,7 +135,7 @@ export const practicasTrackingTour: DriveStep[] = [
     popover: {
       title: t("Tabla de Seguimiento"),
       description: t(
-        "Cada fila contiene enlaces a Visitas (registro del tutor en la empresa) y Actividades (bitacora del estudiante)."
+        "Cada fila contiene enlaces a Visitas (registro del tutor en la empresa) y Actividades (bitácora del estudiante)."
       ),
       side: "top",
     },
@@ -151,7 +151,7 @@ export const practicasTrackingTour: DriveStep[] = [
   },
   {
     popover: {
-      title: t("Bitacora de Actividades"),
+      title: t("Bitácora de Actividades"),
       description: t(
         "El estudiante registra sus actividades diarias o semanales. El tutor las revisa y da el visto bueno."
       ),
@@ -174,7 +174,7 @@ export const practicasEvalTour: DriveStep[] = [
     popover: {
       title: t("Evaluaciones"),
       description: t(
-        "Etapa final del ciclo de practicas profesionales. Aqui se registran las evaluaciones del estudiante y se formaliza la culminacion."
+        "Etapa final del ciclo de prácticas profesionales. Aquí se registran las evaluaciones del estudiante y se formaliza la culminación."
       ),
       side: "over",
     },
@@ -182,9 +182,9 @@ export const practicasEvalTour: DriveStep[] = [
   {
     element: () => document.querySelector("h2")!,
     popover: {
-      title: t("Pagina de Evaluaciones"),
+      title: t("Página de Evaluaciones"),
       description: t(
-        "Listado de estudiantes listos para evaluar con sus criterios de evaluacion y nota final."
+        "Listado de estudiantes listos para evaluar con sus criterios de evaluación y nota final."
       ),
       side: "bottom",
     },
@@ -194,7 +194,7 @@ export const practicasEvalTour: DriveStep[] = [
     popover: {
       title: t("Tabla de Evaluaciones"),
       description: t(
-        "Seleccione un estudiante para cargar las notas por criterio. Si aprueba, se genera el acta de culminacion."
+        "Seleccione un estudiante para cargar las notas por criterio. Si aprueba, se genera el acta de culminación."
       ),
       side: "top",
     },
@@ -203,7 +203,7 @@ export const practicasEvalTour: DriveStep[] = [
     popover: {
       title: t("Ciclo completado"),
       description: t(
-        "Ha recorrido las 4 etapas: Pre-Inscripcion, Inscripcion, Seguimiento y Evaluacion. Todo el proceso de practicas profesionales esta digitalizado en el sistema."
+        "Ha recorrido las 4 etapas: Pre-Inscripción, Inscripción, Seguimiento y Evaluación. Todo el proceso de prácticas profesionales está digitalizado en el sistema."
       ),
       side: "over",
     },

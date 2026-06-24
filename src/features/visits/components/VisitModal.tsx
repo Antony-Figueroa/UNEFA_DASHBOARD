@@ -403,7 +403,7 @@ export default function VisitModal({
       addToast({
         variant: 'success',
         title: 'Valor agregado',
-        message: `"${newValueName.trim()}" ha sido agregado a ${addValueListType === 'VISIT_TYPE' ? 'Tipos de Visita' : 'Casos de Seguimiento'}`
+        message: `"${newValueName.trim()}" ha sido agregado a ${addValueListType === 'VISIT_TYPE' ? 'tipos de visita' : 'casos de seguimiento'}`
       });
 
       setIsAddValueModalOpen(false);
@@ -645,7 +645,7 @@ export default function VisitModal({
             <div className="grid grid-cols-1 gap-x-6 gap-y-5">
               <div>
                 <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                  Tutor que realizó la Visita *
+                  Tutor que realizó la Visita <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-3">
                   <div className="flex-1">
@@ -695,7 +695,7 @@ export default function VisitModal({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
               <div>
                 <label htmlFor="visitDate" className="text-sm font-medium text-text-primary dark:text-white/90">
-                  Fecha y Hora de la Visita *
+                  Fecha y Hora de la Visita <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="datetime-local"
@@ -724,7 +724,7 @@ export default function VisitModal({
 
               <div>
                 <label htmlFor="visitType" className="text-sm font-medium text-text-primary dark:text-white/90">
-                  Tipo de Visita *
+                  Tipo de Visita <span className="text-red-500">*</span>
                 </label>
                 <Controller
                   name="visitType"
@@ -755,7 +755,7 @@ export default function VisitModal({
 
               <div>
                 <label htmlFor="visitCase" className="text-sm font-medium text-text-primary dark:text-white/90">
-                  Caso de Seguimiento *
+                  Caso de Seguimiento <span className="text-red-500">*</span>
                 </label>
                 <Controller
                   name="visitCase"
@@ -788,7 +788,7 @@ export default function VisitModal({
             {/* Horas trabajadas */}
             <div className="max-w-xs">
               <label htmlFor="hoursWorked" className="text-sm font-medium text-text-primary dark:text-white/90">
-                Horas Trabajadas *
+                Horas Trabajadas <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Input
@@ -867,7 +867,7 @@ export default function VisitModal({
             {/* Actividades realizadas */}
             <div>
               <label htmlFor="activitiesPerformed" className="text-sm font-medium text-text-primary dark:text-white/90">
-                Actividades Realizadas *
+                Actividades Realizadas <span className="text-red-500">*</span>
               </label>
               <TextArea
                 id="activitiesPerformed"
@@ -1001,7 +1001,7 @@ export default function VisitModal({
             <div className="space-y-3">
               <div>
                 <label htmlFor="newValueName" className="mb-1.5 block text-sm font-medium text-text-primary dark:text-text-emphasis">
-                  Nombre *
+                  Nombre <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="newValueName"

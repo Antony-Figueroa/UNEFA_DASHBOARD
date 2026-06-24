@@ -214,7 +214,7 @@ export default function InternshipTypeModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
               <div className="md:col-span-2">
-                <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombre del Tipo de Práctica *</label>
+                <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombre del Tipo de Práctica <span className="text-red-500">*</span></label>
                 <Controller
                   name="name"
                   control={control}
@@ -236,7 +236,7 @@ export default function InternshipTypeModal({
               </div>
 
               <div>
-                <label className="text-sm font-medium text-text-primary dark:text-white/90">Prioridad en el Sistema *</label>
+                <label className="text-sm font-medium text-text-primary dark:text-white/90">Prioridad en el Sistema <span className="text-red-500">*</span></label>
                 <Controller
                   name="priority"
                   control={control}

@@ -191,7 +191,7 @@ export default function InstitutionTable({
         </div>
         <h3 className="text-lg font-semibold text-alert-error-text dark:text-error-400">Error de conexión</h3>
         <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
-          no hay conexion a la bd
+          no hay conexión a la BD
         </p>
       </div>
     );

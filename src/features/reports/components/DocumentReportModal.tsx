@@ -200,10 +200,10 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
   );
 
   const searchSubtitle = isPracticeDoc
-    ? 'Buscá el estudiante por CI o nombre, o explorá la lista de prácticas'
+    ? 'Busca el estudiante por CI o nombre, o explora la lista de prácticas'
     : isTutorDoc
-      ? 'Buscá el tutor por CI o nombre, o explorá la lista de tutores'
-      : 'Ingresá el ID del registro para generar el documento';
+      ? 'Busca el tutor por CI o nombre, o explora la lista de tutores'
+      : 'Ingresa el ID del registro para generar el documento';
 
   // Guard después de TODOS los hooks
   if (!config) return null;

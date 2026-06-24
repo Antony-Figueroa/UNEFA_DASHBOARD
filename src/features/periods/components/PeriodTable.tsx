@@ -562,7 +562,7 @@ const PeriodTable = ({
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Timeline
+                        Cronología
                     </button>
                 </div>
 
@@ -751,7 +751,7 @@ const PeriodTable = ({
                                                 title={
                                                     !eligibleForBulkIds.has(periodo.periodId)
                                                         ? periodo.status === false
-                                                            ? 'Período ya inactivo — use restaurar'
+                                                            ? 'Período ya inactivo — usa Restaurar'
                                                             : periodo.isInUse
                                                                 ? 'Tiene registros asociados'
                                                                 : getSafePeriodStatus(periodo) === 2

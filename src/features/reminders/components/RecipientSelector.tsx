@@ -44,7 +44,7 @@ export const RecipientSelector = ({
   value,
   onChange,
   title = 'Destinatarios',
-  description = 'Seleccioná a quiénes va dirigido el mensaje.',
+  description = 'Selecciona a quiénes va dirigido el mensaje.',
 }: RecipientSelectorProps) => {
   const [dbRoles, setDbRoles] = useState<Array<{ name: string }>>([]);
   const [users, setUsers] = useState<RecipientUser[]>([]);

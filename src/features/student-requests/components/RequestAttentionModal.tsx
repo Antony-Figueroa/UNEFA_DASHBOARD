@@ -101,7 +101,7 @@ export const RequestAttentionModal = ({
               <p className="font-medium">{request.studentCi}</p>
             </div>
             <div className="min-w-0">
-              <p className="text-sm text-text-secondary">Email</p>
+              <p className="text-sm text-text-secondary">Correo electrónico</p>
               <p className="font-medium break-words" title={request.studentEmail}>
                 {request.studentEmail}
               </p>

@@ -154,7 +154,7 @@ const InstitutionDistributionChart: React.FC<InstitutionDistributionChartProps> 
               Instituciones
             </h3>
             <p className="text-xs text-text-secondary dark:text-text-tertiary">
-              Distribución por empresa
+              Distribución por institución
             </p>
           </div>
         </div>

@@ -21,10 +21,10 @@ interface GeographicAddressFieldsProps {
   showTypeSelector?: boolean;
   showPrimaryCheckbox?: boolean;
   showReference?: boolean;
-  estadoLabel?: string;
-  municipioLabel?: string;
-  parroquiaLabel?: string;
-  streetLabel?: string;
+  estadoLabel?: React.ReactNode;
+  municipioLabel?: React.ReactNode;
+  parroquiaLabel?: React.ReactNode;
+  streetLabel?: React.ReactNode;
 }
 
 export default function GeographicAddressFields({
@@ -36,10 +36,10 @@ export default function GeographicAddressFields({
   showTypeSelector = false,
   showPrimaryCheckbox = false,
   showReference = false,
-  estadoLabel = 'Estado *',
-  municipioLabel = 'Municipio *',
-  parroquiaLabel = 'Parroquia *',
-  streetLabel = 'Dirección *',
+  estadoLabel = <>Estado <span className="text-red-500">*</span></>,
+  municipioLabel = <>Municipio <span className="text-red-500">*</span></>,
+  parroquiaLabel = <>Parroquia <span className="text-red-500">*</span></>,
+  streetLabel = <>Dirección <span className="text-red-500">*</span></>,
 }: GeographicAddressFieldsProps) {
   const [selectedEstadoId, setSelectedEstadoId] = useState<number | null>(null);
   const [selectedMunicipioId, setSelectedMunicipioId] = useState<number | null>(null);

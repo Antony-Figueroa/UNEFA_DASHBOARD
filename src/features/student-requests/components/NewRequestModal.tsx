@@ -84,7 +84,7 @@ export const NewRequestModal = ({
         <div className="space-y-4">
           {/* Tipo de Solicitud */}
           <div>
-            <label className="block text-sm font-medium mb-1">Tipo de Solicitud *</label>
+            <label className="block text-sm font-medium mb-1">Tipo de Solicitud <span className="text-red-500">*</span></label>
             <select
               value={newRequest.typeId}
               onChange={(e) => setNewRequest(prev => ({ ...prev, typeId: e.target.value }))}
@@ -99,7 +99,7 @@ export const NewRequestModal = ({
 
           {/* Asunto */}
           <div>
-            <label className="block text-sm font-medium mb-1">Asunto *</label>
+            <label className="block text-sm font-medium mb-1">Asunto <span className="text-red-500">*</span></label>
             <input
               type="text"
               value={newRequest.subject}
@@ -111,7 +111,7 @@ export const NewRequestModal = ({
 
           {/* Descripción */}
           <div>
-            <label className="block text-sm font-medium mb-1">Descripción *</label>
+            <label className="block text-sm font-medium mb-1">Descripción <span className="text-red-500">*</span></label>
             <textarea
               value={newRequest.description}
               onChange={(e) => setNewRequest(prev => ({ ...prev, description: e.target.value }))}

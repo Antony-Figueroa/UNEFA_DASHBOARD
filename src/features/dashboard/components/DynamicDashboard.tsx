@@ -69,7 +69,7 @@ export const DynamicDashboard = ({ widgets, data, loading }: DynamicDashboardPro
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 3h18v18H3V3z" />
         </svg>
         <p className="text-sm font-medium">Todos los widgets están ocultos</p>
-        <p className="text-xs mt-1">Podés mostrar widgets desde la configuración del dashboard</p>
+        <p className="text-xs mt-1">Puedes mostrar widgets desde la configuración del dashboard</p>
       </div>
     );
   }

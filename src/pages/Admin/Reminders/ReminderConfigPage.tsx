@@ -147,7 +147,7 @@ const ReminderConfigPage = () => {
               Recordatorios Automáticos
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Gestioná los recordatorios que el sistema envía automáticamente a
+              Gestiona los recordatorios que el sistema envía automáticamente a
               tutores y estudiantes.
             </p>
           </div>

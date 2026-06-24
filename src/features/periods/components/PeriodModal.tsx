@@ -580,7 +580,7 @@ export default function PeriodModal({
                     <div className="grid grid-cols-1 gap-y-5">
                         <div>
                             <div className="flex items-center gap-2 mb-2.5">
-                                <label className="block text-black dark:text-white font-medium text-sm">Lapso Académico *</label>
+                                <label className="block text-black dark:text-white font-medium text-sm">Lapso Académico <span className="text-red-500">*</span></label>
                                 {!periodo && existingPeriods.length > 0 && (
                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 uppercase tracking-wider">
                                         Auto
@@ -630,7 +630,7 @@ export default function PeriodModal({
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-sm font-medium text-text-primary dark:text-white/90">Fecha de Inicio *</label>
+                                <label className="text-sm font-medium text-text-primary dark:text-white/90">Fecha de Inicio <span className="text-red-500">*</span></label>
                                 <div className="relative">
                                     <Controller
                                         control={control}
@@ -681,7 +681,7 @@ export default function PeriodModal({
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-text-primary dark:text-white/90">Fecha de Fin *</label>
+                                <label className="text-sm font-medium text-text-primary dark:text-white/90">Fecha de Fin <span className="text-red-500">*</span></label>
                                 <div className="relative">
                                     <Controller
                                         control={control}
@@ -786,7 +786,7 @@ export default function PeriodModal({
                                                                         minDate: periodo?.startDate ? new Date(periodo.startDate.getTime() - 86400000) : undefined,
                                                                         maxDate: periodo?.endDate ? new Date(periodo.endDate.getTime() + 86400000) : undefined,
                                                                     }}
-                                                                    placeholder="dd/mm/aaaa"
+                                                                    placeholder="DD/MM/AAAA"
                                                                 />
                                                              </div>
                                                              <div>
@@ -809,7 +809,7 @@ export default function PeriodModal({
                                                                         minDate: periodo?.startDate ? new Date(periodo.startDate.getTime() - 86400000) : undefined,
                                                                         maxDate: periodo?.endDate ? new Date(periodo.endDate.getTime() + 86400000) : undefined,
                                                                     }}
-                                                                    placeholder="dd/mm/aaaa"
+                                                                    placeholder="DD/MM/AAAA"
                                                                  />
                                                             </div>
                                                         </div>

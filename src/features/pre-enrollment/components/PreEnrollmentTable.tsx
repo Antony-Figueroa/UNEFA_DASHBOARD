@@ -387,9 +387,9 @@ export default function PreEnrollmentTable({
             <div className="flex flex-col items-center justify-center py-12 text-error-500 animate-fadeIn">
                 <h3 className="text-lg font-semibold text-error-600 dark:text-error-400">Error de conexión</h3>
                 <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
-                    no hay conexion a la bd
+                    No hay conexión a la BD
                 </p>
-                {error && error.message !== 'no hay conexion a la bd' && (
+                {error && error.message !== 'no hay conexión a la BD' && (
                     <div className="mt-4 text-xs text-error-500/70 italic">
                         Detalles: {error.message}
                     </div>

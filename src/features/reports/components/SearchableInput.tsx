@@ -152,7 +152,7 @@ export function SearchableInput<T>({
       )}
 
       {value.length >= minChars && !isSearching && items.length === 0 && !showDropdown && (
-        <p className="text-xs text-text-tertiary mt-1">Sin resultados. Podés ingresar el ID manualmente.</p>
+        <p className="text-xs text-text-tertiary mt-1">Sin resultados. Puedes ingresar el ID manualmente.</p>
       )}
     </div>
   );

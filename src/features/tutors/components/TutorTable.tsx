@@ -258,9 +258,9 @@ export default function TutorTable({
                 </div>
                 <h3 className="text-lg font-semibold text-alert-error-text dark:text-error-400">Error de conexión</h3>
         <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
-          no hay conexion a la bd
+          no hay conexión a la BD
         </p>
-        {error && error.message !== 'no hay conexion a la bd' && (
+        {error && error.message !== 'no hay conexión a la BD' && (
           <div className="mt-4 text-xs text-alert-error-text/70 dark:text-error-500/70 italic">
             Detalles: {error.message}
           </div>

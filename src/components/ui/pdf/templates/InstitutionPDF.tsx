@@ -16,37 +16,33 @@ export const InstitutionPDF: React.FC<InstitutionPDFProps> = ({ data }) => {
       subtitle="Convenios y sedes de empresas o instituciones para prácticas profesionales"
     >
       <View style={pdfStyles.table}>
-        <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-          <Text style={[pdfStyles.tableCell, { flex: 0.8 }]}>RIF</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Nombre de la Empresa o Institución</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Dirección</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1 }]}>Teléfono</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Carrera</Text>
+        <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]} wrap={false}>
+          <Text style={[pdfStyles.tableCell, { flex: 0.8, fontSize: 8 }]}>RIF</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>NOMBRE DE LA EMPRESA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 3.5, fontSize: 8 }]}>DIRECCIÓN FISCAL</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1, fontSize: 8 }]}>TELÉFONO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>CARRERA</Text>
         </View>
 
-        {data.map((institution, index) => (
+        {data.map((institution, index) => {
+          const careers = (institution.careerNames && institution.careerNames.length > 0
+            ? institution.careerNames
+            : ["N/A"]
+          ).join('\n');
+          return (
           <View key={institution.institutionId || index} style={pdfStyles.tableRow} wrap={false}>
             <Text style={[pdfStyles.tableCell, { flex: 0.8, fontSize: 8 }]}>{institution.rif}</Text>
-            <View style={[pdfStyles.tableCell, { flex: 2 }]}>
-              <Text style={{ fontWeight: "bold", fontSize: 9 }}>{institution.name}</Text>
-              <Text style={{ fontSize: 7, color: "#64748B", marginTop: 1 }}>
-                {institution.institutionType}
-              </Text>
-            </View>
-            <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8 }]}>{institution.fiscalAddress}</Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>
+              <Text style={{ fontWeight: "bold" }}>{institution.name}</Text>
+              {'\n'}
+              <Text style={{ fontSize: 7, color: "#64748B" }}>{institution.institutionType}</Text>
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 3.5, fontSize: 8 }]}>{institution.fiscalAddress}</Text>
             <Text style={[pdfStyles.tableCell, { flex: 1, fontSize: 8 }]}>{institution.phone}</Text>
-            <View style={[pdfStyles.tableCell, { flex: 1.5 }]}>
-              {(institution.careerNames && institution.careerNames.length > 0
-                ? institution.careerNames
-                : ["N/A"]
-              ).map((name: string, i: number) => (
-                <Text key={i} style={{ fontSize: 7, color: "#374151", lineHeight: 1.4 }}>
-                  {name}
-                </Text>
-              ))}
-            </View>
+            <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 7 }]}>{careers}</Text>
           </View>
-        ))}
+          );
+        })}
       </View>
     </PDFLayout>
   );

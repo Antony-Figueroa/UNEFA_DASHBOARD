@@ -216,8 +216,8 @@ export default function ActivityLogPage() {
       )}
 
       <ComponentCard title="Historial de Actividades">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-6">
-          <div className="w-full sm:w-64">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div className="w-full">
             <InputField
               type="text"
               placeholder="Buscar actividad..."
@@ -233,7 +233,7 @@ export default function ActivityLogPage() {
             ]}
             value={typeFilter}
             onChange={(e) => setTypeFilter(e as string)}
-            className="w-full sm:w-40"
+            className="w-full"
           />
           <CustomSelect
             options={[
@@ -243,7 +243,7 @@ export default function ActivityLogPage() {
             ]}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e as string)}
-            className="w-full sm:w-40"
+            className="w-full"
           />
         </div>
 

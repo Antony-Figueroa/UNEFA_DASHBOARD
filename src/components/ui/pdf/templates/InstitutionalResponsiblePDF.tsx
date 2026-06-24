@@ -27,12 +27,12 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
     >
       <View style={pdfStyles.table}>
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Cédula</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Nombres y Apellidos</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Título</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Empresa o Institución</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Contacto</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.3 }]}>Fecha de Registro</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>CÉDULA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>NOMBRES Y APELLIDOS</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>TÍTULO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>EMPRESA O INSTITUCIÓN</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>CONTACTO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.3 }]}>FECHA DE REGISTRO</Text>
         </View>
 
         {data.map((responsible, index) => (

@@ -53,8 +53,8 @@ export const EvaluationFilters: React.FC<EvaluationFiltersProps> = ({
   const hasMultiCareer = typeof onCareerFilterChange === 'function';
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-6">
-      <div className="w-full sm:w-64">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      <div className="w-full">
         <InputField
           type="text"
           placeholder="Buscar estudiante, cédula, institución..."
@@ -67,7 +67,7 @@ export const EvaluationFilters: React.FC<EvaluationFiltersProps> = ({
         options={periodOptions}
         value={String(filters.periodId || '')}
         onChange={(v) => onFilterChange('periodId', v as string)}
-        className="w-full sm:w-44"
+        className="w-full"
       />
 
       {hasMultiCareer ? (
@@ -83,7 +83,7 @@ export const EvaluationFilters: React.FC<EvaluationFiltersProps> = ({
           options={careerOptions}
           value={String(filters.careerId || '')}
           onChange={(v) => onFilterChange('careerId', v as string)}
-          className="w-full sm:w-48"
+          className="w-full"
         />
       )}
 
@@ -91,7 +91,7 @@ export const EvaluationFilters: React.FC<EvaluationFiltersProps> = ({
         options={practiceTypeOptions}
         value={String(filters.practiceTypeId || '')}
         onChange={(v) => onFilterChange('practiceTypeId', v as string)}
-        className="w-full sm:w-44"
+        className="w-full"
       />
 
       {extraFilters}

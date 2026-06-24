@@ -52,14 +52,20 @@ export const usePreEnrollment = () => {
   const addPreEnrollment = async (payload: CreatePreEnrollmentPayload) => {
     try {
       const newPreEnrollment = await baseAddPreEnrollment(payload, { silent: true });
-      
+
       if (newPreEnrollment) {
+        const inactivated = (newPreEnrollment as any).inactivatedCount;
         addToast({
-          variant: "success",
+          variant: inactivated ? "success" : "success",
           title: "Pre-Inscripción Registrada",
           message: (
             <>
               <p>La pre-inscripción de <strong>{newPreEnrollment.studentName}</strong> ha sido registrada exitosamente.</p>
+              {inactivated > 0 && (
+                <p className="mt-1 text-amber-600">
+                  {inactivated} pre-inscripción(es) vencida(s) fue(ron) desactivada(s) automáticamente porque el período de inscripción cerró.
+                </p>
+              )}
               <RecordDetails
                 data={newPreEnrollment as unknown as Record<string, unknown>}
                 labels={PRE_ENROLLMENT_LABELS}

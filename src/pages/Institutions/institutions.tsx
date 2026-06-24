@@ -16,7 +16,7 @@ import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { PlusCircleIcon } from "../../icons/actions";
-import { ArrowUpIcon, DownloadIcon } from "../../icons";
+import { FileText, Upload } from "lucide-react";
 import InstitutionTable from "../../features/institutions/components/InstitutionTable";
 import InstitutionModal from "../../features/institutions/components/InstitutionModal";
 import InstitutionViewModal from "../../features/institutions/components/InstitutionViewModal";
@@ -443,14 +443,14 @@ export default function InstitutionsPage() {
                       if (mainTab === "Instituciones") setIsInstPDFModalOpen(true);
                       else setIsRespPDFModalOpen(true);
                     }}
-                    startIcon={<DownloadIcon className="h-5 w-5" />}
+                    startIcon={<FileText className="h-5 w-5" />}
                   >
                     Reporte
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => setIsExportModalOpen(true)}
-                    startIcon={<ArrowUpIcon className="h-5 w-5" />}
+                    startIcon={<Upload className="h-5 w-5" />}
                   >
                     Exportación
                   </Button>

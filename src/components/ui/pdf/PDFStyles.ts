@@ -23,7 +23,7 @@ export const pdfStyles = StyleSheet.create({
   page: {
     paddingTop: 30,
     paddingBottom: 60,
-    paddingHorizontal: 40,
+    paddingHorizontal: 30,
     fontFamily: "Nunito",
     fontSize: 11,
     color: "#1C2434", // text-primary
@@ -117,10 +117,10 @@ export const pdfStyles = StyleSheet.create({
   },
   table: {
     width: "auto",
+    marginBottom: 20,
     borderStyle: "solid",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    marginBottom: 20,
   },
   tableRow: {
     flexDirection: "row",

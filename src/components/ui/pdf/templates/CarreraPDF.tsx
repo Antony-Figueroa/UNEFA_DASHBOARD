@@ -17,10 +17,10 @@ export const CarreraPDF: React.FC<CarreraPDFProps> = ({ data }) => {
     >
       <View style={pdfStyles.table}>
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-          <Text style={[pdfStyles.tableCell, { flex: 1 }]}>Código</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Nombre de la Carrera</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1 }]}>Abrev.</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1, textAlign: "center" }]}>Tipo Carrera</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1 }]}>CÓDIGO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 3 }]}>NOMBRE DE LA CARRERA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1 }]}>ABREV.</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1, textAlign: "center" }]}>TIPO CARRERA</Text>
         </View>
 
         {data.map((career, index) => (

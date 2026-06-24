@@ -177,6 +177,7 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
       }
 
       // 2.0. Auto-inactivar pre-inscripciones vencidas (periodo de holgura terminó y no pasaron a inscripción)
+      let inactivatedCount = 0;
       const gracePeriodCheck = await supabase
         .from(TABLE_NAME)
         .select(`
@@ -212,7 +213,8 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
             .in('PROFESSIONAL_PRACTICE_ID', toInactivate);
 
           if (inactivateError) throw inactivateError;
-          console.log(`[PreEnrollmentsController] Auto-inactivadas ${toInactivate.length} pre-inscripción(es) vencida(s) para estudiante ${fullCI}`);
+          inactivatedCount = toInactivate.length;
+          console.log(`[PreEnrollmentsController] Auto-inactivadas ${inactivatedCount} pre-inscripción(es) vencida(s) para estudiante ${fullCI}`);
         }
       }
 
@@ -399,7 +401,7 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         isInUse: false
       };
       
-      return mappedResult;
+      return { ...mappedResult, inactivatedCount };
     });
 
     res.status(201).json(result);

@@ -14,7 +14,7 @@ import { useTabs } from "../../hooks/useTabs";
 import PeriodTable from "../../features/periods/components/PeriodTable";
 import CustomSelect from "../../components/form/CustomSelect";
 import { PlusCircleIcon } from "../../icons/actions";
-import { DownloadIcon } from "../../icons";
+import { FileText } from "lucide-react";
 import PeriodModal from "../../features/periods/components/PeriodModal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
@@ -424,7 +424,7 @@ export default function Period() {
                                     disabled={isSelecting}
                                     className="sm:w-auto"
                                 >
-                                    <DownloadIcon className="w-5 h-5" />
+                                    <FileText className="w-5 h-5" />
                                     <span className="ml-2">Reporte</span>
                                 </Button>
                                 <Button onClick={handleOpenCreateModal} disabled={isSelecting} className="sm:w-auto">

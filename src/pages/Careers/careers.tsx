@@ -19,7 +19,7 @@ import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } 
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { useTabs } from "../../hooks/useTabs";
 import { PlusCircleIcon } from "../../icons/actions";
-import { DownloadIcon } from "../../icons";
+import { FileText } from "lucide-react";
 
 import CareerTable from "../../features/careers/components/CareerTable";
 import CareerModal from "../../features/careers/components/CareerModal";
@@ -134,6 +134,7 @@ export default function CareersPage() {
   const [viewCareer, setViewCareer] = useState<CareerRowData | null>(null);
   const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
   const [pdfSearchTerm, setPdfSearchTerm] = useState("");
+  const [careerTypeFilter, setCareerTypeFilter] = useState<string>("");
 
   // Estados para Tipos de Prácticas
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
@@ -187,8 +188,9 @@ export default function CareersPage() {
           matchSearch(c.careerName, pdfSearchTerm)
         );
       })
+      .filter(c => !careerTypeFilter || c.careerType === careerTypeFilter)
       .map(formatCareerToRow);
-  }, [careers, pdfSearchTerm]);
+  }, [careers, pdfSearchTerm, careerTypeFilter]);
 
   /**
    * Prepara el estado para crear una nueva carrera o tipo de práctica y abre el modal.
@@ -554,7 +556,7 @@ export default function CareersPage() {
                   variant="outline"
                   onClick={() => setIsPDFModalOpen(true)}
                   disabled={isSelecting}
-                  startIcon={<DownloadIcon className="h-5 w-5" />}
+                  startIcon={<FileText className="h-5 w-5" />}
                 >
                   Reporte
                 </Button>
@@ -676,6 +678,22 @@ export default function CareersPage() {
           { header: "Acrónimo", accessor: "careerAbbreviation" },
           { header: "Tipo", accessor: "careerType" },
         ]}
+        renderFilters={() => (
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-[10px] sm:text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+              Tipo de Carrera
+            </label>
+            <select
+              value={careerTypeFilter}
+              onChange={(e) => setCareerTypeFilter(e.target.value)}
+              className="w-full px-3 py-2 sm:py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-lg sm:rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+            >
+              <option value="">Todos</option>
+              <option value="CORTA">Corta</option>
+              <option value="LARGA">Larga</option>
+            </select>
+          </div>
+        )}
       />
 
       {/* Modales de Tipos de Prácticas */}

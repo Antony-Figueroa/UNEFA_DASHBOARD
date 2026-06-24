@@ -17,7 +17,7 @@ import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
-import { ArrowUpIcon, DownloadIcon } from "../../icons";
+import { FileText, Upload } from "lucide-react";
 
 import TutorTable from "../../features/tutors/components/TutorTable";
 import TutorModal from "../../features/tutors/components/TutorModal";
@@ -364,7 +364,7 @@ export default function TutorsPage() {
                             <Button
                                 variant="outline"
                                 onClick={() => setIsPDFModalOpen(true)}
-                                startIcon={<DownloadIcon className="h-5 w-5" />}
+                                startIcon={<FileText className="h-5 w-5" />}
                             >
                                 Reporte
                             </Button>
@@ -372,7 +372,7 @@ export default function TutorsPage() {
                                 variant="outline"
                                 onClick={() => setIsExportModalOpen(true)}
                                 disabled={isSelecting}
-                                startIcon={<ArrowUpIcon className="h-5 w-5" />}
+                                startIcon={<Upload className="h-5 w-5" />}
                             >
                                 Exportación
                             </Button>

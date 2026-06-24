@@ -17,11 +17,11 @@ export const PreEnrollmentPDF: React.FC<PreEnrollmentPDFProps> = ({ data }) => {
     >
       <View style={pdfStyles.table}>
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Cédula</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Estudiante</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Carrera</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Período / Tipo</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Matrícula</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>CÉDULA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>ESTUDIANTE</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>CARRERA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>PERÍODO / TIPO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>MATRÍCULA</Text>
         </View>
 
         {data.map((item, index) => (

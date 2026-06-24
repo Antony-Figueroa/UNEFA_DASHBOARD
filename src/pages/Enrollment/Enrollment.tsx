@@ -15,7 +15,7 @@ import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
-import { DownloadIcon } from "../../icons";
+import { FileText } from "lucide-react";
 
 import EnrollmentTable from "../../features/enrollment/components/EnrollmentTable";
 import EnrollmentModal from "../../features/enrollment/components/EnrollmentModal";
@@ -287,24 +287,42 @@ export default function EnrollmentPage() {
      */
     const handleSave = (payload: CreateEnrollmentPayload | UpdateEnrollmentPayload) => {
         const isEditing = "enrollmentId" in payload;
+        const trySave = async (override: boolean) => {
+            try {
+                if (isEditing) {
+                    await editEnrollment(payload as UpdateEnrollmentPayload);
+                } else {
+                    await addEnrollment(
+                        override
+                            ? { ...(payload as CreateEnrollmentPayload), overridePeriodValidation: true }
+                            : (payload as CreateEnrollmentPayload),
+                    );
+                }
+                setIsModalOpen(false);
+                setConfirmation(null);
+            } catch (e: any) {
+                const errorCode = e?.response?.data?.code;
+                if (errorCode === "DATE_OUTSIDE_PERIOD" || errorCode === "PERIOD_NOT_ACTIVE") {
+                    setConfirmation({
+                        isOpen: true,
+                        title: "Período Cerrado",
+                        message: `El período de inscripción ha finalizado. ¿Desea registrar la inscripción de todas formas?`,
+                        onConfirm: () => trySave(true),
+                        confirmText: "Registrar de todas formas",
+                        variant: "warning",
+                    });
+                } else {
+                    console.error("[EnrollmentPage] Error saving enrollment:", e);
+                    setConfirmation(null);
+                }
+            }
+        };
+
         setConfirmation({
             isOpen: true,
             title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
             message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios de" : "registrar"} esta inscripción?`,
-            onConfirm: async () => {
-                try {
-                    if (isEditing) {
-                        await editEnrollment(payload as UpdateEnrollmentPayload);
-                    } else {
-                        await addEnrollment(payload as CreateEnrollmentPayload);
-                    }
-                    setIsModalOpen(false);
-                } catch (e) {
-                    console.error("[EnrollmentPage] Error saving enrollment:", e);
-                } finally {
-                    setConfirmation(null);
-                }
-            },
+            onConfirm: () => trySave(false),
             confirmText: isEditing ? "Guardar" : "Registrar",
             variant: "info",
         });
@@ -367,7 +385,7 @@ export default function EnrollmentPage() {
                             <Button
                                 variant="outline"
                                 onClick={() => setIsPDFModalOpen(true)}
-                                startIcon={<DownloadIcon className="h-5 w-5" />}
+                                startIcon={<FileText className="h-5 w-5" />}
                             >
                                 Reporte
                             </Button>

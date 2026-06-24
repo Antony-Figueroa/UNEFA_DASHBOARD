@@ -69,6 +69,13 @@ export const useEnrollment = () => {
       }
     } catch (e) {
       const axiosError = e as any;
+      
+      // Si el período cerró, propagar para que el componente ofrezca override
+      const errorCode = axiosError?.response?.data?.code;
+      if (errorCode === 'DATE_OUTSIDE_PERIOD' || errorCode === 'PERIOD_NOT_ACTIVE') {
+        throw e;
+      }
+
       if (!axiosError.response || axiosError.response.status >= 500) {
         console.error("[useEnrollment] Error crítico al inscribir:", e);
       }

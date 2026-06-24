@@ -296,6 +296,29 @@ export default function TutorModal({
     },
   });
 
+  const formValues = watch();
+  const allRequiredFilled = useMemo(() => {
+    const v = formValues;
+    return !!(
+      v.identificationPrefix &&
+      v.identificationNumber?.length >= 6 &&
+      v.firstName &&
+      v.lastName &&
+      v.sex &&
+      v.birthDate &&
+      v.civilStatus &&
+      v.phoneAreaCode &&
+      v.phoneNumber?.length === 7 &&
+      v.email &&
+      v.condition &&
+      v.dedication &&
+      v.category &&
+      v.profession &&
+      v.titulo &&
+      v.carreras?.length > 0
+    );
+  }, [formValues]);
+
   const {
     showConfirmation,
     handleCloseAttempt,
@@ -1230,7 +1253,7 @@ export default function TutorModal({
               <AsyncButton
                 onClick={handleFormSubmit}
                 loading={isLoading || confirmSaving}
-                disabled={!isDirty || isLoading || confirmSaving}
+                disabled={!allRequiredFilled || !isDirty || isLoading || confirmSaving}
               >
                 Guardar
               </AsyncButton>

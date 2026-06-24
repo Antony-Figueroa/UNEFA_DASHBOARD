@@ -15,154 +15,145 @@ interface Career {
   careerType?: string;
 }
 
-interface SelectedCareer {
-  careerId: number;
-  careerName: string;
-  careerType?: string;
-  projectedStudents: number;
-}
-
 interface ProyeccionModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// Hardcoded — no nucleus data in DB
+const REGION = "LOS LLANOS";
+const NUCLEUS = "PORTUGUESA";
+const EXTENSION = "ACARIGUA";
+
 export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
   const [periods, setPeriods] = useState<{ value: string; label: string; periodId: string }[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
-  const [careers, setCareers] = useState<Career[]>([]);
+  const [allCareers, setAllCareers] = useState<Career[]>([]);
   const [selectedCareerIds, setSelectedCareerIds] = useState<string[]>([]);
-  const [selectedCareers, setSelectedCareers] = useState<SelectedCareer[]>([]);
+  const [proyectadosMap, setProyectadosMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "config">("preview");
 
-  // Load periods and careers when modal opens
+  // Load periods + careers when modal opens
   useEffect(() => {
     if (!isOpen) return;
 
-    const loadData = async () => {
+    const load = async () => {
       try {
         setLoading(true);
-        const [periodList, careerList] = await Promise.all([getPeriods(), getCareers()]);
-
+        const [periodList, careerList] = await Promise.all([
+          getPeriods(),
+          getCareers()
+        ]);
         const periodOptions = (periodList || []).map(p => ({
           value: p.periodId,
           label: p.description,
           periodId: p.periodId
         }));
         setPeriods(periodOptions);
-
-        const careers = Array.isArray(careerList) ? careerList : (careerList as any)?.data || [];
-        const careerData = careers.map((c: Career) => ({
-          careerId: c.careerId,
-          careerName: c.careerName,
-          careerType: c.careerType
-        }));
-        setCareers(careerData);
+        setAllCareers(careerList || []);
       } catch (error) {
-        console.error("Error loading data for proyeccion:", error);
-        toast.error("Error al cargar los datos");
+        console.error("Error loading data:", error);
+        toast.error("Error al cargar datos");
       } finally {
         setLoading(false);
       }
     };
 
-    loadData();
+    load();
   }, [isOpen]);
 
-  // Update selected careers when selection changes
-  useEffect(() => {
-    const newSelectedCareers: SelectedCareer[] = [];
-    selectedCareerIds.forEach(id => {
-      const career = careers.find(c => String(c.careerId) === id);
-      if (career) {
-        const existing = selectedCareers.find(sc => sc.careerId === career.careerId);
-        newSelectedCareers.push({
-          ...career,
-          projectedStudents: existing?.projectedStudents || 0
-        });
-      }
-    });
-    setSelectedCareers(newSelectedCareers);
-  }, [selectedCareerIds, careers]);
-
   // Handle projected students change
-  const handleProjectedStudentsChange = useCallback((careerId: number, value: string) => {
+  const handleProyectadosChange = useCallback((careerId: number, value: string) => {
     const numValue = Math.max(0, parseInt(value) || 0);
-    setSelectedCareers(prev => prev.map(c =>
-      c.careerId === careerId ? { ...c, projectedStudents: numValue } : c
-    ));
+    setProyectadosMap(prev => ({
+      ...prev,
+      [String(careerId)]: numValue
+    }));
   }, []);
 
-  // Prepare data for Excel export and preview
+  // Selected career objects
+  const selectedCareers = useMemo(() => {
+    return allCareers.filter(c => selectedCareerIds.includes(String(c.careerId)));
+  }, [allCareers, selectedCareerIds]);
+
+  // Prepare data for Excel export
   const prepareExcelData = useCallback(() => {
-    const shortCareers = selectedCareers.filter(c => c.careerType?.toUpperCase() === "CORTA");
-    const longCareers = selectedCareers.filter(c => c.careerType?.toUpperCase() !== "CORTA");
+    if (!selectedPeriodId || selectedCareers.length === 0) return null;
+
+    const shortCareers = selectedCareers
+      .filter(c => c.careerType?.toUpperCase() === "CORTA")
+      .map(c => ({
+        careerId: c.careerId,
+        careerName: c.careerName,
+        careerType: c.careerType,
+        proyectados: proyectadosMap[String(c.careerId)] || 0
+      }));
+
+    const longCareers = selectedCareers
+      .filter(c => c.careerType?.toUpperCase() !== "CORTA")
+      .map(c => ({
+        careerId: c.careerId,
+        careerName: c.careerName,
+        careerType: c.careerType,
+        proyectados: proyectadosMap[String(c.careerId)] || 0
+      }));
+
+    const periodLabel = periods.find(p => p.periodId === selectedPeriodId)?.label || "";
+    const totalStudents =
+      shortCareers.reduce((s, c) => s + c.proyectados, 0) +
+      longCareers.reduce((s, c) => s + c.proyectados, 0);
 
     return {
-      periodDescription: periods.find(p => p.periodId === selectedPeriodId)?.label || "",
-      nuclei: [
-        {
-          nucleusId: 1,
-          name: "NÚCLEO PORTUGUESA",
-          region: "PORTUGUESA",
-          nucleusType: "",
-          extension: "ACARIGUA",
-          shortCareers: shortCareers.map(c => ({
-            careerId: c.careerId,
-            careerName: c.careerName,
-            proyectados: c.projectedStudents
-          })),
-          longCareers: longCareers.map(c => ({
-            careerId: c.careerId,
-            careerName: c.careerName,
-            proyectados: c.projectedStudents
-          }))
-        }
-      ],
+      periodDescription: periodLabel,
+      nuclei: [{
+        nucleusId: 0,
+        name: NUCLEUS,
+        region: REGION,
+        nucleusType: "NÚCLEO",
+        extension: EXTENSION,
+        shortCareers,
+        longCareers
+      }],
       totals: {
         totalShortCareers: shortCareers.length,
         totalLongCareers: longCareers.length,
-        totalCareers: selectedCareers.length,
-        totalStudents: selectedCareers.reduce((sum, c) => sum + c.projectedStudents, 0)
+        totalCareers: shortCareers.length + longCareers.length,
+        totalStudents
       }
     };
-  }, [selectedCareers, selectedPeriodId, periods]);
+  }, [selectedPeriodId, selectedCareers, proyectadosMap, periods]);
 
-  // Prepare preview table data
+  // Preview table rows — one career per row, nucleus+extension in every row
   const previewTableData = useMemo(() => {
-interface PreviewTableRow {
-  region: string;
-  nucleus: string;
-  extension: string;
-  shortCareerName: string;
-  shortCareerCount: number | string;
-  longCareerName: string;
-  longCareerCount: number | string;
-}
+    const data = prepareExcelData();
+    if (!data) return [];
 
-  const data: PreviewTableRow[] = [];
-    const proyeccionData = prepareExcelData();
-    
-    proyeccionData.nuclei.forEach(nucleus => {
-      const maxRows = Math.max(nucleus.shortCareers.length, nucleus.longCareers.length, 1);
-      for (let i = 0; i < maxRows; i++) {
-        const shortCareer = nucleus.shortCareers[i];
-        const longCareer = nucleus.longCareers[i];
-        data.push({
+    const rows: any[] = [];
+    data.nuclei.forEach((nucleus: any) => {
+      const careerRows: { shortName: string; shortCount: number | string; longName: string; longCount: number | string }[] = [];
+      (nucleus.shortCareers || []).forEach((c: any) =>
+        careerRows.push({ shortName: c.careerName, shortCount: c.proyectados, longName: "", longCount: "" })
+      );
+      (nucleus.longCareers || []).forEach((c: any) =>
+        careerRows.push({ shortName: "", shortCount: "", longName: c.careerName, longCount: c.proyectados })
+      );
+
+      careerRows.forEach((row, i) => {
+        rows.push({
           region: i === 0 ? nucleus.region : "",
-          nucleus: i === 0 ? nucleus.name : "",
-          extension: i === 0 ? nucleus.extension : "",
-          shortCareerName: shortCareer?.careerName || "",
-          shortCareerCount: shortCareer?.proyectados ?? "",
-          longCareerName: longCareer?.careerName || "",
-          longCareerCount: longCareer?.proyectados ?? ""
+          nucleus: nucleus.name,
+          extension: nucleus.extension,
+          shortCareerName: row.shortName,
+          shortCareerCount: row.shortCount,
+          longCareerName: row.longName,
+          longCareerCount: row.longCount
         });
-      }
+      });
     });
 
-    return data;
+    return rows;
   }, [prepareExcelData]);
 
   // Handle export
@@ -171,7 +162,7 @@ interface PreviewTableRow {
       toast.error("Seleccione un período académico");
       return;
     }
-    if (selectedCareers.length === 0) {
+    if (selectedCareerIds.length === 0) {
       toast.error("Seleccione al menos una carrera");
       return;
     }
@@ -179,6 +170,10 @@ interface PreviewTableRow {
     try {
       setIsExporting(true);
       const data = prepareExcelData();
+      if (!data) {
+        toast.error("Error al preparar los datos");
+        return;
+      }
       const periodLabel = periods.find(p => p.periodId === selectedPeriodId)?.label || "";
       const fileName = `proyeccion_pasantias_${periodLabel.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}`;
       await generateProyeccionExcel(data, periodLabel, fileName);
@@ -189,23 +184,19 @@ interface PreviewTableRow {
     } finally {
       setIsExporting(false);
     }
-  }, [selectedPeriodId, selectedCareers, prepareExcelData, periods]);
+  }, [selectedPeriodId, selectedCareerIds, prepareExcelData, periods]);
 
-  // Reset form when closing
+  // Reset when closing
   const handleClose = useCallback(() => {
     setSelectedPeriodId("");
     setSelectedCareerIds([]);
-    setSelectedCareers([]);
+    setProyectadosMap({});
     setActiveTab("preview");
     onClose();
   }, [onClose]);
 
-  const careerOptions = careers.map(c => ({
-    value: String(c.careerId),
-    text: c.careerName
-  }));
-
   const selectedPeriod = periods.find(p => p.periodId === selectedPeriodId);
+  const careerOptions = allCareers.map(c => ({ value: String(c.careerId), text: `${c.careerName} (${c.careerType || "LG"})` }));
 
   return (
     <Modal
@@ -227,9 +218,9 @@ interface PreviewTableRow {
                 Proyección de Pasantías
               </h3>
               <p className="text-[10px] sm:text-xs font-medium text-text-tertiary">
-                {selectedPeriod 
-                  ? `Período: ${selectedPeriod.label} — ${selectedCareers.length} carrera(s) seleccionada(s)`
-                  : "Configure el período y las carreras para generar la proyección"}
+                {selectedPeriod
+                  ? `${selectedPeriod.label} — ${REGION} / ${NUCLEUS} / ${EXTENSION}`
+                  : "Seleccione período y carreras"}
               </p>
             </div>
           </div>
@@ -297,7 +288,7 @@ interface PreviewTableRow {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border-light dark:divide-white/5">
-                      {!selectedPeriodId || selectedCareers.length === 0 ? (
+                      {!selectedPeriodId || selectedCareerIds.length === 0 ? (
                         <tr>
                           <td colSpan={7} className="px-4 py-12 text-center text-text-tertiary">
                             <div className="flex flex-col items-center gap-2">
@@ -305,7 +296,7 @@ interface PreviewTableRow {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                               </svg>
                               <span className="font-medium">Configure el reporte para ver la vista previa</span>
-                              <span className="text-xs">Seleccione un período y al menos una carrera</span>
+                              <span className="text-xs">Seleccione período + carreras + cantidades</span>
                             </div>
                           </td>
                         </tr>
@@ -327,24 +318,24 @@ interface PreviewTableRow {
                 </div>
 
                 {/* Totals bar */}
-                {(selectedPeriodId && selectedCareers.length > 0) && (
+                {(selectedPeriodId && selectedCareerIds.length > 0) && (
                   <div className="px-4 py-3 bg-brand-500/10 border-t border-border-light dark:border-white/5">
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs sm:text-sm">
                       <div className="p-2 bg-bg-surface dark:bg-bg-dark-surface rounded-lg">
                         <p className="text-text-tertiary">Carreras Cortas</p>
-                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData().totals.totalShortCareers}</p>
+                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData()?.totals?.totalShortCareers ?? 0}</p>
                       </div>
                       <div className="p-2 bg-bg-surface dark:bg-bg-dark-surface rounded-lg">
                         <p className="text-text-tertiary">Carreras Largas</p>
-                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData().totals.totalLongCareers}</p>
+                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData()?.totals?.totalLongCareers ?? 0}</p>
                       </div>
                       <div className="p-2 bg-bg-surface dark:bg-bg-dark-surface rounded-lg">
                         <p className="text-text-tertiary">Total Carreras</p>
-                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData().totals.totalCareers}</p>
+                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData()?.totals?.totalCareers ?? 0}</p>
                       </div>
                       <div className="p-2 bg-bg-surface dark:bg-bg-dark-surface rounded-lg">
                         <p className="text-text-tertiary">Total Estudiantes</p>
-                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData().totals.totalStudents}</p>
+                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData()?.totals?.totalStudents ?? 0}</p>
                       </div>
                     </div>
                   </div>
@@ -391,51 +382,57 @@ interface PreviewTableRow {
                   />
                 </div>
 
-                {/* Career multi-select */}
+                {/* MultiSelect for careers */}
                 <div className="space-y-1.5 sm:space-y-2">
-                  <label className="text-[10px] sm:text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
-                    Carreras
-                  </label>
                   <MultiSelect
-                    label=""
+                    label="Carreras"
                     options={careerOptions}
                     value={selectedCareerIds}
-                    onChange={(selected) => setSelectedCareerIds(selected)}
-                    placeholder="Seleccione carreras"
+                    onChange={setSelectedCareerIds}
+                    placeholder="Seleccione carreras..."
                   />
                 </div>
 
-                {/* Selected careers with number inputs */}
+                {/* Hardcoded location info */}
+                <div className="bg-blue-50 dark:bg-blue-900/10 rounded-lg p-3 space-y-1 border border-blue-100 dark:border-blue-900/20">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
+                    Ubicación
+                  </p>
+                  <p className="text-xs text-text-primary dark:text-text-emphasis">
+                    <span className="font-medium">Región:</span> {REGION}
+                  </p>
+                  <p className="text-xs text-text-primary dark:text-text-emphasis">
+                    <span className="font-medium">Núcleo:</span> {NUCLEUS}
+                  </p>
+                  <p className="text-xs text-text-primary dark:text-text-emphasis">
+                    <span className="font-medium">Extensión:</span> {EXTENSION}
+                  </p>
+                </div>
+
+                {/* Projected counts per career */}
                 {selectedCareers.length > 0 && (
-                  <div className="space-y-1.5 sm:space-y-2 pt-4 border-t border-border-light dark:border-white/5">
-                    <label className="text-[10px] sm:text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
-                      Estudiantes Proyectados
-                    </label>
-                    <div className="space-y-2 sm:space-y-3 max-h-64 overflow-y-auto">
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-text-tertiary pl-1">
+                      Cantidad Proyectada
+                    </p>
+                    <div className="divide-y divide-border-light dark:divide-white/5 border border-border-light dark:border-white/10 rounded-lg overflow-hidden">
                       {selectedCareers.map(career => (
-                        <div
-                          key={career.careerId}
-                          className="flex items-center justify-between p-3 border border-border-default dark:border-border-dark rounded-lg bg-bg-surface dark:bg-bg-dark-surface hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                        >
-                          <div className="flex-1 pr-3">
-                            <p className="text-xs sm:text-sm font-medium text-text-primary dark:text-text-emphasis leading-tight">
+                        <div key={career.careerId} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50/50 dark:hover:bg-white/5">
+                          <div className="flex-1 pr-2 min-w-0">
+                            <p className="text-xs font-medium text-text-primary dark:text-text-emphasis truncate">
                               {career.careerName}
                             </p>
-                            <p className="text-[10px] text-text-tertiary mt-0.5">
+                            <p className="text-[10px] text-text-tertiary">
                               {career.careerType?.toUpperCase() === "CORTA" ? "Carrera Corta" : "Carrera Larga"}
                             </p>
                           </div>
-
-                          <div className="shrink-0">
-                            <input
-                              type="number"
-                              min="0"
-                              value={career.projectedStudents}
-                              onChange={(e) => handleProjectedStudentsChange(career.careerId, e.target.value)}
-                              className="w-20 text-center rounded border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface px-2 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                              placeholder="0"
-                            />
-                          </div>
+                          <input
+                            type="number"
+                            min="0"
+                            value={proyectadosMap[String(career.careerId)] || 0}
+                            onChange={(e) => handleProyectadosChange(career.careerId, e.target.value)}
+                            className="w-16 text-center rounded border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface px-1.5 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+                          />
                         </div>
                       ))}
                     </div>
@@ -444,7 +441,7 @@ interface PreviewTableRow {
 
                 <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-brand-500/5 border border-brand-500/10 mt-4 sm:mt-8">
                   <p className="text-[10px] sm:text-[11px] text-brand-600 dark:text-brand-400 leading-relaxed italic">
-                    * Ingrese la cantidad de estudiantes proyectados para cada carrera. El reporte se exportará con los datos ingresados.
+                    * Seleccione las carreras e ingrese la cantidad proyectada. Región/Núcleo/Extensión fijos: {REGION} / {NUCLEUS} / {EXTENSION}.
                   </p>
                 </div>
               </div>
@@ -453,7 +450,7 @@ interface PreviewTableRow {
             <div className="p-4 sm:p-6 bg-bg-secondary/30 dark:bg-white/5 border-t border-border-light dark:border-white/5 space-y-2 sm:space-y-3">
               <button
                 onClick={handleExport}
-                disabled={isExporting || !selectedPeriodId || selectedCareers.length === 0}
+                disabled={isExporting || !selectedPeriodId || selectedCareerIds.length === 0}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <DownloadIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

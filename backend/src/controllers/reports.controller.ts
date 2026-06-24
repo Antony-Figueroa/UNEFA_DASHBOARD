@@ -1014,6 +1014,10 @@ export const exportReportExcel = async (req: Request, res: Response) => {
 
     switch (type) {
       case 'tutores-academicos': {
+        // Helper: limpia el string "null" literal y espacios
+        const cleanVal = (v: string | null | undefined): string =>
+          (!v || v.trim().toLowerCase() === 'null') ? '' : v.trim();
+
         // ── 1. Query principal: tutores académicos con sus prácticas ──
         const { data: tutorPractices } = await supabase
           .from('t_professional_practices_tutor')
@@ -1120,7 +1124,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
               condicion: tutor.CONDITION || '',
               dedicacion: tutor.DEDICATION || '',
               categoria: tutor.CATEGORY || '',
-              telefono: getPersonField(tutor.t_persons, 'phone') || '',
+               telefono: cleanVal(getPersonField(tutor.t_persons, 'phone')),
               correo: getPersonField(tutor.t_persons, 'email') || '',
               cantidadEstudiantes: 1,
             });
@@ -1142,8 +1146,8 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             ? `${instTutorPerson.last_name || ''} ${instTutorPerson.second_last_name || ''}`.trim()
             : '';
           const instCi = instTutorPerson?.ci || '';
-          const instPhone = instTutorPerson?.phone || '';
-          const instEmail = instTutorPerson?.email || '';
+          const instPhone = cleanVal(instTutorPerson?.phone || '');
+          const instEmail = cleanVal(instTutorPerson?.email || '');
           const tutorInstConcat = instTutorPerson
             ? `${instSurname}, ${instName}, C.I: ${instCi}/TLFNO: ${instPhone}/CORREO: ${instEmail}`
             : '';
@@ -1160,7 +1164,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             sexo: studentPerson?.gender || '',
             tipo: estudianteEntity?.STUDENT_TYPE || '',
             rango: estudianteEntity?.MILITARY_RANK || '',
-            telefono: studentPerson?.phone || '',
+            telefono: cleanVal(studentPerson?.phone || ''),
             institucion: institution?.INSTITUTION_NAME || '',
             tipoInstitucion: institution?.INSTITUTION_TYPE || '',
             tutorInst: tutorInstConcat,

@@ -1605,7 +1605,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                     const sameStreet = addr?.street_address === inlineAddress.streetAddress;
                     if (!sameParroquia || !sameStreet) {
                       // Actualizar dirección existente (t_address)
-                      await apiClient.put(`/address/${addr.address_id}`, {
+                      await apiClient.put(`/address/${existingPrimary.person_address_id}`, {
                         parroquia_id: inlineAddress.parroquiaId,
                         street_address: inlineAddress.streetAddress,
                         reference: inlineAddress.reference || '',

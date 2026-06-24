@@ -16,7 +16,7 @@ import { DocumentReportModal } from "../../features/reports/components/DocumentR
 import { ProyeccionModal } from "./ProyeccionModal";
 import { useReports } from "../../features/reports/hooks/useReports";
 import { getReportConfig, DOCUMENT_SECTIONS, ReportType, setCurrentTutorId, currentTutorId } from "../../features/reports/config/reportConfig";
-import { generateSimpleExcel } from "../../utils/unefaExcelReports";
+
 import toast from "react-hot-toast";
 import { DocumentProps } from "@react-pdf/renderer";
 import { SearchableInput } from "../../features/reports/components/SearchableInput";
@@ -240,14 +240,17 @@ export default function ReportsPage() {
   }, [pendingViewType, pendingExportType, handleViewReport, handleExportExcel]);
 
   const exportTableToExcel = async (data: any[], fileName: string) => {
-    const config = getReportConfig(activeReportId);
-    if (!config) return;
     try {
-      await generateSimpleExcel(data, config.columns as any, fileName, config.title);
+      const config = getReportConfig(activeReportId);
+      if (!config) return;
+      const periodNum = periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined;
+      const effectiveCareerIds = careerIdsFilter.length > 0 ? careerIdsFilter : undefined;
+      const blob = await reportsService.exportReportExcel(activeReportId, periodNum, undefined, effectiveCareerIds);
+      downloadBlob(blob, `${fileName}.xlsx`);
       toast.success('Reporte exportado exitosamente');
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Reports] Error exporting Excel:', error);
-      toast.error('Error al exportar el reporte');
+      toast.error(error?.response?.data?.message || 'Error al exportar el reporte');
     }
   };
 

@@ -116,11 +116,13 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         ),
         t_professional_practices_tutor (
           TUTOR_TYPE,
-          t_persons!inner (
-            first_name,
-            last_name,
-            phone,
-            email
+          t_tutors (
+            t_persons!inner (
+              first_name,
+              last_name,
+              phone,
+              email
+            )
           )
         )
       `)
@@ -173,9 +175,9 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         grade: (enrollment as any).GRADE || 0,
         totalHours: 0,
         requiredHours: requiredHours,
-        tutorName: academicTutor ? `${academicTutor.t_persons?.first_name || ''} ${academicTutor.t_persons?.last_name || ''}`.trim() : '',
-        tutorPhone: academicTutor?.t_persons?.phone || '',
-        tutorEmail: academicTutor?.t_persons?.email || '',
+        tutorName: academicTutor ? `${academicTutor.t_tutors?.t_persons?.first_name || ''} ${academicTutor.t_tutors?.t_persons?.last_name || ''}`.trim() : '',
+        tutorPhone: academicTutor?.t_tutors?.t_persons?.phone || '',
+        tutorEmail: academicTutor?.t_tutors?.t_persons?.email || '',
         professionalPracticeId: practiceId
       };
 

@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import PageMeta from "../../../../components/common/PageMeta";
-import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
 import ComponentCard from "../../../../components/common/ComponentCard";
 import Button from "../../../../components/ui/button/Button";
 import apiClient from "../../../../api/apiClient";
@@ -113,9 +111,6 @@ export default function InstitutionConfig() {
 
   return (
     <>
-      <PageMeta title="Configuración Institucional" description="Datos de la institución" />
-      <PageBreadcrumb pageTitle="Configuración Institucional" />
-
       <div className="space-y-6 animate-fadeIn">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

@@ -343,7 +343,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
               }}
               onClick={(e) => e.stopPropagation()}
               role="listbox"
-              aria-label={label}
+              aria-label={typeof label === 'string' ? label : undefined}
             >
               {onAddNew && (
                 <div className="sticky top-0 z-10 bg-bg-main dark:bg-bg-dark border-b border-border-light dark:border-border-dark mb-1">

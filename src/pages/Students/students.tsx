@@ -157,7 +157,7 @@ export default function StudentsPage() {
           </div>
 
           {!pageLoading && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Button variant="outline" onClick={() => modals.setIsPDFModalOpen(true)} disabled={modals.selectedIds.length > 0} startIcon={<FileText className="h-5 w-5" />}>Reporte</Button>
               <Button variant="outline" onClick={() => modals.setIsImportModalOpen(true)} disabled={modals.selectedIds.length > 0} startIcon={<ArrowUpIcon className="h-5 w-5" />}>Importar</Button>
               <Button variant="outline" onClick={() => modals.setIsExportModalOpen(true)} disabled={modals.selectedIds.length > 0} startIcon={<Upload className="h-5 w-5" />}>Exportación</Button>

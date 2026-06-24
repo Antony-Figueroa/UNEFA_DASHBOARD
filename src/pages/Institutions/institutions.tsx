@@ -436,7 +436,7 @@ export default function InstitutionsPage() {
             </div>
 
             {!pageLoading && (
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <Button
                     variant="outline"
                     onClick={() => {

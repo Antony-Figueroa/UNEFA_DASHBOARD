@@ -71,6 +71,7 @@ export default function PeriodModal({
     // Obtener valores actuales para reactividad al inicio para evitar ReferenceError en useMemo
     const yearValue = watch('year');
     const startDateValue = watch('startDate');
+    const endDateValue = watch('endDate');
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingData, setPendingData] = useState<PeriodFormData | null>(null);
@@ -103,6 +104,7 @@ export default function PeriodModal({
     const [typeDatesState, setTypeDatesState] = useState<Record<number, { startDate: string | null; endDate: string | null }>>({});
     const [coverageWarnings, setCoverageWarnings] = useState<string[]>([]);
     const [editingTypeDates, setEditingTypeDates] = useState(false);
+    const autoCompleteDoneRef = useRef(false);
 
     // Flatpickr onChange altInput returns d/m/Y. Convert to Y-m-d for storage so value sync setDate(Y-m-d) works.
     const toYmd = (str: string): string => {
@@ -121,6 +123,7 @@ export default function PeriodModal({
             setCoverageWarnings([]);
             setAccordionOpen(false);
             setEditingTypeDates(false);
+            autoCompleteDoneRef.current = false;
             return;
         }
 
@@ -131,6 +134,14 @@ export default function PeriodModal({
                     id: dto.INTERNSHIP_TYPE_ID ?? dto.id ?? 0,
                     name: dto.NAME ?? dto.name ?? '',
                 })).filter(t => t.id > 0);
+
+                // Sort: Única → Hospitalaria → Comunitaria
+                const typeOrder: Record<string, number> = { UNICA: 0, HOSPITALARIA: 1, COMUNITARIA: 2 };
+                types.sort((a, b) => {
+                    const an = a.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '');
+                    const bn = b.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '');
+                    return (typeOrder[an] ?? 99) - (typeOrder[bn] ?? 99);
+                });
                 setInternshipTypes(types);
 
                 // Initialize type dates from existing periodo data
@@ -450,6 +461,65 @@ export default function PeriodModal({
         }, 100);
     }, [isOpen, existingPeriods, reset, setValue]);
 
+    // Auto-complete type dates ONCE on first load for NEW periods only
+    useEffect(() => {
+        if (autoCompleteDoneRef.current) return;
+        if (!startDateValue || !endDateValue || isInitializing.current) return;
+        if (internshipTypes.length === 0) return;
+        // Don't overwrite server data when editing
+        if (periodo) return;
+
+        const eightWeeksMs = 8 * 7 * 24 * 60 * 60 * 1000;
+
+        const formatYmd = (date: Date): string => {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        };
+
+        const start = new Date(startDateValue);
+        const end = new Date(endDateValue);
+
+        const getTypeByName = (target: string) =>
+            internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === target);
+
+        const unicaType = getTypeByName('UNICA');
+        const hospType = getTypeByName('HOSPITALARIA');
+        const comuType = getTypeByName('COMUNITARIA');
+
+        const updates: Record<number, { startDate: string; endDate: string }> = {};
+
+        // Única: full 16-week period
+        if (unicaType) {
+            updates[unicaType.id] = {
+                startDate: formatYmd(start),
+                endDate: formatYmd(end),
+            };
+        }
+
+        // Comunitaria: first 8 weeks
+        if (comuType) {
+            const comuEnd = new Date(start.getTime() + eightWeeksMs);
+            updates[comuType.id] = {
+                startDate: formatYmd(start),
+                endDate: formatYmd(comuEnd),
+            };
+        }
+
+        // Hospitalaria: second 8 weeks
+        if (hospType) {
+            const hospStart = new Date(start.getTime() + eightWeeksMs);
+            updates[hospType.id] = {
+                startDate: formatYmd(hospStart),
+                endDate: formatYmd(end),
+            };
+        }
+
+        if (Object.keys(updates).length > 0) {
+            setTypeDatesState(prev => ({ ...prev, ...updates }));
+        }
+
+        autoCompleteDoneRef.current = true;
+    }, [startDateValue, endDateValue, internshipTypes, periodo]);
+
     /**
      * Maneja el envío del formulario, valida las fechas y llama a la función onSave.
      */
@@ -506,6 +576,21 @@ export default function PeriodModal({
                     }
                 }
 
+                // ponytail: validate comunitaria < hospitalaria ordering
+                const hospType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'HOSPITALARIA');
+                const comuType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'COMUNITARIA');
+                if (hospType && comuType) {
+                    const hospDates = typeDatesState[hospType.id];
+                    const comuDates = typeDatesState[comuType.id];
+                    if (hospDates?.startDate && comuDates?.endDate) {
+                        const hospStart = parseYmd(hospDates.startDate);
+                        const comuEnd = parseYmd(comuDates.endDate);
+                        if (comuEnd.getTime() > hospStart.getTime()) {
+                            throw new Error('Comunitaria: la fecha de fin debe ser anterior a la fecha de inicio de Hospitalaria');
+                        }
+                    }
+                }
+
                 const updatePayload: UpdatePeriodPayload = {
                     periodId: periodo.periodId,
                     code: newDescription,
@@ -530,6 +615,25 @@ export default function PeriodModal({
                     );
                 }
             } else {
+                // ponytail: validate comunitaria < hospitalaria ordering (same as edit path)
+                const hospType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'HOSPITALARIA');
+                const comuType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'COMUNITARIA');
+                if (hospType && comuType) {
+                    const hospDates = typeDatesState[hospType.id];
+                    const comuDates = typeDatesState[comuType.id];
+                    if (hospDates?.startDate && comuDates?.endDate) {
+                        const parseYmd = (str: string): Date => {
+                            const [y, m, d] = str.split('-').map(Number);
+                            return new Date(y, m - 1, d, 12, 0, 0);
+                        };
+                        const hospStart = parseYmd(hospDates.startDate);
+                        const comuEnd = parseYmd(comuDates.endDate);
+                        if (comuEnd.getTime() > hospStart.getTime()) {
+                            throw new Error('Comunitaria: la fecha de fin debe ser anterior a la fecha de inicio de Hospitalaria');
+                        }
+                    }
+                }
+
                 const createPayload: CreatePeriodPayload = {
                     code: newDescription,
                     description: newDescription,
@@ -765,54 +869,135 @@ export default function PeriodModal({
                                                         <p className="text-xs font-semibold text-text-primary dark:text-white/90 uppercase tracking-wider mb-2">
                                                             {type.name}
                                                         </p>
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                            <div>
-                                                                <label className="text-[11px] font-medium text-text-tertiary mb-1 block">
-                                                                    Fecha de Inicio
-                                                                </label>
-                                                                <FlatpickrDatePicker
-                                                                    value={td?.startDate ?? ''}
-                                                                    onChange={(dateStr) => {
-                                                                        setTypeDatesState(prev => ({
-                                                                            ...prev,
-                                                                            [type.id]: {
-                                                                                ...prev[type.id],
-                                                                                startDate: toYmd(dateStr) || null,
-                                                                                endDate: prev[type.id]?.endDate ?? null,
-                                                                            },
-                                                                        }));
-                                                                    }}
-                                                                    options={{
-                                                                        minDate: periodo?.startDate ? new Date(periodo.startDate.getTime() - 86400000) : undefined,
-                                                                        maxDate: periodo?.endDate ? new Date(periodo.endDate.getTime() + 86400000) : undefined,
-                                                                    }}
-                                                                    placeholder="DD/MM/AAAA"
-                                                                />
-                                                             </div>
-                                                             <div>
-                                                                 <label className="text-[11px] font-medium text-text-tertiary mb-1 block">
-                                                                     Fecha de Fin
-                                                                 </label>
-                                                                <FlatpickrDatePicker
-                                                                    value={td?.endDate ?? ''}
-                                                                    onChange={(dateStr) => {
-                                                                        setTypeDatesState(prev => ({
-                                                                            ...prev,
-                                                                            [type.id]: {
-                                                                                ...prev[type.id],
-                                                                                startDate: prev[type.id]?.startDate ?? null,
-                                                                                endDate: toYmd(dateStr) || null,
-                                                                            },
-                                                                        }));
-                                                                    }}
-                                                                     options={{
-                                                                        minDate: periodo?.startDate ? new Date(periodo.startDate.getTime() - 86400000) : undefined,
-                                                                        maxDate: periodo?.endDate ? new Date(periodo.endDate.getTime() + 86400000) : undefined,
-                                                                    }}
-                                                                    placeholder="DD/MM/AAAA"
-                                                                 />
-                                                            </div>
-                                                        </div>
+                                                        {/* ponytail: type constraints — end min = start + 8/16w, end max = sibling/period bound */}
+                                                        {(() => {
+                                                            const pStart = startDateValue ? new Date(startDateValue) : null;
+                                                            const pEnd = endDateValue ? new Date(endDateValue) : null;
+                                                            const typeNameUpper = type.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '');
+                                                            const isUnica = typeNameUpper === 'UNICA';
+                                                            const isHospitalaria = typeNameUpper === 'HOSPITALARIA';
+                                                            const isComunitaria = typeNameUpper === 'COMUNITARIA';
+
+                                                            const eightWeeksMs = 8 * 7 * 24 * 60 * 60 * 1000;
+
+                                                            const hospType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'HOSPITALARIA');
+                                                            const comuType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'COMUNITARIA');
+                                                            const hospTd = hospType ? typeDatesState[hospType.id] : null;
+                                                            const comuTd = comuType ? typeDatesState[comuType.id] : null;
+
+                                                            const parseYmd = (str: string): Date | null => {
+                                                                const [y, m, d] = str.split('-').map(Number);
+                                                                if (!y || !m || !d) return null;
+                                                                return new Date(y, m - 1, d, 12, 0, 0);
+                                                            };
+
+                                                            // Current type's own start (if user already picked one)
+                                                            const ownStart = td?.startDate ? parseYmd(td.startDate) : null;
+
+                                                            // startMinDate — Hospitalaria must start after Comunitaria ends
+                                                            const startMinDate = pStart && isHospitalaria && comuTd?.endDate
+                                                                ? (parseYmd(comuTd.endDate) ?? pStart)
+                                                                : pStart;
+
+                                                            // startMaxDate — all: end of parent period
+                                                            const startMaxDate = pEnd ?? undefined;
+
+                                                            // endMinDate — at least start + 8/16w (same as parent: end >= start + min duration)
+                                                            const weeksForType = isUnica ? 16 : 8;
+                                                            const endMinDate = (() => {
+                                                                if (!pStart) return undefined;
+                                                                const base = ownStart ?? pStart;
+                                                                const min = new Date(base.getTime() + weeksForType * 7 * 24 * 60 * 60 * 1000);
+                                                                return min;
+                                                            })();
+
+                                                            // endMaxDate — Comunitaria must end before Hospitalaria starts, others: pEnd
+                                                            const endMaxDate = pEnd && isComunitaria && hospTd?.startDate
+                                                                ? (parseYmd(hospTd.startDate) ?? pEnd)
+                                                                : pEnd;
+
+                                                            // Auto-update end when start changes (same as parent period behavior)
+                                                            const handleStartChange = (dateStr: string) => {
+                                                                const ymd = toYmd(dateStr);
+                                                                if (!ymd) {
+                                                                    setTypeDatesState(prev => ({
+                                                                        ...prev,
+                                                                        [type.id]: { startDate: null, endDate: prev[type.id]?.endDate ?? null },
+                                                                    }));
+                                                                    return;
+                                                                }
+
+                                                                setTypeDatesState(prev => {
+                                                                    const currentEnd = prev[type.id]?.endDate;
+                                                                    const [y, m, d] = ymd.split('-').map(Number);
+                                                                    const newStart = new Date(y, m - 1, d, 12, 0, 0);
+                                                                    const wft = isUnica ? 16 : 8;
+                                                                    const minEnd = new Date(newStart.getTime() + wft * 7 * 24 * 60 * 60 * 1000);
+                                                                    const fmt = (dt: Date): string =>
+                                                                        `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+
+                                                                    let newEnd = currentEnd;
+                                                                    if (!currentEnd) {
+                                                                        newEnd = fmt(minEnd);
+                                                                    } else {
+                                                                        const [ey, em, ed] = currentEnd.split('-').map(Number);
+                                                                        const endDt = new Date(ey, em - 1, ed, 12, 0, 0);
+                                                                        if (endDt.getTime() < minEnd.getTime()) {
+                                                                            newEnd = fmt(minEnd);
+                                                                        }
+                                                                    }
+
+                                                                    return {
+                                                                        ...prev,
+                                                                        [type.id]: { startDate: ymd, endDate: newEnd },
+                                                                    };
+                                                                });
+                                                            };
+
+                                                            return (
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                                    <div>
+                                                                        <label className="text-[11px] font-medium text-text-tertiary mb-1 block">
+                                                                            Fecha de Inicio
+                                                                        </label>
+                                                                        <FlatpickrDatePicker
+                                                                            value={td?.startDate ?? ''}
+                                                                            onChange={handleStartChange}
+                                                                            options={{
+                                                                                minDate: startMinDate,
+                                                                                maxDate: startMaxDate,
+                                                                            }}
+                                                                            placeholder="DD/MM/AAAA"
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="text-[11px] font-medium text-text-tertiary mb-1 block">
+                                                                            Fecha de Fin
+                                                                        </label>
+                                                                        <FlatpickrDatePicker
+                                                                            value={td?.endDate ?? ''}
+                                                                            onChange={(dateStr) => {
+                                                                                setTypeDatesState(prev => {
+                                                                                    const ymd = toYmd(dateStr);
+                                                                                    return {
+                                                                                        ...prev,
+                                                                                        [type.id]: {
+                                                                                            startDate: prev[type.id]?.startDate ?? null,
+                                                                                            endDate: ymd || null,
+                                                                                        },
+                                                                                    };
+                                                                                });
+                                                                            }}
+                                                                            options={{
+                                                                                minDate: endMinDate,
+                                                                                maxDate: endMaxDate,
+                                                                            }}
+                                                                            placeholder="DD/MM/AAAA"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 );
                                             })}

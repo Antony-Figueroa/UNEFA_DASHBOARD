@@ -268,8 +268,8 @@ export default function InstitutionModal({
   const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
 
   // State for tabs in the form
-  const tabsState = useTabs({ defaultTab: 'datos-generales' });
-  useEffect(() => { if (isOpen) tabsState.setActiveTab('datos-generales'); }, [isOpen]);
+  const tabsState = useTabs({ defaultTab: 'identificacion' });
+  useEffect(() => { if (isOpen) tabsState.setActiveTab('identificacion'); }, [isOpen]);
 
   // State for duplicate detection
   const [isCheckingRif, setIsCheckingRif] = useState(false);

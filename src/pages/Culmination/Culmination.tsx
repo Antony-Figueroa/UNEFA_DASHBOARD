@@ -294,8 +294,8 @@ export default function CulminationPage() {
 
         {/* Filters + Table */}
         <ComponentCard title="Listado de Estudiantes">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-6">
-            <div className="w-full sm:w-64">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div className="w-full">
               <InputField
                 type="text"
                 placeholder="Buscar estudiante, cédula..."
@@ -317,7 +317,7 @@ export default function CulminationPage() {
                 setStatusFilter(e as unknown as string);
                 setCurrentPage(1);
               }}
-              className="w-full sm:w-44"
+              className="w-full"
             />
             <CustomSelect
               options={periodOptions}
@@ -326,7 +326,7 @@ export default function CulminationPage() {
                 setPeriodFilter(e as unknown as string);
                 setCurrentPage(1);
               }}
-              className="w-full sm:w-40"
+              className="w-full"
             />
             {(searchTerm || statusFilter || periodFilter) && (
               <Button variant="ghost" onClick={clearFilters}>

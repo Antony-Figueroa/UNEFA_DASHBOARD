@@ -106,6 +106,12 @@ export default function StudentsPage() {
     fetchInternshipTypes();
   }, [fetchInternshipTypes]);
 
+  // ── PDF filters state ────────────────────────────────────────────
+  const [pdfSexFilter, setPdfSexFilter] = useState("");
+
+  const [pdfDateFrom, setPdfDateFrom] = useState("");
+  const [pdfDateTo, setPdfDateTo] = useState("");
+
   // ── PDF data ─────────────────────────────────────────────────────
   const pdfFilteredData = (Array.isArray(students) ? students : [])
     .filter((s) => {
@@ -114,6 +120,19 @@ export default function StudentsPage() {
         matchSearch(s.identificationNumber ?? '', modals.pdfSearchTerm) ||
         matchSearch(fullName, modals.pdfSearchTerm);
       return matchesSearch && !!s.status;
+    })
+    .filter((s) => !pdfSexFilter || s.sex === pdfSexFilter)
+    .filter((s) => {
+      if (!pdfDateFrom && !pdfDateTo) return true;
+      const d = new Date(s.enrollmentDate);
+      if (isNaN(d.getTime())) return !pdfDateFrom && !pdfDateTo;
+      if (pdfDateFrom && d < new Date(pdfDateFrom)) return false;
+      if (pdfDateTo) {
+        const end = new Date(pdfDateTo);
+        end.setHours(23, 59, 59, 999);
+        if (d > end) return false;
+      }
+      return true;
     });
 
   // ── Export ───────────────────────────────────────────────────────
@@ -167,66 +186,7 @@ export default function StudentsPage() {
         </div>
 
         <div className="space-y-6">
-          {/* ── Filter toolbar ──────────────────────────────────── */}
-          <div className="flex flex-wrap items-center gap-3">
-            <select
-              value={filters.filters.careerId}
-              onChange={(e) => filters.setFilter("careerId", e.target.value)}
-              className="w-full sm:w-auto px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
-              aria-label="Filtrar por carrera"
-            >
-              <option value="">Todas las carreras</option>
-              {filters.availableCareers.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </select>
 
-            <select
-              value={filters.filters.regime}
-              onChange={(e) => filters.setFilter("regime", e.target.value)}
-              className="w-full sm:w-auto px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
-              aria-label="Filtrar por régimen"
-            >
-              <option value="">Todos los regímenes</option>
-              {filters.availableRegimes.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.filters.studentType}
-              onChange={(e) => filters.setFilter("studentType", e.target.value)}
-              className="w-full sm:w-auto px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
-              aria-label="Filtrar por tipo"
-            >
-              <option value="">Todos los tipos</option>
-              {filters.availableStudentTypes.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.filters.periodId}
-              onChange={(e) => filters.setFilter("periodId", e.target.value)}
-              className="w-full sm:w-auto px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
-              aria-label="Filtrar por período"
-            >
-              <option value="">Todos los períodos</option>
-              {filters.availablePeriods.map((p) => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
-            </select>
-
-            {filters.hasActiveFilters && (
-              <button
-                onClick={filters.clearFilters}
-                className="inline-flex items-center gap-1 px-3 py-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
-              >
-                <X className="w-4 h-4" />
-                Limpiar filtros
-              </button>
-            )}
-          </div>
 
           {/* ── Table ─────────────────────────────────────────────── */}
           <ComponentCard title={tabsState.activeTab === "Activas" ? "Estudiantes Activos" : "Estudiantes Inactivos"}>
@@ -329,7 +289,44 @@ export default function StudentsPage() {
             onSearchChange={modals.setPdfSearchTerm}
             renderFilters={() => (
               <div className="space-y-4">
-                <p className="text-sm text-text-tertiary">Filtre por nombre o cédula usando el campo de búsqueda.</p>
+                {/* Sexo */}
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[10px] sm:text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                    Sexo
+                  </label>
+                  <select
+                    value={pdfSexFilter}
+                    onChange={(e) => setPdfSexFilter(e.target.value)}
+                    className="w-full px-3 py-2 sm:py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-lg sm:rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                  >
+                    <option value="">Todos</option>
+                    <option value="MASCULINO">Masculino</option>
+                    <option value="FEMENINO">Femenino</option>
+                  </select>
+                </div>
+
+                {/* Fecha desde → hasta */}
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-[10px] sm:text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                    Fecha Registro
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={pdfDateFrom}
+                      onChange={(e) => setPdfDateFrom(e.target.value)}
+                      className="w-full px-3 py-2 sm:py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-lg sm:rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                      placeholder="Desde"
+                    />
+                    <input
+                      type="date"
+                      value={pdfDateTo}
+                      onChange={(e) => setPdfDateTo(e.target.value)}
+                      className="w-full px-3 py-2 sm:py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-lg sm:rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                      placeholder="Hasta"
+                    />
+                  </div>
+                </div>
               </div>
             )}
             columns={[

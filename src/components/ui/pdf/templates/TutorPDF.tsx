@@ -16,6 +16,12 @@ const getCareerName = (id: string, careers?: Career[]) => {
   return career ? career.careerName : id;
 };
 
+const formatCI = (prefix: string | undefined, number: string | undefined): string => {
+  const p = (prefix || '').replace(/-/g, '');
+  const n = (number || '').replace(/-/g, '');
+  return `${p}-${n}`.replace(/--/g, '-');
+};
+
 export const TutorPDF: React.FC<TutorPDFProps> = ({ data, careers }) => {
   return (
     <PDFLayout
@@ -23,40 +29,39 @@ export const TutorPDF: React.FC<TutorPDFProps> = ({ data, careers }) => {
       subtitle="Listado de tutores académicos y metodológicos"
     >
       <View style={pdfStyles.table}>
-        <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Cédula</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Nombre Completo</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Título</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Contacto</Text>
+        <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]} wrap={false}>
+          <Text style={[pdfStyles.tableCell, { flex: 1.2, fontSize: 8 }]}>CÉDULA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>NOMBRE COMPLETO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>TÍTULO Y CARRERA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 3, fontSize: 8 }]}>CONTACTO</Text>
         </View>
 
-        {data.map((tutor, index) => (
+        {data.map((tutor, index) => {
+          const fullName = `${tutor.firstName} ${tutor.middleName || ""} ${tutor.lastName} ${tutor.secondLastName || ""}`.trim();
+          const careersStr = (tutor.carreras || []).map(id => getCareerName(id, careers)).join(" - ");
+          return (
           <View key={tutor.tutorId || index} style={pdfStyles.tableRow} wrap={false}>
-            <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>
-              {tutor.identificationPrefix}-{tutor.identificationNumber}
+            <Text style={[pdfStyles.tableCell, { flex: 1.2, fontSize: 8 }]}>
+              {formatCI(tutor.identificationPrefix, tutor.identificationNumber)}
             </Text>
-            <View style={[pdfStyles.tableCell, { flex: 3 }]}>
-              <Text style={{ fontWeight: "bold" }}>
-                {`${tutor.firstName} ${tutor.middleName || ""} ${tutor.lastName} ${tutor.secondLastName || ""}`.trim()}
-              </Text>
-              <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
-                {tutor.sex}
-              </Text>
-            </View>
-            <View style={[pdfStyles.tableCell, { flex: 2 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>
+              <Text style={{ fontWeight: "bold" }}>{fullName}</Text>
+              {'\n'}
+              <Text style={{ fontSize: 7, color: "#64748B" }}>{tutor.sex}</Text>
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>
               <Text>{tutor.profession}</Text>
-              <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
-                {(tutor.carreras || []).map(id => getCareerName(id, careers)).join(" - ")}
-              </Text>
-            </View>
-            <View style={[pdfStyles.tableCell, { flex: 2 }]}>
+              {'\n'}
+              <Text style={{ fontSize: 7, color: "#64748B" }}>{careersStr}</Text>
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 3, fontSize: 8 }]}>
               <Text>{tutor.email}</Text>
-              <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
-                {tutor.phone}
-              </Text>
-            </View>
+              {'\n'}
+              <Text style={{ fontSize: 7, color: "#64748B" }}>{tutor.phone}</Text>
+            </Text>
           </View>
-        ))}
+          );
+        })}
       </View>
     </PDFLayout>
   );

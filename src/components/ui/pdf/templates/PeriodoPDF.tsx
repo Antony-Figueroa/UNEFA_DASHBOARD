@@ -23,10 +23,10 @@ const PeriodoPDF: React.FC<PeriodoPDFProps> = ({ data }) => {
     >
       <View style={pdfStyles.table}>
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Descripción</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Fecha Inicio</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Fecha Fin</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Estado</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>DESCRIPCIÓN</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>FECHA INICIO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>FECHA FIN</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>ESTADO</Text>
         </View>
 
         {data.map((period, index) => (

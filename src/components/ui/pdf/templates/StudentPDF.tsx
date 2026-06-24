@@ -21,39 +21,45 @@ const formatDate = (date: Date | string | undefined): string => {
 const fullName = (s: Student | StudentRowData): string =>
   [s.firstName, s.middleName, s.lastName, s.secondLastName].filter(Boolean).join(' ');
 
+const formatCI = (s: Student | StudentRowData): string => {
+  const p = (s.identificationPrefix || '').replace(/-/g, '');
+  const n = (s.identificationNumber || '').replace(/-/g, '');
+  return `${p}-${n}`.replace(/--/g, '-');
+};
+
 export const StudentPDF: React.FC<StudentPDFProps> = ({ data }) => {
   return (
     <PDFLayout title="Reporte de Estudiantes" subtitle="Listado detallado de estudiantes registrados">
       <View style={pdfStyles.table}>
         {/* Table Header */}
-        <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Cédula</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Nombre Completo</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1 }]}>Sexo</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Teléfono</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Correo Electrónico</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Fecha Registro</Text>
+        <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]} wrap={false}>
+          <Text style={[pdfStyles.tableCell, { flex: 1, fontSize: 8 }]}>CÉDULA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 3, fontSize: 8 }]}>NOMBRE COMPLETO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 0.8, fontSize: 8 }]}>SEXO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.2, fontSize: 8 }]}>TELÉFONO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>CORREO ELECTRÓNICO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>FECHA REGISTRO</Text>
         </View>
 
         {/* Table Body */}
         {data.map((student, index) => (
-          <View key={student.studentId || index} style={pdfStyles.tableRow}>
-            <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
-              {student.identificationPrefix}-{student.identificationNumber}
+          <View key={student.studentId || index} style={pdfStyles.tableRow} wrap={false}>
+            <Text style={[pdfStyles.tableCell, { flex: 1, fontSize: 8 }]}>
+              {formatCI(student)}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 3 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 3, fontSize: 8 }]}>
               {fullName(student)}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 1 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 0.8, fontSize: 8 }]}>
               {student.sex === 'FEMENINO' ? 'F' : student.sex === 'MASCULINO' ? 'M' : student.sex}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 1.2, fontSize: 8 }]}>
               {student.phone || '-'}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 2 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>
               {student.email || '-'}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>
               {formatDate(student.enrollmentDate)}
             </Text>
           </View>

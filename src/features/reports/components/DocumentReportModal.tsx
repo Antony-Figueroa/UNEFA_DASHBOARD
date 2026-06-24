@@ -300,6 +300,42 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
           data={pdfData}
           template={renderTemplate}
           fileName={`${documentType}_${recordId}`}
+          recordInfo={
+            selectedRecord
+              ? {
+                  label: isPracticeDoc ? 'Estudiante' : 'Tutor',
+                  value: isPracticeDoc
+                    ? (selectedRecord as PracticeSearchResult).studentName
+                    : (selectedRecord as TutorSearchResult).fullName,
+                }
+              : undefined
+          }
+          extraSidebarContent={
+            selectedRecord ? (
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10">
+                  <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                    CI / Rif
+                  </label>
+                  <p className="text-xs font-semibold text-text-primary dark:text-white/90">
+                    {isPracticeDoc
+                      ? (selectedRecord as PracticeSearchResult).studentCi
+                      : (selectedRecord as TutorSearchResult).ci}
+                  </p>
+                </div>
+                {isPracticeDoc && (selectedRecord as PracticeSearchResult).careerName && (
+                  <div className="p-3 rounded-lg bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10">
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                      Carrera
+                    </label>
+                    <p className="text-xs font-semibold text-text-primary dark:text-white/90">
+                      {(selectedRecord as PracticeSearchResult).careerName}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : undefined
+          }
         />
       )}
     </>

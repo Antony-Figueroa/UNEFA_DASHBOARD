@@ -8,6 +8,7 @@ const IAButton: React.FC = () => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isHiddenByPage, setIsHiddenByPage] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
 
   useEffect(() => {
@@ -17,13 +18,17 @@ const IAButton: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    setIsHiddenByPage(document.documentElement.dataset.hideIaButton !== undefined);
+  }, []);
+
   const toggleVisibility = (show: boolean) => {
     setIsVisible(show);
     localStorage.setItem(STORAGE_KEY, String(show));
     setShowOptions(false);
   };
 
-  if (!isVisible) return null;
+  if (!isVisible || isHiddenByPage) return null;
 
   const handleRightClick = (e: React.MouseEvent) => {
     e.preventDefault();

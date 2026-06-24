@@ -182,7 +182,8 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
         }
 
         // --- Validar fecha (misma lógica que Ruta B) ---
-        const dateToValidate = config.skipPeriodStatusCheck ? null : config.extractDate(req);
+        // overridePeriodValidation: true salta la validación de rango de fechas
+        const dateToValidate = (config.skipPeriodStatusCheck || req.body.overridePeriodValidation === true) ? null : config.extractDate(req);
         if (dateToValidate) {
           const dateObj = new Date(dateToValidate);
           const startDate = new Date(period.START_DATE);
@@ -321,7 +322,8 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
       // --- Paso 5: Validar que la fecha esté dentro del rango del periodo (si se proporcionó) ---
       // Si skipPeriodStatusCheck está activo, también se salta la validación de fecha
       // porque el periodo ya finalizó y la fecha actual estaría fuera de rango.
-      const dateToValidate = config.skipPeriodStatusCheck ? null : config.extractDate(req);
+      // overridePeriodValidation: true también salta la validación de rango de fechas.
+      const dateToValidate = (config.skipPeriodStatusCheck || req.body.overridePeriodValidation === true) ? null : config.extractDate(req);
       if (dateToValidate) {
         const dateObj = new Date(dateToValidate);
         const startDate = new Date(period.START_DATE);

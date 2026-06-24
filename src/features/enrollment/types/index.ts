@@ -76,7 +76,8 @@ export interface Enrollment {
  * Payload required to create a new enrollment record.
  */
 export interface CreateEnrollmentPayload extends Omit<Enrollment, "enrollmentId" | "enrollmentDate" | "status"> {
-  // Add any additional fields if required by the backend that aren't in the domain model
+  /** Si es true, salta la validación de período/fecha en el backend */
+  overridePeriodValidation?: boolean;
 }
 
 /**

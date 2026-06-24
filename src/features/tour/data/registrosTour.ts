@@ -5,9 +5,9 @@ const t = (es: string) => es;
 export const gestionEstudiantesTour: DriveStep[] = [
   {
     popover: {
-      title: t("Modulo de Estudiantes"),
+      title: t("Módulo de Estudiantes"),
       description: t(
-        "Este modulo gestiona los datos personales y academicos de los estudiantes. Puede crear, editar, buscar, importar, exportar y administrar el estado de cada registro."
+        "Este módulo gestiona los datos personales y académicos de los estudiantes. Puede crear, editar, buscar, importar, exportar y administrar el estado de cada registro."
       ),
       side: "over",
     },
@@ -15,9 +15,9 @@ export const gestionEstudiantesTour: DriveStep[] = [
   {
     element: () => document.querySelector("h2")!,
     popover: {
-      title: t("Pagina de Estudiantes"),
+      title: t("Página de Estudiantes"),
       description: t(
-        "Esta es la pagina principal de gestion de estudiantes. Desde aqui puede crear, importar y exportar registros, ademas de buscar y filtrar estudiantes."
+        "Esta es la página principal de gestión de estudiantes. Desde aquí puede crear, importar y exportar registros, además de buscar y filtrar estudiantes."
       ),
       side: "bottom",
     },
@@ -28,9 +28,9 @@ export const gestionEstudiantesTour: DriveStep[] = [
       return btn?.parentElement ?? document.querySelector("h2")!;
     },
     popover: {
-      title: t("Botones de Accion Global"),
+      title: t("Botones de Acción Global"),
       description: t(
-        "Acciones globales: <b>Reporte</b> genera un PDF del listado, <b>Importar</b> carga estudiantes desde Excel, <b>Exportacion</b> descarga la base en JSON/SQL/CSV/Excel y <b>Nuevo Estudiante</b> abre el formulario de registro manual."
+        "Acciones globales: <b>Reporte</b> genera un PDF del listado, <b>Importar</b> carga estudiantes desde Excel, <b>Exportación</b> descarga la base en JSON/SQL/CSV/Excel y <b>Nuevo Estudiante</b> abre el formulario de registro manual."
       ),
       side: "left",
     },
@@ -41,7 +41,7 @@ export const gestionEstudiantesTour: DriveStep[] = [
       return Array.from(lists).find((tl) => tl.textContent?.includes("Activos")) ?? document.querySelector("h2")!;
     },
     popover: {
-      title: t("Pestanas Activos / Inactivos"),
+      title: t("Pestañas Activos / Inactivos"),
       description: t(
         "Alterna entre estudiantes Activos (vigentes) e Inactivos (archivados). Al desactivar un estudiante desde la tabla, se mueve automaticamente a Inactivos."
       ),
@@ -51,9 +51,9 @@ export const gestionEstudiantesTour: DriveStep[] = [
   {
     element: () => document.querySelector('input[placeholder*="Buscar por cédula" i]')!,
     popover: {
-      title: t("Busqueda y Filtros de Fecha"),
+      title: t("Búsqueda y Filtros de Fecha"),
       description: t(
-        "Busque estudiantes por cedula, nombre, telefono o correo. Use los filtros <b>Desde</b> y <b>Hasta</b> para acotar por rango de fecha de inscripcion."
+        "Busque estudiantes por cédula, nombre, teléfono o correo. Use los filtros <b>Desde</b> y <b>Hasta</b> para acotar por rango de fecha de inscripción."
       ),
       side: "bottom",
     },
@@ -63,7 +63,7 @@ export const gestionEstudiantesTour: DriveStep[] = [
     popover: {
       title: t("Tabla de Estudiantes"),
       description: t(
-        "Cada fila representa un estudiante. Columnas: seleccion, cedula, nombres, telefono, estatus, correo y acciones. Use el icono <b>ojo</b> para ver detalles, <b>lapiz</b> para editar, <b>papelera</b> para eliminar y el icono <b>morado</b> para copiar a Pre-inscripcion."
+        "Cada fila representa un estudiante. Columnas: selección, cédula, nombres, teléfono, estatus, correo y acciones. Use el icono <b>ojo</b> para ver detalles, <b>lápiz</b> para editar, <b>papelera</b> para eliminar y el icono <b>morado</b> para copiar a Pre-inscripción."
       ),
       side: "top",
     },
@@ -84,7 +84,7 @@ export const registroTutoresTour: DriveStep[] = [
     popover: {
       title: t("Registros — Tutores"),
       description: t(
-        "En esta seccion se gestionan los tutores academicos: datos personales, especialidad, institucion y carga horaria."
+        "En esta sección se gestionan los tutores académicos: datos personales, especialidad, institución y carga horaria."
       ),
       side: "over",
     },
@@ -92,9 +92,9 @@ export const registroTutoresTour: DriveStep[] = [
   {
     element: () => document.querySelector("h2")!,
     popover: {
-      title: t("Pagina de Tutores"),
+      title: t("Página de Tutores"),
       description: t(
-        "Desde esta pagina se administran los tutores. Cada registro incluye datos personales, especialidad, institucion donde dicta clases y carga horaria."
+        "Desde esta página se administran los tutores. Cada registro incluye datos personales, especialidad, institución donde dicta clases y carga horaria."
       ),
       side: "bottom",
     },
@@ -105,7 +105,7 @@ export const registroTutoresTour: DriveStep[] = [
       return Array.from(btns).find((b) => b.textContent?.includes("Nuevo Tutor") || b.textContent?.includes("Agregar Tutor")) ?? document.querySelector('button:has(svg)')!;
     },
     popover: {
-      title: t("Boton Nuevo Tutor"),
+      title: t("Botón Nuevo Tutor"),
       description: t(
         "Haga clic aqui para abrir el formulario y registrar un nuevo tutor."
       ),
@@ -119,7 +119,7 @@ export const registroInstitucionesTour: DriveStep[] = [
     popover: {
       title: t("Registros — Instituciones"),
       description: t(
-        "En esta seccion se gestionan las empresas e instituciones donde los estudiantes realizan sus practicas profesionales."
+        "En esta sección se gestionan las empresas e instituciones donde los estudiantes realizan sus prácticas profesionales."
       ),
       side: "over",
     },
@@ -127,9 +127,9 @@ export const registroInstitucionesTour: DriveStep[] = [
   {
     element: () => document.querySelector("h2")!,
     popover: {
-      title: t("Pagina de Instituciones"),
+      title: t("Página de Instituciones"),
       description: t(
-        "Desde esta pagina se administran las empresas o instituciones. Cada registro incluye nombre, RIF, direccion, contacto, telefono y correo."
+        "Desde esta página se administran las empresas o instituciones. Cada registro incluye nombre, RIF, dirección, contacto, teléfono y correo."
       ),
       side: "bottom",
     },
@@ -140,9 +140,9 @@ export const registroInstitucionesTour: DriveStep[] = [
       return Array.from(btns).find((b) => b.textContent?.includes("Nueva Empre") || b.textContent?.includes("Agregar Responsable")) ?? document.querySelector('button:has(svg)')!;
     },
     popover: {
-      title: t("Boton Nueva Institucion"),
+      title: t("Botón Nueva Institución"),
       description: t(
-        "Haga clic aqui para abrir el formulario y registrar una nueva empresa o institucion."
+        "Haga clic aquí para abrir el formulario y registrar una nueva empresa o institución."
       ),
       side: "left",
     },

@@ -948,7 +948,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                 <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
               </svg>
               <span className="text-sm font-medium text-info-700 dark:text-info-400">
-                Persona ya registrada — datos precargados. Podés modificarlos antes de guardar.
+                Persona ya registrada — datos precargados. Puedes modificarlos antes de guardar.
               </span>
             </div>
           )}

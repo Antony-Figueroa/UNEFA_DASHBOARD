@@ -149,7 +149,7 @@ const TemplateManager = () => {
       closeModal();
     } catch (err) {
       console.error('[TemplateManager] Error saving:', err);
-      setFormErrors({ submit: 'Error al guardar. Intentá de nuevo.' });
+      setFormErrors({ submit: 'Error al guardar. Intenta de nuevo.' });
     } finally {
       setSaving(false);
     }
@@ -189,7 +189,7 @@ const TemplateManager = () => {
           <div className="text-left">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Plantillas de Email</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {templates.length} plantilla(s) — usalas en el Correo Express
+              {templates.length} plantilla(s) — úsalas en el Correo Express
             </p>
           </div>
         </div>
@@ -201,7 +201,7 @@ const TemplateManager = () => {
           {/* Top bar */}
           <div className="flex items-center justify-between">
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Creá y editá plantillas con variables dinámicas {'{{nombre}}'}, {'{{periodo}}'}, etc.
+              Crea y edita plantillas con variables dinámicas {'{{nombre}}'}, {'{{periodo}}'}, etc.
             </p>
             <Button variant="primary" size="sm" onClick={openCreateModal}>
               <PlusCircleIcon className="w-4 h-4 mr-1.5" />
@@ -307,7 +307,7 @@ const TemplateManager = () => {
           <div className="space-y-5">
             {/* Name */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nombre *</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nombre <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={formName}
@@ -332,7 +332,7 @@ const TemplateManager = () => {
 
             {/* Category */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Categoría *</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Categoría <span className="text-red-500">*</span></label>
               <select
                 value={formCategory}
                 onChange={e => { setFormCategory(e.target.value); setIsDirty(true); }}
@@ -347,7 +347,7 @@ const TemplateManager = () => {
             {/* Subject */}
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Asunto * <span className="text-gray-400 font-normal">(podés usar {'{{variable}}'})</span>
+                Asunto <span className="text-red-500">*</span> <span className="text-gray-400 font-normal">(puedes usar {'{{variable}}'})</span>
               </label>
               <input
                 type="text"
@@ -362,7 +362,7 @@ const TemplateManager = () => {
             {/* Cuerpo del email — editor visual */}
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Cuerpo del correo * <span className="text-gray-400 font-normal">(usá los botones para dar formato)</span>
+                Cuerpo del correo <span className="text-red-500">*</span> <span className="text-gray-400 font-normal">(usa los botones para dar formato)</span>
               </label>
               <EmailEditor
                 value={formBody}

@@ -36,7 +36,7 @@ const communityImages: CardData[] = [
     content: (
       <div className="space-y-4">
         <p className="text-neutral-700 dark:text-neutral-300 text-base leading-relaxed">
-          Cada graduación representa el culmination de años de esfuerzo, dedicación y compromiso con la patria. 
+          Cada graduación representa la culminación de años de esfuerzo, dedicación y compromiso con la patria. 
           Nuestros graduados llevan consigo los valores de soberanía y conocimiento.
         </p>
         <div className="aspect-video rounded-xl overflow-hidden">

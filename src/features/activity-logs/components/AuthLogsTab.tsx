@@ -41,13 +41,13 @@ interface AuthLogFilters {
 }
 
 const ACTION_CONFIGS: Record<string, { label: string; color: BadgeColor }> = {
-  LOGIN_SUCCESS: { label: 'Login Exitoso', color: 'success' },
-  LOGIN_FAILED: { label: 'Login Fallido', color: 'error' },
-  LOGOUT: { label: 'Logout', color: 'info' },
+  LOGIN_SUCCESS: { label: 'Inicio de sesión exitoso', color: 'success' },
+  LOGIN_FAILED: { label: 'Inicio de sesión fallido', color: 'error' },
+  LOGOUT: { label: 'Cierre de sesión', color: 'info' },
   SESSION_EXPIRED: { label: 'Sesión Expirada', color: 'warning' },
   ACCOUNT_LOCKED: { label: 'Cuenta Bloqueada', color: 'error' },
-  PASSWORD_RESET_REQUESTED: { label: 'Reset Solicitado', color: 'warning' },
-  PASSWORD_RESET_COMPLETED: { label: 'Reset Completado', color: 'success' },
+  PASSWORD_RESET_REQUESTED: { label: 'Restablecimiento solicitado', color: 'warning' },
+  PASSWORD_RESET_COMPLETED: { label: 'Restablecimiento completado', color: 'success' },
   CREATE_USER: { label: 'Usuario Creado', color: 'success' },
   UPDATE_USER: { label: 'Usuario Actualizado', color: 'info' },
   DELETE_USER: { label: 'Usuario Eliminado', color: 'error' },
@@ -170,19 +170,19 @@ export function AuthLogsTab({ dateFrom, dateTo, onDateFromChange, onDateToChange
     <>
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <ComponentCard title="Total Logs">
+        <ComponentCard title="Total de registros">
           <div className="text-center">
             <p className="text-2xl font-bold text-brand-500">{authStats.total}</p>
             <p className="text-xs text-gray-500">registros</p>
           </div>
         </ComponentCard>
-        <ComponentCard title="Logins Exitosos">
+        <ComponentCard title="Inicios de sesión exitosos">
           <div className="text-center">
             <p className="text-2xl font-bold text-success-500">{authStats.success}</p>
             <p className="text-xs text-gray-500">exitosos</p>
           </div>
         </ComponentCard>
-        <ComponentCard title="Logins Fallidos">
+        <ComponentCard title="Inicios de sesión fallidos">
           <div className="text-center">
             <p className="text-2xl font-bold text-error-500">{authStats.failed}</p>
             <p className="text-xs text-gray-500">fallidos</p>
@@ -225,7 +225,7 @@ export function AuthLogsTab({ dateFrom, dateTo, onDateFromChange, onDateToChange
       />
 
       {/* Auth Logs Table */}
-      <ComponentCard title={`Logs de Autenticación (${filteredAuthLogs.length} de ${authTotal} registros)`}>
+      <ComponentCard title={`Registros de autenticación (${filteredAuthLogs.length} de ${authTotal} registros)`}>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>

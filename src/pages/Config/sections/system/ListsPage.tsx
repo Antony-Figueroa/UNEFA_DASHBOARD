@@ -212,7 +212,7 @@ const ListsConfiguration = () => {
                   Valor en uso
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
-                  Este valor está referenciado en otros registros. Solo podés modificar la abreviatura; el nombre no se puede cambiar.
+                  Este valor está referenciado en otros registros. Solo puedes modificar la abreviatura; el nombre no se puede cambiar.
                 </p>
               </div>
             </div>

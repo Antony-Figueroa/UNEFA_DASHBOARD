@@ -44,7 +44,7 @@ const TutorStudentsWidget = ({ students, loading }: TutorStudentsWidgetProps) =>
         </div>
       ) : safeStudents.length === 0 ? (
         <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">
-          No tenés estudiantes asignados
+          No tienes estudiantes asignados
         </p>
       ) : (
         <div className="space-y-2">

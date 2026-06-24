@@ -16,7 +16,7 @@ interface PracticeGuideProps {
 }
 
 const moduleSteps: Record<string, PracticeStep[]> = {
-  Periodos: [
+  Períodos: [
     {
       title: "Abrir formulario",
       instruction: 'Haga clic en "Nuevo Periodo"',
@@ -50,7 +50,7 @@ const moduleSteps: Record<string, PracticeStep[]> = {
     },
     {
       title: "Completar datos",
-      instruction: 'Codigo (ej. 12345), Nombre, Tipo (CORTA/LARGA), Semestre, Nota minima, Abreviatura, Tipos de Practicas. Luego presione "Guardar Carrera" y confirme con "Crear"',
+      instruction: 'Código (ej. 12345), Nombre, Tipo (CORTA/LARGA), Semestre, Nota mínima, Abreviatura, Tipos de Prácticas. Luego presione "Guardar Carrera" y confirme con "Crear"',
       element: () => document.querySelector('[role="dialog"]'),
       detect: () => document.body.textContent?.includes("Carrera Creado") ?? false,
     },
@@ -72,13 +72,13 @@ const moduleSteps: Record<string, PracticeStep[]> = {
     },
     {
       title: "Datos Personales",
-      instruction: 'Cedula V-12345678, nombres, apellidos, correo, telefono 0422-5645136, sexo, fecha nac., estado civil. Seleccione Estado/Municipio/Parroquia. Luego haga clic en la pestaña <b>Academico</b>',
+      instruction: 'Cédula V-12345678, nombres, apellidos, correo, teléfono 0422-5645136, sexo, fecha nac., estado civil. Seleccione Estado/Municipio/Parroquia. Luego haga clic en la pestaña <b>Académico</b>',
       element: () => document.querySelector('[role="dialog"]'),
       detect: () => !!document.querySelector('button[data-tab-id="academico"][aria-selected="true"]'),
     },
     {
       title: "Datos Academicos",
-      instruction: 'Tipo Estudiante (ej. MILITAR), elija Rango si aplica. Presione "Guardar Estudiante" y confirme con "Guardar"',
+      instruction: 'Tipo de Estudiante (ej. MILITAR), elija Rango si aplica. Presione "Guardar Estudiante" y confirme con "Guardar"',
       element: () => document.querySelector('[role="dialog"]'),
       detect: () => document.body.textContent?.includes("Estudiante Creado") ?? false,
     },
@@ -113,7 +113,7 @@ const moduleSteps: Record<string, PracticeStep[]> = {
   Instituciones: [
     {
       title: "Abrir formulario",
-      instruction: 'Haga clic en "Nueva Empresa o Institucion"',
+      instruction: 'Haga clic en "Nueva Empresa o Institución"',
       element: () => {
         const btns = document.querySelectorAll("button");
         return Array.from(btns).find((b) => b.textContent?.includes("Nueva Empre")) ?? null;
@@ -128,14 +128,14 @@ const moduleSteps: Record<string, PracticeStep[]> = {
     },
     {
       title: "Limpiar",
-      instruction: "Desactive la institucion de prueba de la tabla",
+      instruction: "Desactive la institución de prueba de la tabla",
       detect: () => false,
     },
   ],
-  "Pre-Inscripcion": [
+  "Pre-Inscripción": [
     {
       title: "Abrir formulario",
-      instruction: 'Haga clic en "Nueva Pre-Inscripcion"',
+      instruction: 'Haga clic en "Nueva Pre-Inscripción"',
       element: () => {
         const btns = document.querySelectorAll("button");
         return Array.from(btns).find((b) => b.textContent?.includes("Pre-Inscrip")) ?? null;
@@ -154,10 +154,10 @@ const moduleSteps: Record<string, PracticeStep[]> = {
       detect: () => false,
     },
   ],
-  Inscripcion: [
+  Inscripción: [
     {
       title: "Abrir formulario",
-      instruction: 'Haga clic en "Nueva Inscripcion"',
+      instruction: 'Haga clic en "Nueva Inscripción"',
       element: () => {
         const btns = document.querySelectorAll("button");
         return Array.from(btns).find((b) => b.textContent?.includes("Nueva Inscrip")) ?? null;
@@ -166,7 +166,7 @@ const moduleSteps: Record<string, PracticeStep[]> = {
     },
     {
       title: "Completar y guardar",
-      instruction: 'Complete estudiante, tutor, institucion, fechas y presione "Guardar"',
+      instruction: 'Complete estudiante, tutor, institución, fechas y presione "Guardar"',
       element: () => document.querySelector('[role="dialog"]'),
       detect: () => !document.querySelector('[role="dialog"]'),
     },
@@ -262,17 +262,17 @@ export function PracticeDialog({ moduleName, onClose }: PracticeGuideProps) {
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border dark:border-gray-700 max-w-sm w-full mx-4 p-5 text-center">
         <h3 className="text-base font-bold text-text-primary dark:text-white mb-1">
-          Practica guiada
+          Práctica guiada
         </h3>
         <p className="text-sm text-text-secondary dark:text-text-tertiary mb-4">
-          Haga una prueba de registro en <b>{moduleName}</b>. La guia detecta cada accion y avanza sola.
+           Haga una prueba de registro en <b>{moduleName}</b>. La guía detecta cada acción y avanza sola.
         </p>
         <div className="flex gap-3 justify-center">
           <button onClick={onClose} className="px-3 py-1.5 text-sm font-medium text-text-secondary hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors">
             No, gracias
           </button>
           <button onClick={() => setStarted(true)} className="px-3 py-1.5 text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 rounded-lg transition-colors">
-            Si, empezar
+            Sí, empezar
           </button>
         </div>
       </div>
@@ -282,7 +282,7 @@ export function PracticeDialog({ moduleName, onClose }: PracticeGuideProps) {
       <div className="max-w-lg mx-auto px-4 pb-4 pointer-events-auto">
         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 text-center">
           <p className="text-sm text-text-primary dark:text-white font-medium">
-            Practica completada
+            Práctica completada
           </p>
           <p className="text-xs text-text-tertiary mb-3">
             Recuerde eliminar los datos de prueba del sistema.

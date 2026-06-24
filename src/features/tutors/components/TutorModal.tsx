@@ -1062,7 +1062,7 @@ export default function TutorModal({
                 <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
               </svg>
               <span className="text-sm font-medium text-info-700 dark:text-info-400">
-                Persona ya registrada — datos precargados. Podés modificarlos antes de guardar.
+                Persona ya registrada — datos precargados. Puedes modificarlos antes de guardar.
               </span>
             </div>
           )}
@@ -1401,7 +1401,7 @@ export default function TutorModal({
             <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Información Laboral</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div>
-                <Label>Condición</Label>
+                <Label>Condición <span className="text-red-500">*</span></Label>
                 <Controller
                   name="condition"
                   control={control}
@@ -1419,7 +1419,7 @@ export default function TutorModal({
                 />
               </div>
               <div>
-                <Label>Dedicación</Label>
+                <Label>Dedicación <span className="text-red-500">*</span></Label>
                 <Controller
                   name="dedication"
                   control={control}
@@ -1437,7 +1437,7 @@ export default function TutorModal({
                 />
               </div>
               <div>
-                <Label>Categoría</Label>
+                <Label>Categoría <span className="text-red-500">*</span></Label>
                 <Controller
                   name="category"
                   control={control}
@@ -1455,7 +1455,7 @@ export default function TutorModal({
                 />
               </div>
               <div>
-                <Label>Profesión / Título</Label>
+                <Label>Profesión / Título <span className="text-red-500">*</span></Label>
                 <Controller
                   name="profession"
                   control={control}
@@ -1473,7 +1473,7 @@ export default function TutorModal({
                 />
               </div>
               <div>
-                <Label>Grado de Instrucción</Label>
+                <Label>Grado de Instrucción <span className="text-red-500">*</span></Label>
                 <Controller
                   name="titulo"
                   control={control}
@@ -1503,7 +1503,7 @@ export default function TutorModal({
                 rules={{ required: "Debe seleccionar al menos una carrera" }}
                 render={({ field: { onChange, value } }) => (
                   <MultiSelect
-                    label="Carreras que puede Asignar"
+                    label={<>Carreras que puede Asignar <span className="text-red-500">*</span></>}
                     value={value}
                     onChange={onChange}
                     options={careerOptions}

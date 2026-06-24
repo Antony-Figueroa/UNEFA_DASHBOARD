@@ -16,9 +16,9 @@ function h2OrBody(): Element {
 export const gestionPeriodTour: DriveStep[] = [
   {
     popover: {
-      title: t("Modulo de Gestion"),
+      title: t("Módulo de Gestión"),
       description: t(
-        "Este modulo contiene los datos maestros del sistema: Periodos Academicos y Carreras. Todo el flujo de practicas profesionales (pre-inscripcion, inscripcion, seguimiento y evaluaciones) depende directamente de estos registros."
+        "Este módulo contiene los datos maestros del sistema: Períodos Académicos y Carreras. Todo el flujo de prácticas profesionales (pre-inscripción, inscripción, seguimiento y evaluaciones) depende directamente de estos registros."
       ),
       side: "over",
     },
@@ -26,9 +26,9 @@ export const gestionPeriodTour: DriveStep[] = [
   {
     element: () => document.querySelector("h2")!,
     popover: {
-      title: t("Pagina de Periodos"),
+      title: t("Página de Períodos"),
       description: t(
-        "Esta es la pagina principal de gestion de periodos. Desde aqui podra crear, editar, activar, culminar y desactivar los lapsos academicos del sistema."
+        "Esta es la página principal de gestión de períodos. Desde aquí podrá crear, editar, activar, culminar y desactivar los lapsos académicos del sistema."
       ),
       side: "bottom",
     },
@@ -39,9 +39,9 @@ export const gestionPeriodTour: DriveStep[] = [
       return Array.from(btns).find((b) => b.textContent?.includes("Nuevo Per"))!;
     },
     popover: {
-      title: t("Boton Nuevo Periodo"),
+      title: t("Botón Nuevo Período"),
       description: t(
-        "Haga clic aqui para abrir el formulario y crear un nuevo periodo academico. Debera completar codigo, descripcion, fechas, tipo y dias de gracia."
+        "Haga clic aquí para abrir el formulario y crear un nuevo período académico. Deberá completar código, descripción, fechas, tipo y días de gracia."
       ),
       side: "left",
     },
@@ -52,9 +52,9 @@ export const gestionPeriodTour: DriveStep[] = [
       return Array.from(lists).find((tl) => tl.textContent?.includes("Activos"))!;
     },
     popover: {
-      title: t("Pestanas Activos / Inactivos"),
+      title: t("Pestañas Activos / Inactivos"),
       description: t(
-        "Estas pestanas permiten alternar entre los periodos Activos (los que estan vigentes) y los Inactivos (periodos archivados). Al desactivar un periodo desde la tabla, se mueve automaticamente a Inactivos."
+        "Estas pestañas permiten alternar entre los períodos Activos (los que están vigentes) y los Inactivos (períodos archivados). Al desactivar un período desde la tabla, se mueve automáticamente a Inactivos."
       ),
       side: "bottom",
     },
@@ -62,9 +62,9 @@ export const gestionPeriodTour: DriveStep[] = [
   {
     element: () => document.querySelector('input[placeholder*="Buscar periodo" i]')!,
     popover: {
-      title: t("Busqueda y Filtros"),
+      title: t("Búsqueda y Filtros"),
       description: t(
-        "Filtre los periodos escribiendo en el campo de busqueda. Tambien puede usar el selector de estado (Pendiente, En Curso, Culminado) que se encuentra a la derecha para acotar los resultados."
+        "Filtre los períodos escribiendo en el campo de búsqueda. También puede usar el selector de estado (Pendiente, En Curso, Culminado) que se encuentra a la derecha para acotar los resultados."
       ),
       side: "bottom",
     },
@@ -72,9 +72,9 @@ export const gestionPeriodTour: DriveStep[] = [
   {
     element: () => document.querySelector("table")!,
     popover: {
-      title: t("Tabla de Periodos"),
+      title: t("Tabla de Períodos"),
       description: t(
-        "Cada fila representa un periodo. Las columnas muestran: nombre del lapso, fecha de inicio, fecha de fin, barra de progreso (si esta En Curso), estado actual y las acciones disponibles.<br><br>Puede seleccionar varias filas con los checkboxes para realizar acciones masivas como eliminar o restaurar."
+        "Cada fila representa un período. Las columnas muestran: nombre del lapso, fecha de inicio, fecha de fin, barra de progreso (si está En Curso), estado actual y las acciones disponibles.<br><br>Puede seleccionar varias filas con los checkboxes para realizar acciones masivas como eliminar o restaurar."
       ),
       side: "top",
     },
@@ -83,7 +83,7 @@ export const gestionPeriodTour: DriveStep[] = [
     popover: {
       title: t("Fin del recorrido"),
       description: t(
-        "Estos son los elementos principales de la pagina de Periodos. Puede visitar Carreras desde el menu lateral para continuar con el modulo de Gestion, o explorar Registros y Practicas Profesionales."
+        "Estos son los elementos principales de la página de Períodos. Puede visitar Carreras desde el menú lateral para continuar con el módulo de Gestión, o explorar Registros y Prácticas Profesionales."
       ),
       side: "over",
     },
@@ -93,9 +93,9 @@ export const gestionPeriodTour: DriveStep[] = [
 export const gestionCarrerasTour: DriveStep[] = [
   {
     popover: {
-      title: t("Modulo de Gestion"),
+      title: t("Módulo de Gestión"),
       description: t(
-        "Este modulo administra los datos maestros del sistema: Periodos Academicos y Carreras."
+        "Este módulo administra los datos maestros del sistema: Períodos Académicos y Carreras."
       ),
       side: "over",
     },
@@ -103,9 +103,9 @@ export const gestionCarrerasTour: DriveStep[] = [
   {
     element: () => document.querySelector("h2")!,
     popover: {
-      title: t("Pagina de Carreras"),
+      title: t("Página de Carreras"),
       description: t(
-        "Desde esta pagina se gestionan las carreras universitarias: nombre, codigo, modalidad (presencial o semi-presencial), nucleo y estado."
+        "Desde esta página se gestionan las carreras universitarias: nombre, código, modalidad (presencial o semipresencial), núcleo y estado."
       ),
       side: "bottom",
     },
@@ -117,9 +117,9 @@ export const gestionCarrerasTour: DriveStep[] = [
       return Array.from(btns).find((b) => b.textContent?.includes("Nueva Carrera")) ?? h2OrBody();
     },
     popover: {
-      title: t("Boton Nueva Carrera"),
+      title: t("Botón Nueva Carrera"),
       description: t(
-        "Haga clic aqui para abrir el formulario de creacion de una nueva carrera."
+        "Haga clic aquí para abrir el formulario de creación de una nueva carrera."
       ),
       side: "left",
     },
@@ -131,7 +131,7 @@ export const gestionCarrerasTour: DriveStep[] = [
       return Array.from(lists).find((tl) => tl.textContent?.includes("Activos")) ?? h2OrBody();
     },
     popover: {
-      title: t("Pestanas Activas / Inactivas"),
+      title: t("Pestañas Activas / Inactivas"),
       description: t(
         "Alterna entre carreras Activas (vigentes) e Inactivas (archivadas)."
       ),
@@ -146,7 +146,7 @@ export const gestionCarrerasTour: DriveStep[] = [
     popover: {
       title: t("Tabla de Carreras"),
       description: t(
-        "Listado completo de carreras con columnas de nombre, codigo, modalidad, nucleo y acciones para editar o desactivar cada registro."
+        "Listado completo de carreras con columnas de nombre, código, modalidad, núcleo y acciones para editar o desactivar cada registro."
       ),
       side: "top",
     },
@@ -155,7 +155,7 @@ export const gestionCarrerasTour: DriveStep[] = [
     popover: {
       title: t("Fin del recorrido"),
       description: t(
-        "Ha completado el recorrido del modulo de Gestion. Puede explorar Registros o Practicas Profesionales desde el menu lateral."
+        "Ha completado el recorrido del módulo de Gestión. Puede explorar Registros o Prácticas Profesionales desde el menú lateral."
       ),
       side: "over",
     },

@@ -131,7 +131,7 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
             <FiUsers className="size-5 text-white" />
           </motion.div>
           <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
-            Estudiantes este Mes
+            Estudiantes este mes
           </h3>
         </div>
         <p className="text-sm text-text-secondary dark:text-text-tertiary ml-[52px]">

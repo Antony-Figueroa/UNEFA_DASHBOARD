@@ -118,7 +118,7 @@ const LandingConfigPage: React.FC = () => {
       toast.success('Misión/Visión actualizada exitosamente');
     } catch (error) {
       console.error('[LandingConfigPage] Error saving mission/vision:', error);
-      toast.error('Error al guardar misión/visón');
+      toast.error('Error al guardar misión/visión');
     } finally {
       setSaving(false);
     }

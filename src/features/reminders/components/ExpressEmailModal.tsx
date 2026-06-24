@@ -127,7 +127,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
     if (!subject.trim()) errs.subject = 'El asunto es obligatorio.';
     if (!message.trim()) errs.message = 'El mensaje es obligatorio.';
     if (recipients.roles.length === 0 && recipients.users.length === 0 && externalEmails.length === 0) {
-      errs.recipients = 'Agregá al menos un destinatario (rol, usuario o email externo).';
+      errs.recipients = 'Agrega al menos un destinatario (rol, usuario o correo electrónico externo).';
     }
     return errs;
   };
@@ -155,7 +155,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
       setSent(true);
       setIsDirty(false);
     } catch (err: any) {
-      const msg = err?.response?.data?.error || 'Error al enviar. Intentá de nuevo.';
+      const msg = err?.response?.data?.error || 'Error al enviar. Intenta de nuevo.';
       setErrors({ send: msg });
       console.error('[ExpressEmail] Error:', err);
     } finally {
@@ -179,7 +179,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
             Correo Express Masivo
           </span>
           <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-            Enviá un correo en este mismo momento a grupos, usuarios y/o direcciones externas.
+            Envía un correo en este mismo momento a grupos, usuarios y/o direcciones externas.
           </p>
         </div>
       </ModalHeader>
@@ -208,7 +208,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
                 <TemplateSelector onSelect={handleTemplateSelect} disabled={sending} />
                 <p className="text-[11px] text-gray-400 leading-relaxed">
                   Al seleccionar una plantilla se auto-completarán el asunto y el mensaje. 
-                  Podés editarlos antes de enviar.
+                  Puedes editarlos antes de enviar.
                 </p>
               </div>
 
@@ -217,7 +217,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Asunto y mensaje</h3>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Asunto *</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Asunto <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     className={`w-full rounded-lg border ${errors.subject ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all placeholder:text-gray-400`}
@@ -231,7 +231,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
 
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Mensaje * <span className="text-gray-400 font-normal">(usá los botones para dar formato)</span>
+                    Mensaje <span className="text-red-500">*</span> <span className="text-gray-400 font-normal">(usa los botones para dar formato)</span>
                   </label>
                   <EmailEditor
                     value={message}
@@ -247,7 +247,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
               <div className="bg-white dark:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Destinatarios externos</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 -mt-3">
-                  Escribí direcciones de email para enviar a personas fuera del sistema (como Google Drive).
+                  Escribe direcciones de correo electrónico para enviar a personas fuera del sistema (como Google Drive).
                 </p>
 
                 {/* Chip input */}
@@ -283,7 +283,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
                 </div>
                 {emailInputError && <p className="text-[11px] text-red-500">{emailInputError}</p>}
                 <p className="text-[11px] text-gray-400">
-                  Presioná Enter o coma después de cada email.
+                  Presiona Enter o coma después de cada correo.
                 </p>
               </div>
 
@@ -293,7 +293,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
                     value={recipients}
                     onChange={v => { setRecipients(v); setIsDirty(true); }}
                     title="Destinatarios del sistema"
-                  description="Seleccioná los grupos y/o usuarios registrados a los que querés enviar el correo."
+                  description="Selecciona los grupos y/o usuarios registrados a los que quieres enviar el correo."
                 />
                 {errors.recipients && <p className="text-[11px] text-red-500">{errors.recipients}</p>}
               </div>

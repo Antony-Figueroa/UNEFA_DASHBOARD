@@ -287,7 +287,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
         </div>
         <h3 className="text-lg font-semibold text-alert-error-text dark:text-error-400">Error de conexión</h3>
         <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
-          {dbStatus === "disconnected" ? "La conexión con la base de datos se ha perdido" : "no hay conexion a la bd"}
+          {dbStatus === "disconnected" ? "La conexión con la base de datos se ha perdido" : "no hay conexión a la BD"}
         </p>
         <Button variant="error" onClick={() => window.location.reload()}>
           Reintentar conexión

@@ -273,6 +273,22 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         throw err;
       }
 
+      // Validar que el estudiante no haya sido inscrito en este mismo período antes
+      const { data: existingInPeriod } = await supabase
+        .from(TABLE_NAME)
+        .select('PROFESSIONAL_PRACTICE_ID')
+        .eq('STUDENTS_ID', student.STUDENTS_ID)
+        .eq('PERIOD_ID', preEnrollmentRow.PERIOD_ID)
+        .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
+        .neq('PROFESSIONAL_PRACTICE_ID', preEnrollmentRow.PROFESSIONAL_PRACTICE_ID)
+        .limit(1);
+
+      if (existingInPeriod && existingInPeriod.length > 0) {
+        const err = new Error('El estudiante ya fue inscrito en este período anteriormente');
+        (err as any).status = 409;
+        throw err;
+      }
+
       const updateData: Partial<ProfessionalPractice> & { ENROLLMENT?: string } = {
         REGISTRATION_DATE: now,
         PRACTICES_STATUS: PRACTICES_STATUS.INSCRITO,

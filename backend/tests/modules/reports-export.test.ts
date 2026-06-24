@@ -19,6 +19,10 @@ import ExcelJS, { Workbook } from 'exceljs';
 import { generateWorkbook } from '../../src/services/excel-export.service.js';
 import type { SheetSection } from '../../src/services/excel-export.service.js';
 
+// Constantes de layout del servicio (deben coincidir con excel-export.service.ts)
+const ROW_TITLE = 4;
+const ROW_HEADER = 7;
+
 // ============================================================
 // Helpers
 // ============================================================
@@ -48,9 +52,9 @@ async function getExcelBuffer(agent: request.Agent, url: string, query: Record<s
 
 const EXPECTED_COLUMNS: Record<string, string[]> = {
   'tutores-academicos': [
-    'N°', 'Región', 'Núcleo', 'Extensión', 'Carrera',
-    'Nombre', 'Apellido', 'Cédula', 'Condición', 'Dedicación',
-    'Categoría', 'Teléfono', 'Estudiantes',
+    'N°', 'REGIÓN', 'NÚCLEO', 'EXTENSIÓN', 'CARRERA',
+    'NOMBRE DEL TUTOR (A)', 'APELLIDO DEL TUTOR (A)', 'CÉDULA', 'CONDICIÓN', 'DEDICACIÓN',
+    'CATEGORÍA', 'TELÉFONO', 'CORREO ELECTRÓNICO', 'CANTIDAD DE ESTUDIANTES ATENDIDOS',
   ],
   'resumen-pasantias': [
     'N°', 'Región', 'Núcleo', 'Extensión', 'Carrera',
@@ -196,10 +200,10 @@ describe('generateWorkbook — Tasks 5.1, 5.3', () => {
         periodLabel: 'Período: 1-2025',
         columns: EXPECTED_COLUMNS['tutores-academicos'].map((h, i) => ({
           header: h,
-          key: ['nro', 'region', 'nucleo', 'extension', 'carrera', 'nombreTutor', 'apellidoTutor', 'cedula', 'condicion', 'dedicacion', 'categoria', 'telefono', 'estudiantes'][i],
+          key: ['nro', 'region', 'nucleo', 'extension', 'carrera', 'nombreTutor', 'apellidoTutor', 'cedula', 'condicion', 'dedicacion', 'categoria', 'telefono', 'correo', 'cantidadEstudiantes'][i],
         })),
         rows: [
-          { nro: 1, region: 'Centro', nucleo: 'Núcleo 1', extension: 'Ext A', carrera: 'Ing. Sistemas', nombreTutor: 'Juan', apellidoTutor: 'Pérez', cedula: 'V-123', condicion: 'Ordinario', dedicacion: 'TC', categoria: 'Agregado', telefono: '0412-111', estudiantes: 1 },
+          { nro: 1, region: 'Centro', nucleo: 'Núcleo 1', extension: 'Ext A', carrera: 'Ing. Sistemas', nombreTutor: 'Juan', apellidoTutor: 'Pérez', cedula: 'V-123', condicion: 'Ordinario', dedicacion: 'TC', categoria: 'Agregado', telefono: '0412-111', correo: 'juan@unefa.edu.ve', cantidadEstudiantes: 1 },
         ],
       },
       {
@@ -207,10 +211,10 @@ describe('generateWorkbook — Tasks 5.1, 5.3', () => {
         periodLabel: 'Período: 1-2025',
         columns: EXPECTED_COLUMNS['tutores-academicos'].map((h, i) => ({
           header: h,
-          key: ['nro', 'region', 'nucleo', 'extension', 'carrera', 'nombreTutor', 'apellidoTutor', 'cedula', 'condicion', 'dedicacion', 'categoria', 'telefono', 'estudiantes'][i],
+          key: ['nro', 'region', 'nucleo', 'extension', 'carrera', 'nombreTutor', 'apellidoTutor', 'cedula', 'condicion', 'dedicacion', 'categoria', 'telefono', 'correo', 'cantidadEstudiantes'][i],
         })),
         rows: [
-          { nro: 1, region: 'Occidente', nucleo: 'Núcleo 2', extension: 'Ext B', carrera: 'Contaduría', nombreTutor: 'María', apellidoTutor: 'López', cedula: 'V-456', condicion: 'Ordinario', dedicacion: 'TC', categoria: 'Asociado', telefono: '0416-222', estudiantes: 1 },
+          { nro: 1, region: 'Occidente', nucleo: 'Núcleo 2', extension: 'Ext B', carrera: 'Contaduría', nombreTutor: 'María', apellidoTutor: 'López', cedula: 'V-456', condicion: 'Ordinario', dedicacion: 'TC', categoria: 'Asociado', telefono: '0416-222', correo: 'maria@unefa.edu.ve', cantidadEstudiantes: 1 },
         ],
       },
     ];
@@ -259,19 +263,24 @@ describe('generateWorkbook — Tasks 5.1, 5.3', () => {
     const sheet = workbook.worksheets[0];
     expect(sheet).toBeDefined();
 
-    // Verificar fila 1: título
-    const titleRow = sheet.getRow(1);
-    expect(String(titleRow.getCell(1).value)).toContain('Resumen General');
+    // Verificar fila ROW_TITLE (4): título (puede ser richText)
+    const titleRow = sheet.getRow(ROW_TITLE);
+    const titleVal = titleRow.getCell(1).value;
+    if (typeof titleVal === 'object' && titleVal !== null && 'richText' in titleVal) {
+      expect(titleVal.richText[0].text).toContain('RESUMEN GENERAL');
+    } else {
+      expect(String(titleVal)).toContain('Resumen General');
+    }
 
-    // Verificar fila 4: column headers oficiales
-    const headerRow = sheet.getRow(4);
+    // Verificar fila ROW_HEADER (7): column headers oficiales
+    const headerRow = sheet.getRow(ROW_HEADER);
     columns.forEach((col, idx) => {
       expect(String(headerRow.getCell(idx + 1).value)).toBe(col.header);
     });
 
-    // Verificar fila 5: datos
-    const dataRow = sheet.getRow(5);
-    expect(String(dataRow.getCell(5).value)).toBe('Ing. Sistemas'); // Carrera (col 5)
+    // Verificar primera fila de datos
+    const dataRow = sheet.getRow(ROW_HEADER + 1);
+    expect(String(dataRow.getCell(5).value)).toBe('ING. SISTEMAS'); // Carrera (col 5) — datos en UPPERCASE
     expect(Number(dataRow.getCell(6).value)).toBe(5);               // Estudiantes (col 6)
   });
 
@@ -308,14 +317,14 @@ describe('generateWorkbook — Tasks 5.1, 5.3', () => {
     const sheet = workbook.worksheets[0];
     expect(sheet).toBeDefined();
 
-    // Verificar headers en fila 4
-    const headerRow = sheet.getRow(4);
+    // Verificar headers en fila ROW_HEADER (7)
+    const headerRow = sheet.getRow(ROW_HEADER);
     columns.forEach((col, idx) => {
       expect(String(headerRow.getCell(idx + 1).value)).toBe(col.header);
     });
 
-    // Cédula Estudiante es columna 4 → cell(4)
-    const dataRow = sheet.getRow(5);
+    // Cédula Estudiante es columna 4 → cell(4) en la primera fila de datos
+    const dataRow = sheet.getRow(ROW_HEADER + 1);
     expect(String(dataRow.getCell(4).value)).toBe('V-123');
   });
 
@@ -358,7 +367,7 @@ describe('generateWorkbook — Tasks 5.1, 5.3', () => {
     const sheet = workbook.worksheets[0];
     expect(sheet).toBeDefined();
 
-    const headerRow = sheet.getRow(4);
+    const headerRow = sheet.getRow(ROW_HEADER);
     columns.forEach((col, idx) => {
       expect(String(headerRow.getCell(idx + 1).value)).toBe(col.header);
     });

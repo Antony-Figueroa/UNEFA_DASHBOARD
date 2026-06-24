@@ -14,6 +14,9 @@ import ExcelJS from 'exceljs';
 import { Workbook, Worksheet } from 'exceljs';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ============================================================
 // Tipos
@@ -25,6 +28,38 @@ export interface SheetSection {
   columns: { header: string; key: string; width?: number }[];
   rows: Record<string, any>[];
   footerNotes?: string[];
+  signatures?: string[];
+}
+
+export interface IndividualTutorRow {
+  nro: number;
+  region: string;
+  nucleo: string;
+  extension: string;
+  carrera: string;
+  estudianteNombre: string;
+  estudianteApellido: string;
+  estudianteCi: string;
+  /** 'F' | 'M' | '' */
+  sexo: string;
+  /** 'CIVIL' | 'MILITAR' | '' */
+  tipo: string;
+  rango: string;
+  telefono: string;
+  institucion: string;
+  tipoInstitucion: string;
+  /** Tutor institucional concatenado: "APELLIDO, NOMBRE, C.I: V-.../TLFNO: .../CORREO: ..." */
+  tutorInst: string;
+  direccion: string;
+  observaciones: string;
+}
+
+export interface IndividualTutorSheetConfig {
+  sheetIndex: number;
+  tutorName: string;
+  tutorApellido: string;
+  periodLabel: string;
+  rows: IndividualTutorRow[];
 }
 
 // ============================================================
@@ -33,7 +68,6 @@ export interface SheetSection {
 
 const INSTITUTIONAL_HEADER = [
   'REPÚBLICA BOLIVARIANA DE VENEZUELA',
-  'MINISTERIO DEL PODER POPULAR PARA LA DEFENSA',
   'UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA',
   'DE LA FUERZA ARMADA NACIONAL BOLIVARIANA',
   'VICERRECTORADO ACADÉMICO',
@@ -51,11 +85,11 @@ const FONT_NAME = 'Arial';
 const STYLES = {
   membrete: {
     font: { name: FONT_NAME, size: 9, bold: false },
-    alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
   },
   title: {
     font: { name: FONT_NAME, size: 11, bold: true },
-    alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
   },
   periodCode: {
     font: { name: FONT_NAME, size: 8, bold: true },
@@ -170,7 +204,7 @@ function addSheetContent(workbook: Workbook, ws: Worksheet, section: SheetSectio
   ]};
   titleCell.font = STYLES.title.font;
   titleCell.alignment = STYLES.title.alignment;
-  ws.getRow(ROW_TITLE).height = 25;
+  ws.getRow(ROW_TITLE).height = 50;
 
   // ── Fila 5: código / período (opcional) ──
   ws.mergeCells(ROW_CODE, 1, ROW_CODE, totalCols);
@@ -231,8 +265,9 @@ function addSheetContent(workbook: Workbook, ws: Worksheet, section: SheetSectio
   });
 
   // ── Footer: firmas ──
+  const sigLabels = section.signatures ?? DEFAULT_SIGNATURES;
   const sigStartRow = footerStartRow + notes.length + 1;
-  DEFAULT_SIGNATURES.forEach((sig, idx) => {
+  sigLabels.forEach((sig, idx) => {
     const row = ws.getRow(sigStartRow + idx);
     const colWidth = Math.max(1, Math.floor(totalCols / 3));
     const startCol = idx * colWidth + 1;
@@ -319,6 +354,563 @@ function addEmptySheet(ws: Worksheet, message: string): void {
   cell.alignment = { horizontal: 'center', vertical: 'middle' };
   ws.getColumn(1).width = 60;
   ws.getRow(1).height = 40;
+}
+
+// ============================================================
+// Generador combinado: Relación General + hojas individuales
+// ============================================================
+
+const INDIVIDUAL_TOTAL_COLS = 19;
+
+/** Colores de fondo para headers del individual */
+const HDR_GREEN = 'FF92D050';
+const HDR_YELLOW = 'FFFFFF00';
+
+const INDIVIDUAL_HEADER_STYLE_BASE = {
+  font: { name: FONT_NAME, size: 8, bold: true },
+  alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
+  border: {
+    top: { style: 'thin' as const },
+    bottom: { style: 'thin' as const },
+    left: { style: 'thin' as const },
+    right: { style: 'thin' as const },
+  },
+};
+
+function headerCell(fillArgb: string) {
+  return {
+    ...INDIVIDUAL_HEADER_STYLE_BASE,
+    fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: fillArgb } },
+  };
+}
+
+const INDIVIDUAL_DATA_STYLE = {
+  font: { name: FONT_NAME, size: 8 },
+  alignment: { vertical: 'middle' as const, wrapText: true },
+  border: {
+    top: { style: 'thin' as const },
+    bottom: { style: 'thin' as const },
+    left: { style: 'thin' as const },
+    right: { style: 'thin' as const },
+  },
+};
+
+const ROW_TUTOR_NAME = 7;
+const ROW_INDIVIDUAL_HEADER_1 = 8;
+const ROW_INDIVIDUAL_HEADER_2 = 9;
+const ROW_INDIVIDUAL_DATA_START = 10;
+
+export async function generateTutoresAcademicosWorkbook(
+  generalSection: SheetSection,
+  individualSections: IndividualTutorSheetConfig[],
+): Promise<Workbook> {
+  const workbook = new ExcelJS.Workbook();
+
+  if (individualSections.length === 0 && generalSection.rows.length === 0) {
+    const ws = workbook.addWorksheet('Sin Datos');
+    addEmptySheet(ws, 'No se encontraron registros para el período seleccionado.');
+    return workbook;
+  }
+
+  // Hoja 1: RELACIÓN GENERAL
+  const wsGeneral = workbook.addWorksheet('RELACIÓN GENERAL');
+  addGeneralTutorSheet(workbook, wsGeneral, generalSection);
+
+  // Hojas 2+: individuales por tutor
+  const usedSheetNames = new Set<string>(['RELACIÓN GENERAL']);
+  for (const section of individualSections) {
+    const sheetName = sanitizeSheetName(
+      `${section.sheetIndex} - ${section.tutorApellido}, ${section.tutorName}`,
+      usedSheetNames,
+    );
+    const ws = workbook.addWorksheet(sheetName);
+    addIndividualTutorSheet(workbook, ws, section);
+  }
+
+  return workbook;
+}
+
+// ============================================================
+// Hoja individual de tutor (formato RELACIÓN INDIVIDUAL)
+// ============================================================
+
+function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: IndividualTutorSheetConfig): void {
+  const totalCols = INDIVIDUAL_TOTAL_COLS;
+  const rows = config.rows;
+
+  // ── Fila 1: Membrete ──
+  ws.mergeCells(ROW_MEMBRETE, 1, ROW_MEMBRETE, totalCols);
+  const membreteCell = ws.getCell(ROW_MEMBRETE, 1);
+  membreteCell.value = MEMBRETE_TEXT;
+  membreteCell.font = STYLES.membrete.font;
+  membreteCell.alignment = STYLES.membrete.alignment;
+  ws.getRow(ROW_MEMBRETE).height = 80;
+
+  addLogos(workbook, ws, totalCols);
+
+  // ── Fila 3: espacio ──
+  ws.getRow(ROW_BLANK_1).height = 6;
+
+  // ── Fila 4: Título ──
+  ws.mergeCells(ROW_TITLE, 1, ROW_TITLE, totalCols);
+  const titleCell = ws.getCell(ROW_TITLE, 1);
+  titleCell.value = {
+    richText: [
+      { text: 'FORMATO DE RELACIÓN INDIVIDUAL\nDE DOCENTES CONTRATADOS U ORDINARIOS CON DEDICACIÓN MEDIO TIEMPO (MT), TIEMPO COMPLETO (TC) Y DEDICACIÓN EXCLUSIVA (DE) QUE SE ENCUENTRAN TUTORANDO ESTUDIANTES DE PRACTICAS PROFESIONALES ( PASANTIAS )', font: { name: FONT_NAME, size: 10, bold: true } },
+    ],
+  };
+  titleCell.font = STYLES.title.font;
+  titleCell.alignment = STYLES.title.alignment;
+  ws.getRow(ROW_TITLE).height = 48;
+
+  // ── Fila 5: Período ──
+  ws.mergeCells(ROW_CODE, 1, ROW_CODE, totalCols);
+  const codeCell = ws.getCell(ROW_CODE, 1);
+  codeCell.value = `PERIODO ACADÉMICO ${config.periodLabel}`;
+  codeCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: 'FFFF0000' } };
+  codeCell.alignment = { horizontal: 'left', vertical: 'middle' };
+  ws.getRow(ROW_CODE).height = 18;
+
+  // ── Fila 6: espacio ──
+  ws.getRow(ROW_BLANK_2).height = 4;
+
+  // ── Fila 7: Nombre del tutor (celda combinada con fondo amarillo) ──
+  ws.mergeCells(ROW_TUTOR_NAME, 1, ROW_TUTOR_NAME, totalCols);
+  const tutorNameCell = ws.getCell(ROW_TUTOR_NAME, 1);
+  const tutorFullName = `${config.tutorName} ${config.tutorApellido}`.trim();
+  tutorNameCell.value = `NOMBRE DEL TUTOR (A) ACADÉMICO: ${tutorFullName.toUpperCase()}`;
+  tutorNameCell.font = { name: FONT_NAME, size: 10, bold: true };
+  tutorNameCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
+  tutorNameCell.alignment = { horizontal: 'left', vertical: 'middle' };
+  tutorNameCell.border = {
+    top: { style: 'medium' },
+    bottom: { style: 'medium' },
+    left: { style: 'medium' },
+    right: { style: 'medium' },
+  };
+  ws.getRow(ROW_TUTOR_NAME).height = 22;
+
+  // ── Fila 8: Encabezados principales (fila 1) ──
+  const h1 = ws.getRow(ROW_INDIVIDUAL_HEADER_1);
+  h1.height = 36;
+
+  const g = headerCell(HDR_GREEN);
+  const y = headerCell(HDR_YELLOW);
+
+  // Col 1: N° (rowspan 2 → merge)
+  setCell(h1.getCell(1), 'N°', g);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 1, ROW_INDIVIDUAL_HEADER_2, 1);
+
+  setCell(h1.getCell(2), 'REGIÓN', g);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 2, ROW_INDIVIDUAL_HEADER_2, 2);
+
+  setCell(h1.getCell(3), 'NÚCLEO', g);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 3, ROW_INDIVIDUAL_HEADER_2, 3);
+
+  setCell(h1.getCell(4), 'EXTENSIÓN', g);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 4, ROW_INDIVIDUAL_HEADER_2, 4);
+
+  setCell(h1.getCell(5), 'CARRERA', g);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 5, ROW_INDIVIDUAL_HEADER_2, 5);
+
+  setCell(h1.getCell(6), 'NOMBRE DEL (DE LA) ESTUDIANTE', g);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 6, ROW_INDIVIDUAL_HEADER_2, 6);
+
+  setCell(h1.getCell(7), 'APELLIDO DEL (DE LA) ESTUDIANTE', y);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 7, ROW_INDIVIDUAL_HEADER_2, 7);
+
+  setCell(h1.getCell(8), 'CÉDULA', y);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 8, ROW_INDIVIDUAL_HEADER_2, 8);
+
+  // Col 9-10: SEXO (colspan=2, no rowspan)
+  setCell(h1.getCell(9), 'SEXO', y);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 9, ROW_INDIVIDUAL_HEADER_1, 10);
+
+  // Col 11-13: TIPO DE ESTUDIANTE (colspan=3)
+  setCell(h1.getCell(11), 'TIPO DE ESTUDIANTE', y);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 11, ROW_INDIVIDUAL_HEADER_1, 13);
+
+  setCell(h1.getCell(14), 'TELÉFONO', g);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 14, ROW_INDIVIDUAL_HEADER_2, 14);
+
+  setCell(h1.getCell(15), 'INSTITUCIÓN', g);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 15, ROW_INDIVIDUAL_HEADER_2, 15);
+
+  // Col 16: TIPO DE INSTITUCIÓN (solo fila 1, la fila 2 tendrá sub-header)
+  setCell(h1.getCell(16), 'TIPO DE INSTITUCIÓN', g);
+
+  setCell(h1.getCell(17), 'TUTOR INSTITUCIONAL', g);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 17, ROW_INDIVIDUAL_HEADER_2, 17);
+
+  setCell(h1.getCell(18), 'DIRECCIÓN DE UBICACIÓN DEL CENTRO DE PRÁCTICA PROFESIONAL', g);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 18, ROW_INDIVIDUAL_HEADER_2, 18);
+
+  setCell(h1.getCell(19), 'OBSERVACIONES', y);
+  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 19, ROW_INDIVIDUAL_HEADER_2, 19);
+
+  // ── Fila 9: Sub-encabezados ──
+  const h2 = ws.getRow(ROW_INDIVIDUAL_HEADER_2);
+  h2.height = 50;
+
+  // Col 9-10: sub de SEXO
+  setCell(h2.getCell(9), 'FEMENINO', g);
+  setCell(h2.getCell(10), 'MASCULINO', g);
+
+  // Col 11-13: sub de TIPO
+  setCell(h2.getCell(11), 'CIVIL', y);
+  setCell(h2.getCell(12), 'MILITAR', y);
+  setCell(h2.getCell(13), 'RANGO\n(EN CASO DE SER MILITAR)', y);
+
+  // Col 16: sub de TIPO DE INSTITUCIÓN
+  setCell(h2.getCell(16), 'PÚBLICA / PRIVADA / MIXTA', g);
+
+  // ── Ancho de columnas ──
+  const colWidths = [5, 12, 14, 14, 22, 18, 18, 14, 10, 10, 8, 8, 14, 14, 22, 16, 24, 26, 18];
+  colWidths.forEach((w, idx) => { ws.getColumn(idx + 1).width = w; });
+
+  // ── Filas de datos ──
+  rows.forEach((row, rowIdx) => {
+    const excelRow = ws.getRow(ROW_INDIVIDUAL_DATA_START + rowIdx);
+    excelRow.height = 28;
+
+    const data = [
+      row.nro,
+      row.region,
+      row.nucleo,
+      row.extension,
+      row.carrera,
+      row.estudianteNombre,
+      row.estudianteApellido,
+      row.estudianteCi,
+      row.sexo === 'F' ? 'X' : '',
+      row.sexo === 'M' ? 'X' : '',
+      row.tipo === 'CIVIL' ? 'X' : '',
+      row.tipo === 'MILITAR' ? 'X' : '',
+      row.rango || '',
+      row.telefono,
+      row.institucion,
+      row.tipoInstitucion,
+      row.tutorInst,
+      row.direccion,
+      row.observaciones,
+    ];
+
+    data.forEach((val, colIdx) => {
+      const cell = excelRow.getCell(colIdx + 1);
+      cell.value = val !== null && val !== undefined
+        ? (typeof val === 'string' ? val.toUpperCase() : val)
+        : '';
+      // Center-align sex/tipo/cedula columns
+      const centerCols = [1, 8, 9, 10, 11, 12, 13, 14];
+      cell.font = INDIVIDUAL_DATA_STYLE.font;
+      cell.alignment = {
+        ...INDIVIDUAL_DATA_STYLE.alignment,
+        horizontal: centerCols.includes(colIdx + 1) ? 'center' : 'left',
+      };
+      cell.border = INDIVIDUAL_DATA_STYLE.border;
+    });
+  });
+}
+
+// ============================================================
+// Hoja RELACIÓN GENERAL (formato oficial UNEFA ANEXO)
+// ============================================================
+
+/** Hoja general de tutores académicos — 18 columnas (A=margen, B‑R=datos) */
+function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetSection): void {
+  const DATA_KEYS = section.columns.map(c => c.key);
+  // columnas físicas: 1=A(margen), 2‑18=B‑R
+  const COL_FIRST = 2; // B
+  const COL_LAST = 18; // R
+  const TOTAL = COL_LAST;
+
+  // ── Estilos ──
+  const FONT = 'Arial';
+  const STYLE_HEADER = {
+    font: { name: FONT, size: 8, bold: true },
+    fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF99CC00' } },
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
+    border: {
+      top: { style: 'thin' as const },
+      bottom: { style: 'thin' as const },
+      left: { style: 'thin' as const },
+      right: { style: 'thin' as const },
+    },
+  };
+  const STYLE_HEADER_LAST = {
+    ...STYLE_HEADER,
+    border: { ...STYLE_HEADER.border, right: { style: 'medium' as const } },
+  };
+  const STYLE_CELL = {
+    font: { name: FONT, size: 8 },
+    alignment: { vertical: 'middle' as const, wrapText: true },
+    border: {
+      top: { style: 'thin' as const },
+      bottom: { style: 'thin' as const },
+      left: { style: 'thin' as const },
+      right: { style: 'thin' as const },
+    },
+  };
+  const STYLE_CELL_LEFT = { ...STYLE_CELL, border: { ...STYLE_CELL.border, left: { style: 'medium' as const } } };
+  const STYLE_CELL_RIGHT = { ...STYLE_CELL, border: { ...STYLE_CELL.border, right: { style: 'medium' as const } } };
+  const STYLE_CELL_BOTH = { ...STYLE_CELL, border: { ...STYLE_CELL.border, left: { style: 'medium' as const }, right: { style: 'medium' as const } } };
+
+  // Columnas que se centran
+  const CENTER_KEYS: Record<string, boolean> = {
+    nro: true, region: true, nucleo: true, extension: true,
+    cedula: true, telefono: true, cantidadEstudiantes: true,
+  };
+
+  // ── Anchos de columna ──
+  const COL_WIDTHS = [3, 5, 14, 14, 14, 24, 14, 14, 14, 14, 14, 14, 14, 14, 14, 20, 14, 18];
+  COL_WIDTHS.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+
+  // ============================================================
+  // FILA 1: vacía (espaciado superior)
+  // ============================================================
+  ws.getRow(1).height = 16;
+
+  // ============================================================
+  // FILA 2 (100px): membrete — SOA code + UNEFA header + logos
+  // ============================================================
+  ws.getRow(2).height = 100;
+
+  // Código "SOA-PP-001-3" en col C (col 3)
+  const codeCell = ws.getCell(2, 3);
+  codeCell.value = 'SOA-PP-001-3';
+  codeCell.font = { name: FONT, size: 8, bold: true };
+  codeCell.alignment = { horizontal: 'left', vertical: 'middle' };
+
+  // UNEFA header — merge D(4) a R(18)
+  ws.mergeCells(2, 4, 2, TOTAL);
+  const unefaCell = ws.getCell(2, 4);
+  unefaCell.value = MEMBRETE_TEXT;
+  unefaCell.font = { name: FONT, size: 9 };
+  unefaCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+  // Logos (posicionados sobre esta fila)
+  addGeneralTutorLogos(workbook, ws);
+
+  // ============================================================
+  // FILA 3: espacio 6px
+  // ============================================================
+  ws.getRow(3).height = 6;
+
+  // ============================================================
+  // FILA 4 (74px): TÍTULO + período (bottom border medium)
+  // ============================================================
+  ws.getRow(4).height = 74;
+  ws.mergeCells(4, COL_FIRST, 4, COL_LAST);
+  const titleCell = ws.getCell(4, COL_FIRST);
+  const titleText = section.title;
+  const periodText = section.periodLabel;
+  titleCell.value = {
+    richText: [
+      { text: titleText.toUpperCase(), font: { name: FONT, size: 11, bold: true } },
+      { text: `\n${periodText}`, font: { name: FONT, size: 11, bold: true } },
+    ],
+  };
+  titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  titleCell.border = {
+    top: { style: 'thin' },
+    bottom: { style: 'medium' },
+    left: { style: 'thin' },
+    right: { style: 'thin' },
+  };
+
+  // ============================================================
+  // FILA 5 (50px): ENCABEZADOS VERDES #99CC00
+  // ============================================================
+  ws.getRow(5).height = 50;
+
+  // Cabeceras con merges: NOMBRE(2cols), APELLIDO(2cols), CORREO(2cols)
+  const headers: { text: string; col: number; colspan: number }[] = [
+    { text: 'N°', col: 2, colspan: 1 },
+    { text: 'REGIÓN', col: 3, colspan: 1 },
+    { text: 'NÚCLEO', col: 4, colspan: 1 },
+    { text: 'EXTENSIÓN', col: 5, colspan: 1 },
+    { text: 'CARRERA', col: 6, colspan: 1 },
+    { text: 'NOMBRE DEL TUTOR (A)', col: 7, colspan: 2 },
+    { text: 'APELLIDO DEL TUTOR (A)', col: 9, colspan: 2 },
+    { text: 'CÉDULA', col: 11, colspan: 1 },
+    { text: 'CONDICIÓN', col: 12, colspan: 1 },
+    { text: 'DEDICACIÓN', col: 13, colspan: 1 },
+    { text: 'CATEGORÍA', col: 14, colspan: 1 },
+    { text: 'TELÉFONO', col: 15, colspan: 1 },
+    { text: 'CORREO ELECTRÓNICO', col: 16, colspan: 2 },
+    { text: 'CANTIDAD DE ESTUDIANTES ATENDIDOS', col: 18, colspan: 1 },
+  ];
+
+  headers.forEach((h, idx) => {
+    const isLast = (idx === headers.length - 1);
+    const style = isLast ? STYLE_HEADER_LAST : STYLE_HEADER;
+    const col = h.col;
+    if (h.colspan > 1) {
+      ws.mergeCells(5, col, 5, col + h.colspan - 1);
+    }
+    const cell = ws.getCell(5, col);
+    cell.value = h.text;
+    cell.font = style.font;
+    cell.fill = style.fill;
+    cell.alignment = style.alignment;
+    cell.border = isLast
+      ? { ...style.border, right: { style: 'medium' } }
+      : h.col === 5
+        ? { ...style.border, right: { style: 'medium' } }
+        : style.border;
+  });
+
+  // ============================================================
+  // FILAS DE DATOS (47px) con bordes
+  // ============================================================
+  section.rows.forEach((row, rowIdx) => {
+    const excelRow = ws.getRow(6 + rowIdx);
+    excelRow.height = 47;
+
+    const isLastRow = rowIdx === section.rows.length - 1;
+
+    // Mapa: key → valor
+    const val = (key: string) => {
+      const v = row[key];
+      return v !== null && v !== undefined
+        ? (typeof v === 'string' ? v.toUpperCase() : v)
+        : '';
+    };
+
+    const dataCols: { key: string; physCol: number }[] = [
+      { key: 'nro', physCol: 2 },
+      { key: 'region', physCol: 3 },
+      { key: 'nucleo', physCol: 4 },
+      { key: 'extension', physCol: 5 },
+      { key: 'carrera', physCol: 6 },
+      { key: 'nombreTutor', physCol: 7 },  // NOMBRE (col 7-8 merged)
+      { key: 'apellidoTutor', physCol: 9 }, // APELLIDO (col 9-10 merged)
+      { key: 'cedula', physCol: 11 },
+      { key: 'condicion', physCol: 12 },
+      { key: 'dedicacion', physCol: 13 },
+      { key: 'categoria', physCol: 14 },
+      { key: 'telefono', physCol: 15 },
+      { key: 'correo', physCol: 16 },       // CORREO (col 16-17 merged)
+      { key: 'cantidadEstudiantes', physCol: 18 },
+    ];
+
+    // Merges de datos: nombreTutor → cols 7-8, apellidoTutor → cols 9-10, correo → cols 16-17
+    // Los merges se aplican a TODAS las filas de datos, no solo a la primera
+    const dataRow = 6 + rowIdx;
+    ws.mergeCells(dataRow, 7, dataRow, 8);   // nombreTutor
+    ws.mergeCells(dataRow, 9, dataRow, 10);  // apellidoTutor
+    ws.mergeCells(dataRow, 16, dataRow, 17); // correo
+
+    dataCols.forEach(({ key, physCol }) => {
+      const cell = excelRow.getCell(physCol);
+      cell.value = val(key);
+      cell.font = STYLE_CELL.font;
+      cell.alignment = {
+        vertical: 'middle',
+        wrapText: true,
+        horizontal: CENTER_KEYS[key] ? 'center' : 'left',
+      };
+      // Bordes: medium en laterales
+      const isFirstDataCol = (physCol === COL_FIRST);
+      const isLastDataCol = (physCol === COL_LAST);
+      cell.border = {
+        top: { style: 'thin' },
+        bottom: { style: isLastRow ? 'medium' : 'thin' },
+        left: { style: isFirstDataCol ? 'medium' : 'thin' },
+        right: { style: isLastDataCol ? 'medium' : 'thin' },
+      };
+    });
+  });
+
+  // ============================================================
+  // FILA post‑datos: código "MA/JR.ENE.2014"
+  // ============================================================
+  const codeRow = 6 + section.rows.length;
+  ws.getRow(codeRow).height = 18;
+  const footerCodeCell = ws.getCell(codeRow, 15);
+  footerCodeCell.value = 'MA/JR.ENE.2014';
+  footerCodeCell.font = { name: FONT, size: 8 };
+  footerCodeCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+  // ============================================================
+  // NOTAS al pie (fondo amarillo #FFCC00)
+  // ============================================================
+  const notes = section.footerNotes ?? DEFAULT_FOOTER_NOTES;
+  const noteStartRow = codeRow + 1;
+  notes.forEach((note, idx) => {
+    const r = noteStartRow + idx;
+    ws.getRow(r).height = 20;
+    ws.mergeCells(r, COL_FIRST, r, COL_LAST);
+    const cell = ws.getCell(r, COL_FIRST);
+
+    // La nota 3 (Debe realizar un archivo por cada carrera) en rojo
+    const isRed = note.includes('archivo por cada carrera');
+    cell.value = `Nota: ${isRed ? note.replace('Nota:', '') : note}`;
+    cell.font = { name: FONT, size: 8, italic: !isRed, color: isRed ? { argb: 'FFFF0000' } : undefined };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCC00' } };
+    cell.alignment = { vertical: 'top', wrapText: true };
+  });
+
+  // ============================================================
+  // LÍNEAS DE FIRMA (vacías con borde inferior)
+  // ============================================================
+  const sigLabels = section.signatures ?? DEFAULT_SIGNATURES;
+  const sigStartRow = noteStartRow + notes.length + 1;
+  const sigColWidth = Math.floor((COL_LAST - COL_FIRST + 1) / 3);
+
+  sigLabels.forEach((sig, idx) => {
+    const r = sigStartRow + idx;
+    ws.getRow(r).height = 36;
+    const startCol = COL_FIRST + idx * sigColWidth;
+    const endCol = idx < 2 ? startCol + sigColWidth - 1 : COL_LAST;
+
+    if (endCol > startCol) {
+      ws.mergeCells(r, startCol, r, endCol);
+    }
+    const cell = ws.getCell(r, startCol);
+    cell.value = `__________________________\n${sig}`;
+    cell.font = { name: FONT, size: 9 };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  });
+}
+
+// ============================================================
+// Logos para la hoja general (posicionados sobre fila 2)
+// ============================================================
+
+function addGeneralTutorLogos(workbook: Workbook, ws: Worksheet): void {
+  const logoPaths = findLogoPaths();
+  if (!logoPaths) return;
+
+  try {
+    // Logo UNEFA (izquierda) — col A-B, row 2
+    if (logoPaths.logo && fs.existsSync(logoPaths.logo)) {
+      const logoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.logo) as any, extension: 'png' });
+      ws.addImage(logoId, {
+        tl: { col: 0.2, row: 1.1 },
+        ext: { width: 70, height: 70 },
+      });
+    }
+
+    // Escudo (derecha) — col Q-R row 2
+    if (logoPaths.escudo && fs.existsSync(logoPaths.escudo)) {
+      const escudoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.escudo) as any, extension: 'png' });
+      ws.addImage(escudoId, {
+        tl: { col: 16.5, row: 1.1 },
+        ext: { width: 70, height: 70 },
+      });
+    }
+  } catch (err) {
+    console.warn('[excel-export] No se pudieron cargar las imágenes:', (err as Error).message);
+  }
+}
+
+function setCell(cell: any, value: string, style: any): void {
+  cell.value = value;
+  cell.font = style.font;
+  cell.fill = style.fill;
+  cell.alignment = style.alignment;
+  cell.border = style.border;
 }
 
 // ============================================================

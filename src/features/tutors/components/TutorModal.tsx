@@ -31,11 +31,12 @@ import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH } from "../../../utils/inputFormat";
-import PersonFormFields from "../../persons/components/PersonFormFields";
 import { getTutorByCi } from "../services/tutorsService";
 import { checkAvailability as checkPersonAvailability } from "../../persons/services/personService";
 import { lookupCi } from "../../students/services/studentsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/inputValidation";
+import { PREFIX_OPTIONS } from "../../persons/types";
+import { Search } from "lucide-react";
 // import { addressService } from "../../address/services/addressService";
 // import type { GeoOptionsItem } from "../../address/types";
 // import GeographicAddressFields from "../../address/components/GeographicAddressFields";
@@ -100,18 +101,19 @@ export default function TutorModal({
     const [isCheckingCi, setIsCheckingCi] = useState(false);
     const [isLookingUpCi, setIsLookingUpCi] = useState(false);
     const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-    const tabsState = useTabs({ defaultTab: 'datos-personales' });
-    useEffect(() => { if (isOpen) tabsState.setActiveTab('datos-personales'); }, [isOpen]);
+    const tabsState = useTabs({ defaultTab: 'identificacion' });
+    useEffect(() => { if (isOpen) tabsState.setActiveTab('identificacion'); }, [isOpen]);
 
-    const TAB_IDS = ['datos-personales', 'laboral', 'asignaciones'] as const;
+    const TAB_IDS = ['identificacion', 'perfil-contacto', 'laboral', 'asignaciones'] as const;
     const TAB_FIELDS: Record<string, string[]> = {
-      'datos-personales': ['identificationPrefix', 'identificationNumber', 'firstName', 'middleName', 'lastName', 'secondLastName', 'sex', 'birthDate', 'civilStatus', 'phoneAreaCode', 'phoneNumber', 'email'],
+      'identificacion': ['identificationPrefix', 'identificationNumber', 'firstName', 'middleName', 'lastName', 'secondLastName'],
+      'perfil-contacto': ['birthDate', 'sex', 'civilStatus', 'phoneAreaCode', 'phoneNumber', 'email'],
       'laboral': ['condition', 'dedication', 'category', 'profession', 'titulo'],
       'asignaciones': ['carreras'],
     };
 
     const [existingTutor, setExistingTutor] = useState<any | null>(null);
-    const [existingPerson, setExistingPerson] = useState(false);
+    const [existingPerson, setExistingPerson] = useState<Record<string, any> | null>(null);
     const [viewOnlyMode, setViewOnlyMode] = useState(false);
     const [ciLoadedFromApi, setCiLoadedFromApi] = useState(false);
     // ponytail: currentPersonId no es necesario sin AddressList
@@ -270,7 +272,7 @@ export default function TutorModal({
     setValue,
     setError,
     clearErrors,
-    formState: { errors, isDirty, isValid },
+    formState: { errors, isDirty, isValid, touchedFields },
   } = useForm<TutorFormData>({
     resolver: zodResolver(tutorSchema),
     mode: "onTouched",
@@ -319,6 +321,18 @@ export default function TutorModal({
     );
   }, [formValues]);
 
+  const ciDisabled = !!editingTutor?.tutorId;
+  const isFieldValid = useCallback((fieldName: string) =>
+    !!(touchedFields as any)[fieldName] && !(errors as any)[fieldName],
+    [touchedFields, errors]);
+  const isFieldDisabled = useCallback((fieldName: string) => {
+    if (viewOnlyMode) return true;
+    const apiLock = ciLoadedFromApi && (academicConfig?.lockApiLoadedFields ?? true);
+    const nameFields = ["firstName", "middleName", "lastName", "secondLastName"];
+    if (apiLock && nameFields.includes(fieldName)) return true;
+    return false;
+  }, [viewOnlyMode, ciLoadedFromApi, academicConfig]);
+
   const {
     showConfirmation,
     handleCloseAttempt,
@@ -352,7 +366,7 @@ export default function TutorModal({
       // Si el usuario borró al menos 1 carácter o cambió algo
       if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits || !existingTutor) {
         setExistingTutor(null);
-        setExistingPerson(false);
+        setExistingPerson(null);
         setCiLoadedFromApi(false);
         setViewOnlyMode(false);
         clearErrors("identificationNumber");
@@ -391,7 +405,7 @@ export default function TutorModal({
         if (result?.tutor) {
           const tutorData = result.tutor;
           setExistingTutor(tutorData);
-          setExistingPerson(false);
+          setExistingPerson(null);
 
           const areaCode = tutorData.phone ? tutorData.phone.substring(0, 4) : "";
           const phoneNumber = tutorData.phone ? tutorData.phone.substring(4) : "";
@@ -418,8 +432,9 @@ export default function TutorModal({
           setValue("carreras", tutorData.carreras || []);
         } else if (result?.person) {
           // Persona existe (estudiante, usuario, etc.) pero no como tutor -> pre-cargar datos
+          const personData = result.person;
           setExistingTutor(null);
-          setExistingPerson(true);
+          setExistingPerson(personData);
           setViewOnlyMode(false);
 
           const personData = result.person;
@@ -479,7 +494,7 @@ export default function TutorModal({
             if (result?.tutor) {
               const tutorData = result.tutor;
               setExistingTutor(tutorData);
-              setExistingPerson(false);
+              setExistingPerson(null);
 
               const areaCode = tutorData.phone ? tutorData.phone.substring(0, 4) : "";
               const phoneNumber = tutorData.phone ? tutorData.phone.substring(4) : "";
@@ -506,11 +521,10 @@ export default function TutorModal({
               setValue("carreras", tutorData.carreras || []);
             } else if (result?.person) {
               // Persona existe (estudiante, usuario, etc.) pero no como tutor -> pre-cargar datos
-              setExistingTutor(null);
-              setExistingPerson(true);
-              setViewOnlyMode(false);
-
               const personData = result.person;
+              setExistingTutor(null);
+              setExistingPerson(personData);
+              setViewOnlyMode(false);
               setValue("identificationPrefix", personData.identificationPrefix || 'V');
               setDisplayIdentificationNumber(formatCedulaDisplay(personData.identificationNumber || ''));
               setValue("identificationNumber", personData.identificationNumber || '');
@@ -639,10 +653,12 @@ export default function TutorModal({
     [editingTutor, setError, clearErrors],
   );
 
-  // Factory de handler para campos de nombre (uppercase)
+  // Factory de handler para campos de nombre (uppercase + regex)
   const handleNameChange = useCallback(
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      const val = e.target.value.toUpperCase();
+      const val = e.target.value
+        .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, "")
+        .toUpperCase();
       setValue(field as any, val, { shouldValidate: true, shouldDirty: true });
     },
     [setValue]
@@ -886,7 +902,7 @@ export default function TutorModal({
     if (isOpen) {
       // Limpiar estados de duplicado cuando se abre el modal
       setExistingTutor(null);
-      setExistingPerson(false);
+      setExistingPerson(null);
       setViewOnlyMode(false);
       // address: no usado
       // const emptyAddress = { parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true };
@@ -1053,21 +1069,10 @@ export default function TutorModal({
           )}
           <Tabs
             options={[
-              { 
-                id: 'datos-personales', 
-                label: 'Datos Personales', 
-                errorCount: errorsByTab['datos-personales'],
-              },
-              { 
-                id: 'laboral', 
-                label: 'Laboral', 
-                errorCount: errorsByTab['laboral'],
-              },
-              { 
-                id: 'asignaciones', 
-                label: 'Asignaciones', 
-                errorCount: errorsByTab['asignaciones'],
-              },
+              { id: 'identificacion', label: 'Identificación', errorCount: errorsByTab['identificacion'] },
+              { id: 'perfil-contacto', label: 'Perfil y Contacto', errorCount: errorsByTab['perfil-contacto'] },
+              { id: 'laboral', label: 'Laboral', errorCount: errorsByTab['laboral'] },
+              { id: 'asignaciones', label: 'Asignaciones', errorCount: errorsByTab['asignaciones'] },
             ]}
             {...tabsState.tabProps}
             variant="modal"
@@ -1075,51 +1080,324 @@ export default function TutorModal({
             onTabChange={tabsState.setActiveTab}
           />
 
-          <div className="space-y-6">
-              <div hidden={tabsState.activeTab !== 'datos-personales'} role="tabpanel">
-                <PersonFormFields
-                  control={control}
-                  register={register}
-                  errors={errors}
-                  setValue={setValue}
-                  watch={watch}
-                  options={options}
-                  displayIdentificationNumber={displayIdentificationNumber}
-                  onIdentificationNumberChange={handleIdentificationNumberChange}
-                  onBlurCi={handleCiBlur}
-                  onCiLookup={handleCiLookup}
-                  isCheckingCi={isCheckingCi}
-                  isLookingUpCi={isLookingUpCi}
-                  displayPhoneNumber={displayPhoneNumber}
-                  onPhoneNumberChange={handlePhoneNumberChange}
-                  onBlurEmail={handleEmailBlur}
-                  isCheckingEmail={isCheckingEmail}
-                  createNameHandler={handleNameChange}
-                  onAddValue={openAddValueModal}
-                  age={age}
-                  maxDate={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
-                  viewOnlyMode={viewOnlyMode}
-                  fieldLockOnApiLoad={ciLoadedFromApi && (academicConfig?.lockApiLoadedFields ?? true)}
-                  editingId={editingTutor?.tutorId ?? existingTutor?.tutorId ?? null}
-                />
-                {/* Dirección de Residencia — comentado, no se usa */}
-                {/*
-                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección de Residencia</h3>
-                  <GeographicAddressFields
-                    geoOptions={geoOptions}
-                    value={inlineAddress}
-                    onChange={setInlineAddress}
-                    showReference
-                    estadoLabel="Estado"
-                    municipioLabel="Municipio"
-                    parroquiaLabel="Parroquia"
-                    streetLabel="Dirección"
-                  />
+          {/* ======================== Identificación ======================== */}
+          <div hidden={tabsState.activeTab !== 'identificacion'} role="tabpanel">
+            {existingPerson && (
+              <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-600 dark:bg-yellow-900/20 mb-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <strong>Persona existente:</strong>{' '}
+                    {existingPerson.firstName} {existingPerson.lastName} —{' '}
+                    {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
+                  </p>
+                  {onEditExisting && (
+                    <button type="button" onClick={onEditExisting} className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                      Editar esta persona
+                    </button>
+                  )}
                 </div>
-                */}
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Cédula de Identidad (col-span-2) */}
+              <div className="md:col-span-2">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Cédula de Identidad <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Controller
+                      name="identificationPrefix"
+                      control={control}
+                      render={({ field }) => (
+                        <CustomSelect
+                          id="identificationPrefix"
+                          options={(options["Nacionalidad"] || PREFIX_OPTIONS).map(o => ({ value: String(o.value), label: o.label }))}
+                          placeholder="V"
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          value={String(field.value || "V")}
+                          disabled={ciDisabled}
+                          error={!!errors.identificationPrefix}
+                        />
+                      )}
+                    />
+                    {errors.identificationPrefix && (
+                      <p className="mt-1 text-xs text-red-500">{errors.identificationPrefix.message as string}</p>
+                    )}
+                  </div>
+                  <div className="md:col-span-3 relative">
+                    <Input
+                      value={displayIdentificationNumber}
+                      onChange={handleIdentificationNumberChange}
+                      onBlur={handleCiBlur}
+                      placeholder="V-12.345.678"
+                      disabled={ciDisabled}
+                      maxLength={CEDULA_MAX_LENGTH}
+                      autoComplete="off"
+                      className="tracking-widest"
+                      error={!!errors.identificationNumber}
+                      success={isFieldValid('identificationNumber')}
+                      hint={
+                        errors.identificationNumber?.message as string
+                        || (isCheckingCi ? "Verificando disponibilidad..."
+                        : isLookingUpCi ? "Consultando SENIAT..."
+                        : undefined)
+                      }
+                    />
+                    {!ciDisabled && (
+                      <button
+                        type="button"
+                        onClick={handleCiLookup}
+                        disabled={isLookingUpCi}
+                        title="Buscar datos en SENIAT / CNE"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 transition-colors disabled:opacity-50"
+                      >
+                        <Search className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Nombres */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Primer Nombre <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  {...register("firstName")}
+                  onChange={handleNameChange("firstName")}
+                  placeholder="Primer nombre"
+                  disabled={isFieldDisabled("firstName")}
+                  error={!!errors.firstName}
+                  success={isFieldValid('firstName')}
+                  hint={errors.firstName?.message as string}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Segundo Nombre
+                </label>
+                <Input
+                  {...register("middleName")}
+                  onChange={handleNameChange("middleName")}
+                  placeholder="Segundo nombre (opcional)"
+                  disabled={isFieldDisabled("middleName")}
+                  error={!!errors.middleName}
+                  success={isFieldValid('middleName')}
+                  hint={errors.middleName?.message as string}
+                />
+              </div>
+
+              {/* Apellidos */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Primer Apellido <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  {...register("lastName")}
+                  onChange={handleNameChange("lastName")}
+                  placeholder="Primer apellido"
+                  disabled={isFieldDisabled("lastName")}
+                  error={!!errors.lastName}
+                  success={isFieldValid('lastName')}
+                  hint={errors.lastName?.message as string}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Segundo Apellido
+                </label>
+                <Input
+                  {...register("secondLastName")}
+                  onChange={handleNameChange("secondLastName")}
+                  placeholder="Segundo apellido (opcional)"
+                  disabled={isFieldDisabled("secondLastName")}
+                  error={!!errors.secondLastName}
+                  success={isFieldValid('secondLastName')}
+                  hint={errors.secondLastName?.message as string}
+                />
               </div>
             </div>
+          </div>
+
+          {/* ======================== Perfil y Contacto ======================== */}
+          <div hidden={tabsState.activeTab !== 'perfil-contacto'} role="tabpanel">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Fecha de Nacimiento */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Fecha de Nacimiento{' '}
+                  {age !== null && age !== undefined && (
+                    <span className="text-brand-500 ml-1">({age} años)</span>
+                  )}
+                  <span className="text-red-500">*</span>
+                </label>
+                <Controller
+                  name="birthDate"
+                  control={control}
+                  render={({ field }) => {
+                    const valid = isFieldValid('birthDate');
+                    return (
+                      <input
+                        type="date"
+                        id="birthDate"
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                        className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm transition-all ${
+                          errors.birthDate
+                            ? "border-error-500 focus:border-error-500 text-error-500"
+                            : valid
+                              ? "border-success-500 focus:border-success-300 focus:ring-success-500/20 text-text-primary"
+                              : "border-border-medium focus:border-brand-300 focus:ring-brand-500/10 text-text-primary"
+                        } dark:bg-bg-dark dark:text-text-emphasis dark:border-border-dark dark:focus:border-brand-800 ${
+                          viewOnlyMode ? "cursor-not-allowed bg-bg-secondary opacity-50" : ""
+                        }`}
+                        max={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
+                        disabled={viewOnlyMode}
+                      />
+                    );
+                  }}
+                />
+                {errors.birthDate && (
+                  <p className="mt-1 text-xs text-red-500">{errors.birthDate.message as string}</p>
+                )}
+              </div>
+
+              {/* Sexo */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Sexo <span className="text-red-500">*</span>
+                </label>
+                <Controller
+                  name="sex"
+                  control={control}
+                  render={({ field }) => (
+                    <CustomSelect
+                      id="sex"
+                      options={(options["Sexo"] || []).map(o => ({ value: String(o.value), label: o.label }))}
+                      placeholder="Seleccionar"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={String(field.value || "")}
+                      disabled={viewOnlyMode}
+                      error={!!errors.sex}
+                      success={isFieldValid('sex')}
+                    />
+                  )}
+                />
+                {errors.sex && (
+                  <p className="mt-1 text-xs text-red-500">{errors.sex.message as string}</p>
+                )}
+              </div>
+
+              {/* Estado Civil */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Estado Civil <span className="text-red-500">*</span>
+                </label>
+                <Controller
+                  name="civilStatus"
+                  control={control}
+                  render={({ field }) => (
+                    <CustomSelect
+                      id="civilStatus"
+                      options={(options["Registro Civil"] || []).map(o => ({ value: String(o.value), label: o.label }))}
+                      placeholder="Seleccionar"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={String(field.value || "")}
+                      disabled={viewOnlyMode}
+                      error={!!errors.civilStatus}
+                      success={isFieldValid('civilStatus')}
+                      onAddNew={openAddValueModal ? () => openAddValueModal("Registro Civil", "civilStatus", "Agregar Estado Civil") : undefined}
+                      addNewLabel="Agregar Estado Civil"
+                    />
+                  )}
+                />
+                {errors.civilStatus && (
+                  <p className="mt-1 text-xs text-red-500">{errors.civilStatus.message as string}</p>
+                )}
+              </div>
+
+              {/* Teléfono */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Teléfono <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <Controller
+                      name="phoneAreaCode"
+                      control={control}
+                      render={({ field }) => (
+                        <CustomSelect
+                          id="phoneAreaCode"
+                          options={(options["PREFIJO"] || []).map(o => ({ value: String(o.value), label: o.label }))}
+                          placeholder="0412"
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          value={String(field.value ?? "")}
+                          disabled={viewOnlyMode}
+                          error={!!errors.phoneAreaCode}
+                          onAddNew={openAddValueModal ? () => openAddValueModal("PREFIJO", "phoneAreaCode", "Agregar Prefijo Telefónico") : undefined}
+                          addNewLabel="Nueva opción"
+                        />
+                      )}
+                    />
+                    {errors.phoneAreaCode && (
+                      <p className="mt-1 text-xs text-red-500">{errors.phoneAreaCode.message as string}</p>
+                    )}
+                  </div>
+                  <div className="col-span-3">
+                    <Input
+                      value={displayPhoneNumber ?? watch("phoneNumber") ?? ""}
+                      onChange={handlePhoneNumberChange}
+                      placeholder="123-4567"
+                      disabled={viewOnlyMode}
+                      maxLength={8}
+                      error={!!errors.phoneNumber}
+                      success={isFieldValid('phoneNumber')}
+                      hint={errors.phoneNumber?.message as string}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Email (col-span-2) */}
+              <div className="md:col-span-2">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Correo Electrónico <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  {...register("email")}
+                  type="email"
+                  placeholder="correo@ejemplo.com"
+                  disabled={viewOnlyMode}
+                  autoComplete="off"
+                  error={!!errors.email}
+                  success={isFieldValid('email')}
+                  hint={
+                    isCheckingEmail
+                      ? "Verificando disponibilidad..."
+                      : (errors.email?.message as string)
+                  }
+                  onChange={(e) => {
+                    const upper = e.target.value.toUpperCase();
+                    setValue("email", upper, { shouldValidate: true, shouldDirty: true });
+                  }}
+                  onBlur={(e) => {
+                    register("email").onBlur(e);
+                    handleEmailBlur?.(e);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ======================== Laboral ======================== */}
           <div hidden={tabsState.activeTab !== 'laboral'} role="tabpanel">
             <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Información Laboral</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -1215,6 +1493,8 @@ export default function TutorModal({
               </div>
             </div>
           </div>
+
+          {/* ======================== Asignaciones ======================== */}
           <div hidden={tabsState.activeTab !== 'asignaciones'} role="tabpanel">
             <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Asignaciones</h3>
             <div className="grid grid-cols-1 gap-6">
@@ -1255,7 +1535,7 @@ export default function TutorModal({
                 loading={isLoading || confirmSaving}
                 disabled={!allRequiredFilled || !isDirty || isLoading || confirmSaving}
               >
-                Guardar
+                {editingTutor || existingTutor ? 'Guardar Cambios' : 'Guardar Tutor'}
               </AsyncButton>
             </>
           )}

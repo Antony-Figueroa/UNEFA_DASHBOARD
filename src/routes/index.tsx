@@ -363,10 +363,6 @@ export const AppRoutes = () => {
               }
             />
             <Route
-              path="/configure/academic"
-              element={<Navigate to="/configure/organizacion?tab=academic" replace />}
-            />
-            <Route
               path="/notifications"
               element={<NotificationsPage />}
             />

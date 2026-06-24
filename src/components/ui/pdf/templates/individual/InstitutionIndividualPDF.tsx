@@ -262,21 +262,9 @@ export const InstitutionIndividualPDF: React.FC<InstitutionIndividualPDFProps> =
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={[styles.sectionIndicator, { backgroundColor: "#10B981" }]} />
-            <Text style={styles.sectionTitle}>Ubicación</Text>
+            <Text style={styles.sectionTitle}>Tipos de Práctica</Text>
           </View>
           <View style={styles.infoGrid}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Región</Text>
-              <Text style={styles.infoValue}>{institution.region || "-"}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Núcleo</Text>
-              <Text style={styles.infoValue}>{institution.nucleus || "-"}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Extensión</Text>
-              <Text style={styles.infoValue}>{institution.extension || "-"}</Text>
-            </View>
             {institution.practiceTypes && institution.practiceTypes.length > 0 && (
               <View style={styles.infoItemFull}>
                 <Text style={styles.infoLabel}>Tipos de Práctica</Text>

@@ -1099,14 +1099,19 @@ export default function EnrollmentModal({
                                     ? "No hay instituciones para esta carrera y tipo de práctica" 
                                     : "Seleccione la institución")
                                 : "Seleccione un estudiante primero"}
-                              onChange={(val) => {
-                                field.onChange(val);
-                                setValue("institutionResponsibleId", "");
-                              }}
-                              value={String(field.value)}
-                              className="rounded-xl h-[48px]"
-                              disabled={!selectedPracticeType || !careerId}
-                            />
+                               onChange={(val) => {
+                                 field.onChange(val);
+                                 setValue("institutionResponsibleId", "");
+                               }}
+                               value={String(field.value)}
+                               className="rounded-xl h-[48px]"
+                               disabled={!selectedPracticeType || !careerId}
+                               onAddNew={selectedPracticeType && careerId ? () => {
+                                 const evt = new CustomEvent("enrollment:addInstitution");
+                                 window.dispatchEvent(evt);
+                               } : undefined}
+                               addNewLabel={selectedPracticeType && careerId ? "Nueva Institución" : undefined}
+                             />
                             {selectedPracticeType && selectedCareerName && filteredInstitutions.length === 0 && (
                               <p className="text-[11px] font-bold text-amber-600">
                                 No hay instituciones para esta carrera y tipo de práctica. ¿Desea crear una?
@@ -1119,10 +1124,12 @@ export default function EnrollmentModal({
                     {errors.institutionId && (
                       <p className="text-[11px] font-bold text-error-500">{errors.institutionId.message}</p>
                     )}
+                    {selectedInstitutionId && (
                     <AddressCoincidencePanel
                       personId={studentPersonId}
                       institutionId={selectedInstitutionId}
                     />
+                  )}
                   </div>
 
                   {/* Responsable */}
@@ -1185,7 +1192,7 @@ export default function EnrollmentModal({
             className="w-full sm:w-auto min-h-12" 
             disabled={editingEntry ? !isDirty || !isValid : !isValid || !!preEnrollmentError}
           >
-            {editingEntry ? "Actualizar Inscripción" : "Guardar Inscripción"}
+            {editingEntry ? "Guardar Cambios" : "Guardar Inscripción"}
           </AsyncButton>
         </div>
       </ModalFooter>

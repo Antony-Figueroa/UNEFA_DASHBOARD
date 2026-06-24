@@ -304,17 +304,51 @@ export const getAddressCoincidence = async (req: Request, res: Response) => {
       return;
     }
 
+    // Query person's primary address via normalized tables
     const { data: personAddr, error: personError } = await supabase
-      .rpc('get_primary_address', { p_entity_type: 'person', p_entity_id: parseInt(person_id as string) });
+      .from('t_person_address')
+      .select(`
+        is_primary,
+        address:address_id (
+          address_id, street_address, reference,
+          parroquia:parroquia_id (
+            parroquia_id, name,
+            municipio:municipio_id (
+              municipio_id, name,
+              estado:estado_id ( estado_id, name )
+            )
+          )
+        )
+      `)
+      .eq('person_id', person_id)
+      .eq('is_primary', true)
+      .maybeSingle();
 
     if (personError) throw personError;
 
+    // Query institution's primary address via normalized tables
     const { data: instAddr, error: instError } = await supabase
-      .rpc('get_primary_address', { p_entity_type: 'institution', p_entity_id: parseInt(institution_id as string) });
+      .from('t_institution_address')
+      .select(`
+        is_primary,
+        address:address_id (
+          address_id, street_address, reference,
+          parroquia:parroquia_id (
+            parroquia_id, name,
+            municipio:municipio_id (
+              municipio_id, name,
+              estado:estado_id ( estado_id, name )
+            )
+          )
+        )
+      `)
+      .eq('institution_id', institution_id)
+      .eq('is_primary', true)
+      .maybeSingle();
 
     if (instError) throw instError;
 
-    if (!personAddr || !instAddr) {
+    if (!personAddr?.address || !instAddr?.address) {
       res.json({
         coincidence: null,
         message: 'Una o ambas entidades no tienen dirección principal',
@@ -322,38 +356,48 @@ export const getAddressCoincidence = async (req: Request, res: Response) => {
       return;
     }
 
-    const s = personAddr[0];
-    const i = instAddr[0];
+    // Type-safe access to nested arrays from Supabase select
+    const sAddr = personAddr.address as any;
+    const iAddr = instAddr.address as any;
+
+    const sParroquia = Array.isArray(sAddr.parroquia) ? sAddr.parroquia[0] : sAddr.parroquia;
+    const iParroquia = Array.isArray(iAddr.parroquia) ? iAddr.parroquia[0] : iAddr.parroquia;
+
+    const sMunicipio = Array.isArray(sParroquia?.municipio) ? sParroquia.municipio[0] : sParroquia?.municipio;
+    const iMunicipio = Array.isArray(iParroquia?.municipio) ? iParroquia.municipio[0] : iParroquia?.municipio;
+
+    const sEstado = Array.isArray(sMunicipio?.estado) ? sMunicipio.estado[0] : sMunicipio?.estado;
+    const iEstado = Array.isArray(iMunicipio?.estado) ? iMunicipio.estado[0] : iMunicipio?.estado;
 
     const coincidence = {
-      level: s.parroquia_id === i.parroquia_id ? 'SAME_PARROQUIA'
-        : s.municipio_id === i.municipio_id ? 'SAME_MUNICIPIO'
-        : s.estado_id === i.estado_id ? 'SAME_STATE'
+      level: sParroquia?.parroquia_id === iParroquia?.parroquia_id ? 'SAME_PARROQUIA'
+        : sMunicipio?.municipio_id === iMunicipio?.municipio_id ? 'SAME_MUNICIPIO'
+        : sEstado?.estado_id === iEstado?.estado_id ? 'SAME_STATE'
         : 'DIFFERENT_STATE',
-      state_match: s.estado_id === i.estado_id,
-      municipality_match: s.municipio_id === i.municipio_id,
-      parish_match: s.parroquia_id === i.parroquia_id,
+      state_match: sEstado?.estado_id === iEstado?.estado_id,
+      municipality_match: sMunicipio?.municipio_id === iMunicipio?.municipio_id,
+      parish_match: sParroquia?.parroquia_id === iParroquia?.parroquia_id,
       proximity_score:
-        s.parroquia_id === i.parroquia_id ? 10
-        : s.municipio_id === i.municipio_id ? 5
-        : s.estado_id === i.estado_id ? 3
+        sParroquia?.parroquia_id === iParroquia?.parroquia_id ? 10
+        : sMunicipio?.municipio_id === iMunicipio?.municipio_id ? 5
+        : sEstado?.estado_id === iEstado?.estado_id ? 3
         : 0,
     };
 
     res.json({
       student_address: {
-        estado_id: s.estado_id,
-        estado: s.estado_name,
-        municipio: s.municipio_name,
-        parroquia: s.parroquia_name,
-        street_address: s.street_address,
+        estado_id: sEstado?.estado_id,
+        estado: sEstado?.name,
+        municipio: sMunicipio?.name,
+        parroquia: sParroquia?.name,
+        street_address: sAddr.street_address,
       },
       institution_address: {
-        estado_id: i.estado_id,
-        estado: i.estado_name,
-        municipio: i.municipio_name,
-        parroquia: i.parroquia_name,
-        street_address: i.street_address,
+        estado_id: iEstado?.estado_id,
+        estado: iEstado?.name,
+        municipio: iMunicipio?.name,
+        parroquia: iParroquia?.name,
+        street_address: iAddr.street_address,
       },
       coincidence,
     });

@@ -243,6 +243,7 @@ app.use('/api/dashboard-config', dashboardConfigRoutes);
 app.use('/api/institutions', institutionsRoutes);
 app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
 app.get('/api/evaluations/system-config', getSystemConfig);
+app.use('/api/system-institution', systemInstitutionRoutes);
 
 // Apply protection to all subsequent /api routes
 app.use('/api', authenticateToken, restrictAsistente);
@@ -286,8 +287,6 @@ app.use('/api/reminder-config', reminderConfigRoutes);
 app.use('/api/email-templates', emailTemplatesRoutes);
 app.use('/api/knowledge-base', knowledgeBaseRoutes);
 app.use('/api/address', addressRoutes);
-app.use('/api/system-institution', systemInstitutionRoutes);
-app.use('/api/system-nucleus', systemNucleusRoutes);
 app.use('/api/proyeccion', proyeccionRoutes);
 app.use('/api/bulk-import', bulkImportRoutes);
 

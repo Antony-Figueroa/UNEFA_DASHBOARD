@@ -15,7 +15,7 @@ import { getResponsibleByCi } from "../services/institutionalResponsiblesService
 import { CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload, InstitutionalResponsible, CreateInstitutionPayload } from "../types";
 import { useLists } from "../../lists/hooks/useLists";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_DIGITS, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import Input from "../../../components/form/input/InputField";
 import CustomSelect from "../../../components/form/CustomSelect";
@@ -29,9 +29,10 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 import { checkAvailability as checkPersonAvailability } from "../../persons/services/personService";
-import PersonFormFields from "../../persons/components/PersonFormFields";
 import { useAcademicConfig } from "../../academic-config/hooks/useAcademicConfig";
 import { lookupCi } from "../../students/services/studentsService";
+import { PREFIX_OPTIONS } from "../../persons/types";
+import { Search } from "lucide-react";
 
 // Lazy load para evitar dependencia circular con InstitutionModal
 const InstitutionModal = lazy(() => import("./InstitutionModal"));
@@ -152,7 +153,7 @@ export default function InstitutionalResponsibleModal({
    preselectedInstitutionName,
    modalId,
    onEditExisting,
-}: InstitutionalResponsibleModalProps) {
+ }: InstitutionalResponsibleModalProps) {
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const { fetchMultipleLists } = useLists();
   const { addToast } = useToast();
@@ -180,8 +181,8 @@ export default function InstitutionalResponsibleModal({
    const [apiDataLoaded, setApiDataLoaded] = useState(false);
    const apiLoadedCiRef = useRef("");
    const { config: academicConfig } = useAcademicConfig();
-   const tabsState = useTabs({ defaultTab: "datos-personales" });
-   useEffect(() => { if (isOpen) tabsState.setActiveTab("datos-personales"); }, [isOpen]);
+   const tabsState = useTabs({ defaultTab: "identificacion" });
+   useEffect(() => { if (isOpen) tabsState.setActiveTab("identificacion"); }, [isOpen]);
 
 // Check if institutional responsible exists by CI
     const checkInstitutionalResponsibleByCi = async (ci: string) => {
@@ -235,7 +236,7 @@ export default function InstitutionalResponsibleModal({
     setValue,
     setError,
     clearErrors,
-    formState: { errors, isSubmitted, isDirty, isValid },
+    formState: { errors, isSubmitted, isDirty, isValid, touchedFields },
    } = useForm<RespFormData>({
     resolver: zodResolver(respSchema),
     mode: "onChange",
@@ -254,9 +255,33 @@ export default function InstitutionalResponsibleModal({
     },
   });
 
-  const TAB_IDS = ['datos-personales', 'instituciones'] as const;
+  const isFieldValid = useCallback((fieldName: string) =>
+    !!(touchedFields as any)[fieldName] && !(errors as any)[fieldName],
+    [touchedFields, errors]);
+
+  const handleNameChange = useCallback(
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value
+        .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, "")
+        .toUpperCase();
+      setValue(field as any, val, { shouldValidate: true, shouldDirty: true });
+    },
+    [setValue]
+  );
+
+  const ciDisabled = !!editingResp?.responsibleId;
+  const isFieldDisabled = useCallback((fieldName: string) => {
+    if (viewOnlyMode) return true;
+    const apiLock = apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true);
+    const nameFields = ["firstName", "middleName", "lastName", "secondLastName"];
+    if (apiLock && nameFields.includes(fieldName)) return true;
+    return false;
+  }, [viewOnlyMode, apiDataLoaded, academicConfig]);
+
+  const TAB_IDS = ['identificacion', 'contacto', 'instituciones'] as const;
   const TAB_FIELDS: Record<string, string[]> = {
-    'datos-personales': ['identificationPrefix', 'identificationNumber', 'firstName', 'middleName', 'lastName', 'secondLastName', 'phonePrefix', 'phoneNumber', 'email', 'title'],
+    'identificacion': ['identificationPrefix', 'identificationNumber', 'firstName', 'middleName', 'lastName', 'secondLastName'],
+    'contacto': ['phonePrefix', 'phoneNumber', 'email', 'title'],
     'instituciones': ['institutions'],
   };
   const errorsByTab = useMemo(() => {
@@ -840,46 +865,238 @@ export default function InstitutionalResponsibleModal({
 
             <Tabs
               options={[
-                { id: "datos-personales", label: "Datos Personales", errorCount: errorsByTab['datos-personales'] },
-                { id: "instituciones", label: "Instituciones y Cargo", errorCount: errorsByTab['instituciones'] }
+                { id: 'identificacion', label: 'Identificación', errorCount: errorsByTab['identificacion'] },
+                { id: 'contacto', label: 'Contacto', errorCount: errorsByTab['contacto'] },
+                { id: 'instituciones', label: 'Instituciones y Cargo', errorCount: errorsByTab['instituciones'] },
               ]}
               {...tabsState.tabProps}
               variant="modal"
               className="mb-6"
             />
 
-            <div className="space-y-6">
-              {/* Tab 1: Datos Personales */}
-              <div hidden={tabsState.activeTab !== "datos-personales"} role="tabpanel">
-                <PersonFormFields
-                  control={control}
-                  register={register}
-                  errors={errors}
-                  setValue={setValue}
-                  watch={watch}
-                  options={options}
-                  displayIdentificationNumber={displayIdentificationNumber}
-                  onIdentificationNumberChange={handleIdentificationNumberChange}
-                  onBlurCi={handleCiBlur}
-                  isCheckingCi={isCheckingCi}
-                  onCiLookup={handleCiLookup}
-                  isLookingUpCi={isLookingUpCi}
-                  onBlurEmail={handleEmailBlur}
-                  isCheckingEmail={isCheckingEmail}
-                  displayPhoneNumber={displayPhoneNumber}
-                  onPhoneNumberChange={handlePhoneNumberChange}
-                  onAddValue={(listName, field, title) =>
-                    openAddValueModal(listName, field as any, title)
-                  }
-                   viewOnlyMode={false}
-                  fieldLockOnApiLoad={apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true)}
-                  editingId={editingResp?.responsibleId ?? existingResponsible?.responsibleId ?? null}
-                  hiddenFields={["sex", "birthDate", "civilStatus", "address"]}
-                />
+            {/* ======================== Identificación ======================== */}
+            <div hidden={tabsState.activeTab !== 'identificacion'} role="tabpanel">
+              {existingPerson && (
+                <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-600 dark:bg-yellow-900/20 mb-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <strong>Persona existente:</strong>{' '}
+                      {existingPerson.firstName} {existingPerson.lastName} —{' '}
+                      {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
+                    </p>
+                    {onEditExisting && (
+                      <button type="button" onClick={onEditExisting} className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                        Editar esta persona
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Cédula de Identidad (col-span-2) */}
+                <div className="md:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Cédula de Identidad <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <Controller
+                        name="identificationPrefix"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomSelect
+                            id="identificationPrefix"
+                            options={(options["Nacionalidad"] || PREFIX_OPTIONS).map(o => ({ value: String(o.value), label: o.label }))}
+                            placeholder="V"
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            value={String(field.value || "V")}
+                            disabled={ciDisabled}
+                            error={!!errors.identificationPrefix}
+                          />
+                        )}
+                      />
+                      {errors.identificationPrefix && (
+                        <p className="mt-1 text-xs text-red-500">{errors.identificationPrefix.message as string}</p>
+                      )}
+                    </div>
+                    <div className="md:col-span-3 relative">
+                      <Input
+                        value={displayIdentificationNumber}
+                        onChange={handleIdentificationNumberChange}
+                        onBlur={handleCiBlur}
+                        placeholder="V-12.345.678"
+                        disabled={ciDisabled}
+                        maxLength={CEDULA_MAX_LENGTH}
+                        autoComplete="off"
+                        className="tracking-widest"
+                        error={!!errors.identificationNumber}
+                        success={isFieldValid('identificationNumber')}
+                        hint={
+                          errors.identificationNumber?.message as string
+                          || (isCheckingCi ? "Verificando disponibilidad..."
+                          : isLookingUpCi ? "Consultando SENIAT..."
+                          : undefined)
+                        }
+                      />
+                      {!ciDisabled && (
+                        <button
+                          type="button"
+                          onClick={handleCiLookup}
+                          disabled={isLookingUpCi}
+                          title="Buscar datos en SENIAT / CNE"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 transition-colors disabled:opacity-50"
+                        >
+                          <Search className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-                {/* Título */}
-                <div className="mt-6">
-                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Título</label>
+                {/* Nombres */}
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Primer Nombre <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    {...register("firstName")}
+                    onChange={handleNameChange("firstName")}
+                    placeholder="Primer nombre"
+                    disabled={isFieldDisabled("firstName")}
+                    error={!!errors.firstName}
+                    success={isFieldValid('firstName')}
+                    hint={errors.firstName?.message as string}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Segundo Nombre
+                  </label>
+                  <Input
+                    {...register("middleName")}
+                    onChange={handleNameChange("middleName")}
+                    placeholder="Segundo nombre (opcional)"
+                    disabled={isFieldDisabled("middleName")}
+                    error={!!errors.middleName}
+                    success={isFieldValid('middleName')}
+                    hint={errors.middleName?.message as string}
+                  />
+                </div>
+
+                {/* Apellidos */}
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Primer Apellido <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    {...register("lastName")}
+                    onChange={handleNameChange("lastName")}
+                    placeholder="Primer apellido"
+                    disabled={isFieldDisabled("lastName")}
+                    error={!!errors.lastName}
+                    success={isFieldValid('lastName')}
+                    hint={errors.lastName?.message as string}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Segundo Apellido
+                  </label>
+                  <Input
+                    {...register("secondLastName")}
+                    onChange={handleNameChange("secondLastName")}
+                    placeholder="Segundo apellido (opcional)"
+                    disabled={isFieldDisabled("secondLastName")}
+                    error={!!errors.secondLastName}
+                    success={isFieldValid('secondLastName')}
+                    hint={errors.secondLastName?.message as string}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ======================== Contacto ======================== */}
+            <div hidden={tabsState.activeTab !== 'contacto'} role="tabpanel">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Teléfono */}
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Teléfono <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <Controller
+                        name="phonePrefix"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomSelect
+                            id="phonePrefix"
+                            options={(options["PREFIJO"] || []).map(o => ({ value: String(o.value), label: o.label }))}
+                            placeholder="0412"
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            value={String(field.value ?? "")}
+                            disabled={viewOnlyMode}
+                            error={!!errors.phonePrefix}
+                            onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Prefijo Telefónico")}
+                            addNewLabel="Nueva opción"
+                          />
+                        )}
+                      />
+                      {errors.phonePrefix && (
+                        <p className="mt-1 text-xs text-red-500">{errors.phonePrefix.message as string}</p>
+                      )}
+                    </div>
+                    <div className="col-span-3">
+                      <Input
+                        value={displayPhoneNumber ?? watch("phoneNumber") ?? ""}
+                        onChange={handlePhoneNumberChange}
+                        placeholder="123-4567"
+                        disabled={viewOnlyMode}
+                        maxLength={8}
+                        error={!!errors.phoneNumber}
+                        success={isFieldValid('phoneNumber')}
+                        hint={errors.phoneNumber?.message as string}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Correo Electrónico <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    {...register("email")}
+                    type="email"
+                    placeholder="correo@ejemplo.com"
+                    disabled={viewOnlyMode}
+                    autoComplete="off"
+                    error={!!errors.email}
+                    success={isFieldValid('email')}
+                    hint={
+                      isCheckingEmail
+                        ? "Verificando disponibilidad..."
+                        : (errors.email?.message as string)
+                    }
+                    onChange={(e) => {
+                      const upper = e.target.value.toUpperCase();
+                      setValue("email", upper, { shouldValidate: true, shouldDirty: true });
+                    }}
+                    onBlur={(e) => {
+                      register("email").onBlur(e);
+                      handleEmailBlur?.(e);
+                    }}
+                  />
+                </div>
+
+                {/* Título (col-span-2) */}
+                <div className="md:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Título / Cargo Académico
+                  </label>
                   <Controller
                     name="title"
                     control={control}
@@ -903,124 +1120,124 @@ export default function InstitutionalResponsibleModal({
                   )}
                 </div>
               </div>
+            </div>
 
-              {/* Tab 2: Instituciones */}
-              <div hidden={tabsState.activeTab !== "instituciones"} role="tabpanel">
-                 <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Empresas o Instituciones *</label>
-                {preselectedInstitutionId ? (
-                  <div className="space-y-2">
-                    <div className="px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-lg flex items-center justify-between">
-                      <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">
-                        {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Empresa o Institución seleccionada"}
-                      </p>
-                    </div>
-                        <Controller
-                      name="institutions"
-                      control={control}
-                      render={({ field }) => {
-                        const { value, onChange } = field;
-                        const inst = (value || []).find((i: any) => String(i.institutionId) === String(preselectedInstitutionId));
-                        const currentCargo = inst?.cargo || "";
-                        return (
-                          <Input
-                            placeholder="Cargo en esta empresa (ej: Gerente, Supervisor)"
-                            className="uppercase"
-                            value={currentCargo}
-                            
-                            onChange={(e) => {
-                              const newValue = (value || []).map((i: any) => 
-                                String(i.institutionId) === String(preselectedInstitutionId)
-                                  ? { ...i, cargo: e.target.value.toUpperCase() }
-                                  : i
-                              );
-                              onChange(newValue);
-                            }}
-                          />
-                        );
-                      }}
-                    />
+            {/* ======================== Instituciones ======================== */}
+            <div hidden={tabsState.activeTab !== "instituciones"} role="tabpanel">
+               <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Empresas o Instituciones *</label>
+              {preselectedInstitutionId ? (
+                <div className="space-y-2">
+                  <div className="px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-lg flex items-center justify-between">
+                    <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">
+                      {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Empresa o Institución seleccionada"}
+                    </p>
                   </div>
-                ) : (
-                  <Controller
+                      <Controller
                     name="institutions"
                     control={control}
-                    render={({ field: { value, onChange } }) => {
-                      const selectedInstitutions = value || [];
-                      
-                      const handleAddInstitution = (institutionId: string) => {
-                        const institutionName = institutionOptions.find(o => o.value === institutionId)?.label || "";
-                        onChange([...selectedInstitutions, { institutionId, institutionName, cargo: "" }]);
-                      };
-                      
-                      const handleRemoveInstitution = (institutionId: string) => {
-                        onChange(selectedInstitutions.filter((i: any) => i.institutionId !== institutionId));
-                      };
-                      
-                      const handleCargoChange = (institutionId: string, cargo: string) => {
-                        onChange(selectedInstitutions.map((i: any) => 
-                          i.institutionId === institutionId 
-                            ? { ...i, cargo: cargo.toUpperCase() }
-                            : i
-                        ));
-                      };
-
+                    render={({ field }) => {
+                      const { value, onChange } = field;
+                      const inst = (value || []).find((i: any) => String(i.institutionId) === String(preselectedInstitutionId));
+                      const currentCargo = inst?.cargo || "";
                       return (
-                        <div className="space-y-2">
-                          <CustomSelect
-                            id="add-institution"
-                            options={institutionOptions
-                              .filter(opt => !selectedInstitutions.some((s: any) => s.institutionId === opt.value))
-                              .map(opt => ({ value: String(opt.value), label: opt.label }))
-                            }
-onChange={(val) => {
-                              if (val) handleAddInstitution(val);
-                            }}
-                            placeholder="Agregar empresa o institución..."
-                            
-                            onAddNew={() => setIsNewInstitutionModalOpen(true)}
-                            addNewLabel="Crear nueva empresa o institución"
-                          />
+                        <Input
+                          placeholder="Cargo en esta empresa (ej: Gerente, Supervisor)"
+                          className="uppercase"
+                          value={currentCargo}
                           
-                          {selectedInstitutions.length > 0 && (
-                            <div className="space-y-2 mt-2">
-                              {selectedInstitutions.map((inst: any) => (
-                                <div key={inst.institutionId} className="flex items-center gap-2 p-2 rounded-lg border bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate text-gray-700 dark:text-gray-300">
-                                      {inst.institutionName || institutionOptions.find(o => o.value === inst.institutionId)?.label || "Empresa o Institución"}
-                                    </p>
-                                  </div>
-                                  <input
-                                    type="text"
-                                    placeholder="Cargo"
-                                    className="w-32 px-2 py-1 text-xs uppercase border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
-                                    value={inst.cargo || ""}
-                                    onChange={(e) => handleCargoChange(inst.institutionId, e.target.value)}
-                                  />
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveInstitution(inst.institutionId)}
-                                      className="text-red-500 hover:text-red-700"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                      </svg>
-                                    </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                          onChange={(e) => {
+                            const newValue = (value || []).map((i: any) => 
+                              String(i.institutionId) === String(preselectedInstitutionId)
+                                ? { ...i, cargo: e.target.value.toUpperCase() }
+                                : i
+                            );
+                            onChange(newValue);
+                          }}
+                        />
                       );
                     }}
                   />
-                )}
-                {errors.institutions && (
-                  <p className="mt-1 text-[11px] font-medium text-red-500">
-                    {errors.institutions.message as string}
-                  </p>
-                )}
-              </div>
+                </div>
+              ) : (
+                <Controller
+                  name="institutions"
+                  control={control}
+                  render={({ field: { value, onChange } }) => {
+                    const selectedInstitutions = value || [];
+                    
+                    const handleAddInstitution = (institutionId: string) => {
+                      const institutionName = institutionOptions.find(o => o.value === institutionId)?.label || "";
+                      onChange([...selectedInstitutions, { institutionId, institutionName, cargo: "" }]);
+                    };
+                    
+                    const handleRemoveInstitution = (institutionId: string) => {
+                      onChange(selectedInstitutions.filter((i: any) => i.institutionId !== institutionId));
+                    };
+                    
+                    const handleCargoChange = (institutionId: string, cargo: string) => {
+                      onChange(selectedInstitutions.map((i: any) => 
+                        i.institutionId === institutionId 
+                          ? { ...i, cargo: cargo.toUpperCase() }
+                          : i
+                      ));
+                    };
+
+                    return (
+                      <div className="space-y-2">
+                        <CustomSelect
+                          id="add-institution"
+                          options={institutionOptions
+                            .filter(opt => !selectedInstitutions.some((s: any) => s.institutionId === opt.value))
+                            .map(opt => ({ value: String(opt.value), label: opt.label }))
+                          }
+onChange={(val) => {
+                              if (val) handleAddInstitution(val);
+                            }}
+                          placeholder="Agregar empresa o institución..."
+                          
+                          onAddNew={() => setIsNewInstitutionModalOpen(true)}
+                          addNewLabel="Crear nueva empresa o institución"
+                        />
+                        
+                        {selectedInstitutions.length > 0 && (
+                          <div className="space-y-2 mt-2">
+                            {selectedInstitutions.map((inst: any) => (
+                              <div key={inst.institutionId} className="flex items-center gap-2 p-2 rounded-lg border bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate text-gray-700 dark:text-gray-300">
+                                    {inst.institutionName || institutionOptions.find(o => o.value === inst.institutionId)?.label || "Empresa o Institución"}
+                                  </p>
+                                </div>
+                                <input
+                                  type="text"
+                                  placeholder="Cargo"
+                                  className="w-32 px-2 py-1 text-xs uppercase border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+                                  value={inst.cargo || ""}
+                                  onChange={(e) => handleCargoChange(inst.institutionId, e.target.value)}
+                                />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveInstitution(inst.institutionId)}
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }}
+                />
+              )}
+              {errors.institutions && (
+                <p className="mt-1 text-[11px] font-medium text-red-500">
+                  {errors.institutions.message as string}
+                </p>
+              )}
             </div>
 
           {/* Navegación entre tabs */}
@@ -1064,7 +1281,7 @@ onChange={(val) => {
                     }
                   }}
                 >
-                  Actualizar
+                  Guardar Cambios
                 </AsyncButton>
 ) : (
                 <AsyncButton 
@@ -1073,13 +1290,13 @@ onChange={(val) => {
                   className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
                   loading={isLoading}
                   disabled={!isValid}
-                  onClick={() => {
+                    onClick={() => {
                     handleFormSubmit().catch(err => {
                       console.error("[InstitutionalResponsibleModal] Error en validación:", err);
                     });
                   }}
                 >
-                  Guardar
+                  Guardar Responsable
                 </AsyncButton>
               )}
            </div>

@@ -532,6 +532,34 @@ export const deletePreEnrollment = async (req: Request, res: Response) => {
   }
 };
 
+export const togglePreEnrollmentStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const result = await dbManager.withRetry(async (supabase) => {
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('PROFESSIONAL_PRACTICE_ID, STATUS')
+        .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
+        .single();
+
+      const { error } = await supabase
+        .from(TABLE_NAME)
+        .update({ STATUS: status ? 1 : 0 })
+        .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id));
+
+      if (error) throw error;
+
+      return { oldStatus: oldData?.STATUS };
+    }, 'togglePreEnrollmentStatus');
+
+    res.json({ success: true, message: status ? 'Pre-inscripción activada' : 'Pre-inscripción inactivada' });
+  } catch (error) {
+    handleDbError(res, error);
+  }
+};
+
 /**
  * Batch pre-enroll multiple students at once.
  * Validates each student independently and returns per-item results.

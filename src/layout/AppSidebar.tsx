@@ -229,7 +229,6 @@ const navItems: NavItem[] = [
       // 🗂️ Sistema
       { name: "SISTEMA", isHeader: true },
       { name: "Parámetros", path: "/configure/settings", permissions: ['config:view'] },
-      { name: "Académicos", path: "/configure/academic", permissions: ['academic-config:edit'] },
       { name: "Organización", path: "/configure/organizacion", permissions: ['config:view'] },
       { name: "Listas (Combos)", path: "/configure/lists", permissions: ['lists:view'] },
       { name: "Respaldos", path: "/configure/backups", permissions: ['backups:view'] },

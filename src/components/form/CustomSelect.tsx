@@ -49,6 +49,8 @@ export interface CustomSelectProps {
   onBlur?: () => void;
   /** Indica si hay un error en la validación. */
   error?: boolean;
+  /** Indica si el valor es válido (verde). */
+  success?: boolean;
   /** Acción opcional para agregar un nuevo valor desde el selector. */
   onAddNew?: () => void;
   /** Etiqueta opcional para la acción de agregar nuevo. */
@@ -81,6 +83,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   disabled = false,
   onBlur,
   error = false,
+  success = false,
   onAddNew,
   addNewLabel,
   searchable,
@@ -378,7 +381,9 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
             ? "cursor-not-allowed bg-gray-100 opacity-50 border-border-medium dark:bg-bg-dark/50 dark:text-text-tertiary"
             : error
               ? "border-error-500 focus:ring-error-500/10 dark:border-error-800"
-              : isOpen
+              : success
+                ? "border-success-500 focus:ring-success-500/10 dark:border-success-800"
+                : isOpen
                 ? "border-brand-500 ring-4 ring-brand-500/10 dark:border-brand-400"
                 : "border-border-medium bg-transparent hover:border-brand-300 focus:border-brand-300 focus:ring-4 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark",
           selectedValue ? "text-text-primary dark:text-text-emphasis" : "text-text-tertiary"

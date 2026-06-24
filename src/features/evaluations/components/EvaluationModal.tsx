@@ -246,7 +246,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     ? `Editar ${EVALUATOR_TYPE_LABELS[evaluatorType]}`
     : `Nueva ${EVALUATOR_TYPE_LABELS[evaluatorType]}`;
 
-  const submitLabel = isEditing ? 'Actualizar Evaluación' : 'Guardar Evaluación';
+  const submitLabel = isEditing ? 'Guardar Cambios' : 'Guardar Evaluación';
 
   return (
     <Modal

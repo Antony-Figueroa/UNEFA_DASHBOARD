@@ -17,12 +17,6 @@ export interface Institution {
   fiscalAddress: string;
   /** Contact phone number */
   phone: string;
-  /** Geographic region */
-  region: string;
-  /** University nucleus */
-  nucleus: string;
-  /** Extension of the nucleus */
-  extension: string;
   /** Category of institution (e.g., Public, Private) */
   institutionType: string;
   /** Active status of the institution */

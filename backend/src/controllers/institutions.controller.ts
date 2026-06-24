@@ -13,10 +13,10 @@ const CACHE_TTL = 300000; // 5 minutos cache
 
 const INSTITUTION_COLUMNS_TO_AUDIT = [
   'INSTITUTION_NAME', 'INSTITUTION_ADDRESS', 'INSTITUTION_CONTACT',
-  'REGION', 'NUCLEUS', 'EXTENSION', 'INSTITUTION_TYPE', 'STATUS', 'RIF'
+  'INSTITUTION_TYPE', 'STATUS', 'RIF'
 ];
 
-const INSTITUTION_COLUMNS = 'INSTITUTION_ID, INSTITUTION_NAME, INSTITUTION_ADDRESS, INSTITUTION_CONTACT, PRACTICE_TYPE, REGION, NUCLEUS, EXTENSION, CREATION_DATE, INSTITUTION_TYPE, STATUS, RIF';
+const INSTITUTION_COLUMNS = 'INSTITUTION_ID, INSTITUTION_NAME, INSTITUTION_ADDRESS, INSTITUTION_CONTACT, PRACTICE_TYPE, CREATION_DATE, INSTITUTION_TYPE, STATUS, RIF';
 const INSTITUTION_INTERNSHIP_TYPE_TABLE = 't_institution_internship_type';
 
 interface AppError extends Error {
@@ -53,9 +53,6 @@ interface DBInstitution {
   INSTITUTION_NAME: string;
   INSTITUTION_ADDRESS: string;
   INSTITUTION_CONTACT: string;
-  REGION: string;
-  NUCLEUS: string;
-  EXTENSION: string;
   CREATION_DATE: string;
   INSTITUTION_TYPE: string;
   PRACTICE_TYPE: string;
@@ -72,9 +69,6 @@ const mapDBToFrontend = (i: any) => ({
   name: i.INSTITUTION_NAME,
   fiscalAddress: i.INSTITUTION_ADDRESS,
   phone: i.INSTITUTION_CONTACT,
-  region: i.REGION, // This will be replaced by getFullName later in getInstitutions
-  nucleus: i.NUCLEUS, // This will be replaced by getFullName later in getInstitutions
-  extension: i.EXTENSION, // This will be replaced by getFullName later in getInstitutions
   institutionType: i.INSTITUTION_TYPE, // This will be replaced by getFullName later in getInstitutions
   practiceTypes: i.PRACTICE_TYPE ? [i.PRACTICE_TYPE] : [],
   // internshipTypeId should come from PRACTICE_TYPE (stored as '1', '2', '3')
@@ -233,9 +227,6 @@ export const getInstitutions = async (req: Request, res: Response) => {
         }
         return {
           ...frontend,
-          region: getFullName(i.REGION),
-          nucleus: getFullName(i.NUCLEUS),
-          extension: getFullName(i.EXTENSION),
           institutionType: getFullName(i.INSTITUTION_TYPE),
           practiceType: practiceTypeName,
           practiceTypes: pTypes
@@ -364,9 +355,6 @@ export const getInstitutionById = async (req: Request, res: Response) => {
     // 3. Return mapped result
     const result = {
       ...mapDBToFrontend(data),
-      region: getFullName(data.REGION),
-      nucleus: getFullName(data.NUCLEUS),
-      extension: getFullName(data.EXTENSION),
       institutionType: getFullName(data.INSTITUTION_TYPE),
       practiceType: getFullName(data.PRACTICE_TYPE)
     };
@@ -392,9 +380,9 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
       INSTITUTION_NAME: sanitizeText(i.name) ?? '',
       INSTITUTION_ADDRESS: sanitizeText(i.fiscalAddress),
       INSTITUTION_CONTACT: i.phone,
-      REGION: sanitizeText(i.region),
-      NUCLEUS: sanitizeText(i.nucleus),
-      EXTENSION: sanitizeText(i.extension),
+      REGION: '',
+      NUCLEUS: '',
+      EXTENSION: '',
       INSTITUTION_TYPE: sanitizeText(i.institutionType),
       PRACTICE_TYPE: i.internshipTypeId || i.practiceType || '1', // Manejar ambos nombres por compatibilidad
       STATUS: i.status ? 1 : 0,
@@ -404,6 +392,22 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
     };
 
     const data = await dbManager.withRetry(async (supabase) => {
+      // Heredar región/núcleo/extensión de la configuración institucional
+      try {
+        const { data: sysInst } = await supabase
+          .from('t_system_institution')
+          .select('region, nucleus, extension')
+          .eq('status', 1)
+          .maybeSingle();
+        if (sysInst) {
+          dbData.REGION = sysInst.region || '';
+          dbData.NUCLEUS = sysInst.nucleus || '';
+          dbData.EXTENSION = sysInst.extension || '';
+        }
+      } catch (_err) {
+        // si no existe la tabla o el registro, usar defaults vacíos
+      }
+
       const { data: inst, error } = await supabase
         .from(TABLE_NAME)
         .insert([dbData])
@@ -482,9 +486,6 @@ export const updateInstitution = async (req: AuthRequest, res: Response) => {
     if (i.name !== undefined) dbData.INSTITUTION_NAME = sanitizeText(i.name) ?? '';
     if (i.fiscalAddress !== undefined) dbData.INSTITUTION_ADDRESS = sanitizeText(i.fiscalAddress);
     if (i.phone !== undefined) dbData.INSTITUTION_CONTACT = i.phone;
-    if (i.region !== undefined) dbData.REGION = sanitizeText(i.region);
-    if (i.nucleus !== undefined) dbData.NUCLEUS = sanitizeText(i.nucleus);
-    if (i.extension !== undefined) dbData.EXTENSION = sanitizeText(i.extension);
     if (i.institutionType !== undefined) dbData.INSTITUTION_TYPE = sanitizeText(i.institutionType);
     if (i.practiceType !== undefined) dbData.PRACTICE_TYPE = i.practiceType;
     if (i.internshipTypeId !== undefined) dbData.PRACTICE_TYPE = i.internshipTypeId;

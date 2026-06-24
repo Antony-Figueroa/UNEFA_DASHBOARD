@@ -267,7 +267,7 @@ export default function ActivityLogModal({
             loading={isLoading}
             disabled={!isDirty && isEditing}
           >
-            {isEditing ? 'Actualizar' : 'Guardar'}
+            {isEditing ? 'Guardar Cambios' : 'Guardar Registro'}
           </AsyncButton>
         </ModalFooter>
       </form>

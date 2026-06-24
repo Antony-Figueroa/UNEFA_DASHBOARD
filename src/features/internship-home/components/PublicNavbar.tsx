@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { name: "Inicio", path: "/" },
   { name: "Nosotros", path: "/nosotros" },
   { name: "Carreras", path: "/carreras" },
-  { name: "Pasantias", path: "/pasantias" },
+  { name: "Pasantías", path: "/pasantias" },
 ];
 
 const PublicNavbar: React.FC = () => {
@@ -67,7 +67,7 @@ const PublicNavbar: React.FC = () => {
       ref={navRef}
       className="w-full bg-bg-main/80 backdrop-blur-md border-b border-border-light dark:bg-bg-dark/80 dark:border-border-dark sticky top-0 z-50" 
       role="navigation" 
-      aria-label="Navegacion principal"
+      aria-label="Navegación principal"
     >
       <div 
         className="absolute bottom-0 left-0 h-0.5 bg-brand-500 transition-all duration-150 ease-out z-10"
@@ -113,7 +113,7 @@ const PublicNavbar: React.FC = () => {
             <div className="hidden sm:flex items-center gap-3">
               <Link to="/signin">
                 <Button variant="primary" size="sm">
-                  Iniciar Sesion
+                  Iniciar Sesión
                 </Button>
               </Link>
             </div>
@@ -124,7 +124,7 @@ const PublicNavbar: React.FC = () => {
               onClick={() => setIsOpen(!isOpen)}
               aria-expanded={isOpen}
               aria-controls="mobile-menu"
-              aria-label={isOpen ? "Cerrar menu" : "Abrir menu"}
+              aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
             >
               <svg
                 className="h-6 w-6"
@@ -189,7 +189,7 @@ const PublicNavbar: React.FC = () => {
               <div className="pt-4 border-t border-border-light dark:border-border-dark sm:hidden">
                 <Link to="/signin" onClick={() => setIsOpen(false)}>
                   <Button variant="primary" className="w-full justify-center py-3">
-                    Iniciar Sesion
+                    Iniciar Sesión
                   </Button>
                 </Link>
               </div>

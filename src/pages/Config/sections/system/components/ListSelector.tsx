@@ -47,7 +47,7 @@ const ListSelector = ({
             </span>
           </span>
         }
-        desc="Seleccioná una lista para ver sus valores"
+        desc="Selecciona una lista para ver sus valores"
       >
         {/* Buscador integrado en el panel */}
         <SearchInput

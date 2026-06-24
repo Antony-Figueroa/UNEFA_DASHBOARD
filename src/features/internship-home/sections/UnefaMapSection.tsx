@@ -55,7 +55,7 @@ const UnefaMapSection: React.FC = () => {
     },
     {
       id: "satellite" as const,
-      label: "Satelite",
+      label: "Satélite",
       icon: (
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
@@ -90,11 +90,11 @@ const UnefaMapSection: React.FC = () => {
               transition={{ duration: 0.5 }}
             >
               <h2 className="text-3xl md:text-4xl font-bold text-text-primary dark:text-white mb-4">
-                Ubicacion
+                Ubicación
               </h2>
               <p className="text-lg text-text-secondary dark:text-text-tertiary leading-relaxed">
-                Nuestra sede principal de la Extension Araure esta ubicada en un punto clave de Portuguesa,
-                rodeada de servicios esenciales y facil acceso para toda la comunidad universitaria.
+                Nuestra sede principal de la Extensión Araure está ubicada en un punto clave de Portuguesa,
+                rodeada de servicios esenciales y fácil acceso para toda la comunidad universitaria.
               </p>
             </motion.div>
 
@@ -113,7 +113,7 @@ const UnefaMapSection: React.FC = () => {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-bold text-text-primary dark:text-white mb-1">Direccion</h4>
+                  <h4 className="font-bold text-text-primary dark:text-white mb-1">Dirección</h4>
                   <p className="text-sm text-text-secondary dark:text-text-tertiary">
                     Av. 23 con Calle 6, Araure 3303, Portuguesa, Venezuela.
                   </p>
@@ -135,7 +135,7 @@ const UnefaMapSection: React.FC = () => {
                 <div>
                   <h4 className="font-bold text-text-primary dark:text-white mb-1">Conectividad</h4>
                   <p className="text-sm text-text-secondary dark:text-text-tertiary">
-                    A metros del Terminal de Araure y cerca de las principales vias de Acarigua.
+                    A metros del Terminal de Araure y cerca de las principales vías de Acarigua.
                   </p>
                 </div>
               </motion.div>

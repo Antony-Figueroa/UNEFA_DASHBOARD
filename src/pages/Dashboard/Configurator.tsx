@@ -241,7 +241,7 @@ export default function DashboardConfigurator() {
               Configurador de Dashboards
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Personalizá qué widgets ve cada rol, el orden, el tamaño y el color de acento.
+               Personaliza qué widgets ve cada rol, el orden, el tamaño y el color de acento.
             </p>
           </div>
 
@@ -328,7 +328,7 @@ export default function DashboardConfigurator() {
                     </span>
                   </span>
                 }
-                desc="Arrastrá para reordenar · Usá color y tamaño para personalizar"
+                desc="Arrastra para reordenar · Usa color y tamaño para personalizar"
               >
                 <div ref={parentRef} className="space-y-2">
                   {dndWidgets.length === 0 ? (
@@ -337,7 +337,7 @@ export default function DashboardConfigurator() {
                         No hay widgets activos
                       </p>
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                        Agregalos desde el panel de disponibles
+                        Agrégalos desde el panel de disponibles
                       </p>
                     </div>
                   ) : (
@@ -447,7 +447,7 @@ export default function DashboardConfigurator() {
                     </span>
                   </span>
                 }
-                desc="Hacé clic para agregar al dashboard"
+                desc="Haz clic para agregar al dashboard"
               >
                 <div className="space-y-2">
                   {availableWidgets.length === 0 ? (

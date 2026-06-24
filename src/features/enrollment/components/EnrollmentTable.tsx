@@ -359,9 +359,9 @@ export default function EnrollmentTable({
                 </div>
                 <h3 className="text-lg font-semibold text-error-600 dark:text-error-400">Error de conexión</h3>
                 <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
-                    no hay conexion a la bd
+                    No hay conexión a la BD
                 </p>
-                {error && error.message !== 'no hay conexion a la bd' && (
+                {error && error.message !== 'No hay conexión a la BD' && (
                     <div className="mt-4 text-xs text-error-500/70 italic">
                         Detalles: {error.message}
                     </div>
@@ -512,7 +512,7 @@ export default function EnrollmentTable({
                                 <div className="flex items-center">Tipo Práctica <SortIndicator column="practiceType" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("period")}>
-                                <div className="flex items-center">Periodo <SortIndicator column="period" /></div>
+                                <div className="flex items-center">Período <SortIndicator column="period" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
                         </TableRow>
@@ -627,7 +627,7 @@ export default function EnrollmentTable({
                                                 <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.practiceType}</p>
                                             </div>
                                             <div className="flex flex-col items-center col-span-2">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Periodo</p>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Período</p>
                                                 <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.period}</p>
                                             </div>
                                             <div className="flex flex-col items-center col-span-2">

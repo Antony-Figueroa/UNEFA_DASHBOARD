@@ -294,7 +294,7 @@ export default function BatchPreEnrollModal({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Carrera */}
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Carrera *</label>
+            <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Carrera <span className="text-red-500">*</span></label>
             <Controller
               name="careerId"
               control={control}
@@ -317,7 +317,7 @@ export default function BatchPreEnrollModal({
           {/* Semestre */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Semestre *</label>
+              <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Semestre <span className="text-red-500">*</span></label>
               <Badge color="info" variant="light" size="sm" className="font-bold text-[9px]">AUTO</Badge>
             </div>
             <Controller
@@ -342,7 +342,7 @@ export default function BatchPreEnrollModal({
 
           {/* Sección */}
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Sección *</label>
+            <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Sección <span className="text-red-500">*</span></label>
             <Controller
               name="section"
               control={control}
@@ -364,7 +364,7 @@ export default function BatchPreEnrollModal({
 
           {/* Régimen */}
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Régimen *</label>
+            <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Régimen <span className="text-red-500">*</span></label>
             <Controller
               name="regime"
               control={control}
@@ -387,7 +387,7 @@ export default function BatchPreEnrollModal({
           {/* Tipo de Práctica */}
           <div className="space-y-2 sm:col-span-2">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Tipo de Práctica *</label>
+              <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Tipo de Práctica <span className="text-red-500">*</span></label>
               <Badge color="info" variant="light" size="sm" className="font-bold text-[9px]">AUTO</Badge>
             </div>
             <Controller
@@ -412,7 +412,7 @@ export default function BatchPreEnrollModal({
 
           {/* Período */}
           <div className="space-y-2 sm:col-span-2">
-            <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Período Académico *</label>
+            <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Período Académico <span className="text-red-500">*</span></label>
             <Controller
               name="period"
               control={control}
@@ -512,7 +512,7 @@ export default function BatchPreEnrollModal({
           </div>
           <div>
             <h2 className="text-xl font-bold text-text-primary dark:text-white tracking-tight">
-              Preinscripción por Lote
+              Pre-Inscripción por Lote
             </h2>
             <p className="text-xs text-text-tertiary font-medium">
               {step === "form" && "Configure los campos comunes para la pre-inscripción masiva"}
@@ -545,7 +545,7 @@ export default function BatchPreEnrollModal({
                 disabled={!isValid}
                 className="h-10 px-6 rounded-xl font-bold text-sm bg-brand-600 hover:bg-brand-700"
               >
-                Preinscribir {students.length} estudiante(s)
+                Pre-inscribir {students.length} estudiante(s)
               </AsyncButton>
             </div>
           </div>

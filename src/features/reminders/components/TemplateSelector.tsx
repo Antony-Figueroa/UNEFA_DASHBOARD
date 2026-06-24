@@ -121,7 +121,7 @@ export const TemplateSelector = ({ onSelect, disabled }: TemplateSelectorProps) 
 
       {templates.length === 0 && !loading && (
         <p className="text-[11px] text-gray-400">
-          No hay plantillas disponibles. Creá una en Gestión de Plantillas.
+          No hay plantillas disponibles. Crea una en Gestión de Plantillas.
         </p>
       )}
     </div>

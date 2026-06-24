@@ -5,17 +5,17 @@ import { smoothScrollTo } from "../../../utils/scrollUtils";
 
 const PublicFooter: React.FC = () => {
   const resources = [
-    { name: "Reglamento de Prácticas", path: "/docs/reglamento PRACTICAS PROFESIONALES vigente.pdf" },
-    { name: "Carta de Postulación", path: "/docs/CARTA DE POSTULACION PP.pdf" },
-    { name: "Actas Evaluativas", path: "/docs/ACTAS EVALUATIVAS.pdf" },
-    { name: "Estructura del Informe", path: "/docs/ESTRUCTURA DEL INFORME.pdf" },
-    { name: "Guía Metodológica", path: "/docs/METODOLOGÍA.pdf" },
-    { name: "Guía de Prácticas", path: "/docs/PRACTICAS PROFESIONALES.pdf" },
+    { name: "Reglamento de Prácticas", path: "/docs/reglamento%20PRACTICAS%20PROFESIONALES%20vigente.pdf" },
+    { name: "Carta de Postulación", path: "/docs/CARTA%20DE%20POSTULACION%20PP.pdf" },
+    { name: "Actas Evaluativas", path: "/docs/ACTAS%20EVALUATIVAS.pdf" },
+    { name: "Estructura del Informe", path: "/docs/ESTRUCTURA%20DEL%20INFORME.pdf" },
+    { name: "Guía Metodológica", path: "/docs/METODOLOG%C3%8DA.pdf" },
+    { name: "Guía de Prácticas", path: "/docs/PRACTICAS%20PROFESIONALES.pdf" },
     { name: "Plan de la Patria 7T", path: "/docs/plan-de-la-patria-de-las-7t-uv-2.pdf" },
-    { name: "Constitución RBV", path: "/docs/CONSTITUCION RBV (1).pdf" },
-    { name: "Plan de la Patria 2019-2025", path: "/docs/Venezuela_Plan de la Patria 2019-2025 (2019).pdf" },
+    { name: "Constitución RBV", path: "/docs/CONSTITUCION%20RBV%20(1).pdf" },
+    { name: "Plan de la Patria 2019-2025", path: "/docs/Venezuela_Plan%20de%20la%20Patria%202019-2025%20(2019).pdf" },
     { name: "Formato de Membrete", path: "/docs/MEMBRETE.doc" },
-    { name: "Anexo: Portada", path: "/docs/ANEXO K_PORTADA.doc" },
+    { name: "Anexo: Portada", path: "/docs/ANEXO%20K_PORTADA.doc" },
   ];
 
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {

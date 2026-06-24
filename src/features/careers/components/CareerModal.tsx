@@ -429,7 +429,7 @@ export default function CareerModal({
                </div>
              )}
              <div className="md:col-span-2">
-               <label className="text-sm font-medium text-text-primary dark:text-white/90">Código *</label>
+               <label className="text-sm font-medium text-text-primary dark:text-white/90">Código <span className="text-red-500">*</span></label>
                <Input
                  {...register("careerCode")}
                  type="text"
@@ -450,7 +450,7 @@ export default function CareerModal({
              </div>
 
             <div className="md:col-span-2">
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombre de la Carrera *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombre de la Carrera <span className="text-red-500">*</span></label>
               <Input
                 {...register("careerName")}
                 placeholder="Ej: INGENIERÍA DE SISTEMAS"
@@ -466,7 +466,7 @@ export default function CareerModal({
             </div>
 
             <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Tipo de Carrera *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Tipo de Carrera <span className="text-red-500">*</span></label>
               <Controller
                 name="careerType"
                 control={control}
@@ -491,7 +491,7 @@ export default function CareerModal({
             </div>
 
             <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Semestre *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Semestre <span className="text-red-500">*</span></label>
               <Controller
                 name="semester"
                 control={control}
@@ -513,7 +513,7 @@ export default function CareerModal({
             </div>
 
             <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Nota mínima *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Nota mínima <span className="text-red-500">*</span></label>
               <Controller
                 name="minimumGrade"
                 control={control}
@@ -539,7 +539,7 @@ export default function CareerModal({
               )}
             </div>
             <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Abreviatura *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Abreviatura <span className="text-red-500">*</span></label>
               <Input
                 {...register("careerAbbreviation")}
                 type="text"
@@ -560,7 +560,7 @@ export default function CareerModal({
                 control={control}
                 render={({ field }) => (
                   <MultiSelect
-                    label="Tipos de Prácticas *"
+                    label={<span>Tipos de Prácticas <span className="text-red-500">*</span></span>}
                     options={mappedInternshipOptions}
                     value={field.value}
                     onBlur={field.onBlur}

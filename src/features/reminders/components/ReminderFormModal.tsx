@@ -366,7 +366,7 @@ const CalendarDatePicker = ({ selectedDate, onSelectDate, recurringEnabled, recu
         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-center gap-2 py-1">
             <CalendarIcon className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-400">Seleccioná un día en el calendario para programar el envío</span>
+            <span className="text-xs text-gray-400">Selecciona un día en el calendario para programar el envío</span>
           </div>
         </div>
       )}
@@ -387,13 +387,13 @@ interface ValidationErrors {
 const validateForm = (form: typeof FORM_DEFAULTS): ValidationErrors => {
   const errors: ValidationErrors = {};
   if (!form.name.trim()) errors.name = 'El nombre es obligatorio.';
-  if (!form.sendDate) errors.sendDate = 'Seleccioná una fecha de envío.';
+  if (!form.sendDate) errors.sendDate = 'Selecciona una fecha de envío.';
   if (form.recipients.roles.length === 0 && form.recipients.users.length === 0) {
-    errors.recipients = 'Seleccioná al menos un destinatario (grupo o usuario).';
+    errors.recipients = 'Selecciona al menos un destinatario (grupo o usuario).';
   }
   if (form.sendEmail) {
-    if (!form.templateTitle.trim()) errors.templateTitle = 'El título del correo es obligatorio si activás el envío por email.';
-    if (!form.templateMessage.trim()) errors.templateMessage = 'El mensaje del correo es obligatorio si activás el envío por email.';
+    if (!form.templateTitle.trim()) errors.templateTitle = 'El título del correo es obligatorio si activas el envío por correo electrónico.';
+    if (!form.templateMessage.trim()) errors.templateMessage = 'El mensaje del correo es obligatorio si activas el envío por correo electrónico.';
   }
   return errors;
 };
@@ -469,7 +469,7 @@ export const ReminderFormModal = ({
             {editingRule ? 'Editar recordatorio' : 'Nuevo recordatorio'}
           </span>
           <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-            Configurá la regla, la fecha de envío y los destinatarios.
+            Configura la regla, la fecha de envío y los destinatarios.
           </p>
         </div>
       </ModalHeader>
@@ -494,7 +494,7 @@ export const ReminderFormModal = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nombre *</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nombre <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   className={`w-full rounded-lg border ${errors.name && touched.name ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all placeholder:text-gray-400`}
@@ -538,7 +538,7 @@ export const ReminderFormModal = ({
             <SectionTitle
               icon={<ClockIcon className="w-4 h-4" />}
               title="¿Cuándo se envía?"
-              description="Seleccioná la fecha exacta de envío en el calendario."
+              description="Selecciona la fecha exacta de envío en el calendario."
             />
 
             <CalendarDatePicker
@@ -588,7 +588,7 @@ export const ReminderFormModal = ({
                 </svg>
               }
               title="Destinatarios"
-              description="Seleccioná a quiénes va dirigido el recordatorio."
+              description="Selecciona a quiénes va dirigido el recordatorio."
             />
             <RecipientSelector
               value={form.recipients}
@@ -628,7 +628,7 @@ export const ReminderFormModal = ({
                   className={`w-full rounded-lg border ${errors.templateMessage && touched.templateMessage ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all min-h-[80px] placeholder:text-gray-400 resize-y`}
                   value={form.templateMessage}
                   onChange={e => handleChange('templateMessage', e.target.value)}
-                  placeholder="Ej: Tenés {{count}} evaluación(es) sin calificar."
+                  placeholder="Ej: Tienes {{count}} evaluación(es) sin calificar."
                   rows={3}
                 />
                 {errors.templateMessage && touched.templateMessage && <p className="mt-1 text-[11px] text-red-500">{errors.templateMessage}</p>}
@@ -646,7 +646,7 @@ export const ReminderFormModal = ({
             <SectionTitle
               icon={<MailIcon className="w-4 h-4" />}
               title="Notificación por correo electrónico"
-              description="Además de la notificación in-app, podés enviar un email a los destinatarios."
+              description="Además de la notificación in-app, puedes enviar un correo electrónico a los destinatarios."
             />
 
             <div className="pl-12">
@@ -662,12 +662,12 @@ export const ReminderFormModal = ({
                   <MailIcon className="w-4 h-4 text-brand-500 mt-0.5 flex-shrink-0" />
                   <div className="text-[12px] text-gray-600 dark:text-gray-400 leading-relaxed">
                     <p className="font-medium text-gray-700 dark:text-gray-300 mb-0.5">Correo activado</p>
-                    <p>Los destinatarios recibirán un email con el título y mensaje configurados, además de la notificación dentro del sistema.</p>
+                    <p>Los destinatarios recibirán un correo electrónico con el título y mensaje configurados, además de la notificación dentro del sistema.</p>
                   </div>
                 </div>
               )}
               {!form.sendEmail && (
-                <p className="mt-2 text-[11px] text-gray-400 leading-relaxed">Solo se enviará una notificación dentro del sistema. Activá la opción si querés que también llegue por correo electrónico.</p>
+                <p className="mt-2 text-[11px] text-gray-400 leading-relaxed">Solo se enviará una notificación dentro del sistema. Activa la opción si quieres que también llegue por correo electrónico.</p>
               )}
               <EmailPreview title={form.templateTitle} message={form.templateMessage} />
             </div>

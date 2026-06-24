@@ -182,7 +182,7 @@ const EmptyState = () => (
       <FiInbox className="size-7 text-green-500 dark:text-green-400" />
     </div>
     <p className="text-lg font-semibold text-text-emphasis dark:text-text-emphasis">No hay tareas pendientes</p>
-    <p className="text-sm text-text-secondary mt-1 max-w-[240px]">Todo está al día. Disfrutá el silencio administrativo.</p>
+    <p className="text-sm text-text-secondary mt-1 max-w-[240px]">Todo está al día. Disfruta el silencio administrativo.</p>
   </div>
 );
 

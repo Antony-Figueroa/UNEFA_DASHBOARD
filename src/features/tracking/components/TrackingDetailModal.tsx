@@ -216,7 +216,7 @@ export default function TrackingDetailModal({
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
-                      Periodo
+                      Período
                     </label>
                     <p className="text-sm font-semibold text-text-primary dark:text-white/90">
                       {'periodDescription' in display && (display as TrackingDetailDTO).periodDescription

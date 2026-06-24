@@ -108,7 +108,7 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
 
             <div>
               <h4 className="text-sm font-bold uppercase text-text-tertiary mb-3">
-                Criterios Evaluados ({evaluation.items?.length || 0} items)
+                Criterios Evaluados ({evaluation.items?.length || 0} ítems)
               </h4>
               <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
                 {evaluation.items && evaluation.items.length > 0 ? (

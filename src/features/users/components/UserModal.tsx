@@ -315,7 +315,7 @@ const UserModal: React.FC<UserModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
               {/* Cédula */}
               <div>
-                <label className="text-sm font-medium text-text-primary dark:text-white/90">Cédula *</label>
+                <label className="text-sm font-medium text-text-primary dark:text-white/90">Cédula <span className="text-red-500">*</span></label>
                 <Input
                   value={displayCi}
                   onChange={handleCiChange}
@@ -329,7 +329,7 @@ const UserModal: React.FC<UserModalProps> = ({
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombres *</label>
+                <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombres <span className="text-red-500">*</span></label>
                 <Input
                   {...register("name")}
                   disabled={!!user && user.isImported}
@@ -340,7 +340,7 @@ const UserModal: React.FC<UserModalProps> = ({
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-text-primary dark:text-white/90">Apellidos *</label>
+                <label className="text-sm font-medium text-text-primary dark:text-white/90">Apellidos <span className="text-red-500">*</span></label>
                 <Input
                   {...register("surname")}
                   disabled={!!user && user.isImported}
@@ -377,7 +377,7 @@ const UserModal: React.FC<UserModalProps> = ({
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
               <div className="md:col-span-2">
-                <label className="text-sm font-medium text-text-primary dark:text-white/90">Correo Institucional *</label>
+                <label className="text-sm font-medium text-text-primary dark:text-white/90">Correo Institucional <span className="text-red-500">*</span></label>
                 <Input
                   type="email"
                   {...register("email")}
@@ -389,7 +389,7 @@ const UserModal: React.FC<UserModalProps> = ({
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-text-primary dark:text-white/90">Rol del Sistema *</label>
+                <label className="text-sm font-medium text-text-primary dark:text-white/90">Rol del Sistema <span className="text-red-500">*</span></label>
                 <CustomSelect
                   id="role"
                   value={String(watch("role") ?? "")}

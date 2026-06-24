@@ -63,7 +63,7 @@ const ListValueEditor = ({
         desc={
           list
             ? "Valores disponibles en esta lista del sistema"
-            : "Seleccioná una lista para ver sus valores"
+            : "Selecciona una lista para ver sus valores"
         }
         headerAction={
           list && (
@@ -110,7 +110,7 @@ const ListValueEditor = ({
                   : "text-blue-700 dark:text-blue-300"
               }`}>
                 {isProtected
-                  ? "Podés agregar nuevos valores. Los valores en uso no se pueden modificar ni eliminar."
+                  ? "Puedes agregar nuevos valores. Los valores en uso no se pueden modificar ni eliminar."
                   : "Los valores marcados como \"En uso\" no se pueden modificar ni eliminar porque están referenciados en otros registros del sistema."
                 }
               </p>
@@ -249,7 +249,7 @@ const ListValueEditor = ({
                       <>
                         <FolderIcon className="h-12 w-12 opacity-20 mb-3" />
                         <p className="text-sm font-medium">Esta lista no tiene valores</p>
-                        <p className="text-xs mt-1">Usá el botón "Añadir Valor" para crear el primero.</p>
+                        <p className="text-xs mt-1">Usa el botón "Añadir Valor" para crear el primero.</p>
                       </>
                     )}
                   </motion.div>
@@ -262,8 +262,8 @@ const ListValueEditor = ({
                 className="flex flex-col items-center py-20 text-text-tertiary"
               >
                 <ListIcon className="h-14 w-14 opacity-10 mb-4" />
-                <p className="text-sm font-medium">Seleccioná una lista</p>
-                <p className="text-xs mt-1">Elegí una lista del panel izquierdo para ver sus valores</p>
+                <p className="text-sm font-medium">Selecciona una lista</p>
+                <p className="text-xs mt-1">Elige una lista del panel izquierdo para ver sus valores</p>
               </motion.div>
             )}
           </SkeletonLoader>

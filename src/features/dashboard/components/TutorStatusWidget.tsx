@@ -4,7 +4,7 @@ interface TutorStatusWidgetProps {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  'pre-enrolled': 'Pre-inscriptos',
+  'pre-enrolled': 'Preinscriptos',
   'active': 'Activos',
   'completed': 'Completados',
   'suspended': 'Suspendidos',

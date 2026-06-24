@@ -13,7 +13,7 @@ interface TourEntry {
  * Key is a path prefix the route starts with.
  */
 const tourRouteMap: Record<string, TourEntry> = {
-  "/period":       { steps: gestionPeriodTour,       moduleName: "Periodos" },
+  "/period":       { steps: gestionPeriodTour,       moduleName: "Períodos" },
   "/careers":      { steps: gestionCarrerasTour,     moduleName: "Carreras" },
   "/students":     { steps: gestionEstudiantesTour,  moduleName: "Estudiantes" },
   "/tutors":       { steps: registroTutoresTour,     moduleName: "Tutores" },

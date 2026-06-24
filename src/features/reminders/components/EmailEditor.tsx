@@ -87,7 +87,7 @@ const ChevronDown = () => <svg xmlns="http://www.w3.org/2000/svg" width="12" hei
 export const EmailEditor = ({
   value,
   onChange,
-  placeholder = 'Escribí el contenido del correo...',
+  placeholder = 'Escribe el contenido del correo...',
   error,
   minHeight = '200px',
   disabled = false,
@@ -401,7 +401,7 @@ export const EmailEditor = ({
               }}
             />
           ) : (
-            <p className="text-gray-400 text-sm italic">Escribí algo para ver la vista previa...</p>
+            <p className="text-gray-400 text-sm italic">Escribe algo para ver la vista previa...</p>
           )}
           <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
             <p className="text-[11px] text-gray-400">

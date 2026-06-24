@@ -523,7 +523,7 @@ export default function PersonFormFields({
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Fecha de Nacimiento{" "}
+              Fecha de Nacimiento <span className="text-red-500">*</span>{" "}
               {age !== null && age !== undefined && (
                 <span className="text-brand-500 ml-1">({age} años)</span>
               )}

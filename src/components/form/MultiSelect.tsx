@@ -26,7 +26,7 @@ export interface MultiSelectOption {
  */
 export interface MultiSelectProps {
   /** La etiqueta descriptiva del campo. */
-  label: string;
+  label: React.ReactNode;
   /** Lista de opciones disponibles para seleccionar. */
   options: MultiSelectOption[];
   /** Valores seleccionados por defecto (no controlado). */

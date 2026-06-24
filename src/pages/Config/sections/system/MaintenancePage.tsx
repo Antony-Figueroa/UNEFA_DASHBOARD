@@ -122,7 +122,7 @@ export default function MaintenancePage() {
     {
       id: 'verify',
       title: 'Verificar Sistema',
-      description: 'Health check completo de servicios',
+      description: 'Verificación completa del sistema',
       icon: (
         <svg className="w-5 h-5 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -231,7 +231,7 @@ export default function MaintenancePage() {
                 <ul className="mt-2 text-xs text-brand-600 dark:text-brand-400 space-y-1">
                   <li>• <strong>Limpiar Logs:</strong> Elimina registros de autenticación y cambios con más de 90 días</li>
                   <li>• <strong>Sincronizar:</strong> Verifica la integridad de las tablas principales contra Supabase</li>
-                  <li>• <strong>Verificar:</strong> Ejecuta un health check completo de la base de datos y servicios</li>
+                  <li>• <strong>Verificar:</strong> Ejecuta una verificación completa de la base de datos y servicios</li>
                 </ul>
               </div>
             </div>

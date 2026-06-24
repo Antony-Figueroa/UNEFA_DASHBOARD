@@ -21,6 +21,7 @@ import { useLists } from '../../lists/hooks/useLists';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
+import { useToast } from '../../../context/toast';
 import { isSafeInput } from '../../../utils/inputValidation';
 
 
@@ -78,6 +79,7 @@ const TRANSFER_OPTIONS = [
  * de TrackingDetailModal.
  */
 export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoading = false }: TrackingModalProps) {
+    const { addToast } = useToast();
     const { fetchMultipleLists } = useLists();
     const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -94,6 +96,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                     setDetailData(data);
                 } catch (error) {
                     console.error("[TrackingModal] Error al cargar detalles:", error);
+                    addToast({ variant: "error", title: "Error", message: "No se pudieron cargar los detalles del seguimiento." });
                 }
             };
             loadDetail();
@@ -117,6 +120,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                 }
             } catch (error) {
                 console.error("[TrackingModal] Error al cargar opciones de lista:", error);
+                addToast({ variant: "error", title: "Error", message: "No se pudieron cargar las opciones del formulario." });
             }
         };
 
@@ -191,6 +195,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
             setPendingData(null);
         } catch (error) {
             console.error("[TrackingModal] Error al procesar el envío del formulario:", error);
+            addToast({ variant: "error", title: "Error", message: "No se pudo guardar el seguimiento." });
         }
     };
 
@@ -320,7 +325,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                                 Cancelar
                             </Button>
                             <AsyncButton type="submit" loading={isLoading} disabled={!isValid || !isDirty}>
-                                Actualizar Seguimiento
+                                Guardar Cambios
                             </AsyncButton>
                         </div>
                     </ModalFooter>

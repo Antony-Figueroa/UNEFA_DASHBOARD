@@ -456,7 +456,7 @@ const UserModal: React.FC<UserModalProps> = ({
             className="w-full sm:w-auto min-h-12"
             disabled={!isValid || (user ? !isDirty : false)}
           >
-            {user ? "Actualizar Datos" : "Crear Usuario"}
+            {user ? "Guardar Cambios" : "Guardar Usuario"}
           </AsyncButton>
         </div>
       </ModalFooter>

@@ -852,7 +852,7 @@ export default function PeriodModal({
                         disabled={!isValid || (periodo ? !isDirty : false)}
                         className="w-full sm:w-auto min-h-12" 
                     >
-                        {periodo ? 'Actualizar Registro' : 'Guardar Período'}
+                        {periodo ? 'Guardar Cambios' : 'Guardar Período'}
                     </AsyncButton>
                 </div>
             </ModalFooter>

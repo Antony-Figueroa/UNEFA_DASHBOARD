@@ -19,9 +19,6 @@ interface InstitutionDTO {
   careerId: string;
   careerIds?: string[];
   careerName?: string;
-  region: string;
-  nucleus: string;
-  extension: string;
   institutionType: string;
   status: boolean;
   registrationDate: string | Date;

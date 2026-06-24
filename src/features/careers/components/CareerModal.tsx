@@ -635,7 +635,7 @@ export default function CareerModal({
                   }
                 }}
               >
-                Editar Registro
+                Habilitar Edición
               </AsyncButton>
             ) : (
               <AsyncButton type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
@@ -644,7 +644,7 @@ export default function CareerModal({
             )
           ) : (
             <AsyncButton type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid || (editingCareer ? !isDirty : false)}>
-              {editingCareer ? "Actualizar Registro" : "Guardar Carrera"}
+              {editingCareer ? "Guardar Cambios" : "Guardar Carrera"}
             </AsyncButton>
           )}
         </div>

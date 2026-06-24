@@ -9,6 +9,6 @@ const router = Router();
 
 // ponytail: branding data (logo, name) — any authenticated user can read, no auth needed for GET
 router.get('/', getInstitution);
-router.put('/', requirePermission('system-institution:edit'), updateInstitution);
+router.put('/', authenticateToken, requirePermission('system-institution:edit'), updateInstitution);
 
 export default router;

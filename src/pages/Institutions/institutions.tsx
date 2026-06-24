@@ -543,6 +543,10 @@ export default function InstitutionsPage() {
                 // Notificar que una nueva institución fue creada
                 const evt = new CustomEvent("institution:saved");
                 window.dispatchEvent(evt);
+                // Cerrar modal de creación y abrir modal de responsables
+                setIsModalOpen(false);
+                setNewlyCreatedInstitution({ id: newInst.institutionId, name: newInst.name });
+                setIsRespModalOpen(true);
                 return { institutionId: newInst.institutionId, name: newInst.name };
               }
             }

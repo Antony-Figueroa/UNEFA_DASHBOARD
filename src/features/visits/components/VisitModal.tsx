@@ -933,7 +933,7 @@ export default function VisitModal({
               disabled={!isValid}
               className="w-full sm:w-auto min-h-12"
             >
-              {isEditing ? 'Actualizar Visita' : 'Registrar Visita'}
+              {isEditing ? 'Guardar Cambios' : 'Guardar Visita'}
             </AsyncButton>
           </div>
         </ModalFooter>

@@ -20,6 +20,7 @@ import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
+import { useToast } from "../../../context/toast";
 import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 /**
@@ -94,6 +95,7 @@ export default function InternshipTypeModal({
 }: InternshipTypeModalProps) {
   const isInitializing = useRef(false);
 
+  const { addToast } = useToast();
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   const [pendingData, setPendingData] = useState<InternshipTypeFormData | null>(null);
 
@@ -152,18 +154,27 @@ export default function InternshipTypeModal({
     setShowSaveConfirmation(true);
   };
 
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     if (!pendingData) return;
     
-    onSave({
-      name: pendingData.name.toUpperCase(),
-      priority: Number(pendingData.priority),
-      status: editingItem?.status ?? true,
-      hoursRequired: editingItem?.hoursRequired ?? 360,
-    });
-    
-    setShowSaveConfirmation(false);
-    setPendingData(null);
+    try {
+      await onSave({
+        name: pendingData.name.toUpperCase(),
+        priority: Number(pendingData.priority),
+        status: editingItem?.status ?? true,
+        hoursRequired: editingItem?.hoursRequired ?? 360,
+      });
+      
+      setShowSaveConfirmation(false);
+      setPendingData(null);
+    } catch (error) {
+      console.error("[InternshipTypeModal] Error al guardar:", error);
+      addToast({
+        variant: "error",
+        title: "Error",
+        message: "No se pudo guardar el tipo de práctica.",
+      });
+    }
   };
 
   return (
@@ -266,7 +277,7 @@ export default function InternshipTypeModal({
               className="w-full sm:w-auto min-h-12" 
               disabled={!isValid || (editingItem ? !isDirty : false)}
             >
-              {editingItem ? "Actualizar Registro" : "Guardar Tipo de Práctica"}
+              {editingItem ? "Guardar Cambios" : "Guardar Tipo de Práctica"}
             </AsyncButton>
           </div>
         </ModalFooter>

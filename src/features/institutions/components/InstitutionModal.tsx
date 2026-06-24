@@ -32,7 +32,6 @@ import { useToast } from "../../../context/toast";
 import { cleanCedula, cleanPhone, cleanRif, formatRifDisplay, RIF_MAX_LENGTH, RIF_INPUT_CLASS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { getInstitutionByRif, checkRifExists } from "../services/institutionsService";
 import { SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
-import AddressList from "../../address/components/AddressList";
 import GeographicAddressFields from "../../address/components/GeographicAddressFields";
 import type { GeographicAddressValue } from "../../address/components/GeographicAddressFields";
 import type { GeoOptionsItem } from "../../address/types";
@@ -97,9 +96,6 @@ const baseInstSchema = z.object({
     .min(1, "El número de teléfono es obligatorio")
     .regex(/^\d+$/, "Solo se admiten números")
     .length(7, "El número debe tener exactamente 7 dígitos"),
-  region: z.string().min(1, "Seleccione una región"),
-  nucleus: z.string().min(1, "Seleccione un núcleo"),
-  extension: z.string().min(1, "Seleccione una extensión"),
   institutionType: z.string().min(1, "Seleccione un tipo de empresa o institución"),
   internshipTypeId: z.string().min(1, "Seleccione el tipo de práctica"),
   careerIds: z.array(z.string()).min(1, "Seleccione al menos una carrera"),
@@ -194,25 +190,19 @@ export default function InstitutionModal({
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   // Estado para el flujo de agregar responsables después de crear institución
-  const [showResponsibleSection, setShowResponsibleSection] = useState(false);
-  const [pendingInstitutionId, setPendingInstitutionId] = useState<string | null>(null);
-  const [askAddResponsiblesOpen, setAskAddResponsiblesOpen] = useState(false);
   const [newlyAddedResponsibles, setNewlyAddedResponsibles] = useState<InstitutionalResponsible[]>([]);
 
   // Resetear estados cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
       // Resetear todo los estados relacionados con el flujo de responsables
-      setShowResponsibleSection(false);
-      setPendingInstitutionId(null);
-      setAskAddResponsiblesOpen(false);
       setNewlyAddedResponsibles([]);
       setRifDuplicateStatus(null);
       setSavedFormData(null);
       loadOptions();
       loadGeoOptions();
     }
-  }, [isOpen]);
+    }, [isOpen]);
 
   const loadGeoOptions = async () => {
     try {
@@ -362,7 +352,7 @@ export default function InstitutionModal({
     const cleaned = cleanPhone(input);
     const formatted = formatPhoneLocalDisplay(cleaned);
     setDisplayPhoneNumber(formatted);
-    setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
+    setValue("phoneNumber", formatted, { shouldValidate: true, shouldDirty: true });
   };
 
   const instSchema = useMemo(() => createInstSchema(existingInstitutions, editingInst || null, rifDuplicateStatus), [existingInstitutions, editingInst, rifDuplicateStatus]);
@@ -376,7 +366,7 @@ export default function InstitutionModal({
     setValue,
     setError,
     clearErrors,
-    formState: { errors, isDirty, isValid },
+    formState: { errors, isDirty, isValid, touchedFields },
   } = useForm<InstFormData>({
     resolver: zodResolver(instSchema),
     mode: "onChange",
@@ -386,9 +376,6 @@ export default function InstitutionModal({
       name: "",
       phonePrefix: "",
       phoneNumber: "",
-      region: "",
-      nucleus: "",
-      extension: "",
       institutionType: "",
       internshipTypeId: "",
       careerIds: [],
@@ -404,23 +391,30 @@ export default function InstitutionModal({
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateInstitutionPayload | UpdateInstitutionPayload | null>(null);
 
-  const TAB_IDS = ['datos-generales', 'configuracion'] as const;
+  const TAB_IDS = ['identificacion', 'contacto', 'configuracion'] as const;
   const TAB_FIELDS: Record<string, string[]> = {
-    'datos-generales': ['rifPrefix', 'rifNumber', 'name', 'phonePrefix', 'phoneNumber', 'region', 'nucleus', 'extension', 'institutionType'],
+    'identificacion': ['rifPrefix', 'rifNumber', 'name', 'institutionType'],
+    'contacto': ['phonePrefix', 'phoneNumber'],
     'configuracion': ['internshipTypeId', 'careerIds'],
   };
+  const isFieldValid = useCallback((fieldName: string) =>
+    !!(touchedFields as any)[fieldName] && !(errors as any)[fieldName],
+    [touchedFields, errors]);
   const errorsByTab = useMemo(() => {
     const keys = Object.keys(errors);
     const counts: Record<string, number> = {};
     for (const tab of TAB_IDS) counts[tab] = keys.filter(k => TAB_FIELDS[tab].includes(k)).length;
     return counts;
   }, [errors]);
-  const currentTabIndex = TAB_IDS.indexOf(tabsState.activeTab as typeof TAB_IDS[number]);
-  const goPrevTab = () => { if (currentTabIndex > 0) tabsState.setActiveTab(TAB_IDS[currentTabIndex - 1]); };
-  const goNextTab = () => { if (currentTabIndex < TAB_IDS.length - 1) tabsState.setActiveTab(TAB_IDS[currentTabIndex + 1]); };
   const onFormError = useCallback((formErrors: FieldErrors<InstFormData>) => {
     const firstTab = TAB_IDS.find(tab => TAB_FIELDS[tab].some(f => (formErrors as Record<string, any>)[f]));
-    if (firstTab) tabsState.setActiveTab(firstTab);
+    if (firstTab) {
+      tabsState.setActiveTab(firstTab);
+      requestAnimationFrame(() => {
+        const firstErrorEl = document.querySelector<HTMLElement>('[aria-invalid="true"]');
+        firstErrorEl?.focus();
+      });
+    }
   }, []);
 
   const loadOptions = async () => {
@@ -428,9 +422,6 @@ export default function InstitutionModal({
       const listNames = [
         "PREFIJO",
         "Rif",
-        "Region",
-        "Nucleo",
-        "Extensión",
         "Tipo de empresa",
         "TIPO DE PRACTICA"
       ];
@@ -457,9 +448,6 @@ export default function InstitutionModal({
   };
 
   const optionsRif = options.Rif;
-  const optionsRegion = options.Region;
-  const optionsNucleo = options.Nucleo;
-  const optionsExtension = options["Extensión"];
   const optionsTipoEmpresa = options["Tipo de empresa"];
   const optionsCodigosArea = options.PREFIJO;
   const optionsTipoPractica = options["TIPO DE PRACTICA"];
@@ -549,9 +537,6 @@ export default function InstitutionModal({
         name: editingInst.name,
         phonePrefix: phoneP || "",
         phoneNumber: phoneN || "",
-        region: editingInst.region?.toUpperCase() || "",
-        nucleus: editingInst.nucleus?.toUpperCase() || "",
-        extension: editingInst.extension?.toUpperCase() || "",
         institutionType: editingInst.institutionType?.toUpperCase() || "",
         internshipTypeId: internshipTypeId,
         careerIds: editingInst.careerIds || [],
@@ -679,18 +664,6 @@ export default function InstitutionModal({
     });
   }, [optionsRif]);
 
-  const REGION_OPTIONS = useMemo(() => {
-    return (optionsRegion || []).sort((a, b) => a.label.localeCompare(b.label));
-  }, [optionsRegion]);
-
-  const NUCLEUS_OPTIONS = useMemo(() => {
-    return (optionsNucleo || []).sort((a, b) => a.label.localeCompare(b.label));
-  }, [optionsNucleo]);
-
-  const EXTENSION_OPTIONS = useMemo(() => {
-    return (optionsExtension || []).sort((a, b) => a.label.localeCompare(b.label));
-  }, [optionsExtension]);
-
   const INSTITUTION_TYPE_OPTIONS = useMemo(() => {
     return (optionsTipoEmpresa || []).sort((a, b) => a.label.localeCompare(b.label));
   }, [optionsTipoEmpresa]);
@@ -716,9 +689,6 @@ export default function InstitutionModal({
         name: editingInst.name,
         phonePrefix: phoneP || "",
         phoneNumber: phoneN || "",
-        region: editingInst.region?.toUpperCase() || "",
-        nucleus: editingInst.nucleus?.toUpperCase() || "",
-        extension: editingInst.extension?.toUpperCase() || "",
         institutionType: editingInst.institutionType?.toUpperCase() || "",
         internshipTypeId: internshipTypeId,
         careerIds: editingInst.careerIds || [],
@@ -742,9 +712,6 @@ export default function InstitutionModal({
           name: "",
           phonePrefix: "",
           phoneNumber: "",
-          region: "",
-          nucleus: "",
-          extension: "",
           institutionType: "",
           internshipTypeId: "",
           careerIds: [],
@@ -763,9 +730,6 @@ export default function InstitutionModal({
       rif: `${data.rifPrefix}-${data.rifNumber}`.toUpperCase(),
       name: data.name.toUpperCase(),
       phone: `${data.phonePrefix}-${data.phoneNumber}`,
-      region: data.region.toUpperCase(),
-      nucleus: data.nucleus.toUpperCase(),
-      extension: data.extension.toUpperCase(),
       institutionType: data.institutionType.toUpperCase(),
       internshipTypeId: data.internshipTypeId,
       careerIds: data.careerIds,
@@ -821,7 +785,7 @@ export default function InstitutionModal({
             </div>
           </div>
         )}
-        <form onSubmit={handleFormSubmit} className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${isLoading && editingInst ? 'opacity-50 pointer-events-none' : ''}`}>
+        <form onSubmit={handleFormSubmit} className={`grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 ${isLoading && editingInst ? 'opacity-50 pointer-events-none' : ''}`}>
           {existingInstitution && (
             <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg md:col-span-2">
               <p className="text-sm text-warning-700 dark:text-warning-300">
@@ -833,15 +797,29 @@ export default function InstitutionModal({
           
           <Tabs
             options={[
-              { id: 'datos-generales', label: 'Datos Generales', errorCount: errorsByTab['datos-generales'] },
-              { id: 'configuracion', label: 'Configuración', errorCount: errorsByTab['configuracion'] },
+              { 
+                id: 'identificacion', 
+                label: 'Identificación', 
+                errorCount: errorsByTab['identificacion'],
+              },
+              { 
+                id: 'contacto', 
+                label: 'Contacto y Dirección', 
+                errorCount: errorsByTab['contacto'],
+              },
+              { 
+                id: 'configuracion', 
+                label: 'Configuración', 
+                errorCount: errorsByTab['configuracion'],
+              },
             ]}
             {...tabsState.tabProps}
             variant="modal"
             className="mb-6 md:col-span-2"
+            onTabChange={tabsState.setActiveTab}
           />
 
-          <div hidden={tabsState.activeTab !== 'datos-generales'} role="tabpanel" className="contents">
+          <div hidden={tabsState.activeTab !== 'identificacion'} role="tabpanel" className="contents">
           <div>
             <label className="text-sm font-medium text-text-primary dark:text-white/90">RIF *</label>
             <div className="flex gap-2">
@@ -869,8 +847,9 @@ export default function InstitutionModal({
                       onChange={handleRifNumberChange}
                       placeholder="12345678-9" 
                       className={`uppercase ${RIF_INPUT_CLASS}`}
-                      error={!!errors.rifNumber}
-                      hint={errors.rifNumber?.message || (isCheckingRif ? "Verificando..." : (rifDuplicateStatus === 'confirmed' ? "RIF ya existe, se generará código interno único" : " "))}
+                       error={!!errors.rifNumber}
+                       success={isFieldValid('rifNumber')}
+                       hint={errors.rifNumber?.message || (isCheckingRif ? "Verificando..." : (rifDuplicateStatus === 'confirmed' ? "RIF ya existe, se generará código interno único" : " "))}
                       disabled={!!editingInst || !!existingInstitution}
                       maxLength={RIF_MAX_LENGTH}
                       onBlur={async (e) => {
@@ -934,12 +913,39 @@ export default function InstitutionModal({
               {...register("name", {
                 onChange: handleUppercaseChange
               })} 
-              error={!!errors.name} 
-              hint={errors.name?.message}
-              disabled={isFormDisabled || !!editingInst}
+               error={!!errors.name} 
+               success={isFieldValid('name')}
+               hint={errors.name?.message}
+               disabled={isFormDisabled || !!editingInst}
             />
           </div>
 
+          <div>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">Tipo de Empresa o Institución *</label>
+            <Controller
+              name="institutionType"
+              control={control}
+              render={({ field }) => (
+                <CustomSelect
+                  id="institutionType"
+                  options={INSTITUTION_TYPE_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                  onChange={field.onChange}
+                  value={String(field.value ?? "")}
+                  placeholder="Seleccione tipo"
+                  error={!!errors.institutionType}
+                  disabled={isFormDisabled}
+                  onAddNew={() => openAddValueModal("Tipo de empresa", "institutionType", "Agregar Tipo de Empresa")}
+                  addNewLabel="Nueva opción"
+                />
+              )}
+            />
+            {errors.institutionType && (
+              <p className="mt-1 text-xs text-red-500">{errors.institutionType.message}</p>
+            )}
+          </div>
+          </div>
+
+          <div hidden={tabsState.activeTab !== 'contacto'} role="tabpanel" className="contents">
           <div>
             <label className="text-sm font-medium text-text-primary dark:text-white/90">Teléfono *</label>
             <div className="flex gap-2">
@@ -969,8 +975,9 @@ export default function InstitutionModal({
                   placeholder="000-0000" 
                   className={PHONE_INPUT_CLASS}
                   maxLength={PHONE_LOCAL_MAX_LENGTH}
-                  error={!!errors.phoneNumber || !!errors.phonePrefix} 
-                  disabled={isFormDisabled}
+                   error={!!errors.phoneNumber || !!errors.phonePrefix} 
+                   success={isFieldValid('phoneNumber')}
+                   disabled={isFormDisabled}
                 />
               </div>
             </div>
@@ -997,112 +1004,6 @@ export default function InstitutionModal({
           </div>
 
           <div hidden={tabsState.activeTab !== 'configuracion'} role="tabpanel" className="contents">
-          {/* Sección de Direcciones Estructuradas */}
-          <div className="md:col-span-2">
-            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-              <AddressList
-                entityType="institution"
-                entityId={editingInst?.institutionId ? Number(editingInst.institutionId) : null}
-                geoOptions={geoOptions}
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label className="text-sm font-medium text-text-primary dark:text-white/90">Región *</label>
-            <Controller
-              name="region"
-              control={control}
-              render={({ field }) => (
-                <CustomSelect
-                  id="region"
-                  options={REGION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                  onChange={field.onChange}
-                  value={String(field.value ?? "")}
-                  placeholder="Seleccione región"
-                  error={!!errors.region}
-                  disabled={isFormDisabled}
-                  onAddNew={() => openAddValueModal("Region", "region", "Agregar Región")}
-                  addNewLabel="Nueva opción"
-                />
-              )}
-            />
-            {errors.region && (
-              <p className="mt-1 text-xs text-red-500">{errors.region.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-text-primary dark:text-white/90">Núcleo *</label>
-            <Controller
-              name="nucleus"
-              control={control}
-              render={({ field }) => (
-                <CustomSelect
-                  id="nucleus"
-                  options={NUCLEUS_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                  onChange={field.onChange}
-                  value={String(field.value ?? "")}
-                  placeholder="Seleccione núcleo"
-                  error={!!errors.nucleus}
-                  disabled={isFormDisabled}
-                  onAddNew={() => openAddValueModal("Nucleo", "nucleus", "Agregar Núcleo")}
-                  addNewLabel="Nueva opción"
-                />
-              )}
-            />
-            {errors.nucleus && (
-              <p className="mt-1 text-xs text-red-500">{errors.nucleus.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-text-primary dark:text-white/90">Extensión *</label>
-            <Controller
-              name="extension"
-              control={control}
-              render={({ field }) => (
-                <CustomSelect
-                  id="extension"
-                  options={EXTENSION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                  onChange={field.onChange}
-                  value={String(field.value ?? "")}
-                  placeholder="Seleccione extensión"
-                  error={!!errors.extension}
-                  disabled={isFormDisabled}
-                  onAddNew={() => openAddValueModal("Extensión", "extension", "Agregar Extensión")}
-                  addNewLabel="Nueva opción"
-                />
-              )}
-            />
-            {errors.extension && (
-              <p className="mt-1 text-xs text-red-500">{errors.extension.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-text-primary dark:text-white/90">Tipo de Empresa o Institución *</label>
-            <Controller
-              name="institutionType"
-              control={control}
-              render={({ field }) => (
-                <CustomSelect
-                  id="institutionType"
-                  options={INSTITUTION_TYPE_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                  onChange={field.onChange}
-                  value={String(field.value ?? "")}
-                  placeholder="Seleccione tipo"
-                  error={!!errors.institutionType}
-                  disabled={isFormDisabled}
-                  onAddNew={() => openAddValueModal("Tipo de empresa", "institutionType", "Agregar Tipo de Empresa")}
-                  addNewLabel="Nueva opción"
-                />
-              )}
-            />
-            {errors.institutionType && (
-              <p className="mt-1 text-xs text-red-500">{errors.institutionType.message}</p>
-            )}
-          </div>
 
           {/* Tipo de Práctica que acepta la institución */}
           <div>
@@ -1282,193 +1183,43 @@ export default function InstitutionModal({
             </div>
           )}
 
-          {/* Sección para agregar responsables después de crear institución */}
-          {showResponsibleSection && (
-            <div className="md:col-span-2 mt-4">
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Agregar Responsables Institucionales
-                  </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowResponsibleSection(false);
-                      onClose();
-                    }}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    Omitir y cerrar
-                  </Button>
-                </div>
-
-                {/* Mostrar responsables existentes O los recien agregados durante la creación */}
-                {(responsibles.length > 0 || newlyAddedResponsibles.length > 0) ? (
-                  <div className="space-y-2 mb-4">
-                    {/* Responsables existentes (cuando se edita) */}
-                    {responsibles.map((resp) => {
-                      // Obtener el cargo de esta institución específica
-                      const currentInstitution = resp.institutions?.find(
-                        inst => inst.institutionId === editingInst?.institutionId
-                      );
-                      const institutionCargo = currentInstitution?.cargo || resp.cargo || "";
-                      
-                      return (
-                      <div
-                        key={resp.responsibleId}
-                        className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                            {resp.firstName} {resp.lastName}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}
-                            {institutionCargo && ` • ${institutionCargo}`}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingResponsible(resp);
-                              setIsRespModalOpen(true);
-                            }}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                          </Button>
-                        </div>
-                      </div>
-                    )})}
-                    {/* Responsables recien agregados (durante creación) */}
-                    {newlyAddedResponsibles.map((resp) => (
-                      <div
-                        key={resp.responsibleId}
-                        className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {resp.firstName} {resp.lastName}
-                            </p>
-                            <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full">
-                              Nuevo
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}{resp.cargo && ` • ${resp.cargo}`}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingResponsible(resp);
-                              setIsRespModalOpen(true);
-                            }}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-gray-500 dark:text-gray-400 mb-4">
-                    <p className="text-sm">No hay responsables agregados aún</p>
-                  </div>
-                )}
-
-                <div className="flex justify-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditingResponsible(null);
-                      setIsRespModalOpen(true);
-                    }}
-                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Agregar Responsable
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
           </div>
           
           {/* Botón oculto para permitir submit con Enter */}
           <button type="submit" className="hidden" />
 
-          {/* Navegación entre tabs */}
-          <div className="md:col-span-2 flex items-center justify-between pt-4 mt-6 border-t border-border-light dark:border-border-dark">
-            <Button variant="outline" size="sm" onClick={goPrevTab} disabled={currentTabIndex === 0}>
-              ← Anterior
-            </Button>
-            {currentTabIndex < TAB_IDS.length - 1 ? (
-              <Button size="sm" onClick={goNextTab}>
-                Siguiente →
-              </Button>
-            ) : (
-              <span className="text-xs text-text-tertiary">Última sección</span>
-            )}
-          </div>
         </form>
       </ModalBody>
-      <ModalFooter>
-        {showResponsibleSection ? (
-          <Button variant="primary" onClick={() => {
-            setShowResponsibleSection(false);
-            onClose();
-          }}>
-            Guardar y Cerrar
+      <ModalFooter className="sticky-footer">
+        <>
+          <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading}>
+            Cancelar
           </Button>
-        ) : (
-          <>
-            <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading}>
-              Cancelar
-            </Button>
-            {existingInstitution ? (
-              viewOnlyMode ? (
-                <AsyncButton 
-                  type="button"
-                  onClick={() => {
-                    setViewOnlyMode(false);
-                  }}
-                >
-                  Habilitar Edición
-                </AsyncButton>
-              ) : (
-                <AsyncButton onClick={handleFormSubmit} loading={isLoading} disabled={!isValid}>
-                  Guardar Cambios
-                </AsyncButton>
-              )
-            ) : editingInst ? (
-              <AsyncButton onClick={handleFormSubmit} loading={isLoading} disabled={!isDirty}>
-                Guardar Cambios
+          {existingInstitution ? (
+            viewOnlyMode ? (
+              <AsyncButton 
+                type="button"
+                onClick={() => {
+                  setViewOnlyMode(false);
+                }}
+              >
+                Habilitar Edición
               </AsyncButton>
             ) : (
               <AsyncButton onClick={handleFormSubmit} loading={isLoading} disabled={!isValid}>
-                Registrar Empresa o Institución
+                Guardar Cambios
               </AsyncButton>
-            )}
-          </>
-        )}
+            )
+          ) : editingInst ? (
+            <AsyncButton onClick={handleFormSubmit} loading={isLoading} disabled={!isDirty}>
+              Guardar Cambios
+            </AsyncButton>
+          ) : (
+            <AsyncButton onClick={handleFormSubmit} loading={isLoading} disabled={!isValid}>
+              Guardar Empresa
+            </AsyncButton>
+          )}
+        </>
       </ModalFooter>
     </Modal>
 
@@ -1480,19 +1231,6 @@ export default function InstitutionModal({
           if (pendingSave) {
             try {
               const result = await onSave(pendingSave);
-              const savedId = !editingInst && result && typeof result === 'object' && 'institutionId' in (result as any)
-                ? (result as any).institutionId
-                : editingInst?.institutionId;
-
-
-
-              // Si es nueva institución, preguntar si quiere agregar responsables
-              if (!editingInst && result && typeof result === 'object' && 'institutionId' in (result as any)) {
-                setPendingInstitutionId((result as any).institutionId);
-                setConfirmSaveOpen(false);
-                setTimeout(() => setAskAddResponsiblesOpen(true), 100);
-                return;
-              }
               setConfirmSaveOpen(false);
             } catch (saveError) {
               console.error("[InstitutionModal] Error al guardar:", saveError);
@@ -1556,27 +1294,6 @@ export default function InstitutionModal({
       message={`¿Estás seguro de que deseas quitar a ${responsibleToRemove?.firstName} ${responsibleToRemove?.lastName} de esta empresa o institución? Dejará de aparecer en este listado pero sus datos se mantendrán en el sistema.`}
       onConfirm={handleConfirmRemove}
     />
-
-    {/* Dialog para preguntar si desea agregar responsables después de crear institución */}
-    {!editingInst && (
-      <UnifiedDialog
-        isOpen={askAddResponsiblesOpen}
-        onClose={() => {
-          setAskAddResponsiblesOpen(false);
-          setPendingInstitutionId(null);
-          // No cerrar el modal padre - solo el diálogo
-        }}
-        onConfirm={() => {
-          setAskAddResponsiblesOpen(false);
-          setShowResponsibleSection(true);
-        }}
-        variant="info"
-        title="Agregar Responsables"
-        message="¿Deseas agregar responsables institucionales ahora? También puedes hacerlo más adelante desde la edición de la empresa o institución."
-        confirmLabel="Sí, agregar responsables"
-        cancelLabel="No, cerrar"
-      />
-    )}
 
     <UnifiedDialog
       isOpen={showConfirmation}
@@ -1708,41 +1425,17 @@ export default function InstitutionModal({
               : { ...editingResponsible, ...data, institutions: updatedInstitutions };
             await onEditResponsible?.(updateData as UpdateInstitutionalResponsiblePayload);
           } else {
-            // Usar pendingInstitutionId si es el flujo de creación, sinon usar editingInst
-            const institutionId = showResponsibleSection ? pendingInstitutionId : editingInst!.institutionId;
+            const institutionId = editingInst!.institutionId;
             
-            // Agregar el responsable con la nueva estructura de instituciones
             const newResponsible = { 
               ...data, 
               institutions: [{ 
-                institutionId: institutionId!, 
+                institutionId: institutionId, 
                 institutionName: editingInst?.name || "",
                 cargo: data.institutions?.[0]?.cargo || "" 
               }]
             } as CreateInstitutionalResponsiblePayload;
             await onAddResponsible?.(newResponsible);
-            
-            // Si estamos en el flujo de creación, agregar a la lista local
-            if (showResponsibleSection && institutionId) {
-              const tempId = `temp-${Date.now()}`;
-              const newResp: InstitutionalResponsible = {
-                responsibleId: tempId,
-                identificationPrefix: data.identificationPrefix || '',
-                identificationNumber: data.identificationNumber || '',
-                firstName: data.firstName || '',
-                lastName: data.lastName || '',
-                phone: data.phone || '',
-                email: data.email || '',
-                institutions: [{ 
-                  institutionId: institutionId, 
-                  institutionName: editingInst?.name || "",
-                  cargo: data.cargo || ""
-                }],
-                status: true,
-                registrationDate: new Date()
-              };
-              setNewlyAddedResponsibles(prev => [...prev, newResp]);
-            }
           }
           setIsRespModalOpen(false);
           setEditingResponsible(null);
@@ -1755,7 +1448,7 @@ export default function InstitutionModal({
       editingResp={editingResponsible}
       institutionOptions={institutionOptions}
       isLoading={responsibleLoading}
-      preselectedInstitutionId={showResponsibleSection ? pendingInstitutionId || undefined : editingInst?.institutionId}
+      preselectedInstitutionId={editingInst?.institutionId}
       preselectedInstitutionName={editingInst?.name}
     />
 

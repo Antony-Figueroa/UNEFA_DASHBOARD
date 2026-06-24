@@ -2,6 +2,13 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Buffer } from "buffer";
 import "./index.css";
+
+// ponytail: SW update → reload to use fresh assets and avoid stale chunk references
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    window.location.reload();
+  });
+}
 import "swiper/swiper-bundle.css";
 import "flatpickr/dist/flatpickr.css";
 import "./features/tour/tour-theme.css";

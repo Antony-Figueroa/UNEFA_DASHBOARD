@@ -29,7 +29,8 @@ import {
   StudentFormOutput
 } from "../constants/validation";
 import { formatCedulaDisplay, formatPhoneLocalDisplay, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
-import PersonFormFields from "../../persons/components/PersonFormFields";
+import { Search } from "lucide-react";
+import { PREFIX_OPTIONS } from "../../persons/types";
 import { useAcademicConfig } from "../../academic-config/hooks/useAcademicConfig";
 import AddressList from "../../address/components/AddressList";
 import GeographicAddressFields from "../../address/components/GeographicAddressFields";
@@ -97,8 +98,8 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
   
   // State for tabs in the form
-  const tabsState = useTabs({ defaultTab: 'datos-personales' });
-  useEffect(() => { if (isOpen) tabsState.setActiveTab('datos-personales'); }, [isOpen]);
+  const tabsState = useTabs({ defaultTab: 'identificacion' });
+  useEffect(() => { if (isOpen) tabsState.setActiveTab('identificacion'); }, [isOpen]);
 
   // State for existing record (when duplicate is found)
   const [existingStudent, setExistingStudent] = useState<any | null>(null);
@@ -119,7 +120,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       const res = await addressService.getPersonAddresses(personId);
       const addrs = res.data as any[];
       if (addrs && addrs.length > 0) {
-        const primary = addrs[0];
+        // Buscar la dirección primaria (isPrimary), sino la primera con address_type_id 3, sino la primera
+        const primary = addrs.find(a => a.is_primary)
+          ?? addrs.find(a => a.address_type?.address_type_id === 3)
+          ?? addrs[0];
         const addr = primary.address;
         if (addr) {
           setInlineAddress({
@@ -143,7 +147,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     setValue,
     setError,
     clearErrors,
-    formState: { errors, isDirty, isValid },
+    formState: { errors, isDirty, isValid, touchedFields },
   } = useForm<StudentFormInput>({
     resolver: zodResolver(studentSchema),
     mode: "all",
@@ -167,10 +171,24 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     },
   });
 
-  const TAB_IDS = ['datos-personales', 'academico'] as const;
+  const ciDisabled = !!editingStudent?.studentId;
+  const isFieldDisabled = useCallback((fieldName: string) => {
+    if (viewOnlyMode) return true;
+    const apiLock = apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true);
+    const nameFields = ["firstName", "middleName", "lastName", "secondLastName"];
+    if (apiLock && nameFields.includes(fieldName)) return true;
+    return false;
+  }, [viewOnlyMode, apiDataLoaded, academicConfig]);
+  const isFieldValid = useCallback((fieldName: string) =>
+    !!(touchedFields as any)[fieldName] && !(errors as any)[fieldName],
+    [touchedFields, errors]);
+
+  const TAB_IDS = ['identificacion', 'perfil-contacto', 'residencia', 'datos-academicos'] as const;
   const TAB_FIELDS: Record<string, string[]> = {
-    'datos-personales': ['identificationPrefix', 'identificationNumber', 'firstName', 'middleName', 'lastName', 'secondLastName', 'sex', 'birthDate', 'civilStatus', 'phonePrefix', 'phoneNumber', 'email', 'address'],
-    'academico': ['studentType', 'militaryRank', 'works'],
+    'identificacion': ['identificationPrefix', 'identificationNumber', 'firstName', 'middleName', 'lastName', 'secondLastName'],
+    'perfil-contacto': ['sex', 'birthDate', 'civilStatus', 'phonePrefix', 'phoneNumber', 'email'],
+    'residencia': [],
+    'datos-academicos': ['studentType', 'militaryRank', 'works'],
   };
   const errorsByTab = useMemo(() => {
     const keys = Object.keys(errors);
@@ -178,12 +196,16 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     for (const tab of TAB_IDS) counts[tab] = keys.filter(k => TAB_FIELDS[tab].includes(k)).length;
     return counts;
   }, [errors]);
-  const currentTabIndex = TAB_IDS.indexOf(tabsState.activeTab as typeof TAB_IDS[number]);
-  const goPrevTab = () => { if (currentTabIndex > 0) tabsState.setActiveTab(TAB_IDS[currentTabIndex - 1]); };
-  const goNextTab = () => { if (currentTabIndex < TAB_IDS.length - 1) tabsState.setActiveTab(TAB_IDS[currentTabIndex + 1]); };
-  const scrollToErrorTab = useCallback(() => {
+  const scrollToFirstError = useCallback(() => {
     const firstTab = TAB_IDS.find(tab => TAB_FIELDS[tab].some(f => (errors as Record<string, any>)[f]));
-    if (firstTab) tabsState.setActiveTab(firstTab);
+    if (firstTab) {
+      tabsState.setActiveTab(firstTab);
+      // Esperar a que el tab se renderice y enfocar el primer campo con error
+      requestAnimationFrame(() => {
+        const firstErrorEl = document.querySelector<HTMLElement>('[aria-invalid="true"]');
+        firstErrorEl?.focus();
+      });
+    }
   }, [errors]);
 
   // Handle identification number input change with formatting
@@ -919,7 +941,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         </ModalHeader>
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
-        <form id="student-form" onSubmit={handleSubmit(onSubmit, scrollToErrorTab)} className="space-y-8 w-full">
+        <form id="student-form" onSubmit={handleSubmit(onSubmit, scrollToFirstError)} className="space-y-8 w-full">
           {existingStudent && (
             <div className="flex items-center space-x-3 p-3 bg-info-50 dark:bg-info-500/10 border border-info-200 dark:border-info-500/20 rounded-lg mb-4">
               <svg className="h-5 w-5 text-info-700 dark:text-info-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -933,192 +955,477 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           
           <Tabs
             options={[
-              { id: 'datos-personales', label: 'Datos Personales', errorCount: errorsByTab['datos-personales'] },
-              { id: 'academico', label: 'Académico', errorCount: errorsByTab['academico'] },
+              { id: 'identificacion', label: 'Identificación', errorCount: errorsByTab['identificacion'] },
+              { id: 'perfil-contacto', label: 'Perfil y Contacto', errorCount: errorsByTab['perfil-contacto'] },
+              { id: 'residencia', label: 'Residencia', errorCount: errorsByTab['residencia'] },
+              { id: 'datos-academicos', label: 'Datos Académicos', errorCount: errorsByTab['datos-academicos'] },
             ]}
             {...tabsState.tabProps}
             variant="modal"
             className="mb-6"
+            onTabChange={tabsState.setActiveTab}
           />
 
-          <div hidden={tabsState.activeTab !== 'datos-personales'} role="tabpanel">
-          {/* ============================================================ */}
-          {/* Campos compartidos de Persona (usando PersonFormFields) */}
-          {/* ============================================================ */}
-          <PersonFormFields
-            control={control}
-            register={register}
-            errors={errors}
-            setValue={setValue}
-            watch={watch}
-            options={options}
-            displayIdentificationNumber={displayIdentificationNumber}
-            onIdentificationNumberChange={handleIdentificationNumberChange}
-            onBlurCi={handleCiBlur}
-            onCiLookup={handleCiLookup}
-            isCheckingCi={isCheckingCi}
-            isLookingUpCi={isLookingUpCi}
-            displayPhoneNumber={displayPhoneNumber}
-            onPhoneNumberChange={handlePhoneNumberChange}
-            createNameHandler={createNameHandler}
-            onAddValue={openAddValueModal}
-            age={age}
-            maxDate={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
-            onBlurEmail={handleEmailBlur}
-            isCheckingEmail={isCheckingEmail}
-            viewOnlyMode={viewOnlyMode}
-            fieldLockOnApiLoad={apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true)}
-            editingId={editingStudent?.studentId ?? existingStudent?.studentId ?? null}
-          />
-          
-          {/* Sección de Dirección */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-            <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección de Residencia</h3>
-            <GeographicAddressFields
-              geoOptions={geoOptions}
-              value={inlineAddress}
-              onChange={setInlineAddress}
-              showReference
-            />
-          </div>
-          </div>
-          
-          <div hidden={tabsState.activeTab !== 'academico'} role="tabpanel">
-          {/* ============================================================ */}
-          {/* Campos específicos de Estudiante */}
-          {/* ============================================================ */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-            {/* Tipo Estudiante */}
-            <div>
-              <label htmlFor="studentType" className="text-sm font-medium text-text-primary dark:text-white/90">
-                Tipo Estudiante <span className="text-red-500">*</span>
-              </label>
-              <Controller
-                name="studentType"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="studentType"
-                    options={STUDENT_TYPE_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione campo"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    disabled={viewOnlyMode}
-                    error={!!errors.studentType}
-                  />
-                )}
-              />
-              {errors.studentType && (
-                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
-                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                  {errors.studentType.message}
-                </p>
-              )}
+          {existingStudent && (
+            <div className="flex items-center space-x-3 p-3 bg-info-50 dark:bg-info-500/10 border border-info-200 dark:border-info-500/20 rounded-lg mb-4">
+              <svg className="h-5 w-5 text-info-700 dark:text-info-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+              </svg>
+              <span className="text-sm font-medium text-info-700 dark:text-info-400">
+                Persona ya registrada — datos precargados. Podés modificarlos antes de guardar.
+              </span>
             </div>
+          )}
 
-            {/* Rango Militar (solo si es MILITAR) */}
-            {studentType === "MILITAR" && (
+          {/* ======================== Identificación ======================== */}
+          <div hidden={tabsState.activeTab !== 'identificacion'} role="tabpanel">
+            {existingPerson && (
+              <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-600 dark:bg-yellow-900/20 mb-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <strong>Persona existente:</strong>{' '}
+                    {existingPerson.firstName} {existingPerson.lastName} —{' '}
+                    {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
+                  </p>
+                  {onEditExisting && (
+                    <button type="button" onClick={onEditExisting} className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                      Editar esta persona
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Cédula de Identidad (col-span-2) */}
+              <div className="md:col-span-2">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Cédula de Identidad <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Controller
+                      name="identificationPrefix"
+                      control={control}
+                      render={({ field }) => (
+                        <CustomSelect
+                          id="identificationPrefix"
+                          options={(options["Nacionalidad"] || PREFIX_OPTIONS).map(o => ({ value: String(o.value), label: o.label }))}
+                          placeholder="V"
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          value={String(field.value || "V")}
+                          disabled={ciDisabled}
+                          error={!!errors.identificationPrefix}
+                          success={isFieldValid('identificationPrefix')}
+                        />
+                      )}
+                    />
+                    {errors.identificationPrefix && (
+                      <p className="mt-1 text-xs text-red-500">{errors.identificationPrefix.message as string}</p>
+                    )}
+                  </div>
+                  <div className="md:col-span-3 relative">
+                    <Input
+                      value={displayIdentificationNumber}
+                      onChange={handleIdentificationNumberChange}
+                      onBlur={handleCiBlur}
+                      placeholder="V-12.345.678"
+                      disabled={ciDisabled}
+                      maxLength={CEDULA_MAX_LENGTH}
+                      autoComplete="off"
+                      className="tracking-widest"
+                      error={!!errors.identificationNumber}
+                      success={isFieldValid('identificationNumber')}
+                      hint={
+                        errors.identificationNumber?.message as string
+                        || (isCheckingCi ? "Verificando disponibilidad..."
+                        : isLookingUpCi ? "Consultando SENIAT..."
+                        : undefined)
+                      }
+                    />
+                    {!ciDisabled && (
+                      <button
+                        type="button"
+                        onClick={handleCiLookup}
+                        disabled={isLookingUpCi}
+                        title="Buscar datos en SENIAT / CNE"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 transition-colors disabled:opacity-50"
+                      >
+                        <Search className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Nombres */}
               <div>
-                <label htmlFor="militaryRank" className="text-sm font-medium text-text-primary dark:text-white/90">
-                  Rango Militar <span className="text-red-500">*</span>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Primer Nombre <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  {...register("firstName")}
+                  onChange={createNameHandler("firstName")}
+                  placeholder="Primer nombre"
+                  disabled={isFieldDisabled("firstName")}
+                  error={!!errors.firstName}
+                  success={isFieldValid('firstName')}
+                  hint={errors.firstName?.message as string}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Segundo Nombre
+                </label>
+                <Input
+                  {...register("middleName")}
+                  onChange={createNameHandler("middleName")}
+                  placeholder="Segundo nombre (opcional)"
+                  disabled={isFieldDisabled("middleName")}
+                  error={!!errors.middleName}
+                  success={isFieldValid('middleName')}
+                  hint={errors.middleName?.message as string}
+                />
+              </div>
+
+              {/* Apellidos */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Primer Apellido <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  {...register("lastName")}
+                  onChange={createNameHandler("lastName")}
+                  placeholder="Primer apellido"
+                  disabled={isFieldDisabled("lastName")}
+                  error={!!errors.lastName}
+                  success={isFieldValid('lastName')}
+                  hint={errors.lastName?.message as string}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Segundo Apellido
+                </label>
+                <Input
+                  {...register("secondLastName")}
+                  onChange={createNameHandler("secondLastName")}
+                  placeholder="Segundo apellido (opcional)"
+                  disabled={isFieldDisabled("secondLastName")}
+                  error={!!errors.secondLastName}
+                  success={isFieldValid('secondLastName')}
+                  hint={errors.secondLastName?.message as string}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ======================== Perfil y Contacto ======================== */}
+          <div hidden={tabsState.activeTab !== 'perfil-contacto'} role="tabpanel">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Fecha de Nacimiento */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Fecha de Nacimiento{' '}
+                  {age !== null && age !== undefined && (
+                    <span className="text-brand-500 ml-1">({age} años)</span>
+                  )}
+                  <span className="text-red-500">*</span>
                 </label>
                 <Controller
-                  name="militaryRank"
+                  name="birthDate"
                   control={control}
                   render={({ field }) => {
-                    const currentOptions = MILITARY_RANKS.filter(opt => opt.value !== "NO APLICA");
+                    const valid = isFieldValid('birthDate');
                     return (
-                      <CustomSelect
-                        id="militaryRank"
-                        options={currentOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                        placeholder="Seleccione Rango"
-                        onChange={field.onChange}
+                      <input
+                        type="date"
+                        id="birthDate"
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value)}
                         onBlur={field.onBlur}
-                        value={String(field.value)}
-                        onAddNew={() => openAddValueModal("Rango Militar", "militaryRank", "Agregar Rango Militar")}
-                        addNewLabel="Agregar Rango Militar"
+                        className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm transition-all ${
+                          errors.birthDate
+                            ? "border-error-500 focus:border-error-500 text-error-500"
+                            : valid
+                              ? "border-success-500 focus:border-success-300 focus:ring-success-500/20 text-text-primary"
+                              : "border-border-medium focus:border-brand-300 focus:ring-brand-500/10 text-text-primary"
+                        } dark:bg-bg-dark dark:text-text-emphasis dark:border-border-dark dark:focus:border-brand-800 ${
+                          viewOnlyMode ? "cursor-not-allowed bg-bg-secondary opacity-50" : ""
+                        }`}
+                        max={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
                         disabled={viewOnlyMode}
-                        error={!!errors.militaryRank}
                       />
                     );
                   }}
                 />
-                {errors.militaryRank && (
+                {errors.birthDate && (
+                  <p className="mt-1 text-xs text-red-500">{errors.birthDate.message as string}</p>
+                )}
+              </div>
+
+              {/* Sexo */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Sexo <span className="text-red-500">*</span>
+                </label>
+                <Controller
+                  name="sex"
+                  control={control}
+                  render={({ field }) => (
+                    <CustomSelect
+                      id="sex"
+                      options={(options["Sexo"] || []).map(o => ({ value: String(o.value), label: o.label }))}
+                      placeholder="Seleccionar"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={String(field.value || "")}
+                      disabled={viewOnlyMode}
+                      error={!!errors.sex}
+                      success={isFieldValid('sex')}
+                    />
+                  )}
+                />
+                {errors.sex && (
+                  <p className="mt-1 text-xs text-red-500">{errors.sex.message as string}</p>
+                )}
+              </div>
+
+              {/* Estado Civil */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Estado Civil <span className="text-red-500">*</span>
+                </label>
+                <Controller
+                  name="civilStatus"
+                  control={control}
+                  render={({ field }) => (
+                    <CustomSelect
+                      id="civilStatus"
+                      options={(options["Registro Civil"] || []).map(o => ({ value: String(o.value), label: o.label }))}
+                      placeholder="Seleccionar"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={String(field.value || "")}
+                      disabled={viewOnlyMode}
+                      error={!!errors.civilStatus}
+                      success={isFieldValid('civilStatus')}
+                      onAddNew={openAddValueModal ? () => openAddValueModal("Registro Civil", "civilStatus", "Agregar Estado Civil") : undefined}
+                      addNewLabel="Agregar Estado Civil"
+                    />
+                  )}
+                />
+                {errors.civilStatus && (
+                  <p className="mt-1 text-xs text-red-500">{errors.civilStatus.message as string}</p>
+                )}
+              </div>
+
+              {/* Teléfono */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Teléfono <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <Controller
+                      name="phonePrefix"
+                      control={control}
+                      render={({ field }) => (
+                        <CustomSelect
+                          id="phonePrefix"
+                          options={(options["PREFIJO"] || []).map(o => ({ value: String(o.value), label: o.label }))}
+                          placeholder="0412"
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          value={String(field.value ?? "")}
+                          disabled={viewOnlyMode}
+                          error={!!errors.phonePrefix}
+                          success={isFieldValid('phonePrefix')}
+                          onAddNew={openAddValueModal ? () => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Prefijo Telefónico") : undefined}
+                          addNewLabel="Nueva opción"
+                        />
+                      )}
+                    />
+                    {errors.phonePrefix && (
+                      <p className="mt-1 text-xs text-red-500">{errors.phonePrefix.message as string}</p>
+                    )}
+                  </div>
+                  <div className="col-span-3">
+                    <Input
+                      value={displayPhoneNumber ?? watch("phoneNumber") ?? ""}
+                      onChange={handlePhoneNumberChange}
+                      placeholder="123-4567"
+                      disabled={viewOnlyMode}
+                      maxLength={8}
+                      error={!!errors.phoneNumber}
+                      success={isFieldValid('phoneNumber')}
+                      hint={errors.phoneNumber?.message as string}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Email (col-span-2) */}
+              <div className="md:col-span-2">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Correo Electrónico <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  {...register("email")}
+                  type="email"
+                  placeholder="correo@ejemplo.com"
+                  disabled={viewOnlyMode}
+                  autoComplete="off"
+                  error={!!errors.email}
+                  success={isFieldValid('email')}
+                  hint={
+                    isCheckingEmail
+                      ? "Verificando disponibilidad..."
+                      : (errors.email?.message as string)
+                  }
+                  onChange={(e) => {
+                    const upper = e.target.value.toUpperCase();
+                    setValue("email", upper, { shouldValidate: true, shouldDirty: true });
+                  }}
+                  onBlur={(e) => {
+                    register("email").onBlur(e);
+                    handleEmailBlur?.(e);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ======================== Residencia ======================== */}
+          <div hidden={tabsState.activeTab !== 'residencia'} role="tabpanel">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+              <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección de Residencia</h3>
+              <GeographicAddressFields
+                geoOptions={geoOptions}
+                value={inlineAddress}
+                onChange={setInlineAddress}
+                showReference
+              />
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 mt-6">
+              <AddressList
+                key={addressRefreshKey}
+                entityType="person"
+                entityId={editingStudent?.personId ? Number(editingStudent.personId) : existingStudent?.personId ? Number(existingStudent.personId) : null}
+                geoOptions={geoOptions}
+                onAddressesChange={() => {
+                  if (editingStudent?.personId) loadPrimaryAddress(editingStudent.personId);
+                }}
+              />
+            </div>
+          </div>
+
+          {/* ======================== Datos Académicos ======================== */}
+          <div hidden={tabsState.activeTab !== 'datos-academicos'} role="tabpanel">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Tipo Estudiante */}
+              <div>
+                <label htmlFor="studentType" className="text-sm font-medium text-text-primary dark:text-white/90">
+                  Tipo Estudiante <span className="text-red-500">*</span>
+                </label>
+                <Controller
+                  name="studentType"
+                  control={control}
+                  render={({ field }) => (
+                    <CustomSelect
+                      id="studentType"
+                      options={STUDENT_TYPE_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                      placeholder="Seleccione campo"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={String(field.value)}
+                      disabled={viewOnlyMode}
+                      error={!!errors.studentType}
+                      success={isFieldValid('studentType')}
+                    />
+                  )}
+                />
+                {errors.studentType && (
                   <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
                     <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                    {errors.militaryRank.message}
+                    {errors.studentType.message}
                   </p>
                 )}
               </div>
-            )}
 
-            {/* ¿Trabaja? */}
-            <div>
-              <label htmlFor="works" className="text-sm font-medium text-text-primary dark:text-white/90">
-                ¿Trabaja? <span className="text-red-500">*</span>
-              </label>
-              <Controller
-                name="works"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="works"
-                    options={WORKS_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    disabled={viewOnlyMode}
-                    error={!!errors.works}
-                  />
+              {/* ¿Trabaja? */}
+              <div>
+                <label htmlFor="works" className="text-sm font-medium text-text-primary dark:text-white/90">
+                  ¿Trabaja? <span className="text-red-500">*</span>
+                </label>
+                <Controller
+                  name="works"
+                  control={control}
+                  render={({ field }) => (
+                    <CustomSelect
+                      id="works"
+                      options={WORKS_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                      placeholder="Seleccione"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={String(field.value)}
+                      disabled={viewOnlyMode}
+                      error={!!errors.works}
+                      success={isFieldValid('works')}
+                    />
+                  )}
+                />
+                {errors.works && (
+                  <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                    <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                    {errors.works.message}
+                  </p>
                 )}
-              />
-              {errors.works && (
-                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
-                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                  {errors.works.message}
-                </p>
+              </div>
+
+              {/* Rango Militar (solo si es MILITAR) */}
+              {studentType === "MILITAR" && (
+                <div className="md:col-span-2">
+                  <label htmlFor="militaryRank" className="text-sm font-medium text-text-primary dark:text-white/90">
+                    Rango Militar <span className="text-red-500">*</span>
+                  </label>
+                  <Controller
+                    name="militaryRank"
+                    control={control}
+                    render={({ field }) => {
+                      const currentOptions = MILITARY_RANKS.filter(opt => opt.value !== "NO APLICA");
+                      return (
+                        <CustomSelect
+                          id="militaryRank"
+                          options={currentOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                          placeholder="Seleccione Rango"
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          value={String(field.value)}
+                          onAddNew={() => openAddValueModal("Rango Militar", "militaryRank", "Agregar Rango Militar")}
+                          addNewLabel="Agregar Rango Militar"
+                          disabled={viewOnlyMode}
+                          error={!!errors.militaryRank}
+                          success={isFieldValid('militaryRank')}
+                        />
+                      );
+                    }}
+                  />
+                  {errors.militaryRank && (
+                    <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                      <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                      {errors.militaryRank.message}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>
 
-          {/* Direcciones Estructuradas */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-            <AddressList
-              key={addressRefreshKey}
-              entityType="person"
-              entityId={editingStudent?.personId ? Number(editingStudent.personId) : existingStudent?.personId ? Number(existingStudent.personId) : null}
-              geoOptions={geoOptions}
-              onAddressesChange={() => {
-                if (editingStudent?.personId) loadPrimaryAddress(editingStudent.personId);
-              }}
-            />
-          </div>
-          </div>
-
-          {/* Navegación entre tabs */}
-          <div className="flex items-center justify-between pt-4 mt-6 border-t border-border-light dark:border-border-dark">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goPrevTab}
-              disabled={currentTabIndex === 0}
-            >
-              ← Anterior
-            </Button>
-            {currentTabIndex < TAB_IDS.length - 1 ? (
-              <Button size="sm" onClick={goNextTab}>
-                Siguiente →
-              </Button>
-            ) : (
-              <span className="text-xs text-text-tertiary">Última sección</span>
-            )}
-          </div>
         </form>
       </ModalBody>
 
-      <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
+      <ModalFooter className="shrink-0 px-6 sm:px-12 py-4 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark sticky-footer">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
@@ -1139,7 +1446,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                     title: "Error de Validación",
                     message: "Por favor, complete todos los campos obligatorios correctamente.",
                   });
-                  scrollToErrorTab();
+                  scrollToFirstError();
                 }
               }}
             >
@@ -1161,11 +1468,11 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                     title: "Error de Validación",
                     message: "Por favor, complete todos los campos obligatorios correctamente.",
                   });
-                  scrollToErrorTab();
+                  scrollToFirstError();
                 }
               }}
             >
-              Actualizar Registro
+              Guardar Cambios
             </AsyncButton>
           ) : (
             <AsyncButton 
@@ -1183,7 +1490,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                     title: "Error de Validación",
                     message: "Por favor, complete todos los campos obligatorios correctamente.",
                   });
-                  scrollToErrorTab();
+                  scrollToFirstError();
                 }
               }}
             >
@@ -1287,7 +1594,9 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                 if (targetPersonId) {
                   const existingRes = await addressService.getPersonAddresses(targetPersonId);
                   const existingAddrs = existingRes.data as any[];
-                  const existingPrimary = existingAddrs?.[0];
+                  const existingPrimary = existingAddrs?.find(a => a.is_primary)
+                    ?? existingAddrs?.find(a => a.address_type?.address_type_id === 3)
+                    ?? existingAddrs?.[0];
 
                   if (existingPrimary) {
                     // Ya tiene dirección — ver si cambió algo
@@ -1304,6 +1613,11 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                         entity_type: 'person',
                         entity_id: targetPersonId,
                       });
+                      addToast({
+                        variant: "success",
+                        title: "Dirección actualizada",
+                        message: "La dirección de residencia se actualizó correctamente.",
+                      });
                     }
                     // Si es igual → skip, no duplicar
                   } else {
@@ -1317,9 +1631,15 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                       reference: inlineAddress.reference,
                       isPrimary: inlineAddress.isPrimary,
                     });
+                    addToast({
+                      variant: "success",
+                      title: "Dirección guardada",
+                      message: "La dirección de residencia se registró correctamente.",
+                    });
                   }
-                  // Refrescar AddressList en el próximo render
+                  // Refrescar AddressList y recargar GeographicAddressFields
                   setAddressRefreshKey(k => k + 1);
+                  loadPrimaryAddress(targetPersonId);
                 }
               } catch (addrErr) {
                 console.error('[StudentModal] Error saving address:', addrErr);

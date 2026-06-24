@@ -16,6 +16,9 @@ interface InstitutionData {
   email: string;
   website: string;
   resolution_number: string;
+  region: string;
+  nucleus: string;
+  extension: string;
 }
 
 const DEFAULT_FORM: InstitutionData = {
@@ -27,6 +30,9 @@ const DEFAULT_FORM: InstitutionData = {
   email: "",
   website: "",
   resolution_number: "",
+  region: "",
+  nucleus: "",
+  extension: "",
 };
 
 export default function InstitutionConfig() {
@@ -51,6 +57,9 @@ export default function InstitutionConfig() {
           email: data.email || "",
           website: data.website || "",
           resolution_number: data.resolution_number || "",
+          region: data.region || "",
+          nucleus: data.nucleus || "",
+          extension: data.extension || "",
         });
         setHasData(true);
       }
@@ -198,6 +207,42 @@ export default function InstitutionConfig() {
                     onChange={(e) => updateField("resolution_number", e.target.value)}
                     className={inputClass}
                     placeholder="Ej: Resolución N° XYZ"
+                  />
+                </div>
+              </div>
+            </ComponentCard>
+
+            {/* Ubicación */}
+            <ComponentCard title="Ubicación">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div>
+                  <label className={labelClass}>Región</label>
+                  <input
+                    type="text"
+                    value={form.region}
+                    onChange={(e) => updateField("region", e.target.value)}
+                    className={inputClass}
+                    placeholder="Ej: Capital"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Núcleo</label>
+                  <input
+                    type="text"
+                    value={form.nucleus}
+                    onChange={(e) => updateField("nucleus", e.target.value)}
+                    className={inputClass}
+                    placeholder="Ej: Núcleo Caracas"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Extensión</label>
+                  <input
+                    type="text"
+                    value={form.extension}
+                    onChange={(e) => updateField("extension", e.target.value)}
+                    className={inputClass}
+                    placeholder="Ej: Extensión Cagua"
                   />
                 </div>
               </div>

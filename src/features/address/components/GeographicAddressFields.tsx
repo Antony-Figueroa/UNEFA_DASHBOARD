@@ -220,7 +220,7 @@ export default function GeographicAddressFields({
           placeholder="Calle, número, sector, urbanización..."
           value={streetAddress}
           onChange={handleStreetChange}
-          rows={2}
+          rows={3}
           disabled={disabled}
         />
       </div>

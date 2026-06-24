@@ -1303,3 +1303,17 @@ span.flatpickr-weekday {
 .simplebar-scrollbar.simplebar-visible:before {
   @apply opacity-100;
 }
+
+/* Modal sticky footer */
+.sticky-footer {
+  position: sticky;
+  bottom: 0;
+  background: inherit;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 10;
+}
+
+.dark .sticky-footer {
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+}

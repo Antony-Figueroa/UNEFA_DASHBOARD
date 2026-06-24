@@ -24,9 +24,11 @@ export default function AddressCard({ address, onEdit, onDelete, onSetPrimary }:
         </span>
       )}
 
-      <div className="mb-2">
-        <AddressBadge addressType={addressType} />
-      </div>
+      {addressType?.code?.toUpperCase() !== 'FISCAL' && (
+        <div className="mb-2">
+          <AddressBadge addressType={addressType} />
+        </div>
+      )}
 
       <p className="text-sm font-medium text-gray-900">{addr.streetAddress}</p>
       <p className="text-sm text-gray-500">

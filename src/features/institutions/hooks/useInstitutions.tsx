@@ -14,9 +14,6 @@ const INSTITUTION_LABELS: Record<string, string> = {
   fiscalAddress: "Dirección Fiscal",
   phone: "Teléfono",
   practiceType: "Tipo de Práctica",
-  region: "Región",
-  nucleus: "Núcleo",
-  extension: "Extensión",
   institutionType: "Tipo de Empresa o Institución",
 };
 

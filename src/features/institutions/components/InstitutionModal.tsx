@@ -1183,7 +1183,6 @@ export default function InstitutionModal({
           )}
 
           </div>
-          </div>
 
           {/* Botón oculto para permitir submit con Enter */}
           <button type="submit" className="hidden" />

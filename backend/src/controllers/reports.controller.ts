@@ -2,8 +2,8 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
-import { generateWorkbook, generateTutoresAcademicosWorkbook } from '../services/excel-export.service.js';
-import type { IndividualTutorSheetConfig, IndividualTutorRow } from '../services/excel-export.service.js';
+import { generateWorkbook, generateTutoresAcademicosWorkbook, generateResumenPasantiasWorkbook } from '../services/excel-export.service.js';
+import type { IndividualTutorSheetConfig, IndividualTutorRow, ResumenPasantiaRow } from '../services/excel-export.service.js';
 
 interface PeriodInfo {
   PERIOD_ID: number;
@@ -1284,7 +1284,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
                 tipo: institution.INSTITUTION_TYPE || '',
                 estudiantes: new Set<number>(),
                 tutoresAcad: new Set<number>(),
-                tutoresInst: new Set<number>(),
+                tutoresInst: new Set<number>(), // IDs, para contar
                 observacion: '',
               });
             }
@@ -1299,46 +1299,33 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             });
           });
 
-          // Agrupar por carrera para las hojas
-          const careerGroupMap = new Map<string, any[]>();
-          summaryMap.forEach((record) => {
-            const careerName = record.carrera || 'Sin Carrera';
-            if (!careerGroupMap.has(careerName)) careerGroupMap.set(careerName, []);
-            careerGroupMap.get(careerName)!.push(record);
+          // Convertir a array plano, ordenar globalmente
+          const sortedRows = Array.from(summaryMap.values()).sort((a, b) => {
+            const c1 = (a.region || '').localeCompare(b.region || '');
+            if (c1 !== 0) return c1;
+            const c2 = (a.nucleo || '').localeCompare(b.nucleo || '');
+            if (c2 !== 0) return c2;
+            const c3 = (a.extension || '').localeCompare(b.extension || '');
+            if (c3 !== 0) return c3;
+            const c4 = (a.carrera || '').localeCompare(b.carrera || '');
+            if (c4 !== 0) return c4;
+            return (a.empresa || '').localeCompare(b.empresa || '');
           });
 
-          const sections = Array.from(careerGroupMap.entries()).map(([career, records]) => ({
-            title: 'Resumen General de Prácticas Profesionales',
-            periodLabel: periodDesc,
-            columns: [
-              { header: 'N°', key: 'nro', width: 5 },
-              { header: 'Región', key: 'region', width: 12 },
-              { header: 'Núcleo', key: 'nucleo', width: 14 },
-              { header: 'Extensión', key: 'extension', width: 14 },
-              { header: 'Carrera', key: 'carrera', width: 22 },
-              { header: 'Estudiantes', key: 'cantidadEstudiantes', width: 12 },
-              { header: 'Tutores Acad.', key: 'cantidadTutoresAcad', width: 14 },
-              { header: 'Empresa', key: 'empresa', width: 24 },
-              { header: 'Tipo', key: 'tipo', width: 14 },
-              { header: 'Cant. Tutores Inst.', key: 'cantidadTutoresInst', width: 16 },
-              { header: 'Observación', key: 'observacion', width: 20 },
-            ],
-            rows: records.map((r: any, i: number) => ({
-              nro: i + 1,
-              region: r.region,
-              nucleo: r.nucleo,
-              extension: r.extension,
-              carrera: r.carrera,
-              cantidadEstudiantes: r.estudiantes.size,
-              cantidadTutoresAcad: r.tutoresAcad.size,
-              empresa: r.empresa,
-              tipo: r.tipo,
-              cantidadTutoresInst: r.tutoresInst.size,
-              observacion: r.observacion,
-            })),
+          const dataRows: ResumenPasantiaRow[] = sortedRows.map((r) => ({
+            region: r.region,
+            nucleo: r.nucleo,
+            extension: r.extension,
+            carrera: r.carrera,
+            cantidadTutoresAcad: r.tutoresAcad.size,
+            cantidadEstudiantes: r.estudiantes.size,
+            empresa: r.empresa,
+            tipo: r.tipo,
+            cantidadTutoresInst: r.tutoresInst.size,
+            observacion: r.observacion,
           }));
 
-          workbook = await generateWorkbook(sections);
+          workbook = await generateResumenPasantiasWorkbook(dataRows, periodDesc);
         }
         break;
       }

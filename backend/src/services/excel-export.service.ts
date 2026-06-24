@@ -54,6 +54,20 @@ export interface IndividualTutorRow {
   observaciones: string;
 }
 
+export interface ResumenPasantiaRow {
+  region: string;
+  nucleo: string;
+  extension: string;
+  carrera: string;
+  cantidadTutoresAcad: number;
+  cantidadEstudiantes: number;
+  empresa: string;
+  /** 'PÚBLICA' | 'PRIVADA' (desde INSTITUTION_TYPE) */
+  tipo: string;
+  cantidadTutoresInst: number;
+  observacion: string;
+}
+
 export interface IndividualTutorSheetConfig {
   sheetIndex: number;
   tutorName: string;
@@ -428,6 +442,213 @@ export async function generateTutoresAcademicosWorkbook(
   }
 
   return workbook;
+}
+
+// ============================================================
+// Generador: Resumen de Pasantías (formato oficial UNEFA)
+// ============================================================
+
+export async function generateResumenPasantiasWorkbook(
+  rows: ResumenPasantiaRow[],
+  periodLabel: string,
+): Promise<Workbook> {
+  const workbook = new ExcelJS.Workbook();
+
+  if (rows.length === 0) {
+    const ws = workbook.addWorksheet('Sin Datos');
+    addEmptySheet(ws, 'No se encontraron registros para el período seleccionado.');
+    return workbook;
+  }
+
+  const ws = workbook.addWorksheet('RESUMEN');
+  const TOTAL = 11; // A-K
+
+  // ============================================================
+  // Estilos
+  // ============================================================
+  const FONT = 'Arial';
+
+  const STYLE_HEADER = {
+    font: { name: FONT, size: 8, bold: true },
+    fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF99CC00' } },
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
+    border: {
+      top: { style: 'thin' as const },
+      bottom: { style: 'thin' as const },
+      left: { style: 'thin' as const },
+      right: { style: 'thin' as const },
+    },
+  };
+
+  // ============================================================
+  // Anchos de columna (A-K)
+  // ============================================================
+  const COL_WIDTHS = [14, 14, 14, 24, 12, 12, 24, 8, 8, 12, 20];
+  COL_WIDTHS.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+
+  // ============================================================
+  // FILA 1: espacio superior
+  // ============================================================
+  ws.getRow(1).height = 10;
+
+  // ============================================================
+  // FILA 2 (100px): membrete + logos
+  // ============================================================
+  ws.getRow(2).height = 100;
+
+  ws.mergeCells(2, 1, 2, TOTAL);
+  const membreteCell = ws.getCell(2, 1);
+  membreteCell.value = MEMBRETE_TEXT;
+  membreteCell.font = { name: FONT, size: 9 };
+  membreteCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+  addResumenLogos(workbook, ws);
+
+  // ============================================================
+  // FILA 3: espacio
+  // ============================================================
+  ws.getRow(3).height = 6;
+
+  // ============================================================
+  // FILA 4 (60px): TÍTULO + período (período en rojo)
+  // ============================================================
+  ws.getRow(4).height = 60;
+  ws.mergeCells(4, 1, 4, TOTAL);
+  const titleCell = ws.getCell(4, 1);
+  titleCell.value = {
+    richText: [
+      { text: 'RESUMEN PASANTIAS', font: { name: FONT, size: 12, bold: true } },
+      { text: `\n${periodLabel}`, font: { name: FONT, size: 12, bold: true, color: { argb: 'FFFF0000' } } },
+    ],
+  };
+  titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  titleCell.border = {
+    top: { style: 'thin' },
+    bottom: { style: 'medium' },
+    left: { style: 'thin' },
+    right: { style: 'thin' },
+  };
+
+  // ============================================================
+  // FILA 5: espacio
+  // ============================================================
+  ws.getRow(5).height = 4;
+
+  // ============================================================
+  // FILA 6 (42px): HEADER ROW 1 (rowspan 2 en A-F)
+  // A=REGIÓN, B=NÚCLEO, C=EXRTENSIÓN, D=NOMBRE DE LA CARRERA,
+  // E=CANTIDAD DE TUTORES ACADEMICOS, F=CANTIDAD DE ESTUDIANTES,
+  // G-K merged = CENTRO DE PRACTICA PROFESIONAL
+  // ============================================================
+  const h1 = ws.getRow(6);
+  h1.height = 42;
+
+  const setH = (cell: any, val: string) => {
+    cell.value = val;
+    cell.font = STYLE_HEADER.font;
+    cell.fill = STYLE_HEADER.fill;
+    cell.alignment = STYLE_HEADER.alignment;
+    cell.border = STYLE_HEADER.border;
+  };
+
+  // A-F: rowspan 2 (merge row 6-7)
+  setH(ws.getCell(6, 1), 'REGIÓN');         ws.mergeCells(6, 1, 7, 1);
+  setH(ws.getCell(6, 2), 'NÚCLEO');         ws.mergeCells(6, 2, 7, 2);
+  setH(ws.getCell(6, 3), 'EXRTENSIÓN');     ws.mergeCells(6, 3, 7, 3);
+  setH(ws.getCell(6, 4), 'NOMBRE DE\nLA CARRERA'); ws.mergeCells(6, 4, 7, 4);
+  setH(ws.getCell(6, 5), 'CANTIDAD DE\nTUTORES\nACADEMICOS'); ws.mergeCells(6, 5, 7, 5);
+  setH(ws.getCell(6, 6), 'CANTIDAD\nDE\nESTUDIANTES'); ws.mergeCells(6, 6, 7, 6);
+
+  // G-K: merged "CENTRO DE PRACTICA PROFESIONAL"
+  ws.mergeCells(6, 7, 6, 11);
+  setH(ws.getCell(6, 7), 'CENTRO DE PRACTICA PROFESIONAL');
+
+  // ============================================================
+  // FILA 7 (42px): HEADER ROW 2 — sub-headers bajo CENTRO
+  // G=NOMBRE DE LA EMPRESA / INSTITUCION, H=PÚBLICA, I=PRIVADA,
+  // J=CANTIDAD DE TUTORES INSTITUCIONALES, K=OBSERVACION
+  // ============================================================
+  const h2 = ws.getRow(7);
+  h2.height = 42;
+
+  setH(ws.getCell(7, 7), 'NOMBRE DE LA\nEMPRESA / INSTITUCION');
+  setH(ws.getCell(7, 8), 'PÚBLICA');
+  setH(ws.getCell(7, 9), 'PRIVADA');
+  setH(ws.getCell(7, 10), 'CANTIDAD DE\nTUTORES\nINSTITUCIONALES');
+  setH(ws.getCell(7, 11), 'OBSERVACION');
+
+  // ============================================================
+  // FILAS DE DATOS (desde fila 8) — TODO centrado
+  // ============================================================
+  rows.forEach((row, rowIdx) => {
+    const excelRow = ws.getRow(8 + rowIdx);
+    excelRow.height = 28;
+
+    const isLastRow = rowIdx === rows.length - 1;
+    const noBoldBorder = isLastRow ? { style: 'medium' as const } : { style: 'thin' as const };
+
+    const cellVals: (string | number)[] = [
+      row.region,
+      row.nucleo,
+      row.extension,
+      row.carrera,
+      row.cantidadTutoresAcad,
+      row.cantidadEstudiantes,
+      row.empresa,
+      (row.tipo || '').toUpperCase() === 'PÚBLICA' ? 'X' : '',
+      (row.tipo || '').toUpperCase() === 'PRIVADA' ? 'X' : '',
+      row.cantidadTutoresInst,
+      row.observacion,
+    ];
+
+    cellVals.forEach((val, colIdx) => {
+      const cell = excelRow.getCell(colIdx + 1);
+      cell.value = val ?? '';
+      cell.font = { name: FONT, size: 9 };
+      cell.alignment = {
+        vertical: 'middle',
+        wrapText: true,
+        horizontal: 'center',
+      };
+      cell.border = {
+        top: { style: 'thin' },
+        bottom: noBoldBorder,
+        left: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    });
+  });
+
+  return workbook;
+}
+
+// ============================================================
+// Logos para hoja resumen (posicionados sobre fila 2, 11 cols)
+// ============================================================
+
+function addResumenLogos(workbook: Workbook, ws: Worksheet): void {
+  const logoPaths = findLogoPaths();
+  if (!logoPaths) return;
+
+  try {
+    if (logoPaths.logo && fs.existsSync(logoPaths.logo)) {
+      const logoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.logo) as any, extension: 'png' });
+      ws.addImage(logoId, {
+        tl: { col: 0.1, row: 1.1 },
+        ext: { width: 70, height: 70 },
+      });
+    }
+
+    if (logoPaths.escudo && fs.existsSync(logoPaths.escudo)) {
+      const escudoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.escudo) as any, extension: 'png' });
+      ws.addImage(escudoId, {
+        tl: { col: 9.8, row: 1.1 },
+        ext: { width: 70, height: 70 },
+      });
+    }
+  } catch (err) {
+    console.warn('[excel-export] No se pudieron cargar las imágenes:', (err as Error).message);
+  }
 }
 
 // ============================================================

@@ -369,7 +369,7 @@ export default function PreEnrollmentPage() {
                     </div>
 
                     {!pageLoading && (
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             <Button onClick={handleCreate} disabled={isSelecting} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
                                 Nueva Pre-Inscripción
                             </Button>

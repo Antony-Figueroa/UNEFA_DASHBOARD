@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
-import { generateWorkbook } from '../services/excel-export.service.js';
+import { generateWorkbook, generateTutoresAcademicosWorkbook } from '../services/excel-export.service.js';
+import type { IndividualTutorSheetConfig, IndividualTutorRow } from '../services/excel-export.service.js';
 
 interface PeriodInfo {
   PERIOD_ID: number;
@@ -1013,7 +1014,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
 
     switch (type) {
       case 'tutores-academicos': {
-        // Reutilizar lógica de getTutorsAcademicReport
+        // ── 1. Query principal: tutores académicos con sus prácticas ──
         const { data: tutorPractices } = await supabase
           .from('t_professional_practices_tutor')
           .select(`
@@ -1022,36 +1023,93 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             t_tutors (
               TUTOR_ID,
               CONDITION, DEDICATION, CATEGORY, EMAIL,
+              person_id,
               t_persons!inner (
-                ci, first_name, middle_name, last_name, second_last_name, phone, email
+                ci, first_name, middle_name, last_name, second_last_name, phone, email, gender
               )
             ),
             t_professional_practices (
-              PROFESSIONAL_PRACTICE_ID, PERIOD_ID, PRACTICES_STATUS,
-              INSTITUTION_ID, STUDENTS_ID,
-              t_institution (INSTITUTION_ID, INSTITUTION_NAME, REGION, NUCLEUS, EXTENSION),
-              t_students (STUDENTS_ID),
-              t_career (CAREER_ID, CAREER_NAME, CAREER_ABBREVIATION)
+              PROFESSIONAL_PRACTICE_ID, PERIOD_ID, student_person_id,
+              t_institution (
+                INSTITUTION_ID, INSTITUTION_NAME, REGION, NUCLEUS, EXTENSION,
+                INSTITUTION_TYPE, INSTITUTION_ADDRESS
+              ),
+              t_students (
+                STUDENTS_ID, STUDENT_TYPE, MILITARY_RANK
+              ),
+              t_career (CAREER_ID, CAREER_NAME),
+              t_professional_practices_tutor (
+                TUTOR_TYPE,
+                t_tutors (
+                  TUTOR_ID, TITULO, person_id
+                )
+              )
             )
           `)
           .eq('TUTOR_TYPE', 'ACADEMICO');
 
-        if (tutorPractices) {
-          const careerGroups = new Map<string, any[]>();
-          const periodDesc = await getPeriodDescription(supabase, periodId as string);
+        if (!tutorPractices) break;
 
-          (tutorPractices as any[])?.forEach((tp) => {
-            const tutor = tp.t_tutors;
-            const practice = tp.t_professional_practices;
-            if (!tutor || !practice) return;
-            if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
-            if (careerIds.length > 0 && (!practice.t_career || !careerIds.includes(practice.t_career.CAREER_ID))) return;
+        // ── 2. Recolectar todos los person_id de estudiantes y tutores institucionales ──
+        const raw = tutorPractices as any[];
+        const personIds = new Set<number>();
+        raw.forEach((tp) => {
+          const practice = tp.t_professional_practices;
+          if (!practice) return;
+          if (practice.student_person_id) personIds.add(practice.student_person_id);
+          const instTutors = practice.t_professional_practices_tutor || [];
+          instTutors.forEach((t: any) => {
+            if (t.t_tutors?.person_id) personIds.add(t.t_tutors.person_id);
+          });
+        });
 
-            const careerName = practice.t_career?.CAREER_NAME || 'Sin Carrera';
-            const institution = practice.t_institution;
+        const personIdArray = [...personIds];
+        let studentPersonMap = new Map<number, any>();
+        let instTutorPersonMap = new Map<number, any>();
 
-            if (!careerGroups.has(careerName)) careerGroups.set(careerName, []);
-            careerGroups.get(careerName)!.push({
+        if (personIdArray.length > 0) {
+          const { data: persons } = await supabase
+            .from('t_persons')
+            .select('person_id, ci, first_name, middle_name, last_name, second_last_name, phone, email, gender')
+            .in('person_id', personIdArray);
+
+          if (persons) {
+            for (const p of persons as any[]) {
+              studentPersonMap.set(p.person_id, p);
+              instTutorPersonMap.set(p.person_id, p);
+            }
+          }
+        }
+
+        // ── 3. Procesar datos ──
+        const periodDesc = await getPeriodDescription(supabase, periodId as string);
+        const generalMap = new Map<string, Map<number, any>>();
+        const individualMap = new Map<number, { tutorFirstNames: string; tutorLastNames: string; rows: IndividualTutorRow[] }>();
+
+        raw.forEach((tp) => {
+          const tutor = tp.t_tutors;
+          const practice = tp.t_professional_practices;
+          if (!tutor || !practice) return;
+          if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
+          if (careerIds.length > 0 && (!practice.t_career || !careerIds.includes(practice.t_career.CAREER_ID))) return;
+
+          const careerName = practice.t_career?.CAREER_NAME || 'Sin Carrera';
+          const institution = practice.t_institution;
+          const studentPerson = practice.student_person_id ? studentPersonMap.get(practice.student_person_id) : null;
+          const estudianteEntity = practice.t_students; // STUDENT_TYPE, MILITARY_RANK
+          const tutorInstArr = practice.t_professional_practices_tutor || [];
+          const instTutor = tutorInstArr.find((t: any) => t.TUTOR_TYPE === 'INSTITUCIONAL')?.t_tutors;
+          const instTutorPerson = instTutor?.person_id ? instTutorPersonMap.get(instTutor.person_id) : null;
+
+          // ── General: agregar por tutor ──
+          if (!generalMap.has(careerName)) generalMap.set(careerName, new Map<number, any>());
+          const genTutorMap = generalMap.get(careerName)!;
+          const tutorKey = tutor.TUTOR_ID;
+
+          if (genTutorMap.has(tutorKey)) {
+            genTutorMap.get(tutorKey)!.cantidadEstudiantes++;
+          } else {
+            genTutorMap.set(tutorKey, {
               region: getRegionName(institution?.REGION) || institution?.REGION || '',
               nucleo: institution?.NUCLEUS || '',
               extension: institution?.EXTENSION || '',
@@ -1063,32 +1121,124 @@ export const exportReportExcel = async (req: Request, res: Response) => {
               dedicacion: tutor.DEDICATION || '',
               categoria: tutor.CATEGORY || '',
               telefono: getPersonField(tutor.t_persons, 'phone') || '',
+              correo: getPersonField(tutor.t_persons, 'email') || '',
+              cantidadEstudiantes: 1,
+            });
+          }
+
+          // ── Individual: detalle por estudiante ──
+          const tutorFirstNames = `${getPersonField(tutor.t_persons, 'first_name') || ''} ${getPersonField(tutor.t_persons, 'middle_name') || ''}`.trim();
+          const tutorLastNames = `${getPersonField(tutor.t_persons, 'last_name') || ''} ${getPersonField(tutor.t_persons, 'second_last_name') || ''}`.trim();
+
+          if (!individualMap.has(tutorKey)) {
+            individualMap.set(tutorKey, { tutorFirstNames, tutorLastNames, rows: [] });
+          }
+
+          // Construir tutor institucional concatenado desde t_persons
+          const instName = instTutorPerson
+            ? `${instTutorPerson.first_name || ''} ${instTutorPerson.middle_name || ''}`.trim()
+            : '';
+          const instSurname = instTutorPerson
+            ? `${instTutorPerson.last_name || ''} ${instTutorPerson.second_last_name || ''}`.trim()
+            : '';
+          const instCi = instTutorPerson?.ci || '';
+          const instPhone = instTutorPerson?.phone || '';
+          const instEmail = instTutorPerson?.email || '';
+          const tutorInstConcat = instTutorPerson
+            ? `${instSurname}, ${instName}, C.I: ${instCi}/TLFNO: ${instPhone}/CORREO: ${instEmail}`
+            : '';
+
+          individualMap.get(tutorKey)!.rows.push({
+            nro: 0,
+            region: getRegionName(institution?.REGION) || institution?.REGION || '',
+            nucleo: institution?.NUCLEUS || '',
+            extension: institution?.EXTENSION || '',
+            carrera: careerName,
+            estudianteNombre: studentPerson ? `${studentPerson.first_name || ''} ${studentPerson.middle_name || ''}`.trim() : '',
+            estudianteApellido: studentPerson ? `${studentPerson.last_name || ''} ${studentPerson.second_last_name || ''}`.trim() : '',
+            estudianteCi: studentPerson?.ci || '',
+            sexo: studentPerson?.gender || '',
+            tipo: estudianteEntity?.STUDENT_TYPE || '',
+            rango: estudianteEntity?.MILITARY_RANK || '',
+            telefono: studentPerson?.phone || '',
+            institucion: institution?.INSTITUTION_NAME || '',
+            tipoInstitucion: institution?.INSTITUTION_TYPE || '',
+            tutorInst: tutorInstConcat,
+            direccion: institution?.INSTITUTION_ADDRESS || '',
+            observaciones: '',
+          });
+        });
+
+          // ── Construir hoja "RELACIÓN GENERAL" ──
+          const ANEXO_FOOTER_NOTES = [
+            'Nota:',
+            '1.-Los soportes anexados a este formato, deberán estar ordenados según la numeración correspondiente a cada tutor (a).',
+            '2. Las pestañas deben estar enumeradas de acuerdo al orden numerico del docente en la relacion general.',
+            '2.-Debe realizar un archivo por cada carrera.',
+          ];
+
+          const ANEXO_SIGNATURES = [
+            'NOMBRE APELLIDO\nFIRMA Y SELLO DEL COORDINADOR DE PRÁCTICAS PROFESIONALES',
+            'NOMBRE APELLIDO\nFIRMA Y SELLO DEL JEFE ÁREA ACADÉMICA',
+            'NOMBRE APELLIDO\nFIRMA Y SELLO DEL DECANO (A)',
+          ];
+
+          // Todas las carreras en una sola sección general (una hoja)
+          const generalRows: any[] = [];
+          generalMap.forEach((tutorMap) => {
+            tutorMap.forEach((r) => {
+              generalRows.push(r);
             });
           });
-
-          const sections = Array.from(careerGroups.entries()).map(([career, rows]) => ({
-            title: 'ANEXO 4 — Relación de Tutores Académicos',
+          // Ordenar por apellido para mantener consistencia con individuales
+          generalRows.sort((a, b) => a.apellidoTutor.localeCompare(b.apellidoTutor));
+          const generalSection = {
+            title: 'RELACIÓN GENERAL\nDE TUTORES ACADÉMICOS CONTRATADOS U ORDINARIOS CON DEDICACIÓN MT, TC Y DE QUE SE ENCUENTRAN TUTORANDO ESTUDIANTES DE PRACTICAS PROFESIONALES ( PASANTIAS )',
             periodLabel: periodDesc,
             columns: [
               { header: 'N°', key: 'nro', width: 5 },
-              { header: 'Región', key: 'region', width: 14 },
-              { header: 'Núcleo', key: 'nucleo', width: 16 },
-              { header: 'Extensión', key: 'extension', width: 14 },
-              { header: 'Carrera', key: 'carrera', width: 24 },
-              { header: 'Nombre', key: 'nombreTutor', width: 18 },
-              { header: 'Apellido', key: 'apellidoTutor', width: 18 },
-              { header: 'Cédula', key: 'cedula', width: 14 },
-              { header: 'Condición', key: 'condicion', width: 14 },
-              { header: 'Dedicación', key: 'dedicacion', width: 14 },
-              { header: 'Categoría', key: 'categoria', width: 14 },
-              { header: 'Teléfono', key: 'telefono', width: 14 },
-              { header: 'Estudiantes', key: 'estudiantes', width: 12 },
+              { header: 'REGIÓN', key: 'region', width: 14 },
+              { header: 'NÚCLEO', key: 'nucleo', width: 16 },
+              { header: 'EXTENSIÓN', key: 'extension', width: 14 },
+              { header: 'CARRERA', key: 'carrera', width: 24 },
+              { header: 'NOMBRE DEL TUTOR (A)', key: 'nombreTutor', width: 20 },
+              { header: 'APELLIDO DEL TUTOR (A)', key: 'apellidoTutor', width: 20 },
+              { header: 'CÉDULA', key: 'cedula', width: 14 },
+              { header: 'CONDICIÓN', key: 'condicion', width: 14 },
+              { header: 'DEDICACIÓN', key: 'dedicacion', width: 14 },
+              { header: 'CATEGORÍA', key: 'categoria', width: 14 },
+              { header: 'TELÉFONO', key: 'telefono', width: 14 },
+              { header: 'CORREO ELECTRÓNICO', key: 'correo', width: 22 },
+              { header: 'CANTIDAD DE ESTUDIANTES ATENDIDOS', key: 'cantidadEstudiantes', width: 16 },
             ],
-            rows: rows.map((r, i) => ({ nro: i + 1, ...r, estudiantes: 1 })),
-          }));
+            rows: generalRows.map((r, i) => ({ nro: i + 1, ...r })),
+            footerNotes: ANEXO_FOOTER_NOTES,
+            signatures: ANEXO_SIGNATURES,
+          };
 
-          workbook = await generateWorkbook(sections);
-        }
+          // ── Construir hojas individuales ──
+          const individualSections: IndividualTutorSheetConfig[] = [];
+          let tutorCounter = 0;
+          // Ordenar tutores por apellido para consistencia
+          const sortedTutors = Array.from(individualMap.entries()).sort((a, b) => {
+            return a[1].tutorLastNames.localeCompare(b[1].tutorLastNames);
+          });
+
+          sortedTutors.forEach(([_tid, info]) => {
+            tutorCounter++;
+            const sortedRows = info.rows.sort((a, b) =>
+              `${a.estudianteApellido} ${a.estudianteNombre}`.localeCompare(`${b.estudianteApellido} ${b.estudianteNombre}`),
+            );
+            individualSections.push({
+              sheetIndex: tutorCounter,
+              tutorName: info.tutorFirstNames,
+              tutorApellido: info.tutorLastNames,
+              periodLabel: periodDesc,
+              rows: sortedRows.map((r, i) => ({ ...r, nro: i + 1 })),
+            });
+          });
+
+          workbook = await generateTutoresAcademicosWorkbook(generalSection, individualSections);
         break;
       }
 

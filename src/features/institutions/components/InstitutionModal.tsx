@@ -919,7 +919,8 @@ export default function InstitutionModal({
                disabled={isFormDisabled || !!editingInst}
             />
           </div>
-
+          </div>
+          
           <div hidden={tabsState.activeTab !== 'contacto'} role="tabpanel" className="contents">
           <div>
             <label className="text-sm font-medium text-text-primary dark:text-white/90">Teléfono <span className="text-red-500">*</span></label>

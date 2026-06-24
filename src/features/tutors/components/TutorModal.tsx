@@ -437,7 +437,6 @@ export default function TutorModal({
           setExistingPerson(personData);
           setViewOnlyMode(false);
 
-          const personData = result.person;
           setValue("identificationPrefix", personData.identificationPrefix || 'V');
           setDisplayIdentificationNumber(formatCedulaDisplay(personData.identificationNumber || ''));
           setValue("identificationNumber", personData.identificationNumber || '');

@@ -1643,6 +1643,11 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                 }
               } catch (addrErr) {
                 console.error('[StudentModal] Error saving address:', addrErr);
+                addToast({
+                  variant: "error",
+                  title: "Error al guardar dirección",
+                  message: "No se pudo guardar la dirección de residencia.",
+                });
               }
             }
           } finally {

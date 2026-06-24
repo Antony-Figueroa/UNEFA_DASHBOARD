@@ -1090,7 +1090,7 @@ export default function EnrollmentModal({
                         return (
                           <>
                             <CustomSelect
-                              options={filteredInstitutions.map(i => ({
+                              options={filteredInstitutions.map((i: any) => ({
                                 value: i.institutionId,
                                 label: `${i.name}${i.region || i.nucleus ? ` (${[i.region, i.nucleus].filter(Boolean).join(' - ')})` : ''}`
                               }))}

@@ -48,7 +48,18 @@ export default function AddressList({
   }, [entityId, fetchAddresses]);
 
   useEffect(() => {
-    addressService.getAddressTypes().then(res => setAddressTypes(res.data)).catch(() => {});
+    addressService.getAddressTypes().then(res => {
+      const raw = res.data as any[];
+      if (Array.isArray(raw)) {
+        setAddressTypes(raw.map((item: any) => ({
+          addressTypeId: item.address_type_id ?? item.addressTypeId,
+          code: item.code,
+          name: item.name,
+          description: item.description,
+          status: item.status,
+        })));
+      }
+    }).catch(() => {});
   }, []);
 
   const addressTypeOptions = addressTypes.map(t => ({

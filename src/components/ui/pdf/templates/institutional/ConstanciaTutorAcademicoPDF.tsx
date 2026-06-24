@@ -14,6 +14,10 @@ const styles = StyleSheet.create({
 
 interface Props {
   data: {
+    estudiante?: {
+      ci: string; primerNombre: string; segundoNombre?: string;
+      primerApellido: string; segundoApellido?: string;
+    } | null;
     tutor: {
       ci: string; titulo: string | null; primerNombre: string; segundoNombre?: string;
       primerApellido: string; segundoApellido?: string;
@@ -37,6 +41,8 @@ export function ConstanciaTutorAcademicoPDF({ data, textos }: Props) {
     periodo: data.periodo?.description || '',
     inicioLapso: data.periodo ? formatFecha(data.periodo.startDate) : '',
     finLapso: data.periodo ? formatFecha(data.periodo.endDate) : '',
+    estudianteNombreCompleto: data.estudiante ? formatNombreCompleto(data.estudiante) : '',
+    estudianteCi: data.estudiante ? formatCI(data.estudiante.ci) : '',
     dia: fechaHoy.dia,
     mes: fechaHoy.mes,
     anio: fechaHoy.anio,

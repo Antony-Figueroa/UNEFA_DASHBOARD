@@ -1,4 +1,5 @@
-export function parseCI(ci: string): { prefix: string; number: string } {
+export function parseCI(ci: string | null | undefined): { prefix: string; number: string } {
+  if (!ci) return { prefix: '', number: '' };
   const parts = ci.split('-');
   return {
     prefix: parts[0] || 'V',
@@ -6,7 +7,8 @@ export function parseCI(ci: string): { prefix: string; number: string } {
   };
 }
 
-export function formatCI(ci: string): string {
+export function formatCI(ci: string | null | undefined): string {
+  if (!ci) return '';
   const { prefix, number } = parseCI(ci);
   return `${prefix}/E - ${number}`;
 }
@@ -17,27 +19,33 @@ export function getTutorTitle(titulo: string | null): string {
 }
 
 export function getTutorFullName(tutor: {
-  titulo: string | null;
-  primerNombre: string;
-  segundoNombre?: string;
-  primerApellido: string;
-  segundoApellido?: string;
-}): string {
-  const title = getTutorTitle(tutor.titulo);
+  titulo?: string | null;
+  primerNombre?: string | null;
+  segundoNombre?: string | null;
+  primerApellido?: string | null;
+  segundoApellido?: string | null;
+} | null | undefined): string {
+  if (!tutor) return '';
+  const title = getTutorTitle(tutor.titulo ?? null);
+  const primerNombre = tutor.primerNombre || '';
   const segundoNombre = tutor.segundoNombre ? ` ${tutor.segundoNombre}` : '';
+  const primerApellido = tutor.primerApellido || '';
   const segundoApellido = tutor.segundoApellido ? ` ${tutor.segundoApellido}` : '';
-  return `${title}. ${tutor.primerNombre}${segundoNombre} ${tutor.primerApellido}${segundoApellido}`;
+  return `${title}. ${primerNombre}${segundoNombre} ${primerApellido}${segundoApellido}`;
 }
 
 export function formatNombreCompleto(persona: {
-  primerNombre: string;
-  segundoNombre?: string;
-  primerApellido: string;
-  segundoApellido?: string;
-}): string {
+  primerNombre?: string | null;
+  segundoNombre?: string | null;
+  primerApellido?: string | null;
+  segundoApellido?: string | null;
+} | null | undefined): string {
+  if (!persona) return '';
+  const primerNombre = persona.primerNombre || '';
   const segundoNombre = persona.segundoNombre ? ` ${persona.segundoNombre}` : '';
+  const primerApellido = persona.primerApellido || '';
   const segundoApellido = persona.segundoApellido ? ` ${persona.segundoApellido}` : '';
-  return `${persona.primerNombre}${segundoNombre} ${persona.primerApellido}${segundoApellido}`;
+  return `${primerNombre}${segundoNombre} ${primerApellido}${segundoApellido}`.trim();
 }
 
 export function formatFecha(fecha: string | null): string {

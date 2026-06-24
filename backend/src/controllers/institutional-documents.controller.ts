@@ -15,8 +15,13 @@ async function getPracticeBase(supabase: any, practiceId: number) {
       PROFESSIONAL_PRACTICE_ID, START_DATE, END_DATE, GRADE, REGIME,
       SEMESTER, SECTION, DEPARTMENT,
       STUDENTS_ID, CAREER_ID, INSTITUTION_ID, PERIOD_ID, INTERNSHIP_TYPE_ID,
-      t_students!inner(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME,
-        CONTACT_PHONE, EMAIL, ADDRESS, GENDER, STUDENT_TYPE, EMPLOYMENT),
+      t_students!inner(
+        STUDENTS_ID, STUDENT_TYPE, EMPLOYMENT,
+        t_persons!fk_students_person(
+          ci, first_name, middle_name, last_name, second_last_name,
+          email, phone, gender, address
+        )
+      ),
       t_career!inner(CAREER_NAME, CAREER_ABBREVIATION),
       t_institution(INSTITUTION_NAME, INSTITUTION_TYPE, INSTITUTION_ADDRESS,
         REGION, NUCLEUS, EXTENSION, RIF, INSTITUTION_CONTACT),
@@ -96,14 +101,14 @@ export const getDataAceptacionTutor = async (req: Request, res: Response) => {
       data: {
         practiceId,
         estudiante: {
-          ci: estudiante.STUDENTS_CI,
-          primerNombre: estudiante.NAME,
-          segundoNombre: estudiante.SECOND_NAME || '',
-          primerApellido: estudiante.SURNAME,
-          segundoApellido: estudiante.SECOND_SURNAME || '',
-          telefono: estudiante.CONTACT_PHONE || '',
-          email: estudiante.EMAIL || '',
-          genero: estudiante.GENDER || '',
+          ci: (estudiante.t_persons?.ci ?? estudiante.STUDENTS_CI) || '',
+          primerNombre: (estudiante.t_persons?.first_name ?? estudiante.NAME) || '',
+          segundoNombre: (estudiante.t_persons?.middle_name ?? estudiante.SECOND_NAME) || '',
+          primerApellido: (estudiante.t_persons?.last_name ?? estudiante.SURNAME) || '',
+          segundoApellido: (estudiante.t_persons?.second_last_name ?? estudiante.SECOND_SURNAME) || '',
+          telefono: (estudiante.t_persons?.phone ?? estudiante.CONTACT_PHONE) || '',
+          email: (estudiante.t_persons?.email ?? estudiante.EMAIL) || '',
+          genero: (estudiante.t_persons?.gender ?? estudiante.GENDER) || '',
           tipoEstudiante: estudiante.STUDENT_TYPE || '',
           empleo: estudiante.EMPLOYMENT || '',
         },
@@ -148,11 +153,11 @@ export const getDataSolicitudInstitucion = async (req: Request, res: Response) =
       data: {
         practiceId,
         estudiante: {
-          ci: estudiante.STUDENTS_CI,
-          primerNombre: estudiante.NAME,
-          segundoNombre: estudiante.SECOND_NAME || '',
-          primerApellido: estudiante.SURNAME,
-          segundoApellido: estudiante.SECOND_SURNAME || '',
+          ci: (estudiante.t_persons?.ci ?? estudiante.STUDENTS_CI) || '',
+          primerNombre: (estudiante.t_persons?.first_name ?? estudiante.NAME) || '',
+          segundoNombre: (estudiante.t_persons?.middle_name ?? estudiante.SECOND_NAME) || '',
+          primerApellido: (estudiante.t_persons?.last_name ?? estudiante.SURNAME) || '',
+          segundoApellido: (estudiante.t_persons?.second_last_name ?? estudiante.SECOND_SURNAME) || '',
         },
         carrera: { nombre: carrera.CAREER_NAME, abreviatura: carrera.CAREER_ABBREVIATION },
         institucion: institucion ? {
@@ -197,13 +202,13 @@ export const getDataCartaPostulacion = async (req: Request, res: Response) => {
       data: {
         practiceId,
         estudiante: {
-          ci: estudiante.STUDENTS_CI,
-          primerNombre: estudiante.NAME,
-          segundoNombre: estudiante.SECOND_NAME || '',
-          primerApellido: estudiante.SURNAME,
-          segundoApellido: estudiante.SECOND_SURNAME || '',
-          telefono: estudiante.CONTACT_PHONE || '',
-          email: estudiante.EMAIL || '',
+          ci: (estudiante.t_persons?.ci ?? estudiante.STUDENTS_CI) || '',
+          primerNombre: (estudiante.t_persons?.first_name ?? estudiante.NAME) || '',
+          segundoNombre: (estudiante.t_persons?.middle_name ?? estudiante.SECOND_NAME) || '',
+          primerApellido: (estudiante.t_persons?.last_name ?? estudiante.SURNAME) || '',
+          segundoApellido: (estudiante.t_persons?.second_last_name ?? estudiante.SECOND_SURNAME) || '',
+          telefono: (estudiante.t_persons?.phone ?? estudiante.CONTACT_PHONE) || '',
+          email: (estudiante.t_persons?.email ?? estudiante.EMAIL) || '',
           empleo: estudiante.EMPLOYMENT || '',
         },
         carrera: { nombre: carrera.CAREER_NAME, abreviatura: carrera.CAREER_ABBREVIATION },
@@ -253,11 +258,11 @@ export const getDataActaValidacion = async (req: Request, res: Response) => {
       data: {
         practiceId,
         estudiante: {
-          ci: estudiante.STUDENTS_CI,
-          primerNombre: estudiante.NAME,
-          segundoNombre: estudiante.SECOND_NAME || '',
-          primerApellido: estudiante.SURNAME,
-          segundoApellido: estudiante.SECOND_SURNAME || '',
+          ci: (estudiante.t_persons?.ci ?? estudiante.STUDENTS_CI) || '',
+          primerNombre: (estudiante.t_persons?.first_name ?? estudiante.NAME) || '',
+          segundoNombre: (estudiante.t_persons?.middle_name ?? estudiante.SECOND_NAME) || '',
+          primerApellido: (estudiante.t_persons?.last_name ?? estudiante.SURNAME) || '',
+          segundoApellido: (estudiante.t_persons?.second_last_name ?? estudiante.SECOND_SURNAME) || '',
         },
         carrera: { nombre: carrera.CAREER_NAME, abreviatura: carrera.CAREER_ABBREVIATION },
       },
@@ -291,11 +296,11 @@ export const getDataEvaluacionFinal = async (req: Request, res: Response) => {
       data: {
         practiceId,
         estudiante: {
-          ci: estudiante.STUDENTS_CI,
-          primerNombre: estudiante.NAME,
-          segundoNombre: estudiante.SECOND_NAME || '',
-          primerApellido: estudiante.SURNAME,
-          segundoApellido: estudiante.SECOND_SURNAME || '',
+          ci: (estudiante.t_persons?.ci ?? estudiante.STUDENTS_CI) || '',
+          primerNombre: (estudiante.t_persons?.first_name ?? estudiante.NAME) || '',
+          segundoNombre: (estudiante.t_persons?.middle_name ?? estudiante.SECOND_NAME) || '',
+          primerApellido: (estudiante.t_persons?.last_name ?? estudiante.SURNAME) || '',
+          segundoApellido: (estudiante.t_persons?.second_last_name ?? estudiante.SECOND_SURNAME) || '',
         },
         carrera: { nombre: carrera.CAREER_NAME, abreviatura: carrera.CAREER_ABBREVIATION },
         institucion: institucion ? {
@@ -343,11 +348,11 @@ export const getDataEvaluacionTutorInstitucional = async (req: Request, res: Res
       data: {
         practiceId,
         estudiante: {
-          ci: estudiante.STUDENTS_CI,
-          primerNombre: estudiante.NAME,
-          segundoNombre: estudiante.SECOND_NAME || '',
-          primerApellido: estudiante.SURNAME,
-          segundoApellido: estudiante.SECOND_SURNAME || '',
+          ci: (estudiante.t_persons?.ci ?? estudiante.STUDENTS_CI) || '',
+          primerNombre: (estudiante.t_persons?.first_name ?? estudiante.NAME) || '',
+          segundoNombre: (estudiante.t_persons?.middle_name ?? estudiante.SECOND_NAME) || '',
+          primerApellido: (estudiante.t_persons?.last_name ?? estudiante.SURNAME) || '',
+          segundoApellido: (estudiante.t_persons?.second_last_name ?? estudiante.SECOND_SURNAME) || '',
         },
         carrera: { nombre: carrera.CAREER_NAME, abreviatura: carrera.CAREER_ABBREVIATION },
         institucion: institucion ? { nombre: institucion.INSTITUTION_NAME } : null,
@@ -391,11 +396,11 @@ export const getDataEvaluacionTutorAcademico = async (req: Request, res: Respons
       data: {
         practiceId,
         estudiante: {
-          ci: estudiante.STUDENTS_CI,
-          primerNombre: estudiante.NAME,
-          segundoNombre: estudiante.SECOND_NAME || '',
-          primerApellido: estudiante.SURNAME,
-          segundoApellido: estudiante.SECOND_SURNAME || '',
+          ci: (estudiante.t_persons?.ci ?? estudiante.STUDENTS_CI) || '',
+          primerNombre: (estudiante.t_persons?.first_name ?? estudiante.NAME) || '',
+          segundoNombre: (estudiante.t_persons?.middle_name ?? estudiante.SECOND_NAME) || '',
+          primerApellido: (estudiante.t_persons?.last_name ?? estudiante.SURNAME) || '',
+          segundoApellido: (estudiante.t_persons?.second_last_name ?? estudiante.SECOND_SURNAME) || '',
         },
         carrera: { nombre: carrera.CAREER_NAME, abreviatura: carrera.CAREER_ABBREVIATION },
         tutorAcademico: tutorAcad ? {
@@ -476,11 +481,11 @@ export const getDataEvaluacionComite = async (req: Request, res: Response) => {
       data: {
         practiceId,
         estudiante: {
-          ci: estudiante.STUDENTS_CI,
-          primerNombre: estudiante.NAME,
-          segundoNombre: estudiante.SECOND_NAME || '',
-          primerApellido: estudiante.SURNAME,
-          segundoApellido: estudiante.SECOND_SURNAME || '',
+          ci: (estudiante.t_persons?.ci ?? estudiante.STUDENTS_CI) || '',
+          primerNombre: (estudiante.t_persons?.first_name ?? estudiante.NAME) || '',
+          segundoNombre: (estudiante.t_persons?.middle_name ?? estudiante.SECOND_NAME) || '',
+          primerApellido: (estudiante.t_persons?.last_name ?? estudiante.SURNAME) || '',
+          segundoApellido: (estudiante.t_persons?.second_last_name ?? estudiante.SECOND_SURNAME) || '',
         },
         carrera: { nombre: carrera.CAREER_NAME, abreviatura: carrera.CAREER_ABBREVIATION },
         tutorAcademico: tutorAcad ? {
@@ -532,6 +537,7 @@ export const getDataConstanciaTutorAcademico = async (req: Request, res: Respons
     const practiceIds = (tutorPractices || []).map((tp: any) => tp.PROFESSIONAL_PRACTICE_ID);
     let totalHours = 0;
     let activePeriodId: number | null = null;
+    let estudianteData: any = null;
 
     if (practiceIds.length > 0) {
       const { data: visits } = await supabase
@@ -543,15 +549,31 @@ export const getDataConstanciaTutorAcademico = async (req: Request, res: Respons
         totalHours += Number(v.HOURS_WORKED || 0);
       });
 
-      // Usar el período de la práctica más reciente
+      // Usar la práctica más reciente para obtener período y estudiante
       const { data: latest } = await supabase
         .from('t_professional_practices')
-        .select('PERIOD_ID')
+        .select('PERIOD_ID, STUDENTS_ID')
         .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
         .eq('STATUS', 1)
         .order('START_DATE', { ascending: false })
         .limit(1);
       activePeriodId = latest?.[0]?.PERIOD_ID || null;
+      const latestPracticeStudentId: number | null = latest?.[0]?.STUDENTS_ID || null;
+
+      // Obtener datos del estudiante asociado a la práctica más reciente
+      if (latestPracticeStudentId) {
+        const { data: estudiante } = await supabase
+          .from('t_students')
+          .select(`
+            STUDENTS_ID,
+            t_persons!fk_students_person(
+              ci, first_name, middle_name, last_name, second_last_name
+            )
+          `)
+          .eq('STUDENTS_ID', latestPracticeStudentId)
+          .single();
+        estudianteData = estudiante;
+      }
     }
 
     let periodoData = null;
@@ -568,6 +590,13 @@ export const getDataConstanciaTutorAcademico = async (req: Request, res: Respons
       success: true,
       data: {
         practiceId: 0,
+        estudiante: estudianteData ? {
+          ci: (estudianteData?.t_persons?.ci ?? estudianteData?.STUDENTS_CI) || '',
+          primerNombre: (estudianteData?.t_persons?.first_name ?? estudianteData?.NAME) || '',
+          segundoNombre: (estudianteData?.t_persons?.middle_name ?? estudianteData?.SECOND_NAME) || '',
+          primerApellido: (estudianteData?.t_persons?.last_name ?? estudianteData?.SURNAME) || '',
+          segundoApellido: (estudianteData?.t_persons?.second_last_name ?? estudianteData?.SECOND_SURNAME) || '',
+        } : null,
         tutor: {
           ci: tutor.TUTOR_CI || '',
           titulo: tutor.TITULO,
@@ -617,6 +646,7 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
     const practiceIds = (tutorPractices || []).map((tp: any) => tp.PROFESSIONAL_PRACTICE_ID);
     let totalHours = 0;
     let activePeriodId: number | null = null;
+    let estudianteData: any = null;
 
     if (practiceIds.length > 0) {
       const { data: visits } = await supabase
@@ -628,14 +658,30 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
         totalHours += Number(v.HOURS_WORKED || 0);
       });
 
+      // Usar la práctica más reciente para obtener período y estudiante
       const { data: latest } = await supabase
         .from('t_professional_practices')
-        .select('PERIOD_ID')
+        .select('PERIOD_ID, STUDENTS_ID')
         .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
         .eq('STATUS', 1)
         .order('START_DATE', { ascending: false })
         .limit(1);
       activePeriodId = latest?.[0]?.PERIOD_ID || null;
+      const latestPracticeStudentId: number | null = latest?.[0]?.STUDENTS_ID || null;
+
+      if (latestPracticeStudentId) {
+        const { data: estudiante } = await supabase
+          .from('t_students')
+          .select(`
+            STUDENTS_ID,
+            t_persons!fk_students_person(
+              ci, first_name, middle_name, last_name, second_last_name
+            )
+          `)
+          .eq('STUDENTS_ID', latestPracticeStudentId)
+          .single();
+        estudianteData = estudiante;
+      }
     }
 
     let periodoData = null;
@@ -665,6 +711,13 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
       success: true,
       data: {
         practiceId: 0,
+        estudiante: estudianteData ? {
+          ci: (estudianteData?.t_persons?.ci ?? estudianteData?.STUDENTS_CI) || '',
+          primerNombre: (estudianteData?.t_persons?.first_name ?? estudianteData?.NAME) || '',
+          segundoNombre: (estudianteData?.t_persons?.middle_name ?? estudianteData?.SECOND_NAME) || '',
+          primerApellido: (estudianteData?.t_persons?.last_name ?? estudianteData?.SURNAME) || '',
+          segundoApellido: (estudianteData?.t_persons?.second_last_name ?? estudianteData?.SECOND_SURNAME) || '',
+        } : null,
         tutor: {
           ci: tutor.TUTOR_CI || '',
           titulo: tutor.TITULO,
@@ -706,12 +759,17 @@ export const searchPractices = async (req: Request, res: Response) => {
         PROFESSIONAL_PRACTICE_ID,
         STUDENTS_ID,
         STATUS,
-        t_students!inner(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
+        t_students!inner(
+          STUDENTS_ID,
+          t_persons!fk_students_person(
+            ci, first_name, middle_name, last_name, second_last_name
+          )
+        ),
         t_career!inner(CAREER_NAME),
         t_institution(INSTITUTION_NAME),
         t_internships_period(DESCRIPTION)
       `)
-      .or(`t_students.STUDENTS_CI.ilike.${term},t_students.NAME.ilike.${term},t_students.SURNAME.ilike.${term}`)
+      .or(`t_students.t_persons.ci.ilike.${term},t_students.t_persons.first_name.ilike.${term},t_students.t_persons.last_name.ilike.${term}`)
       .limit(20);
 
     if (error) {
@@ -720,11 +778,11 @@ export const searchPractices = async (req: Request, res: Response) => {
     }
 
     const results = (data || []).map((p: any) => {
-      const student = p.t_students;
+      const person = p.t_students?.t_persons;
       return {
         practiceId: p.PROFESSIONAL_PRACTICE_ID,
-        studentCi: student.STUDENTS_CI,
-        studentName: [student.NAME, student.SECOND_NAME, student.SURNAME, student.SECOND_SURNAME]
+        studentCi: person?.ci ?? '',
+        studentName: [person?.first_name, person?.middle_name, person?.last_name, person?.second_last_name]
           .filter(Boolean).join(' '),
         careerName: p.t_career?.CAREER_NAME || '',
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
@@ -845,7 +903,12 @@ export const listPractices = async (req: Request, res: Response) => {
         PROFESSIONAL_PRACTICE_ID,
         STUDENTS_ID,
         STATUS,
-        t_students!inner(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
+        t_students!inner(
+          STUDENTS_ID,
+          t_persons!fk_students_person(
+            ci, first_name, middle_name, last_name, second_last_name
+          )
+        ),
         t_career!inner(CAREER_NAME),
         t_institution(INSTITUTION_NAME),
         t_internships_period(DESCRIPTION)
@@ -863,7 +926,7 @@ export const listPractices = async (req: Request, res: Response) => {
     }
 
     if (term) {
-      query = (query as any).or(`t_students.STUDENTS_CI.ilike.${term},t_students.NAME.ilike.${term},t_students.SURNAME.ilike.${term}`);
+      query = (query as any).or(`t_students.t_persons.ci.ilike.${term},t_students.t_persons.first_name.ilike.${term},t_students.t_persons.last_name.ilike.${term}`);
     }
 
     const { data, error, count } = await query
@@ -876,11 +939,11 @@ export const listPractices = async (req: Request, res: Response) => {
     }
 
     const results = (data || []).map((p: any) => {
-      const student = p.t_students;
+      const person = p.t_students?.t_persons;
       return {
         practiceId: p.PROFESSIONAL_PRACTICE_ID,
-        studentCi: student.STUDENTS_CI,
-        studentName: [student.NAME, student.SECOND_NAME, student.SURNAME, student.SECOND_SURNAME]
+        studentCi: person?.ci ?? '',
+        studentName: [person?.first_name, person?.middle_name, person?.last_name, person?.second_last_name]
           .filter(Boolean).join(' '),
         careerName: p.t_career?.CAREER_NAME || '',
         institutionName: p.t_institution?.INSTITUTION_NAME || '',

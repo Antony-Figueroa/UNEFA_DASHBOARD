@@ -9,22 +9,26 @@ import { reportConfig } from '../reportConfig';
 describe('reportConfig — tutores-academicos (Task 3.1)', () => {
   const config = reportConfig['tutores-academicos'];
 
-  it('debería tener las columnas oficiales sin "Correo Electrónico"', () => {
+  it('debería incluir "CORREO ELECTRÓNICO" entre TELÉFONO y CANTIDAD DE ESTUDIANTES ATENDIDOS', () => {
     const headers = config.columns.map((c) => c.header);
-    expect(headers).not.toContain('Correo Electrónico');
+    const telIdx = headers.indexOf('TELÉFONO');
+    const correoIdx = headers.indexOf('CORREO ELECTRÓNICO');
+    const cantIdx = headers.indexOf('CANTIDAD DE ESTUDIANTES ATENDIDOS');
+    expect(correoIdx).toBeGreaterThan(telIdx);
+    expect(cantIdx).toBeGreaterThan(correoIdx);
   });
 
-  it('debería tener exactamente 13 columnas oficiales', () => {
+  it('debería tener exactamente 14 columnas oficiales en mayúsculas', () => {
     const headers = config.columns.map((c) => c.header);
     expect(headers).toEqual([
-      'N°', 'Región', 'Núcleo', 'Extensión', 'Carrera',
-      'Nombre', 'Apellido', 'Cédula', 'Condición', 'Dedicación',
-      'Categoría', 'Teléfono', 'Estudiantes',
+      'N°', 'REGIÓN', 'NÚCLEO', 'EXTENSIÓN', 'CARRERA',
+      'NOMBRE DEL TUTOR (A)', 'APELLIDO DEL TUTOR (A)', 'CÉDULA', 'CONDICIÓN', 'DEDICACIÓN',
+      'CATEGORÍA', 'TELÉFONO', 'CORREO ELECTRÓNICO', 'CANTIDAD DE ESTUDIANTES ATENDIDOS',
     ]);
   });
 
-  it('debería mostrar cantidadEstudiantes como número en la columna Estudiantes', () => {
-    const col = config.columns.find((c) => c.header === 'Estudiantes');
+  it('debería mostrar cantidadEstudiantes como número en la columna CANTIDAD DE ESTUDIANTES ATENDIDOS', () => {
+    const col = config.columns.find((c) => c.header === 'CANTIDAD DE ESTUDIANTES ATENDIDOS');
     expect(col).toBeDefined();
     const accessor = col!.accessor;
     if (typeof accessor === 'function') {

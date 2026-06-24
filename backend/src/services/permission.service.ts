@@ -16,29 +16,43 @@ class PermissionService {
   
   /**
    * Obtiene todos los permisos de un rol
+   *
+   * NOTA: No usamos la sintaxis de join anidado de PostgREST (t_permissions(NAME))
+   * porque depende del caché de esquema de PostgREST, que puede estar desactualizado
+   * o no tener la FK registrada (error PGRST200). En su lugar, hacemos dos queries
+   * separadas que son más robustas y no dependen del schema cache.
    */
   async getPermissionsByRole(roleId: number): Promise<string[]> {
     return await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
+      // 1. Obtener los IDs de permisos asignados al rol
+      const { data: rolePerms, error: rpError } = await supabase
         .from('t_roles_permissions')
-        .select(`
-          PERMISSIONS_ID,
-          t_permissions ( NAME )
-        `)
+        .select('PERMISSIONS_ID')
         .eq('ROLES_ID', roleId);
 
-      if (error) {
-        console.error('[PermissionService] Error getting permissions:', error);
+      if (rpError) {
+        console.error('[PermissionService] Error getting role permission IDs:', rpError);
         return [];
       }
 
-      return (data || [])
-        .map((item: any) => {
-          // Supabase: { t_permissions: { NAME: 'students:view' } }
-          // PGlite:   { t_permissions_NAME: 'students:view' }
-          return item.t_permissions?.NAME ?? item.t_permissions_NAME ?? null;
-        })
-        .filter(Boolean) as string[];
+      if (!rolePerms || rolePerms.length === 0) {
+        return [];
+      }
+
+      const permissionIds = (rolePerms as any[]).map(item => item.PERMISSIONS_ID);
+
+      // 2. Obtener los nombres de los permisos por sus IDs
+      const { data: permissions, error: permError } = await supabase
+        .from('t_permissions')
+        .select('NAME')
+        .in('PERMISSIONS_ID', permissionIds);
+
+      if (permError) {
+        console.error('[PermissionService] Error getting permission names:', permError);
+        return [];
+      }
+
+      return (permissions || []).map((item: any) => item.NAME).filter(Boolean) as string[];
     });
   }
 

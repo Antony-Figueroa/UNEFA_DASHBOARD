@@ -142,10 +142,21 @@ export const SingleReportModal = <T,>({
                 {subtitle && (
                   <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10">
                     <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
-                      {recordInfo?.label || "Registro"}
+                      Tipo de Documento
                     </label>
                     <p className="text-xs sm:text-sm font-semibold text-text-primary dark:text-white/90">
                       {subtitle}
+                    </p>
+                  </div>
+                )}
+
+                {recordInfo && (
+                  <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10">
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                      {recordInfo.label}
+                    </label>
+                    <p className="text-xs sm:text-sm font-semibold text-text-primary dark:text-white/90">
+                      {recordInfo.value}
                     </p>
                   </div>
                 )}

@@ -41,6 +41,7 @@ export default function AddressCard({ address, onEdit, onDelete, onSetPrimary }:
       <div className="mt-3 flex gap-2">
         {!isPrimary && (
           <button
+            type="button"
             onClick={onSetPrimary}
             className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-yellow-600 hover:bg-yellow-50 transition-colors"
             title="Establecer como principal"
@@ -49,12 +50,14 @@ export default function AddressCard({ address, onEdit, onDelete, onSetPrimary }:
           </button>
         )}
         <button
+          type="button"
           onClick={onEdit}
           className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"
         >
           <Pencil className="h-3.5 w-3.5" /> Editar
         </button>
         <button
+          type="button"
           onClick={onDelete}
           className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
         >

@@ -103,7 +103,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
 
   // State for existing record (when duplicate is found)
   const [existingStudent, setExistingStudent] = useState<any | null>(null);
-  const [existingPerson, setExistingPerson] = useState(false);
+  const [existingPerson, setExistingPerson] = useState<any>(false);
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
   // State for API-loaded data flow (SENIAT)
   const [apiDataLoaded, setApiDataLoaded] = useState(false);
@@ -988,7 +988,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                     {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
                   </p>
                   {onEditExisting && (
-                    <button type="button" onClick={onEditExisting} className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                    <button type="button" onClick={() => onEditExisting?.(null as any)} className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
                       Editar esta persona
                     </button>
                   )}
@@ -1457,7 +1457,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
               type="submit" 
               form="student-form" 
               loading={isLoading} 
-              disabled={!isDirty && !(inlineAddress.parroquiaId && inlineAddress.streetAddress)}
+              disabled={!isDirty}
               className="w-full sm:w-auto min-h-12 shadow-none"
               onClick={async () => {
                 if (!isValid) {

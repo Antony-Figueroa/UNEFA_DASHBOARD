@@ -175,7 +175,7 @@ export default function InstitutionalResponsibleModal({
     const [isLookingUpCi, setIsLookingUpCi] = useState(false);
     const [isCheckingEmail, setIsCheckingEmail] = useState(false);
    const [existingResponsible, setExistingResponsible] = useState<any | null>(null);
-   const [existingPerson, setExistingPerson] = useState(false);
+    const [existingPerson, setExistingPerson] = useState<any>(false);
    const [viewOnlyMode, setViewOnlyMode] = useState(false);
    // State for API-loaded data flow (SENIAT)
    const [apiDataLoaded, setApiDataLoaded] = useState(false);
@@ -885,7 +885,7 @@ export default function InstitutionalResponsibleModal({
                       {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
                     </p>
                     {onEditExisting && (
-                      <button type="button" onClick={onEditExisting} className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                      <button type="button" onClick={() => onEditExisting?.(null as any)} className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
                         Editar esta persona
                       </button>
                     )}

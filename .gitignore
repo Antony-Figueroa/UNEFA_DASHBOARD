@@ -59,5 +59,13 @@ openspec/
 # Backend build output
 backend/dist/
 
+# Code analysis output (root-level analysis files)
+/login-form
+/login-page
+/modal-perfil-contacto
+/signin-form
+/student-modal
+/students-page
+
 # Database backup dumps
 backups/

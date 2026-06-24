@@ -1090,7 +1090,7 @@ export default function TutorModal({
                     {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
                   </p>
                   {onEditExisting && (
-                    <button type="button" onClick={onEditExisting} className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                    <button type="button" onClick={() => onEditExisting?.(null as any)} className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
                       Editar esta persona
                     </button>
                   )}

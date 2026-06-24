@@ -279,7 +279,7 @@ export default function InstitutionTable({
               value={searchTerm}
               onChange={setSearchTerm}
               placeholder="Buscar por RIF, nombre o teléfono"
-              className="h-11"
+              className="sm:!w-full h-11"
             />
 
             {/* Filtro por Carrera */}

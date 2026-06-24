@@ -64,6 +64,28 @@ export function safeNumber(value: number | null | undefined, fallback = 0): numb
   return value;
 }
 
+const MESES_ES: string[] = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+export function getFechaParts(fecha: string | null): { dia: string; mes: string; anio: string } {
+  if (!fecha) {
+    const hoy = new Date();
+    return {
+      dia: String(hoy.getDate()),
+      mes: MESES_ES[hoy.getMonth()],
+      anio: String(hoy.getFullYear()),
+    };
+  }
+  const date = new Date(fecha);
+  return {
+    dia: String(date.getDate()),
+    mes: MESES_ES[date.getMonth()],
+    anio: String(date.getFullYear()),
+  };
+}
+
 export const DEFAULTS = {
   TITULO: 'Tutor Académico',
   SECOND_NAME: '',

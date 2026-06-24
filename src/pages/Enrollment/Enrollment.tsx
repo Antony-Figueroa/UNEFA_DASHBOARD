@@ -303,14 +303,19 @@ export default function EnrollmentPage() {
             } catch (e: any) {
                 const errorCode = e?.response?.data?.code;
                 if (errorCode === "DATE_OUTSIDE_PERIOD" || errorCode === "PERIOD_NOT_ACTIVE") {
-                    setConfirmation({
-                        isOpen: true,
-                        title: "Período Cerrado",
-                        message: `El período de inscripción ha finalizado. ¿Desea registrar la inscripción de todas formas?`,
-                        onConfirm: () => trySave(true),
-                        confirmText: "Registrar de todas formas",
-                        variant: "warning",
-                    });
+                    // Cerrar el diálogo actual y mostrar el de override en el próximo tick
+                    // para evitar conflictos de loading state entre useCrud y UnifiedDialog
+                    setConfirmation(null);
+                    setTimeout(() => {
+                        setConfirmation({
+                            isOpen: true,
+                            title: "Período Cerrado",
+                            message: `El período de inscripción ha finalizado. ¿Desea registrar la inscripción de todas formas?`,
+                            onConfirm: () => trySave(true),
+                            confirmText: "Registrar de todas formas",
+                            variant: "warning",
+                        });
+                    }, 0);
                 } else {
                     console.error("[EnrollmentPage] Error saving enrollment:", e);
                     setConfirmation(null);

@@ -37,9 +37,11 @@ const Switch = forwardRef<HTMLInputElement, SwitchProps>(({
   onChange,
   color = "blue",
   className = "",
+  checked: controlledChecked,
   ...props
 }, ref) => {
-  const [isChecked, setIsChecked] = useState(defaultChecked);
+  const [internalChecked, setInternalChecked] = useState(defaultChecked);
+  const isChecked = controlledChecked !== undefined ? controlledChecked : internalChecked;
 
   /**
    * Maneja el cambio de estado del interruptor.
@@ -47,7 +49,9 @@ const Switch = forwardRef<HTMLInputElement, SwitchProps>(({
   const handleToggle = () => {
     if (disabled) return;
     const newCheckedState = !isChecked;
-    setIsChecked(newCheckedState);
+    if (controlledChecked === undefined) {
+      setInternalChecked(newCheckedState);
+    }
     if (onChange) {
       onChange(newCheckedState);
     }

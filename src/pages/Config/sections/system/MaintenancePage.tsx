@@ -217,39 +217,6 @@ export default function MaintenancePage() {
           </div>
         </ComponentCard>
 
-        {/* Info Cards */}
-        <ComponentCard title="Información">
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-brand-50 dark:bg-brand-500/10">
-              <svg className="w-5 h-5 text-brand-600 dark:text-brand-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
-                <h4 className="text-sm font-medium text-brand-700 dark:text-brand-300">
-                  Acerca del mantenimiento
-                </h4>
-                <ul className="mt-2 text-xs text-brand-600 dark:text-brand-400 space-y-1">
-                  <li>• <strong>Limpiar Logs:</strong> Elimina registros de autenticación y cambios con más de 90 días</li>
-                  <li>• <strong>Sincronizar:</strong> Verifica la integridad de las tablas principales contra Supabase</li>
-                  <li>• <strong>Verificar:</strong> Ejecuta una verificación completa de la base de datos y servicios</li>
-                </ul>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-500/10">
-              <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div>
-                <h4 className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                  Parámetros del Sistema
-                </h4>
-                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                  La configuración de seguridad, contraseñas, sesiones y logs se administra desde <strong>Parámetros del Sistema</strong> en la sección de Configuración.
-                </p>
-              </div>
-            </div>
-          </div>
-        </ComponentCard>
       </div>
 
       <UnifiedDialog

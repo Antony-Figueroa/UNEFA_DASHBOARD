@@ -43,10 +43,12 @@ const handleDbError = (res: Response, error: unknown) => {
 interface TutorAssociation {
   TUTOR_ID: number;
   TUTOR_TYPE: string;
-  t_persons?: {
-    first_name: string;
-    last_name: string;
-    phone?: string;
+  t_tutors?: {
+    t_persons?: {
+      first_name: string;
+      last_name: string;
+      phone?: string;
+    };
   };
 }
 
@@ -131,7 +133,9 @@ export const getEnrollments = async (req: Request, res: Response) => {
           t_professional_practices_tutor (
             TUTOR_ID,
             TUTOR_TYPE,
-            t_persons!inner (first_name, last_name, phone)
+            t_tutors (
+              t_persons!inner (first_name, last_name, phone)
+            )
           )
         `)
         .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
@@ -184,11 +188,11 @@ export const getEnrollments = async (req: Request, res: Response) => {
         studentName: getPersonFullName(item.t_persons),
         careerName: item.t_career?.CAREER_NAME || '',
         academicTutorId: academicTutor?.TUTOR_ID?.toString() || '',
-        academicTutorName: getPersonFullName(academicTutor?.t_persons),
-        academicTutorPhone: getPersonField(academicTutor?.t_persons, 'phone') || '',
+        academicTutorName: getPersonFullName(academicTutor?.t_tutors?.t_persons),
+        academicTutorPhone: getPersonField(academicTutor?.t_tutors?.t_persons, 'phone') || '',
         methodologicalTutorId: methodologicalTutor?.TUTOR_ID?.toString() || '',
-        methodologicalTutorName: getPersonFullName(methodologicalTutor?.t_persons),
-        methodologicalTutorPhone: getPersonField(methodologicalTutor?.t_persons, 'phone') || '',
+        methodologicalTutorName: getPersonFullName(methodologicalTutor?.t_tutors?.t_persons),
+        methodologicalTutorPhone: getPersonField(methodologicalTutor?.t_tutors?.t_persons, 'phone') || '',
         institutionId: item.INSTITUTION_ID?.toString() || '',
         institutionName: item.t_institution?.INSTITUTION_NAME || '',
         institutionAddress: item.t_institution?.INSTITUTION_ADDRESS || '',
@@ -363,7 +367,9 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
           t_professional_practices_tutor (
             TUTOR_ID,
             TUTOR_TYPE,
-            t_persons!inner (first_name, last_name)
+            t_tutors (
+              t_persons!inner (first_name, last_name)
+            )
           )
         `)
         .eq('PROFESSIONAL_PRACTICE_ID', practice.PROFESSIONAL_PRACTICE_ID)
@@ -383,9 +389,9 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         studentName: getPersonFullName(item.t_persons),
         careerName: item.t_career?.CAREER_NAME || '',
         academicTutorId: academicTutor?.TUTOR_ID?.toString() || '',
-        academicTutorName: getPersonFullName(academicTutor?.t_persons),
+        academicTutorName: getPersonFullName(academicTutor?.t_tutors?.t_persons),
         methodologicalTutorId: methodologicalTutor?.TUTOR_ID?.toString() || '',
-        methodologicalTutorName: getPersonFullName(methodologicalTutor?.t_persons),
+        methodologicalTutorName: getPersonFullName(methodologicalTutor?.t_tutors?.t_persons),
         institutionId: item.INSTITUTION_ID?.toString() || '',
         institutionName: item.t_institution?.INSTITUTION_NAME || '',
         institutionResponsibleId: item.MANAGER_ID?.toString() || '',

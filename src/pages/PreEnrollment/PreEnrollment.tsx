@@ -186,6 +186,50 @@ export default function PreEnrollmentPage() {
     };
 
     const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
+    const [hasCheckedExpired, setHasCheckedExpired] = useState(false);
+
+    // Detectar pre-inscripciones activas cuyo período de inscripción ya venció
+    useEffect(() => {
+        if (hasCheckedExpired || pageLoading || preEnrollments.length === 0 || periodos.length === 0) return;
+
+        const now = new Date();
+        const expired: PreEnrollment[] = [];
+
+        for (const pre of preEnrollments) {
+            if (!pre.status) continue; // solo activas
+            const period = periodos.find(p => p.description.trim().toUpperCase() === pre.period.trim().toUpperCase());
+            if (!period) continue;
+            const startDate = new Date(period.startDate);
+            if (isNaN(startDate.getTime())) continue;
+            const graceDays = period.enrollmentGraceDays ?? 21;
+            const deadline = new Date(startDate);
+            deadline.setDate(deadline.getDate() + graceDays);
+            if (now > deadline) {
+                expired.push(pre);
+            }
+        }
+
+        if (expired.length > 0) {
+            setConfirmation({
+                isOpen: true,
+                title: "Pre-Inscripciones Vencidas",
+                message: `Hay ${expired.length} pre-inscripcione(s) activa(s) cuyo período de inscripción ya cerró. ¿Desea desactivarlas automáticamente?`,
+                confirmText: "Desactivar",
+                variant: "warning",
+                onConfirm: async () => {
+                    try {
+                        await bulkToggleStatus(expired.map(p => p.preEnrollmentId), false);
+                    } catch (error) {
+                        console.error("[PreEnrollmentPage] Error al desactivar vencidas:", error);
+                    } finally {
+                        setConfirmation(null);
+                        setHasCheckedExpired(true);
+                    }
+                }
+            });
+        }
+        setHasCheckedExpired(true);
+    }, [preEnrollments, periodos, pageLoading, hasCheckedExpired, bulkToggleStatus]);
 
     const filtered = useMemo(() => {
         return preEnrollments.map(formatPreEnrollmentToRow);

@@ -83,7 +83,7 @@ export default function NucleiManager() {
     setLoading(true);
     try {
       const res = await apiClient.get("/system-nucleus");
-      setNuclei(res.data?.data || []);
+      setNuclei(res.data || []);
     } catch {
       toast.error("Error al cargar núcleos");
     } finally {
@@ -109,8 +109,8 @@ export default function NucleiManager() {
   const fetchAssignedCareers = useCallback(async (nucleusId: number) => {
     try {
       const res = await apiClient.get(`/system-nucleus/${nucleusId}/careers`);
-      const items: { careerId: number }[] = res.data?.data || [];
-      setSelectedCareers(items.map((c) => String(c.careerId)));
+      const items = res.data || [];
+      setSelectedCareers(items.map((c: any) => String(c.t_career?.CAREER_ID ?? c.careerId ?? "")).filter(Boolean));
     } catch {
       setSelectedCareers([]);
     }
@@ -188,7 +188,7 @@ export default function NucleiManager() {
       } else {
         // Create
         const res = await apiClient.post("/system-nucleus", payload);
-        nucleusId = res.data?.data?.nucleus_id;
+        nucleusId = res.data?.nucleus_id || res.data?.data?.nucleus_id;
         toast.success("Núcleo creado exitosamente");
       }
 

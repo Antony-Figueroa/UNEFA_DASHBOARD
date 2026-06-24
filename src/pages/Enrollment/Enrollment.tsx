@@ -612,6 +612,7 @@ export default function EnrollmentPage() {
                                     setIsInstitutionModalOpen(false);
                                     setIsResponsibleModalOpen(true);
                                     setPreselectedInstitutionId(result.institutionId);
+                                    window.dispatchEvent(new CustomEvent("institution:saved"));
                                 }
                                 return result ? { institutionId: result.institutionId, name: result.name } : undefined;
                             } catch (e) {

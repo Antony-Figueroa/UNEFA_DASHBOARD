@@ -567,15 +567,13 @@ const PeriodTable = ({
                 </div>
 
                 {/* Filtros */}
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <div className="w-full sm:w-64">
-                        <InputField
-                            type="text"
-                            placeholder="Buscar periodo..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
+                    <InputField
+                        type="text"
+                        placeholder="Buscar periodo..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                     <CustomSelect
                         options={[
                             { value: "", label: "Todos los estatus" },
@@ -586,8 +584,9 @@ const PeriodTable = ({
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e as unknown as string)}
                         placeholder="Filtrar por estatus"
-                        className="w-full sm:w-48"
+                        className="w-full"
                     />
+                    <div className="flex items-center">
                     {(searchTerm || statusFilter) && (
                         <Button
                             variant="ghost"
@@ -597,6 +596,7 @@ const PeriodTable = ({
                             Limpiar
                         </Button>
                     )}
+                    </div>
                 </div>
             </div>
 

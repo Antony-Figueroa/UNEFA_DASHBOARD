@@ -400,13 +400,14 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
         <div className="flex items-center justify-between">
 </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <SearchInput
             value={searchTerm}
             onChange={(v) => onSearchChange?.(v)}
             placeholder="Buscar por nombre o código de carrera"
+            className="sm:!w-full"
           />
-          <div className="relative w-full sm:w-64">
+          <div className="relative">
             <CustomSelect
               options={[
                 { value: "", label: "Todos los tipos" },
@@ -421,7 +422,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
               className="w-full h-11"
             />
           </div>
-          <div className="relative w-full sm:w-48">
+          <div className="relative">
             <CustomSelect
               options={[
                 { value: "", label: "Todas" },

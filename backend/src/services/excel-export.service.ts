@@ -495,7 +495,6 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
   h1.height = 36;
 
   const g = headerCell(HDR_GREEN);
-  const y = headerCell(HDR_YELLOW);
 
   // Col 1: N° (rowspan 2 → merge)
   setCell(h1.getCell(1), 'N°', g);
@@ -516,18 +515,18 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
   setCell(h1.getCell(6), 'NOMBRE DEL (DE LA) ESTUDIANTE', g);
   ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 6, ROW_INDIVIDUAL_HEADER_2, 6);
 
-  setCell(h1.getCell(7), 'APELLIDO DEL (DE LA) ESTUDIANTE', y);
+  setCell(h1.getCell(7), 'APELLIDO DEL (DE LA) ESTUDIANTE', g);
   ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 7, ROW_INDIVIDUAL_HEADER_2, 7);
 
-  setCell(h1.getCell(8), 'CÉDULA', y);
+  setCell(h1.getCell(8), 'CÉDULA', g);
   ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 8, ROW_INDIVIDUAL_HEADER_2, 8);
 
   // Col 9-10: SEXO (colspan=2, no rowspan)
-  setCell(h1.getCell(9), 'SEXO', y);
+  setCell(h1.getCell(9), 'SEXO', g);
   ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 9, ROW_INDIVIDUAL_HEADER_1, 10);
 
   // Col 11-13: TIPO DE ESTUDIANTE (colspan=3)
-  setCell(h1.getCell(11), 'TIPO DE ESTUDIANTE', y);
+  setCell(h1.getCell(11), 'TIPO DE ESTUDIANTE', g);
   ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 11, ROW_INDIVIDUAL_HEADER_1, 13);
 
   setCell(h1.getCell(14), 'TELÉFONO', g);
@@ -545,7 +544,7 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
   setCell(h1.getCell(18), 'DIRECCIÓN DE UBICACIÓN DEL CENTRO DE PRÁCTICA PROFESIONAL', g);
   ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 18, ROW_INDIVIDUAL_HEADER_2, 18);
 
-  setCell(h1.getCell(19), 'OBSERVACIONES', y);
+  setCell(h1.getCell(19), 'OBSERVACIONES', g);
   ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 19, ROW_INDIVIDUAL_HEADER_2, 19);
 
   // ── Fila 9: Sub-encabezados ──
@@ -557,9 +556,9 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
   setCell(h2.getCell(10), 'MASCULINO', g);
 
   // Col 11-13: sub de TIPO
-  setCell(h2.getCell(11), 'CIVIL', y);
-  setCell(h2.getCell(12), 'MILITAR', y);
-  setCell(h2.getCell(13), 'RANGO\n(EN CASO DE SER MILITAR)', y);
+  setCell(h2.getCell(11), 'CIVIL', g);
+  setCell(h2.getCell(12), 'MILITAR', g);
+  setCell(h2.getCell(13), 'RANGO\n(EN CASO DE SER MILITAR)', g);
 
   // Col 16: sub de TIPO DE INSTITUCIÓN
   setCell(h2.getCell(16), 'PÚBLICA / PRIVADA / MIXTA', g);
@@ -584,7 +583,7 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
       row.estudianteCi,
       row.sexo === 'F' ? 'X' : '',
       row.sexo === 'M' ? 'X' : '',
-      row.tipo === 'CIVIL' ? 'X' : '',
+      row.tipo === 'CIV' || row.tipo === 'CIVIL' ? 'X' : '',
       row.tipo === 'MILITAR' ? 'X' : '',
       row.rango || '',
       row.telefono,
@@ -856,19 +855,32 @@ function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetS
   // ============================================================
   const sigLabels = section.signatures ?? DEFAULT_SIGNATURES;
   const sigStartRow = noteStartRow + notes.length + 1;
-  const sigColWidth = Math.floor((COL_LAST - COL_FIRST + 1) / 3);
 
-  sigLabels.forEach((sig, idx) => {
-    const r = sigStartRow + idx;
-    ws.getRow(r).height = 36;
-    const startCol = COL_FIRST + idx * sigColWidth;
-    const endCol = idx < 2 ? startCol + sigColWidth - 1 : COL_LAST;
+  // Fila de líneas vacías para firmar (borde inferior solamente)
+  const lineRow = sigStartRow;
+  ws.getRow(lineRow).height = 57;
+  for (let c = COL_FIRST; c <= COL_LAST; c++) {
+    const cell = ws.getCell(lineRow, c);
+    cell.border = { bottom: { style: 'thin' } };
+  }
 
-    if (endCol > startCol) {
-      ws.mergeCells(r, startCol, r, endCol);
+  // Fila de etiquetas de firma (3 secciones horizontales)
+  const labelRow = sigStartRow + 1;
+  ws.getRow(labelRow).height = 63;
+
+  // Distribuir 3 firmas horizontalmente
+  const sigSections = [
+    { text: sigLabels[0] || '', start: 2, end: 6 },
+    { text: sigLabels[1] || '', start: 7, end: 11 },
+    { text: sigLabels[2] || '', start: 12, end: 18 },
+  ];
+
+  sigSections.forEach(({ text, start, end }) => {
+    if (end > start) {
+      ws.mergeCells(labelRow, start, labelRow, end);
     }
-    const cell = ws.getCell(r, startCol);
-    cell.value = `__________________________\n${sig}`;
+    const cell = ws.getCell(labelRow, start);
+    cell.value = text;
     cell.font = { name: FONT, size: 9 };
     cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   });

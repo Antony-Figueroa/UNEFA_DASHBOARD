@@ -362,6 +362,7 @@ export default function TutorTable({
                       value={searchTerm}
                       onChange={setSearchTerm}
                       placeholder="Buscar por cédula, nombre, teléfono o correo"
+                      className="sm:!w-full"
                     />
 
                     {/* Filtro por Carrera */}

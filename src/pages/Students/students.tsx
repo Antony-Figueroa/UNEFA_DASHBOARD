@@ -172,7 +172,7 @@ export default function StudentsPage() {
             <select
               value={filters.filters.careerId}
               onChange={(e) => filters.setFilter("careerId", e.target.value)}
-              className="px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
+              className="w-full sm:w-auto px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
               aria-label="Filtrar por carrera"
             >
               <option value="">Todas las carreras</option>
@@ -184,7 +184,7 @@ export default function StudentsPage() {
             <select
               value={filters.filters.regime}
               onChange={(e) => filters.setFilter("regime", e.target.value)}
-              className="px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
+              className="w-full sm:w-auto px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
               aria-label="Filtrar por régimen"
             >
               <option value="">Todos los regímenes</option>
@@ -196,7 +196,7 @@ export default function StudentsPage() {
             <select
               value={filters.filters.studentType}
               onChange={(e) => filters.setFilter("studentType", e.target.value)}
-              className="px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
+              className="w-full sm:w-auto px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
               aria-label="Filtrar por tipo"
             >
               <option value="">Todos los tipos</option>
@@ -208,7 +208,7 @@ export default function StudentsPage() {
             <select
               value={filters.filters.periodId}
               onChange={(e) => filters.setFilter("periodId", e.target.value)}
-              className="px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
+              className="w-full sm:w-auto px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-text-primary"
               aria-label="Filtrar por período"
             >
               <option value="">Todos los períodos</option>

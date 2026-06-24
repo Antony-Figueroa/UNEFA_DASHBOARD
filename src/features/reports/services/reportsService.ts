@@ -257,17 +257,17 @@ export const reportsService = {
   },
 
   getProyeccionByPeriod: async (periodId: number) => {
-    const response = await apiClient.get(`/api/proyeccion?periodId=${periodId}`);
+    const response = await apiClient.get(`/proyeccion?periodId=${periodId}`);
     return response.data;
   },
 
   getProyeccionStructure: async (periodId: number) => {
-    const response = await apiClient.get(`/api/proyeccion/structure?periodId=${periodId}`);
+    const response = await apiClient.get(`/proyeccion/structure?periodId=${periodId}`);
     return response.data;
   },
 
   saveProyeccionBatch: async (periodId: number, items: { nucleusId: number; careerId: number; estudiantesProyectados: number }[]) => {
-    const response = await apiClient.put('/api/proyeccion/batch', { periodId, items });
+    const response = await apiClient.put('/proyeccion/batch', { periodId, items });
     return response.data;
   },
 

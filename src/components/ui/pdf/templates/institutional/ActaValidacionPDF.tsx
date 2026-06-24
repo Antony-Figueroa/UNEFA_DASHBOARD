@@ -1,6 +1,6 @@
-import { Text, StyleSheet } from '@react-pdf/renderer';
+import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
-import { formatNombreCompleto, formatCI } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatCI, formatFecha, getFechaParts } from '@/features/reports/utils/reportFormatters';
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
@@ -12,15 +12,19 @@ interface Props {
   data: {
     estudiante: { ci: string; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string };
     carrera: { nombre: string };
+    practica?: { startDate?: string; endDate?: string } | null;
   };
   textos: Record<string, string>;
 }
 
 export function ActaValidacionPDF({ data, textos }: Props) {
+  const fechaHoy = getFechaParts(null);
+  const fechaValidacion = `${fechaHoy.dia} de ${fechaHoy.mes} de ${fechaHoy.anio}`;
   const cuerpo = renderDocumentText(textos.cuerpo || '', {
     estudianteNombreCompleto: formatNombreCompleto(data.estudiante),
     estudianteCi: formatCI(data.estudiante.ci),
     carrera: data.carrera.nombre,
+    fechaValidacion,
   });
 
   return (

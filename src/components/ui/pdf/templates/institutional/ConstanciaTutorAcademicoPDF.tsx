@@ -1,6 +1,6 @@
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
-import { formatNombreCompleto, formatCI, formatFecha, getTutorTitle } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatCI, formatFecha, getTutorTitle, getFechaParts } from '@/features/reports/utils/reportFormatters';
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
@@ -26,6 +26,7 @@ interface Props {
 }
 
 export function ConstanciaTutorAcademicoPDF({ data, textos }: Props) {
+  const fechaHoy = getFechaParts(null);
   const cuerpo = renderDocumentText(textos.cuerpo || '', {
     tutorTitulo: getTutorTitle(data.tutor.titulo),
     tutorNombreCompleto: formatNombreCompleto(data.tutor),
@@ -36,11 +37,14 @@ export function ConstanciaTutorAcademicoPDF({ data, textos }: Props) {
     periodo: data.periodo?.description || '',
     inicioLapso: data.periodo ? formatFecha(data.periodo.startDate) : '',
     finLapso: data.periodo ? formatFecha(data.periodo.endDate) : '',
+    dia: fechaHoy.dia,
+    mes: fechaHoy.mes,
+    anio: fechaHoy.anio,
   });
 
   return (
     <PDFLayout title="CONSTANCIA DE TUTOR ACADÉMICO">
-      <Text style={styles.title}>CONSTANCIA DE TUTOR ACADÉMICO</Text>
+      <Text style={styles.title}>CONSTANCIA</Text>
       <Text style={styles.paragraph}>{cuerpo}</Text>
       <View style={styles.firmaContainer}>
         <Text style={styles.firmaLine}>___________________________________</Text>

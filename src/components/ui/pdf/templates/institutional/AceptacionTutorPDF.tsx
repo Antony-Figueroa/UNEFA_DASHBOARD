@@ -1,6 +1,6 @@
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
-import { formatNombreCompleto, formatCI, getTutorTitle } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatCI, getTutorTitle, getFechaParts } from '@/features/reports/utils/reportFormatters';
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
@@ -26,6 +26,7 @@ interface Props {
 
 export function AceptacionTutorPDF({ data, textos }: Props) {
   const tutorName = data.tutor ? getTutorTitle(data.tutor.titulo) + '. ' + formatNombreCompleto(data.tutor) : 'N/A';
+  const fechaHoy = getFechaParts(null);
   const cuerpo = renderDocumentText(textos.encabezado || '', {
     tutorTitulo: getTutorTitle(data.tutor?.titulo ?? null),
     tutorNombreCompleto: data.tutor ? formatNombreCompleto(data.tutor) : 'N/A',
@@ -34,6 +35,10 @@ export function AceptacionTutorPDF({ data, textos }: Props) {
     estudianteNombreCompleto: formatNombreCompleto(data.estudiante),
     estudianteCi: formatCI(data.estudiante.ci),
     carrera: data.carrera.nombre,
+    lugar: 'Guanare',
+    dia: fechaHoy.dia,
+    mes: fechaHoy.mes,
+    anio: fechaHoy.anio,
   });
   const firma = renderDocumentText(textos.firma || '', {});
 
@@ -47,12 +52,6 @@ export function AceptacionTutorPDF({ data, textos }: Props) {
         <Text style={styles.firmaRol}>Tutor(a) Académico(a)</Text>
         <Text style={styles.firmaRol}>C.I.: {data.tutor ? formatCI(data.tutor.ci) : 'N/A'}</Text>
         <Text style={styles.firmaRol}>Teléfono: {data.tutor?.telefono || ''}</Text>
-      </View>
-      <View style={styles.firmaContainer}>
-        <Text style={styles.firmaLine}>___________________________________</Text>
-        <Text style={styles.firmaNombre}>MSc. Marbelys del Valle Rivero</Text>
-        <Text style={styles.firmaRol}>Decana del Núcleo Portuguesa</Text>
-        <Text style={styles.firmaRol}>Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022</Text>
       </View>
     </PDFLayout>
   );

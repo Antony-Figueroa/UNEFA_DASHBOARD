@@ -64,7 +64,7 @@ describe('mergeTextData — merge FALLBACK_TEXTOS con API data', () => {
       'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022'
     );
     // Otras claves del fallback no deben modificarse
-    expect(result.aceptacion_tutor.encabezado).toContain('Por medio de la presente');
+    expect(result.aceptacion_tutor.encabezado).toContain('por medio de la presente');
     // Claves de API sin fallback deben aparecer
     expect(result.aceptacion_tutor).toBeDefined();
   });

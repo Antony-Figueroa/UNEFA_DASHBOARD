@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 /**
  * E2E Test: Pruebas de Registro
@@ -7,7 +8,7 @@ import { test, expect } from '@playwright/test';
  */
 
 // Función de helper para hacer login
-async function login(page: any) {
+async function login(page: Page) {
   // Ir directamente a la página de login
   await page.goto('http://localhost:5173/signin');
   await page.waitForLoadState('domcontentloaded');

@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { login, gotoAndWait } from './fixtures';
 
 /**
@@ -47,9 +47,6 @@ test.describe('Gestión de Estudiantes', () => {
 
   test('Ver estudiantes activos e inactivos', async ({ page }) => {
     await gotoAndWait(page, '/students');
-    
-    // Look for tabs or toggle
-    const tabs = page.locator('[role="tab"], .tab, button:has-text("Activo"), button:has-text("Inactivo")');
     
     // Try clicking inactive tab if exists
     const inactiveTab = page.locator('button:has-text("Inactivo"), button:has-text("Inactivas")').first();

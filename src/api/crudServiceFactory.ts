@@ -24,7 +24,7 @@ export interface CrudServiceConfig<TItem, TCreatePayload, TUpdatePayload, TApiDT
   /** Función para mapear el DTO de la API a la entidad de dominio */
   mapFromApi: (dto: TApiDTO) => TItem;
   /** Función para mapear la entidad o el payload al DTO de la API (opcional) */
-  mapToApi?: (item: Partial<TItem> | TCreatePayload | TUpdatePayload) => any;
+  mapToApi?: (item: Partial<TItem> | TCreatePayload | TUpdatePayload) => TApiDTO;
 }
 
 /**
@@ -33,7 +33,7 @@ export interface CrudServiceConfig<TItem, TCreatePayload, TUpdatePayload, TApiDT
 export interface GetAllParams {
   limit?: number;
   offset?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -86,7 +86,7 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
     getAll: async (params?: GetAllParams) => {
       const cacheKey = `${crudCachePrefix(endpoint)}list:${JSON.stringify(params || {})}`;
       return dedupeRequest(cacheKey, async () => {
-        const response = await apiClient.get<any>(endpoint, { params });
+        const response = await apiClient.get<TApiDTO>(endpoint, { params });
 
         // Backward compatibility: si no hay params, mantener comportamiento anterior
         if (!params) {
@@ -122,10 +122,11 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
       // Se asume que el ID está presente en el payload o se maneja externamente
       // En esta implementación genérica, intentamos obtener el ID de campos comunes
       const possibleIdField = idField || `${endpoint.replace(/^\//, '')}Id`;
-      const id = (data as any).id || 
-                 (data as any).ID || 
-                 (data as any)[possibleIdField] || 
-                 (data as any)[possibleIdField.replace(/sId$/, 'Id')];
+      const record = data as Record<string, unknown>;
+      const id = (record.id as string | number) ?? 
+                 (record.ID as string | number) ?? 
+                 (record[possibleIdField] as string | number) ?? 
+                 (record[possibleIdField.replace(/sId$/, 'Id')] as string | number) ?? '';
       
       const payload = config.mapToApi ? config.mapToApi(data) : data;
       const response = await apiClient.put<TApiDTO>(`${endpoint}/${id}`, payload);

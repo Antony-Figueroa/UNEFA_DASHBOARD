@@ -730,7 +730,12 @@ export default function EnrollmentModal({
                   </div>
                   {errors.identificationNumber && (
                     <p className="text-[11px] font-bold text-error-500 flex items-center gap-1.5 animate-pulse">
-                      {errors.identificationNumber.message || preEnrollmentError}
+                      {errors.identificationNumber.message}
+                    </p>
+                  )}
+                  {preEnrollmentError && !errors.identificationNumber && (
+                    <p className="text-[11px] font-bold text-error-500 flex items-center gap-1.5">
+                      {preEnrollmentError}
                     </p>
                   )}
                 </div>

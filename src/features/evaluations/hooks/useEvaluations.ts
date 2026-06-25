@@ -26,6 +26,7 @@ interface UseEvaluationsReturn {
   updateEvaluation: (id: number, data: UpdateEvaluationPayload) => Promise<boolean>;
   deleteEvaluation: (id: number) => Promise<boolean>;
   getPracticeStatus: (practiceId: number) => Promise<EvaluationStatus | null>;
+  getBatchStatus: (practiceIds: number[]) => Promise<Record<number, EvaluationStatus>>;
 }
 
 export const useEvaluations = (): UseEvaluationsReturn => {
@@ -132,6 +133,14 @@ export const useEvaluations = (): UseEvaluationsReturn => {
     }
   }, []);
 
+  const getBatchStatus = useCallback(async (practiceIds: number[]) => {
+    try {
+      return await evaluationService.getBatchPracticeStatus(practiceIds);
+    } catch {
+      return {};
+    }
+  }, []);
+
   const getEvaluationById = useCallback(async (id: number) => {
     try {
       setLoading(true);
@@ -158,7 +167,8 @@ export const useEvaluations = (): UseEvaluationsReturn => {
     createEvaluation,
     updateEvaluation,
     deleteEvaluation,
-    getPracticeStatus
+    getPracticeStatus,
+    getBatchStatus
   };
 };
 

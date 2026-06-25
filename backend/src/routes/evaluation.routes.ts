@@ -5,6 +5,7 @@ import {
   getCriteria,
   getEvaluations,
   getEvaluationById,
+  getBatchPracticeStatus,
   createEvaluation,
   updateEvaluation,
   deleteEvaluation,
@@ -17,6 +18,7 @@ const router = Router();
 router.get('/criteria', requirePermission('evaluations:view'), getCriteria);
 router.get('/practice/:practiceId/status', requirePermission('evaluations:view'), getPracticeEvaluationStatus);
 router.get('/practice/:practiceId/tutor-info', requirePermission('evaluations:view'), getPracticeTutorInfo);
+router.get('/batch-status', requirePermission('evaluations:view'), getBatchPracticeStatus);
 router.get('/', requirePermission('evaluations:view'), getEvaluations);
 router.get('/:id', requirePermission('evaluations:view'), getEvaluationById);
 router.post('/', requirePermission('evaluations:create'), validateCreateEvaluationPeriod, createEvaluation);

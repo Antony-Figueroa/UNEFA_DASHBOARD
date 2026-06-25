@@ -327,11 +327,8 @@ export default function TutorModal({
     [touchedFields, errors]);
   const isFieldDisabled = useCallback((fieldName: string) => {
     if (viewOnlyMode) return true;
-    const apiLock = ciLoadedFromApi && (academicConfig?.lockApiLoadedFields ?? true);
-    const nameFields = ["firstName", "middleName", "lastName", "secondLastName"];
-    if (apiLock && nameFields.includes(fieldName)) return true;
     return false;
-  }, [viewOnlyMode, ciLoadedFromApi, academicConfig]);
+  }, [viewOnlyMode]);
 
   const {
     showConfirmation,

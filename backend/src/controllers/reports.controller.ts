@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
-import { generateWorkbook, generateTutoresAcademicosWorkbook, generateResumenPasantiasWorkbook } from '../services/excel-export.service.js';
+import { generateWorkbook, generateTutoresAcademicosWorkbook, generateResumenPasantiasWorkbook, generateRelacionEmpresasWorkbook } from '../services/excel-export.service.js';
 import type { IndividualTutorSheetConfig, IndividualTutorRow, ResumenPasantiaRow } from '../services/excel-export.service.js';
 
 interface PeriodInfo {
@@ -835,7 +835,8 @@ export const getRelacionEmpresasDemandan = async (req: Request, res: Response) =
       extension: e.extension,
       empresa: e.empresa,
       rif: e.rif,
-      tipo: e.tipo,
+      publica: (e.tipo || '').toUpperCase() === 'PÚBLICA' ? 'X' : '',
+      privada: (e.tipo || '').toUpperCase() === 'PRIVADA' ? 'X' : '',
       carrera: Array.from(e.carreras).join(', '),
       cantidadEstudiantes: e.estudiantes,
     }));
@@ -1683,36 +1684,19 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           entry.estudiantes++;
         });
 
-        const rows = Array.from(empresaMap.values()).map((e, i) => ({
-          nro: i + 1,
+        const rows = Array.from(empresaMap.values()).map((e) => ({
           region: e.region,
           nucleo: e.nucleo,
           extension: e.extension,
           empresa: e.empresa,
           rif: e.rif,
-          tipo: e.tipo,
+          publica: (e.tipo || '').toUpperCase() === 'PÚBLICA' ? 'X' : '',
+          privada: (e.tipo || '').toUpperCase() === 'PRIVADA' ? 'X' : '',
           carrera: Array.from(e.carreras).join(', '),
           cantidadEstudiantes: e.estudiantes,
         }));
 
-        const sections = [{
-          title: 'Relación de Empresas',
-          periodLabel: periodDesc,
-          columns: [
-            { header: 'N°', key: 'nro', width: 6 },
-            { header: 'Región', key: 'region', width: 14 },
-            { header: 'Núcleo', key: 'nucleo', width: 16 },
-            { header: 'Extensión', key: 'extension', width: 16 },
-            { header: 'Empresa', key: 'empresa', width: 30 },
-            { header: 'RIF', key: 'rif', width: 16 },
-            { header: 'Tipo', key: 'tipo', width: 14 },
-            { header: 'Carrera', key: 'carrera', width: 24 },
-            { header: 'Estudiantes', key: 'cantidadEstudiantes', width: 12 },
-          ],
-          rows,
-        }];
-
-        workbook = await generateWorkbook(sections);
+        workbook = await generateRelacionEmpresasWorkbook(rows, periodDesc);
         break;
       }
 

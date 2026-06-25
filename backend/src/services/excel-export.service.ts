@@ -82,6 +82,7 @@ export interface IndividualTutorSheetConfig {
 
 const INSTITUTIONAL_HEADER = [
   'REPÚBLICA BOLIVARIANA DE VENEZUELA',
+  'MINISTERIO DEL PODER POPULAR PARA LA DEFENSA',
   'UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA',
   'DE LA FUERZA ARMADA NACIONAL BOLIVARIANA',
   'VICERRECTORADO ACADÉMICO',
@@ -447,6 +448,176 @@ export async function generateTutoresAcademicosWorkbook(
 // ============================================================
 // Generador: Resumen de Pasantías (formato oficial UNEFA)
 // ============================================================
+
+// ============================================================
+// Interfaces
+// ============================================================
+
+interface RelacionEmpresaExcelRow {
+  region: string;
+  nucleo: string;
+  extension: string;
+  empresa: string;
+  rif: string;
+  publica: string;
+  privada: string;
+  carrera: string;
+  cantidadEstudiantes: number;
+}
+
+// ============================================================
+// Generador: Relación de Empresas (formato oficial Form-002-2019)
+// ============================================================
+
+export async function generateRelacionEmpresasWorkbook(
+  rows: RelacionEmpresaExcelRow[],
+  periodLabel: string,
+): Promise<Workbook> {
+  const workbook = new ExcelJS.Workbook();
+  const TOTAL = 9; // A-I
+
+  if (rows.length === 0) {
+    const ws = workbook.addWorksheet('Sin Datos');
+    addEmptySheet(ws, 'No se encontraron registros para el período seleccionado.');
+    return workbook;
+  }
+
+  const ws = workbook.addWorksheet('RELACIÓN');
+  const FONT = 'Arial';
+  const HDR_BG = 'FF8DB3E2';
+  const SUB_BG = 'FF76923C';
+  const TOTAL_BG = 'FFD6E3BC';
+
+  // ── Fila 1: Membrete (120px) + logos ──
+  ws.getRow(1).height = 120;
+  ws.mergeCells(1, 1, 1, TOTAL);
+  const mem = ws.getCell(1, 1);
+  mem.value = MEMBRETE_TEXT;
+  mem.font = { name: FONT, size: 9 };
+  mem.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  addLogos(workbook, ws, TOTAL);
+
+  // ── Fila 2: spacer ──
+  ws.getRow(2).height = 6;
+
+  // ── Fila 3: Form code ──
+  ws.getRow(3).height = 18;
+  ws.mergeCells(3, 1, 3, TOTAL);
+  const code = ws.getCell(3, 1);
+  code.value = 'Form-002-2019 CPA-VAC_jp';
+  code.font = { name: FONT, size: 8, bold: true };
+  code.alignment = { horizontal: 'left', vertical: 'middle' };
+
+  // ── Fila 4: spacer ──
+  ws.getRow(4).height = 6;
+
+  // ── Fila 5: Título (60px) ──
+  ws.getRow(5).height = 60;
+  ws.mergeCells(5, 1, 5, TOTAL);
+  const title = ws.getCell(5, 1);
+  title.value = {
+    richText: [
+      { text: 'RELACIÓN DE EMPRESAS O INSTITUCIONES QUE DEMANDA ASIGNACIÓN DE PASANTES', font: { name: FONT, size: 11, bold: true } },
+      { text: `\nPARA EL PERÍODO ACADÉMICO ${periodLabel}`, font: { name: FONT, size: 11, bold: true, color: { argb: 'FFFF0000' } } },
+    ],
+  };
+  title.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+  // ── Estilo header ──
+  const hdr = {
+    font: { name: FONT, size: 9, bold: true },
+    fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: HDR_BG } },
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
+    border: { top: { style: 'thin' as const }, bottom: { style: 'thin' as const }, left: { style: 'thin' as const }, right: { style: 'thin' as const } },
+  };
+  const setH = (c: any, v: string) => { c.value = v; c.font = hdr.font; c.fill = hdr.fill; c.alignment = hdr.alignment; c.border = hdr.border; };
+
+  // ── Fila 6: HEADER ROW 1 (36px) — rowspan implícito via merge ──
+  ws.getRow(6).height = 36;
+  setH(ws.getCell(6, 1), 'REGIÓN');          ws.mergeCells(6, 1, 7, 1);
+  setH(ws.getCell(6, 2), 'NÚCLEO');          ws.mergeCells(6, 2, 7, 2);
+  setH(ws.getCell(6, 3), 'EXTENSIÓN');       ws.mergeCells(6, 3, 7, 3);
+  setH(ws.getCell(6, 4), 'NOMBRE DE LA EMPRESA O INSTITUCIÓN'); ws.mergeCells(6, 4, 7, 4);
+  setH(ws.getCell(6, 5), 'RIF');             ws.mergeCells(6, 5, 7, 5);
+  ws.mergeCells(6, 6, 6, 7);                 setH(ws.getCell(6, 6), 'TIPO DE EMPRESA');
+  setH(ws.getCell(6, 8), 'CARRERA');         ws.mergeCells(6, 8, 7, 8);
+  setH(ws.getCell(6, 9), 'CANTIDAD DE\nESTUDIANTES\nSOLICITADOS'); ws.mergeCells(6, 9, 7, 9);
+
+  // ── Fila 7: HEADER ROW 2 (50px) ──
+  ws.getRow(7).height = 50;
+  setH(ws.getCell(7, 6), 'PÚBLICA\n(Marque con una "X"\nsegún sea el caso)');
+  setH(ws.getCell(7, 7), 'PRIVADA\n(Marque con una "X"\nsegún sea el caso)');
+
+  // ── Column widths ──
+  const empresaW = Math.min(Math.max(...rows.map(r => (r.empresa || '').length), 10) + 3, 55);
+  const carreraW = Math.min(Math.max(...rows.map(r => (r.carrera || '').length), 10) + 3, 35);
+  [12, 16, 16, empresaW, 16, 10, 10, carreraW, 10].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+
+  // ── Data rows ──
+  const center = { vertical: 'middle' as const, wrapText: true, horizontal: 'center' as const };
+  const left = { vertical: 'middle' as const, wrapText: true, horizontal: 'left' as const };
+  const dataStyle = { font: { name: FONT, size: 9 }, border: { top: { style: 'thin' as const }, bottom: { style: 'thin' as const }, left: { style: 'thin' as const }, right: { style: 'thin' as const } } };
+
+  rows.forEach((r, i) => {
+    const er = ws.getRow(8 + i);
+    er.height = 24;
+    const vals = [r.region, r.nucleo, r.extension, r.empresa, r.rif, r.publica || '', r.privada || '', r.carrera, r.cantidadEstudiantes];
+    vals.forEach((v, ci) => {
+      const cell = er.getCell(ci + 1);
+      cell.value = v !== null && v !== undefined ? (typeof v === 'string' ? v.toUpperCase() : v) : '';
+      cell.font = dataStyle.font;
+      cell.alignment = [6, 7, 9].includes(ci + 1) ? center : left;
+      cell.border = dataStyle.border;
+    });
+  });
+
+  // ── Merge region across entire column A (rowspan=rows.length) ──
+  if (rows.length > 1) {
+    ws.mergeCells(8, 1, 8 + rows.length - 1, 1);
+  }
+
+  // ── Subtotals ──
+  const dataEnd = 8 + rows.length;
+  const pub = rows.filter(r => r.publica === 'X').length;
+  const priv = rows.filter(r => r.privada === 'X').length;
+  const careers = new Set(rows.map(r => r.carrera)).size;
+  const totalEst = rows.reduce((s, r) => s + (r.cantidadEstudiantes || 0), 0);
+
+  const sub = (c: any) => {
+    c.font = { name: FONT, size: 10, bold: true, color: { argb: 'FF000000' } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SUB_BG } };
+    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+  };
+
+  ws.getRow(dataEnd).height = 24;
+  ws.mergeCells(dataEnd, 2, dataEnd, 3);
+  sub(ws.getCell(dataEnd, 2)); ws.getCell(dataEnd, 2).value = 'SUB-TOTALES';
+  [{ c: 4, v: rows.length }, { c: 5, v: rows.length }, { c: 6, v: pub }, { c: 7, v: priv }, { c: 8, v: careers }, { c: 9, v: totalEst }].forEach(({ c, v }) => {
+    sub(ws.getCell(dataEnd, c));
+    ws.getCell(dataEnd, c).value = v;
+  });
+
+  // ── Total instituciones ──
+  const r1 = dataEnd + 1;
+  ws.getRow(r1).height = 28;
+  const tot = (c: any) => {
+    c.font = { name: FONT, size: 11, bold: true };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TOTAL_BG } };
+    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+  };
+  ws.mergeCells(r1, 2, r1, 3); tot(ws.getCell(r1, 2)); ws.getCell(r1, 2).value = 'TOTAL INSTITUCIONES';
+  tot(ws.getCell(r1, 4)); ws.getCell(r1, 4).value = rows.length;
+
+  // ── Total estudiantes solicitados ──
+  const r2 = r1 + 1;
+  ws.getRow(r2).height = 36;
+  ws.mergeCells(r2, 2, r2, 3); tot(ws.getCell(r2, 2)); ws.getCell(r2, 2).value = `TOTAL ESTUDIANTES SOLICITADOS\nPARA EL ${periodLabel}`;
+  tot(ws.getCell(r2, 4)); ws.getCell(r2, 4).value = totalEst;
+
+  return workbook;
+}
 
 export async function generateResumenPasantiasWorkbook(
   rows: ResumenPasantiaRow[],

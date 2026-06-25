@@ -8,6 +8,7 @@ import { getPeriods } from "../../features/periods/services/periodService";
 import { getCareers } from "../../features/careers/services/careersService";
 import { generateProyeccionExcel } from "../../utils/unefaExcelReports";
 import { XIcon } from "lucide-react";
+import apiClient from "../../api/apiClient";
 
 interface Career {
   careerId: number;
@@ -20,11 +21,6 @@ interface ProyeccionModalProps {
   onClose: () => void;
 }
 
-// Hardcoded — no nucleus data in DB
-const REGION = "LOS LLANOS";
-const NUCLEUS = "PORTUGUESA";
-const EXTENSION = "ACARIGUA";
-
 export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
   const [periods, setPeriods] = useState<{ value: string; label: string; periodId: string }[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
@@ -34,6 +30,7 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "config">("preview");
+  const [sysLocation, setSysLocation] = useState({ region: 'LOS LLANOS', nucleus: 'PORTUGUESA', extension: 'ACARIGUA' });
 
   // Load periods + careers when modal opens
   useEffect(() => {
@@ -42,10 +39,18 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
     const load = async () => {
       try {
         setLoading(true);
-        const [periodList, careerList] = await Promise.all([
+        const [periodList, careerList, sysInstRes] = await Promise.all([
           getPeriods(),
-          getCareers()
+          getCareers(),
+          apiClient.get('/system-institution').catch(() => null)
         ]);
+        if (sysInstRes?.data) {
+          setSysLocation({
+            region: sysInstRes.data.region || 'LOS LLANOS',
+            nucleus: sysInstRes.data.nucleus || 'PORTUGUESA',
+            extension: sysInstRes.data.extension || 'ACARIGUA'
+          });
+        }
         const periodOptions = (periodList || []).map(p => ({
           value: p.periodId,
           label: p.description,
@@ -110,10 +115,10 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
       periodDescription: periodLabel,
       nuclei: [{
         nucleusId: 0,
-        name: NUCLEUS,
-        region: REGION,
+        name: sysLocation.nucleus,
+        region: sysLocation.region,
         nucleusType: "NÚCLEO",
-        extension: EXTENSION,
+        extension: sysLocation.extension,
         shortCareers,
         longCareers
       }],
@@ -220,7 +225,7 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
               </h3>
               <p className="text-[10px] sm:text-xs font-medium text-text-tertiary">
                 {selectedPeriod
-                  ? `${selectedPeriod.label} — ${REGION} / ${NUCLEUS} / ${EXTENSION}`
+                  ? `${selectedPeriod.label} — ${sysLocation.region} / ${sysLocation.nucleus} / ${sysLocation.extension}`
                   : "Seleccione período y carreras"}
               </p>
             </div>
@@ -394,19 +399,19 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
                   />
                 </div>
 
-                {/* Hardcoded location info */}
+                {/* System location info */}
                 <div className="bg-blue-50 dark:bg-blue-900/10 rounded-lg p-3 space-y-1 border border-blue-100 dark:border-blue-900/20">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
                     Ubicación
                   </p>
                   <p className="text-xs text-text-primary dark:text-text-emphasis">
-                    <span className="font-medium">Región:</span> {REGION}
+                    <span className="font-medium">Región:</span> {sysLocation.region}
                   </p>
                   <p className="text-xs text-text-primary dark:text-text-emphasis">
-                    <span className="font-medium">Núcleo:</span> {NUCLEUS}
+                    <span className="font-medium">Núcleo:</span> {sysLocation.nucleus}
                   </p>
                   <p className="text-xs text-text-primary dark:text-text-emphasis">
-                    <span className="font-medium">Extensión:</span> {EXTENSION}
+                    <span className="font-medium">Extensión:</span> {sysLocation.extension}
                   </p>
                 </div>
 
@@ -442,7 +447,7 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
 
                 <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-brand-500/5 border border-brand-500/10 mt-4 sm:mt-8">
                   <p className="text-[10px] sm:text-[11px] text-brand-600 dark:text-brand-400 leading-relaxed italic">
-                    * Seleccione las carreras e ingrese la cantidad proyectada. Región/Núcleo/Extensión fijos: {REGION} / {NUCLEUS} / {EXTENSION}.
+                    * Seleccione las carreras e ingrese la cantidad proyectada. Región/Núcleo/Extensión: {sysLocation.region} / {sysLocation.nucleus} / {sysLocation.extension}.
                   </p>
                 </div>
               </div>

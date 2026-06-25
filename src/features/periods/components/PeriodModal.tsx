@@ -544,16 +544,16 @@ export default function PeriodModal({
             const typeDatesEntries = Object.entries(typeDatesState);
 
             if (periodo) {
+                // Parse Y-m-d strings to local-noon dates for consistent comparison
+                const parseYmd = (str: string): Date => {
+                    const [y, m, d] = str.split('-').map(Number);
+                    return new Date(y, m - 1, d, 12, 0, 0);
+                };
+
                 // --- Validate type dates within parent period range ---
                 const typeNameMap = new Map(internshipTypes.map(t => [t.id, t.name]));
                 for (const [typeIdStr, dates] of typeDatesEntries) {
                     const typeName = typeNameMap.get(parseInt(typeIdStr)) || `Tipo #${typeIdStr}`;
-                    
-                    // Parse Y-m-d strings to local-noon dates for consistent comparison
-                    const parseYmd = (str: string): Date => {
-                        const [y, m, d] = str.split('-').map(Number);
-                        return new Date(y, m - 1, d, 12, 0, 0);
-                    };
 
                     if (dates.startDate) {
                         const start = parseYmd(dates.startDate);

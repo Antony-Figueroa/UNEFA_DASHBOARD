@@ -86,22 +86,26 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
     getAll: async (params?: GetAllParams) => {
       const cacheKey = `${crudCachePrefix(endpoint)}list:${JSON.stringify(params || {})}`;
       return dedupeRequest(cacheKey, async () => {
-        const response = await apiClient.get<TApiDTO>(endpoint, { params });
+        const response = await apiClient.get<unknown>(endpoint, { params });
+        const body = response.data as Record<string, unknown>;
 
         // Backward compatibility: si no hay params, mantener comportamiento anterior
         if (!params) {
-          const data = Array.isArray(response.data) ? response.data : response.data?.data || response.data;
-          return Array.isArray(data) ? data.map(mapFromApi) : data;
+          if (Array.isArray(body)) {
+            return (body as TApiDTO[]).map(mapFromApi);
+          }
+          const data = (body.data as TApiDTO[]) ?? (body as TItem[]);
+          return Array.isArray(data) ? data.map(mapFromApi) : (data as TItem[]);
         }
 
         // Respuesta paginada: { data: [], total, limit, offset }
-        const rawData = response.data?.data || response.data || [];
+        const rawData = (body.data as TApiDTO[]) ?? (body as TApiDTO[]) ?? [];
         const items = Array.isArray(rawData) ? rawData.map(mapFromApi) : [];
         return {
           data: items,
-          total: response.data?.total ?? items.length,
-          limit: response.data?.limit ?? params.limit ?? 20,
-          offset: response.data?.offset ?? params.offset ?? 0,
+          total: (body.total as number) ?? items.length,
+          limit: (body.limit as number) ?? params.limit ?? 20,
+          offset: (body.offset as number) ?? params.offset ?? 0,
         };
       });
     },

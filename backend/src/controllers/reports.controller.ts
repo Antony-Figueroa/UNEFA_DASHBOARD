@@ -22,6 +22,23 @@ function calcTrend(current: number, previous: number): { change: number; trend: 
   };
 }
 
+async function getSystemLocation(supabase: any): Promise<{ region: string; nucleus: string; extension: string }> {
+  try {
+    const { data } = await supabase
+      .from('t_system_institution')
+      .select('region, nucleus, extension')
+      .eq('status', 1)
+      .maybeSingle();
+    return {
+      region: data?.region || '',
+      nucleus: data?.nucleus || '',
+      extension: data?.extension || '',
+    };
+  } catch {
+    return { region: '', nucleus: '', extension: '' };
+  }
+}
+
 export const getReportsStats = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
@@ -324,6 +341,7 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
       ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
       : [];
     const supabase = dbManager.getConnection();
+    const sysLoc = await getSystemLocation(supabase);
 
     const { data: tutorPractices, error } = await supabase
       .from('t_professional_practices_tutor')
@@ -417,9 +435,9 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
             email: getPersonField(tutor.t_persons, 'email')
           },
           career: career?.CAREER_NAME || '',
-          region: getRegionName(institution?.REGION),
-          nucleus: institution?.NUCLEUS || '',
-          extension: institution?.EXTENSION || '',
+          region: sysLoc.region,
+          nucleus: sysLoc.nucleus,
+          extension: sysLoc.extension,
           studentCount: 1
         });
       }
@@ -468,17 +486,7 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
   }
 };
 
-function getRegionName(code: string | undefined): string {
-  const regionMap: Record<string, string> = {
-    'LOS_LLANOS': 'LOS LLANOS',
-    'CENTRAL': 'CENTRAL',
-    'GUayana': 'GUAYANA',
-    'ANDES': 'ANDES',
-    'OCCIDENTAL': 'OCCIDENTAL',
-    'ORIENTAL': 'ORIENTAL'
-  };
-  return regionMap[code || ''] || code || '';
-}
+// getRegionName removed — now reads from t_system_institution directly
 
 export interface CulminatedStudentReportRow {
   id: number;
@@ -507,6 +515,7 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
       ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
       : [];
     const supabase = dbManager.getConnection();
+    const sysLoc = await getSystemLocation(supabase);
 
     // Consultamos las practicas profesionales
     const { data: practices, error } = await supabase
@@ -554,13 +563,13 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
       if (careerId && career.CAREER_ID !== parseInt(careerId as string)) return;
       if (careerIds.length > 0 && !careerIds.includes(career.CAREER_ID)) return;
 
-      const key = `${institution.REGION}-${institution.NUCLEUS}-${institution.EXTENSION}-${career.CAREER_ID}-${institution.INSTITUTION_ID}`;
+      const key = `${sysLoc.region}-${sysLoc.nucleus}-${sysLoc.extension}-${career.CAREER_ID}-${institution.INSTITUTION_ID}`;
 
       if (!summaryMap.has(key)) {
         summaryMap.set(key, {
-          region: getRegionName(institution.REGION) || institution.REGION,
-          nucleo: institution.NUCLEUS,
-          extension: institution.EXTENSION,
+          region: sysLoc.region,
+          nucleo: sysLoc.nucleus,
+          extension: sysLoc.extension,
           carrera: career.CAREER_NAME,
           empresa: institution.INSTITUTION_NAME,
           tipoEmpresa: institution.INSTITUTION_TYPE,
@@ -775,6 +784,7 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
 export const getRelacionEmpresasDemandan = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
+    const sysLoc = await getSystemLocation(supabase);
     const { periodId, careerId, careerIds: careerIdsQuery, page: pageQuery, limit: limitQuery } = req.query;
     const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
     const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
@@ -814,9 +824,9 @@ export const getRelacionEmpresasDemandan = async (req: Request, res: Response) =
 
       if (!empresaCount.has(key)) {
         empresaCount.set(key, {
-          region: inst.REGION || '',
-          nucleo: inst.NUCLEUS || '',
-          extension: inst.EXTENSION || '',
+          region: sysLoc.region,
+          nucleo: sysLoc.nucleus,
+          extension: sysLoc.extension,
           empresa: inst.INSTITUTION_NAME || '',
           rif: inst.RIF || '',
           tipo: inst.INSTITUTION_TYPE || '',
@@ -1008,6 +1018,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
       ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
       : [];
     const supabase = dbManager.getConnection();
+    const sysLoc = await getSystemLocation(supabase);
 
     // generateWorkbook imported from excel-export.service.js
 
@@ -1115,9 +1126,9 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             genTutorMap.get(tutorKey)!.cantidadEstudiantes++;
           } else {
             genTutorMap.set(tutorKey, {
-              region: getRegionName(institution?.REGION) || institution?.REGION || '',
-              nucleo: institution?.NUCLEUS || '',
-              extension: institution?.EXTENSION || '',
+              region: sysLoc.region,
+              nucleo: sysLoc.nucleus,
+              extension: sysLoc.extension,
               carrera: careerName,
               nombreTutor: `${getPersonField(tutor.t_persons, 'first_name') || ''} ${getPersonField(tutor.t_persons, 'middle_name') || ''}`.trim(),
               apellidoTutor: `${getPersonField(tutor.t_persons, 'last_name') || ''} ${getPersonField(tutor.t_persons, 'second_last_name') || ''}`.trim(),
@@ -1155,9 +1166,9 @@ export const exportReportExcel = async (req: Request, res: Response) => {
 
           individualMap.get(tutorKey)!.rows.push({
             nro: 0,
-            region: getRegionName(institution?.REGION) || institution?.REGION || '',
-            nucleo: institution?.NUCLEUS || '',
-            extension: institution?.EXTENSION || '',
+            region: sysLoc.region,
+            nucleo: sysLoc.nucleus,
+            extension: sysLoc.extension,
             carrera: careerName,
             estudianteNombre: studentPerson ? `${studentPerson.first_name || ''} ${studentPerson.middle_name || ''}`.trim() : '',
             estudianteApellido: studentPerson ? `${studentPerson.last_name || ''} ${studentPerson.second_last_name || ''}`.trim() : '',
@@ -1273,13 +1284,13 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
             if (careerIds.length > 0 && !careerIds.includes(career.CAREER_ID)) return;
 
-            const key = `${institution.REGION}-${institution.NUCLEUS}-${institution.EXTENSION}-${career.CAREER_ID}-${institution.INSTITUTION_ID}`;
+            const key = `${sysLoc.region}-${sysLoc.nucleus}-${sysLoc.extension}-${career.CAREER_ID}-${institution.INSTITUTION_ID}`;
 
             if (!summaryMap.has(key)) {
               summaryMap.set(key, {
-                region: getRegionName(institution.REGION) || institution.REGION || '',
-                nucleo: institution.NUCLEUS || '',
-                extension: institution.EXTENSION || '',
+                region: sysLoc.region,
+                nucleo: sysLoc.nucleus,
+                extension: sysLoc.extension,
                 carrera: career.CAREER_NAME || '',
                 empresa: institution.INSTITUTION_NAME || '',
                 tipo: institution.INSTITUTION_TYPE || '',
@@ -1456,9 +1467,9 @@ export const exportReportExcel = async (req: Request, res: Response) => {
 
           if (!careerGroups.has(careerName)) careerGroups.set(careerName, []);
           careerGroups.get(careerName)!.push({
-            region: getRegionName(inst?.REGION) || inst?.REGION || '',
-            nucleo: inst?.NUCLEUS || '',
-            extension: inst?.EXTENSION || '',
+            region: sysLoc.region,
+            nucleo: sysLoc.nucleus,
+            extension: sysLoc.extension,
             carrera: careerName,
             estudianteNombre: `${estudiante?.NAME || ''} ${estudiante?.SECOND_NAME || ''}`.trim(),
             estudianteApellido: `${estudiante?.SURNAME || ''} ${estudiante?.SECOND_SURNAME || ''}`.trim(),
@@ -1555,9 +1566,9 @@ export const exportReportExcel = async (req: Request, res: Response) => {
               const tutorAcad = tutors.find((t: any) => t.TUTOR_TYPE === 'ACADEMICO')?.t_tutors;
               return {
                 nro: i + 1,
-                region: institution?.REGION || '',
-                nucleo: institution?.NUCLEUS || '',
-                extension: institution?.EXTENSION || '',
+                region: sysLoc.region,
+                nucleo: sysLoc.nucleus,
+                extension: sysLoc.extension,
                 carrera: career?.CAREER_NAME || '',
                 cedula: student?.STUDENTS_CI || '',
                 apellidos: [student?.SURNAME, student?.SECOND_SURNAME].filter(Boolean).join(' '),
@@ -1618,9 +1629,9 @@ export const exportReportExcel = async (req: Request, res: Response) => {
               const evals = p.t_evaluation || [];
               return {
                 nro: i + 1,
-                region: institution?.REGION || '',
-                nucleo: institution?.NUCLEUS || '',
-                extension: institution?.EXTENSION || '',
+                region: sysLoc.region,
+                nucleo: sysLoc.nucleus,
+                extension: sysLoc.extension,
                 carrera: career?.CAREER_NAME || '',
                 cedula: student?.STUDENTS_CI || '',
                 apellidos: [student?.SURNAME, student?.SECOND_SURNAME].filter(Boolean).join(' '),
@@ -1669,9 +1680,9 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           const carrera = (p.t_career as any)?.CAREER_NAME || '';
           if (!empresaMap.has(key)) {
             empresaMap.set(key, {
-              region: inst.REGION || '',
-              nucleo: inst.NUCLEUS || '',
-              extension: inst.EXTENSION || '',
+              region: sysLoc.region,
+              nucleo: sysLoc.nucleus,
+              extension: sysLoc.extension,
               empresa: inst.INSTITUTION_NAME || '',
               rif: inst.RIF || '',
               tipo: inst.INSTITUTION_TYPE || '',
@@ -1807,6 +1818,7 @@ async function getPeriodDescription(supabase: any, periodId?: string): Promise<s
 export const getActaNotasFinalesReport = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
+    const sysLoc = await getSystemLocation(supabase);
     const { periodId, careerId, careerIds: careerIdsQuery, page: pageQuery, limit: limitQuery } = req.query;
     const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
     const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
@@ -1853,9 +1865,9 @@ export const getActaNotasFinalesReport = async (req: Request, res: Response) => 
 
       return {
         nro: idx + 1,
-        region: institution?.REGION || '',
-        nucleo: institution?.NUCLEUS || '',
-        extension: institution?.EXTENSION || '',
+        region: sysLoc.region,
+        nucleo: sysLoc.nucleus,
+        extension: sysLoc.extension,
         carrera: career?.CAREER_NAME || '',
         estudianteCi: student?.STUDENTS_CI || '',
         estudianteNombre: `${student?.NAME || ''} ${student?.SECOND_NAME || ''}`.trim(),
@@ -1884,6 +1896,7 @@ export const getActaNotasFinalesReport = async (req: Request, res: Response) => 
 export const getEvaluacionesConsolidadasReport = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
+    const sysLoc = await getSystemLocation(supabase);
     const { periodId, careerId, careerIds: careerIdsQuery, page: pageQuery, limit: limitQuery } = req.query;
     const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
     const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
@@ -1928,9 +1941,9 @@ export const getEvaluacionesConsolidadasReport = async (req: Request, res: Respo
 
       return {
         nro: idx + 1,
-        region: institution?.REGION || '',
-        nucleo: institution?.NUCLEUS || '',
-        extension: institution?.EXTENSION || '',
+        region: sysLoc.region,
+        nucleo: sysLoc.nucleus,
+        extension: sysLoc.extension,
         carrera: career?.CAREER_NAME || '',
         estudianteCi: student?.STUDENTS_CI || '',
         estudianteNombre: `${student?.NAME || ''} ${student?.SECOND_NAME || ''}`.trim(),
@@ -1961,6 +1974,7 @@ export const getEvaluacionesConsolidadasReport = async (req: Request, res: Respo
 export const getRelacionIndividualDocente = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
+    const sysLoc = await getSystemLocation(supabase);
     const tutorId = parseInt(String(req.params.tutorId));
 
     const { data: tutor } = await supabase
@@ -2006,9 +2020,9 @@ export const getRelacionIndividualDocente = async (req: Request, res: Response) 
 
       return {
         nro: idx + 1,
-        region: inst?.REGION || '',
-        nucleo: inst?.NUCLEUS || '',
-        extension: inst?.EXTENSION || '',
+        region: sysLoc.region,
+        nucleo: sysLoc.nucleus,
+        extension: sysLoc.extension,
         carrera: carrera?.CAREER_NAME || '',
         estudiante: {
           nombre: `${estudiante?.NAME || ''} ${estudiante?.SECOND_NAME || ''}`.trim(),

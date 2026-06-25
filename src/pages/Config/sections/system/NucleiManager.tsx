@@ -10,10 +10,14 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../../componen
 import MultiSelect from "../../../../components/form/MultiSelect";
 import apiClient from "../../../../api/apiClient";
 import toast from "react-hot-toast";
-import { EditIcon, TrashIcon, PlusCircleIcon } from "../../../../icons/actions";
+import { EditIcon, TrashIcon, PlusCircleIcon, EyeIcon } from "../../../../icons/actions";
+import AsyncActionButton from "../../../../components/common/AsyncActionButton";
+import CustomSelect from "../../../../components/form/CustomSelect";
 import type { MultiSelectOption } from "../../../../components/form/MultiSelect";
 import { getCareers } from "../../../../features/careers/services/careersService";
 import { unwrapData } from "../../../../api/crudServiceFactory";
+import * as listsService from "../../../../features/lists/services/listsService";
+import type { ListValue } from "../../../../features/lists/types";
 
 /* ─── Types ─── */
 
@@ -67,6 +71,12 @@ export default function NucleiManager() {
   const [form, setForm] = useState<NucleusFormData>(EMPTY_FORM);
   const [careerOptions, setCareerOptions] = useState<MultiSelectOption[]>([]);
   const [selectedCareers, setSelectedCareers] = useState<string[]>([]);
+  const [regionOptions, setRegionOptions] = useState<ListValue[]>([]);
+
+  // Add-value inline for region
+  const [addValueOpen, setAddValueOpen] = useState(false);
+  const [addValueInput, setAddValueInput] = useState("");
+  const [savingNewValue, setSavingNewValue] = useState(false);
 
   // Confirmation dialog
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -106,6 +116,13 @@ export default function NucleiManager() {
     }
   }, []);
 
+  const fetchRegionOptions = useCallback(async () => {
+    try {
+      const list = await listsService.getListByName("REGION");
+      setRegionOptions(list.values.filter((v: ListValue) => v.status));
+    } catch { /* la lista se crea desde /configure/lists */ }
+  }, []);
+
   const fetchAssignedCareers = useCallback(async (nucleusId: number) => {
     try {
       const res = await apiClient.get(`/system-nucleus/${nucleusId}/careers`);
@@ -119,7 +136,8 @@ export default function NucleiManager() {
   useEffect(() => {
     fetchNuclei();
     fetchCareerOptions();
-  }, [fetchNuclei, fetchCareerOptions]);
+    fetchRegionOptions();
+  }, [fetchNuclei, fetchCareerOptions, fetchRegionOptions]);
 
   /* ─── Modal Handlers ─── */
 
@@ -155,6 +173,31 @@ export default function NucleiManager() {
 
   const updateFormField = (field: keyof NucleusFormData, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddNewRegion = async () => {
+    const raw = addValueInput.trim().toUpperCase();
+    if (!raw) return;
+    setSavingNewValue(true);
+    try {
+      let list: any = null;
+      try { list = await listsService.getListByName("REGION"); } catch { /* fallback */ }
+      if (!list) {
+        const allLists = await listsService.getAllLists();
+        list = allLists.find(l => l.name === "REGION");
+      }
+      if (!list) list = await listsService.createList("REGION");
+      const created = await listsService.createValue(list.id, raw);
+      const opt: ListValue = { ...created, name: raw, status: true };
+      setRegionOptions(prev => [...prev, opt]);
+      updateFormField("region", raw);
+      setAddValueOpen(false);
+      setAddValueInput("");
+    } catch {
+      toast.error("Error al crear la región");
+    } finally {
+      setSavingNewValue(false);
+    }
   };
 
   /* ─── CRUD Actions ─── */
@@ -352,38 +395,31 @@ export default function NucleiManager() {
                       <td className="py-3 px-4 text-center">{getMainBadge(n.is_main)}</td>
                       <td className="py-3 px-4 text-center">{getStatusBadge(n.status)}</td>
                       <td className="py-3 px-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
+                        <div className="flex items-center justify-end gap-3">
+                          <AsyncActionButton
                             onClick={() => openEditModal(n)}
-                            className="p-1.5 rounded-lg text-text-secondary hover:text-brand-500 hover:bg-brand-50 dark:hover:text-brand-400 dark:hover:bg-brand-500/10 transition-colors"
-                            title="Editar"
-                          >
-                            <EditIcon className="h-4 w-4" />
-                          </button>
-                          <button
+                            icon={<EditIcon />}
+                            tooltip="Editar"
+                            variant="primary"
+                          />
+                          <AsyncActionButton
                             onClick={() => handleToggleStatus(n)}
-                            className={`p-1.5 rounded-lg transition-colors ${
-                              n.status === 1
-                                ? "text-text-secondary hover:text-warning-500 hover:bg-warning-50 dark:hover:text-warning-400 dark:hover:bg-warning-500/10"
-                                : "text-text-secondary hover:text-success-500 hover:bg-success-50 dark:hover:text-success-400 dark:hover:bg-success-500/10"
-                            }`}
-                            title={n.status === 1 ? "Desactivar" : "Activar"}
-                          >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              {n.status === 1 ? (
+                            icon={n.status === 1 ? (
+                              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                              ) : (
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              )}
-                            </svg>
-                          </button>
-                          <button
+                              </svg>
+                            ) : (
+                              <EyeIcon />
+                            )}
+                            tooltip={n.status === 1 ? "Desactivar" : "Activar"}
+                            variant={n.status === 1 ? "warning" : "success"}
+                          />
+                          <AsyncActionButton
                             onClick={() => handleDelete(n)}
-                            className="p-1.5 rounded-lg text-text-secondary hover:text-error-500 hover:bg-error-50 dark:hover:text-error-400 dark:hover:bg-error-500/10 transition-colors"
-                            title="Eliminar"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
+                            icon={<TrashIcon />}
+                            tooltip="Eliminar"
+                            variant="error"
+                          />
                         </div>
                       </td>
                     </tr>
@@ -448,12 +484,13 @@ export default function NucleiManager() {
                   <label className={labelClass}>
                     Región <span className="text-error-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <CustomSelect
+                    options={regionOptions.map(o => ({ value: o.name, label: o.name }))}
+                    placeholder="Seleccionar región..."
                     value={form.region}
-                    onChange={(e) => updateFormField("region", e.target.value)}
-                    className={inputClass}
-                    placeholder="Ej: LOS LLANOS"
+                    onChange={(val) => updateFormField("region", val)}
+                    onAddNew={() => { setAddValueInput(""); setAddValueOpen(true); }}
+                    addNewLabel="Nueva región"
                   />
                 </div>
                 <div>
@@ -537,6 +574,37 @@ export default function NucleiManager() {
           </Button>
         </ModalFooter>
       </Modal>
+
+      {/* Dialog para agregar región nueva */}
+      <UnifiedDialog
+        isOpen={addValueOpen}
+        onClose={() => setAddValueOpen(false)}
+        title="Agregar nueva región"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary dark:text-text-tertiary">
+            Ingrese el nombre de la nueva región:
+          </p>
+          <input
+            type="text"
+            value={addValueInput}
+            onChange={(e) => setAddValueInput(e.target.value)}
+            placeholder="Nombre de la región..."
+            className="w-full px-3 py-2 text-sm rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+            autoFocus
+            onKeyDown={(e) => e.key === "Enter" && handleAddNewRegion()}
+          />
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setAddValueOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAddNewRegion} loading={savingNewValue}>
+              Agregar
+            </Button>
+          </div>
+        </div>
+      </UnifiedDialog>
     </>
   );
 }

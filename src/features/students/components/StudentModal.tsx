@@ -174,11 +174,8 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   const ciDisabled = !!editingStudent?.studentId;
   const isFieldDisabled = useCallback((fieldName: string) => {
     if (viewOnlyMode) return true;
-    const apiLock = apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true);
-    const nameFields = ["firstName", "middleName", "lastName", "secondLastName"];
-    if (apiLock && nameFields.includes(fieldName)) return true;
     return false;
-  }, [viewOnlyMode, apiDataLoaded, academicConfig]);
+  }, [viewOnlyMode]);
   const isFieldValid = useCallback((fieldName: string) =>
     !!(touchedFields as any)[fieldName] && !(errors as any)[fieldName],
     [touchedFields, errors]);

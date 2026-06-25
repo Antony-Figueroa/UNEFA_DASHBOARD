@@ -392,22 +392,6 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
     };
 
     const data = await dbManager.withRetry(async (supabase) => {
-      // Heredar región/núcleo/extensión de la configuración institucional
-      try {
-        const { data: sysInst } = await supabase
-          .from('t_system_institution')
-          .select('region, nucleus, extension')
-          .eq('status', 1)
-          .maybeSingle();
-        if (sysInst) {
-          dbData.REGION = sysInst.region || '';
-          dbData.NUCLEUS = sysInst.nucleus || '';
-          dbData.EXTENSION = sysInst.extension || '';
-        }
-      } catch (_err) {
-        // si no existe la tabla o el registro, usar defaults vacíos
-      }
-
       const { data: inst, error } = await supabase
         .from(TABLE_NAME)
         .insert([dbData])

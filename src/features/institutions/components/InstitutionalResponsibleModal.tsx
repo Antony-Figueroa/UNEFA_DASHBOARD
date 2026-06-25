@@ -15,7 +15,7 @@ import { getResponsibleByCi } from "../services/institutionalResponsiblesService
 import { CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload, InstitutionalResponsible, CreateInstitutionPayload } from "../types";
 import { useLists } from "../../lists/hooks/useLists";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_DIGITS, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_DIGITS, CEDULA_MAX_LENGTH, PASSPORT_MAX_LENGTH } from "../../../utils/inputFormat";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import Input from "../../../components/form/input/InputField";
 import CustomSelect from "../../../components/form/CustomSelect";
@@ -270,6 +270,8 @@ export default function InstitutionalResponsibleModal({
   );
 
   const ciDisabled = !!editingResp?.responsibleId;
+  const currentPrefix = watch("identificationPrefix") || "V";
+  const isPassport = currentPrefix === "P";
   const isFieldDisabled = useCallback((fieldName: string) => {
     if (viewOnlyMode) return true;
     return false;
@@ -382,18 +384,27 @@ export default function InstitutionalResponsibleModal({
 
 // Handle identification number input change with formatting
    const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-     const input = e.target.value;
-     // Solo permitir números
-     const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
-     const formatted = formatCedulaDisplay(digitsOnly, false);
-     setDisplayIdentificationNumber(formatted);
-     setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
-     clearErrors("identificationNumber");
+      const input = e.target.value;
+      let cleanedValue = "";
+      const prefix = watch("identificationPrefix") || "V";
+      const isPassport = prefix === "P";
+      
+      if (isPassport) {
+        cleanedValue = input.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, PASSPORT_MAX_LENGTH);
+        const formatted = formatCedulaDisplay(cleanedValue, false);
+        setDisplayIdentificationNumber(formatted);
+        setValue("identificationNumber", cleanedValue, { shouldValidate: true, shouldDirty: true });
+      } else {
+        cleanedValue = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+        const formatted = formatCedulaDisplay(cleanedValue, false);
+        setDisplayIdentificationNumber(formatted);
+        setValue("identificationNumber", cleanedValue, { shouldValidate: true, shouldDirty: true });
+      }
+      clearErrors("identificationNumber");
      
       // Si se cambia la cédula tras una carga de API externa, limpiar el formulario
       if (apiDataLoaded) {
-        const prefix = watch("identificationPrefix") || "V";
-        const currentCi = `${prefix}-${digitsOnly}`;
+        const currentCi = `${prefix}-${cleanedValue}`;
         if (currentCi !== apiLoadedCiRef.current) {
           setApiDataLoaded(false);
           apiLoadedCiRef.current = "";
@@ -417,11 +428,11 @@ export default function InstitutionalResponsibleModal({
 
       // Si se cambia la cédula y hay un existingResponsible o existingPerson, limpiar el formulario
       if (existingResponsible || existingPerson) {
-       const currentStoredDigits = existingResponsible
-         ? existingResponsible.identificationNumber?.replace(/\D/g, '') || ''
+       const currentStoredValue = existingResponsible
+         ? existingResponsible.identificationNumber || ''
          : '';
        // Si el usuario borró al menos 1 carácter o cambió algo
-       if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits || !existingResponsible) {
+       if (cleanedValue.length < currentStoredValue.length || cleanedValue !== currentStoredValue || !existingResponsible) {
          setExistingResponsible(null);
          setExistingPerson(false);
          setViewOnlyMode(false);
@@ -445,8 +456,8 @@ export default function InstitutionalResponsibleModal({
      }
      
 // Trigger CI check ONLY when we have exactly 7 or 8 digits (not before)
-     if (!existingResponsible && !existingPerson && !editingResp && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
-       checkInstitutionalResponsibleByCi(digitsOnly);
+     if (!existingResponsible && !existingPerson && !editingResp && (cleanedValue.length === 7 || cleanedValue.length === 8)) {
+       checkInstitutionalResponsibleByCi(cleanedValue);
      }
    };
 
@@ -922,9 +933,9 @@ export default function InstitutionalResponsibleModal({
                         value={displayIdentificationNumber}
                         onChange={handleIdentificationNumberChange}
                         onBlur={handleCiBlur}
-                        placeholder="V-12.345.678"
+                        placeholder={isPassport ? "ABC123456" : "V-12.345.678"}
                         disabled={ciDisabled}
-                        maxLength={CEDULA_MAX_LENGTH}
+                        maxLength={isPassport ? PASSPORT_MAX_LENGTH : CEDULA_MAX_LENGTH}
                         autoComplete="off"
                         className="tracking-widest"
                         error={!!errors.identificationNumber}
@@ -936,7 +947,7 @@ export default function InstitutionalResponsibleModal({
                           : undefined)
                         }
                       />
-                      {!ciDisabled && (
+                      {!ciDisabled && !isPassport && (
                         <button
                           type="button"
                           onClick={handleCiLookup}

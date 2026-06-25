@@ -38,10 +38,11 @@ import Input from "../../../components/form/input/InputField";
 import CustomSelect from "../../../components/form/CustomSelect";
 import { Search, Loader2 } from "lucide-react";
 import { PREFIX_OPTIONS } from "../types";
+import { PASSPORT_MAX_LENGTH } from "../../../utils/inputFormat";
 
 /** Límites de cédula */
 export const CEDULA_MAX_DIGITS = 8;
-export const CEDULA_MAX_LENGTH = 10; // V-12345678
+export const CEDULA_MAX_LENGTH = 12; // V-00.000.000
 
 /**
  * Propiedades del componente PersonFormFields.
@@ -176,6 +177,11 @@ export default function PersonFormFields({
 }: PersonFormFieldsProps) {
   // CI se deshabilita por editingId O fieldLockOnApiLoad (cuando se cargó de API externa)
   const ciDisabled = !!editingId || fieldLockOnApiLoad;
+
+  // Prefijo actual para adecuar validación/maxLength del campo CI
+  const currentPrefix = watch("identificationPrefix") || "V";
+  const isPassport = currentPrefix === "P";
+  const ciMaxLength = isPassport ? PASSPORT_MAX_LENGTH : CEDULA_MAX_LENGTH;
 
   // Helper to check if a specific field is disabled
   const isFieldDisabled = (fieldName: string) => {
@@ -316,9 +322,9 @@ export default function PersonFormFields({
                 value={displayIdentificationNumber}
                 onChange={onIdentificationNumberChange}
                 onBlur={onBlurCi}
-                placeholder="V-12.345.678"
+                placeholder={isPassport ? "ABC123456" : "V-12.345.678"}
                 disabled={ciDisabled}
-                maxLength={CEDULA_MAX_LENGTH}
+                maxLength={ciMaxLength}
                 autoComplete="off"
                 className="tracking-widest"
                 error={!!errors.identificationNumber}
@@ -341,7 +347,7 @@ export default function PersonFormFields({
                 </button>
               )}
               {/* Botón Buscar en SENIAT — consulta API externa solo cuando el usuario lo pulsa */}
-              {onCiLookup && !ciDisabled && (
+              {onCiLookup && !ciDisabled && !isPassport && (
                 <button
                   type="button"
                   onClick={onCiLookup}

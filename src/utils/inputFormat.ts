@@ -5,66 +5,92 @@
  */
 
 /**
- * Formatea un número de cédula para visualización (V-00.000.000)
- * Formato venezolano: prefijo (V/E) + 7-8 dígitos
- * Ejemplos: V-12.345.678, V-31114449 (8 dígitos sin puntos)
+ * Prefijos que corresponden a cédula venezolana (formateo con puntos).
+ */
+const CID_PREFIXES = ['V', 'E', 'J', 'G'];
+
+/**
+ * Prefijo de pasaporte.
+ */
+const PASSPORT_PREFIX = 'P';
+
+/**
+ * Formatea un número de identificación para visualización.
+ * - Cédula (V/E/J/G): V-12.345.678 (formato venezolano con puntos)
+ * - Pasaporte (P): P-ABC123456 (sin formato, crudo)
  * 
- * @param value - Valor que puede tener prefijo (ej: "V12345678" o "31114449")
+ * @param value - Valor que puede tener prefijo (ej: "V12345678" o "PABC123456")
  * @returns String con formato visual
  */
 export const formatCedulaDisplay = (value: string, includePrefix: boolean = true): string => {
   if (!value) return '';
   
-  // Extraer prefijo y números
-  const cleaned = value.toUpperCase().replace(/[^0-9VE]/g, '');
-  const prefixMatch = cleaned.match(/^([VE])/);
+  const cleaned = value.toUpperCase();
+  const prefixMatch = cleaned.match(/^([A-Z])/);
   const prefix = prefixMatch ? prefixMatch[1] : '';
-  const numbers = cleaned.replace(/^[VE]/, '');
   
-  if (!numbers) return includePrefix ? prefix : '';
+  if (!prefix) return includePrefix ? prefix : '';
   
-  // LIMITE: Solo permitir hasta 8 dígitos (cédula venezolana)
-  const limitedNumbers = numbers.slice(0, CEDULA_MAX_DIGITS);
+  const isPassport = prefix === PASSPORT_PREFIX;
+  const body = cleaned.slice(1); // todo después del prefijo
   
-  // Formatear desde la izquierda para números de 1-8 dígitos
-  let formatted: string;
-  const len = limitedNumbers.length;
+  if (!body) return includePrefix ? prefix : '';
   
-  if (len <= 3) {
-    formatted = limitedNumbers;
-  } else if (len === 4) {
-    formatted = limitedNumbers;
-  } else if (len === 5) {
-    formatted = `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2)}`;
-  } else if (len === 6) {
-    formatted = `${limitedNumbers.slice(0, 3)}.${limitedNumbers.slice(3)}`;
-  } else if (len === 7) {
-    formatted = `${limitedNumbers.slice(0, 1)}.${limitedNumbers.slice(1, 4)}.${limitedNumbers.slice(4, 7)}`;
-  } else if (len === 8) {
-    formatted = `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2, 5)}.${limitedNumbers.slice(5, 8)}`;
-  } else {
-    // Caso por defecto (0 dígitos o por seguridad)
-    formatted = limitedNumbers;
+  const display = isPassport
+    // Pasaporte: crudo, solo caracteres válidos, máx 15
+    ? body.replace(/[^A-Z0-9]/g, '').slice(0, PASSPORT_MAX_LENGTH)
+    // Cédula: solo dígitos, máx 8
+    : body.replace(/\D/g, '').slice(0, CEDULA_MAX_DIGITS);
+  
+  if (isPassport) {
+    // Pasaporte: sin formato (ej: P-ABC123456)
+    if (!includePrefix) return display;
+    return prefix ? `${prefix}-${display}` : display;
   }
-   
+  
+  // Cédula: formateo con puntos (ej: V-12.345.678)
+  let formatted: string;
+  const len = display.length;
+  
+  if (len <= 4) {
+    formatted = display;
+  } else if (len <= 6) {
+    formatted = `${display.slice(0, 2)}.${display.slice(2)}`;
+  } else if (len === 7) {
+    formatted = `${display.slice(0, 1)}.${display.slice(1, 4)}.${display.slice(4, 7)}`;
+  } else if (len === 8) {
+    formatted = `${display.slice(0, 2)}.${display.slice(2, 5)}.${display.slice(5, 8)}`;
+  } else {
+    formatted = display;
+  }
+  
   if (!includePrefix) return formatted;
   return prefix ? `${prefix}-${formatted}` : formatted;
 };
 
 /**
- * Limpia una cédula eliminando caracteres de formato (puntos, guiones)
- * @param value - Valor con o sin formato
- * @returns Valor limpio con prefijo (ej: V12345678)
+ * Limpia una identificación eliminando caracteres de formato (puntos, guiones).
+ * - Cédula (V/E/J/G): solo dígitos, máx 8
+ * - Pasaporte (P): alfanumérico, máx 15
+ * @param value - Valor con o sin formato (ej: "V-12.345.678" o "P-ABC123456")
+ * @returns Valor limpio con prefijo (ej: "V12345678" o "PABC123456")
  */
 export const cleanCedula = (value: string): string => {
   if (!value) return '';
-  // Mantener V o E y solo números
-  const cleaned = value.toUpperCase().replace(/[^0-9VE]/g, '');
-  const prefixMatch = cleaned.match(/^([VE])/);
+  const cleaned = value.toUpperCase();
+  const prefixMatch = cleaned.match(/^([A-Z])/);
   const prefix = prefixMatch ? prefixMatch[1] : '';
-  // LIMITE: Solo permitir hasta 8 dígitos
-  const numbers = cleaned.replace(/^[VE]/, '').slice(0, CEDULA_MAX_DIGITS);
-  return prefix ? `${prefix}${numbers}` : numbers;
+  
+  if (!prefix) return cleaned.replace(/\D/g, '').slice(0, CEDULA_MAX_DIGITS);
+  
+  const isPassport = prefix === PASSPORT_PREFIX;
+  const body = cleaned.slice(1);
+  const maxLen = isPassport ? PASSPORT_MAX_LENGTH : CEDULA_MAX_DIGITS;
+  const validBody = isPassport
+    ? body.replace(/[^A-Z0-9]/g, '').slice(0, maxLen)
+    : body.replace(/\D/g, '').slice(0, maxLen);
+  
+  return `${prefix}${validBody}`;
 };
 
 /**
@@ -73,7 +99,12 @@ export const cleanCedula = (value: string): string => {
 export const CEDULA_MAX_DIGITS = 8;
 
 /**
- * Longitud máxima del input visual incluyendo formato (V-00.000.000 = 12 caracteres)
+ * Longitud máxima del número de pasaporte SIN prefijo (alfanumérico, estándar OACI hasta 9, dejamos 15 por seguridad)
+ */
+export const PASSPORT_MAX_LENGTH = 15;
+
+/**
+ * Longitud máxima del input visual de cédula incluyendo formato (V-00.000.000 = 12 caracteres)
  */
 export const CEDULA_MAX_LENGTH = 12;
 

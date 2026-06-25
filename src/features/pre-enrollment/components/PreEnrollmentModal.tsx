@@ -32,7 +32,7 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";
-import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, CEDULA_MAX_LENGTH, PASSPORT_MAX_LENGTH } from "../../../utils/inputFormat";
 import { UserCircleIcon, ShieldCheckIcon, DocsIcon, InfoIcon, SearchIcon, PlusIcon } from "../../../icons";
 import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
@@ -61,12 +61,12 @@ interface PreEnrollmentModalProps {
  * Define las reglas y mensajes de error para cada campo.
  */
 const preEnrollmentSchema = z.object({
-  /** Prefijo de identificación (V/E) */
+  /** Prefijo de identificación (V/E/P) */
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
-  /** Número de identificación (solo dígitos) */
+  /** Número de identificación (dígitos o alfanumérico para pasaporte) */
   identificationNumber: z.string()
     .min(1, "La identificación es obligatoria")
-    .regex(/^\d+$/, "Solo se admiten números"),
+    .regex(/^[A-Za-z0-9]+$/, "Solo se admiten letras y números"),
   /** Nombre completo del estudiante (autocompletado) */
   studentName: z.string()
     .min(1, "El nombre del estudiante es obligatorio")
@@ -156,6 +156,7 @@ export default function PreEnrollmentModal({
   const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
     { value: "V", label: "V" },
     { value: "E", label: "E" },
+    { value: "P", label: "P" },
   ];
 
   const SEMESTER_OPTIONS = options["Semestre"] || [];
@@ -759,7 +760,7 @@ if (student) {
                             isSearching && "animate-pulse"
                           )}
                           readOnly={!!editingEntry}
-                          maxLength={CEDULA_MAX_LENGTH}
+                          maxLength={idPrefix === "P" ? PASSPORT_MAX_LENGTH : CEDULA_MAX_LENGTH}
                           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                           autoComplete="off"
                         />

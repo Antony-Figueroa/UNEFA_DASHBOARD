@@ -32,7 +32,7 @@ import * as enrollmentService from "../services/enrollmentService";
 import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";
 import { unwrapData } from "../../../api/crudServiceFactory";
-import { formatCedulaDisplay, cleanCedula } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, cleanCedula, PASSPORT_MAX_LENGTH } from "../../../utils/inputFormat";
 import { UserCircleIcon, ShieldCheckIcon, DocsIcon, SearchIcon, UsersIcon, PlusIcon } from "../../../icons";
 import { cn } from "../../../utils/cn";
 import Badge from "../../../components/ui/badge/Badge";
@@ -57,7 +57,7 @@ const BuildingOfficeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-// Longitud máxima para Cédula en inscripción (8 dígitos: V-00.000.000 = 11 caracteres)
+// Longitud máxima para Cédula en inscripción (pasaporte: 15, cédula: 11)
 const ENROLLMENT_CEDULA_MAX_LENGTH = 11;
 
 /**
@@ -150,7 +150,7 @@ export default function EnrollmentModal({
     const cleaned = cleanCedula(input);
     const formatted = formatCedulaDisplay(cleaned);
     setDisplayIdentificationNumber(formatted);
-    setValue("identificationNumber", cleaned, { shouldValidate: true, shouldDirty: true });
+    setValue("identificationNumber", cleaned.replace(/^[A-Z]/, ''), { shouldValidate: true, shouldDirty: true });
   };
 
   const { responsibles } = useInstitutionalResponsibles();
@@ -159,6 +159,7 @@ export default function EnrollmentModal({
   const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
     { value: "V", label: "V" },
     { value: "E", label: "E" },
+    { value: "P", label: "P" },
   ];
 
   const { 
@@ -719,7 +720,7 @@ export default function EnrollmentModal({
                           isSearching && "animate-pulse"
                         )}
                         disabled={!!editingEntry || !!initialData}
-                        maxLength={ENROLLMENT_CEDULA_MAX_LENGTH}
+                        maxLength={idPrefix === "P" ? PASSPORT_MAX_LENGTH : ENROLLMENT_CEDULA_MAX_LENGTH}
                       />
                       {isSearching && (
                         <div className="absolute right-4 top-1/2 -translate-y-1/2">

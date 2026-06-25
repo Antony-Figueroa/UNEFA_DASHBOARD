@@ -39,7 +39,7 @@ export default function NotFound() {
 
           <div className="flex items-center justify-center gap-4">
             <button
-              onClick={() => navigate(canGoBack ? -1 : "/")}
+              onClick={() => { if (canGoBack) navigate(-1); else navigate("/"); }}
               className="inline-flex items-center justify-center rounded-lg border border-border-medium bg-bg-main px-6 py-3.5 text-sm font-medium text-text-secondary shadow-theme-xs hover:bg-bg-secondary hover:text-text-primary dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-white/3 dark:hover:text-text-emphasis"
             >
               {canGoBack ? "Volver atrás" : "Ir al inicio"}

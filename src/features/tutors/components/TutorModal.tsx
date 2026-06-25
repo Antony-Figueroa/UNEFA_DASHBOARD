@@ -145,9 +145,7 @@ export default function TutorModal({
   const tutorSchema = useMemo(() => z.object({
     identificationPrefix: z.string().min(1, "Seleccione el tipo"),
     identificationNumber: z.string()
-      .min(6, "La cédula debe tener al menos 6 dígitos")
-      .max(CEDULA_MAX_DIGITS, `La cédula no puede exceder los ${CEDULA_MAX_DIGITS} dígitos`)
-      .regex(/^\d+$/, "Solo se admiten números"),
+      .min(1, "La identificación es obligatoria"),
     firstName: z.string()
       .min(1, "El primer nombre es obligatorio")
       .max(100, "El nombre es demasiado largo")
@@ -229,6 +227,40 @@ export default function TutorModal({
       .transform(val => val.toUpperCase()),
     carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
   }).superRefine((data, ctx) => {
+    // Validación condicional de identificación
+    const num = data.identificationNumber || "";
+    if (data.identificationPrefix === "P") {
+      if (!/^[A-Za-z0-9]+$/.test(num)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Solo se admiten letras y números",
+          path: ["identificationNumber"],
+        });
+      }
+    } else {
+      if (!/^\d+$/.test(num)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Solo se admiten números",
+          path: ["identificationNumber"],
+        });
+      }
+      if (num.length < 6) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "La cédula debe tener al menos 6 dígitos",
+          path: ["identificationNumber"],
+        });
+      }
+      if (num.length > CEDULA_MAX_DIGITS) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `La cédula no puede exceder los ${CEDULA_MAX_DIGITS} dígitos`,
+          path: ["identificationNumber"],
+        });
+      }
+    }
+
     // Validar duplicidad de cédula
     const currentId = editingTutor?.tutorId ?? existingTutor?.tutorId;
     // Validar duplicidad de cédula

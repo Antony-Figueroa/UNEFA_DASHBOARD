@@ -3,7 +3,7 @@
  * @description Tests para reportTextsService — merge FALLBACK_TEXTOS con API data (Task 7.1.1)
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { mergeTextData } from '../reportTextsService';
 import { FALLBACK_TEXTOS } from '../../utils/documentTexts';
 
@@ -61,7 +61,7 @@ describe('mergeTextData — merge FALLBACK_TEXTOS con API data', () => {
     // Fallback mantiene las claves que API no tocó
     expect(result.solicitud_institucion.cargo).toBe('Decana del Núcleo Portuguesa');
     expect(result.solicitud_institucion.orden).toBe(
-      'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022'
+      'Según Orden administrativa N° 0005 de fecha 18 de marzo de 2022'
     );
     // Otras claves del fallback no deben modificarse
     expect(result.aceptacion_tutor.encabezado).toContain('por medio de la presente');

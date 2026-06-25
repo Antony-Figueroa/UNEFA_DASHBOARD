@@ -365,10 +365,6 @@ test.describe('Regresión: Auth y Password', () => {
       console.log('✓ Sin "Carácter especial" en requisitos');
     }
 
-    // Verificar separación mayúscula/minúscula
-    const hasMayusc = /mayúscula|Mayúscula|MAYUSCULA/.test(text);
-    const hasMinusc = /minúscula|Minúscula|MINUSCULA/.test(text);
-
     let checks = 0;
     if (text.includes('8 caracteres') || text.includes('8 caract')) checks++;
     if (/mayúscula|Mayúscula/.test(text)) checks++;

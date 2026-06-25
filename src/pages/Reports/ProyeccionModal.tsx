@@ -52,7 +52,7 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
           periodId: p.periodId
         }));
         setPeriods(periodOptions);
-        const careers = Array.isArray(careerList) ? careerList : (careerList?.data ?? []);
+        const careers = (Array.isArray(careerList) ? careerList : (careerList?.data ?? [])) as Career[];
         setAllCareers(careers);
       } catch (error) {
         console.error("Error loading data:", error);

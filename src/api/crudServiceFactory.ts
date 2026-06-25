@@ -94,12 +94,12 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
           if (Array.isArray(body)) {
             return (body as TApiDTO[]).map(mapFromApi);
           }
-          const data = (body.data as TApiDTO[]) ?? (body as TItem[]);
+          const data = (body.data as TApiDTO[]) ?? (body as unknown as TItem[]);
           return Array.isArray(data) ? data.map(mapFromApi) : (data as TItem[]);
         }
 
         // Respuesta paginada: { data: [], total, limit, offset }
-        const rawData = (body.data as TApiDTO[]) ?? (body as TApiDTO[]) ?? [];
+        const rawData = (body.data as TApiDTO[]) ?? (body as unknown as TApiDTO[]) ?? [];
         const items = Array.isArray(rawData) ? rawData.map(mapFromApi) : [];
         return {
           data: items,

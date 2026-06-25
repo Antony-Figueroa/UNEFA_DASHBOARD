@@ -272,11 +272,8 @@ export default function InstitutionalResponsibleModal({
   const ciDisabled = !!editingResp?.responsibleId;
   const isFieldDisabled = useCallback((fieldName: string) => {
     if (viewOnlyMode) return true;
-    const apiLock = apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true);
-    const nameFields = ["firstName", "middleName", "lastName", "secondLastName"];
-    if (apiLock && nameFields.includes(fieldName)) return true;
     return false;
-  }, [viewOnlyMode, apiDataLoaded, academicConfig]);
+  }, [viewOnlyMode]);
 
   const TAB_IDS = ['identificacion', 'contacto', 'instituciones'] as const;
   const TAB_FIELDS: Record<string, string[]> = {

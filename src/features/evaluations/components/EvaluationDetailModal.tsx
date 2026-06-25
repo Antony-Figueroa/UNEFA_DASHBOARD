@@ -3,6 +3,7 @@ import { Modal, ModalHeader, ModalBody } from "../../../components/ui/modal";
 import Badge from "../../../components/ui/badge/Badge";
 import { EVALUATOR_TYPE_LABELS, EvaluationWithDetails } from "../types";
 import { useEvaluations } from "../hooks/useEvaluations";
+import { useSystemEvaluationConfig } from "../hooks/useSystemEvaluationConfig";
 
 interface EvaluationDetailModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
   evaluationId
 }) => {
   const { getEvaluationById, fetchCriteria, criteria } = useEvaluations();
+  const { config } = useSystemEvaluationConfig();
   const [evaluation, setEvaluation] = useState<EvaluationWithDetails | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -83,7 +85,7 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p className="text-xs font-bold uppercase text-text-tertiary mb-1">Puntaje Total</p>
                 <p className={`text-2xl font-bold ${getScoreColor(evaluation.totalScore)}`}>
-                  {evaluation.totalScore.toFixed(1)} / 20
+                  {evaluation.totalScore.toFixed(1)} / {config.score.displayScale}
                 </p>
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -131,7 +133,7 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
                           <span className={`text-lg font-bold ${getScoreColor(item.score)}`}>
                             {item.score}
                           </span>
-                          <span className="text-xs text-text-tertiary">/20</span>
+                          <span className="text-xs text-text-tertiary">/{config.score.displayScale}</span>
                         </div>
                       </div>
                     ))

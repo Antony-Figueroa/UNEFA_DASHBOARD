@@ -117,7 +117,8 @@ export interface RelacionEmpresasRow {
   extension: string;
   empresa: string;
   rif: string;
-  tipo: string;
+  publica: string;
+  privada: string;
   carrera: string;
   cantidadEstudiantes: number;
 }

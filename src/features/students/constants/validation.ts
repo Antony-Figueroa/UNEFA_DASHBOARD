@@ -13,9 +13,7 @@ const optionalName = z.string()
 export const studentSchema = z.object({
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
   identificationNumber: z.string()
-    .min(6, "La cédula debe tener al menos 6 dígitos")
-    .max(9, "La cédula no puede tener más de 9 dígitos")
-    .regex(/^\d+$/, "Solo se admiten números"),
+    .min(1, "La identificación es obligatoria"),
   firstName: z.string()
     .min(1, "El primer nombre es obligatorio")
     .max(100, "El nombre es demasiado largo")
@@ -66,14 +64,51 @@ export const studentSchema = z.object({
   militaryRank: z.string().default("NO APLICA"),
   works: z.string().min(1, "Seleccione si trabaja"),
 })
-.refine((data) => {
+.superRefine((data, ctx) => {
+  // Validación de rango militar
   if (data.studentType === "MILITAR") {
-    return data.militaryRank && data.militaryRank !== "" && data.militaryRank !== "NO APLICA";
+    if (!data.militaryRank || data.militaryRank === "" || data.militaryRank === "NO APLICA") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Debe seleccionar un rango militar",
+        path: ["militaryRank"],
+      });
+    }
   }
-  return true;
-}, {
-  message: "Debe seleccionar un rango militar",
-  path: ["militaryRank"],
+
+  // Validación condicional de identificación
+  const num = data.identificationNumber || "";
+  if (data.identificationPrefix === "P") {
+    if (!/^[A-Za-z0-9]+$/.test(num)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Solo se admiten letras y números",
+        path: ["identificationNumber"],
+      });
+    }
+  } else {
+    if (!/^\d+$/.test(num)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Solo se admiten números",
+        path: ["identificationNumber"],
+      });
+    }
+    if (num.length < 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La cédula debe tener al menos 6 dígitos",
+        path: ["identificationNumber"],
+      });
+    }
+    if (num.length > 9) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La cédula no puede tener más de 9 dígitos",
+        path: ["identificationNumber"],
+      });
+    }
+  }
 });
 
 export type StudentFormInput = z.input<typeof studentSchema>;

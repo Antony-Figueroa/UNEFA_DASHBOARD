@@ -53,9 +53,7 @@ const institutionSchema = z.object({
 const respSchema = z.object({
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
   identificationNumber: z.string()
-    .min(1, "La cédula es obligatoria")
-    .regex(/^\d+$/, "Solo se admiten números")
-    .min(7, "La cédula debe tener al menos 7 dígitos"),
+    .min(1, "La identificación es obligatoria"),
   firstName: z.string()
     .min(1, "El primer nombre es obligatorio")
     .max(100, "El nombre es demasiado largo")
@@ -94,6 +92,32 @@ const respSchema = z.object({
     .or(z.literal("")),
   // institutions es obligatorio - debe tener al menos una institución con cargo
   institutions: z.array(institutionSchema).min(1, "Debe agregar al menos una empresa o institución con su cargo"),
+}).superRefine((data, ctx) => {
+  const num = data.identificationNumber || "";
+  if (data.identificationPrefix === "P") {
+    if (!/^[A-Za-z0-9]+$/.test(num)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Solo se admiten letras y números",
+        path: ["identificationNumber"],
+      });
+    }
+  } else {
+    if (!/^\d+$/.test(num)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Solo se admiten números",
+        path: ["identificationNumber"],
+      });
+    }
+    if (num.length < 7) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La cédula debe tener al menos 7 dígitos",
+        path: ["identificationNumber"],
+      });
+    }
+  }
 });
 
 /**

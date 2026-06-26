@@ -249,8 +249,8 @@ export const usePeriods = () => {
      */
     const updateGraceDefaults = async (data: { defaultEnrollmentGraceDays: number; defaultEvaluationGraceDays: number; allowMultipleVisitsPerDay?: boolean; maxVisitsPerDay?: number | null }) => {
         try {
-            const updated = await periodService.updateGraceDefaults(data);
-            setGraceDefaults(updated);
+            await periodService.updateGraceDefaults(data);
+            await loadGraceDefaults();
             addToast({
                 variant: "success",
                 title: "Valores por Defecto Actualizados",

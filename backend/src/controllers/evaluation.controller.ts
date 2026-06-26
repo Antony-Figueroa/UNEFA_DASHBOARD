@@ -5,7 +5,8 @@ import { sanitizeText } from '../utils/text-utils.js';
 import { auditCreate, auditUpdate, auditDelete } from '../utils/audit-helpers.js';
 import { notifyEvaluationCreated } from '../services/notification.service.js';
 import { getPersonField } from '../utils/person-utils.js';
-import { evaluationConfig } from '../config/evaluation.config.js';
+import { evaluationConfig, scaleToDisplay, calculateWeightedGrade } from '../config/evaluation.config.js';
+import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 interface EvaluationCriteria {
   criteriaId: number;
@@ -264,9 +265,8 @@ export const createEvaluation = async (req: AuthRequest, res: Response) => {
     }
 
     // Cada criterio se puntúa según system config, se escala el promedio al displayScale
-    const { score: scoreCfg } = evaluationConfig;
     const rawAverage = data.items.reduce((sum, item) => sum + item.score, 0) / data.items.length;
-    const totalScore = parseFloat(((rawAverage / scoreCfg.max) * scoreCfg.displayScale).toFixed(1));
+    const totalScore = scaleToDisplay(rawAverage);
 
     const { data: evaluation, error: evalError } = await supabase
       .from('t_evaluation')
@@ -364,11 +364,10 @@ export const updateEvaluation = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { score: scoreCfg } = evaluationConfig;
     let totalScore = 0;
     if (items && items.length > 0) {
       const rawAverage = items.reduce((sum: number, item: any) => sum + item.score, 0) / items.length;
-      totalScore = parseFloat(((rawAverage / scoreCfg.max) * scoreCfg.displayScale).toFixed(1));
+      totalScore = scaleToDisplay(rawAverage);
     }
 
     const { error: updateError } = await supabase
@@ -444,6 +443,20 @@ export const deleteEvaluation = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({
         success: false,
         message: 'Evaluación no encontrada'
+      });
+    }
+
+    // No permitir borrar evaluaciones de prácticas culminadas
+    const { data: practiceRow } = await supabase
+      .from('t_professional_practices')
+      .select('PRACTICES_STATUS')
+      .eq('PROFESSIONAL_PRACTICE_ID', (existing as any).PROFESSIONAL_PRACTICE_ID)
+      .single();
+
+    if (practiceRow && practiceRow.PRACTICES_STATUS === PRACTICES_STATUS.CULMINADO) {
+      return res.status(403).json({
+        success: false,
+        message: 'No se puede eliminar evaluaciones de prácticas culminadas.'
       });
     }
 
@@ -625,6 +638,174 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
 };
 
 /**
+ * GET /api/evaluations/batch-status?ids=1,2,3
+ * Retorna el estado de evaluación de múltiples prácticas en una sola llamada.
+ * Elimina el N+1 del frontend.
+ */
+export const getBatchPracticeStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.query;
+    if (!ids || typeof ids !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requieren IDs de prácticas separados por coma (?ids=1,2,3)'
+      });
+    }
+
+    const practiceIds = ids.split(',').map(Number).filter(n => !isNaN(n) && n > 0);
+    if (practiceIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'IDs de práctica inválidos' });
+    }
+
+    const supabase = dbManager.getConnection();
+
+    // 1. Traer todas las prácticas en un solo query
+    const { data: practices, error: practicesError } = await supabase
+      .from('t_professional_practices')
+      .select('PROFESSIONAL_PRACTICE_ID, PERIOD_ID, PRACTICES_STATUS, GRADE, EVALUATION_STATUS')
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
+
+    if (practicesError) throw practicesError;
+    if (!practices || practices.length === 0) {
+      return res.json({ success: true, data: {} });
+    }
+
+    // 2. Traer periodos de todas las prácticas
+    const periodIds = [...new Set((practices as any[]).map(p => p.PERIOD_ID).filter(Boolean))];
+    const { data: periods } = await supabase
+      .from('t_internships_period')
+      .select('PERIOD_ID, PERIOD_STATUS, START_DATE, END_DATE')
+      .in('PERIOD_ID', periodIds);
+
+    const periodMap = new Map<number, any>();
+    (periods || []).forEach(p => periodMap.set(p.PERIOD_ID, p));
+
+    // 3. Traer evaluaciones de todas las prácticas
+    const { data: evaluations, error: evalError } = await supabase
+      .from('t_evaluation')
+      .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME, COMITE_MEMBER_INDEX')
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+      .eq('STATUS', 1);
+
+    if (evalError) throw evalError;
+
+    // 4. Agrupar evaluaciones por práctica
+    const evalByPractice = new Map<number, any[]>();
+    (evaluations || []).forEach((e: any) => {
+      const list = evalByPractice.get(e.PROFESSIONAL_PRACTICE_ID) || [];
+      list.push(e);
+      evalByPractice.set(e.PROFESSIONAL_PRACTICE_ID, list);
+    });
+
+    const evaluatorTypes = Object.keys(evaluationConfig.weights);
+    const result: Record<number, any> = {};
+
+    // 5. Procesar cada práctica
+    (practices as any[]).forEach((practice: any) => {
+      const period = periodMap.get(practice.PERIOD_ID);
+      const practiceEvals = evalByPractice.get(practice.PROFESSIONAL_PRACTICE_ID) || [];
+
+      // Determinar canEvaluate
+      let canEvaluate = true;
+      let periodMessage = '';
+
+      if (period) {
+        const now = new Date();
+        const startDate = new Date(period.START_DATE);
+        const effectiveEndDate = new Date(period.END_DATE);
+        effectiveEndDate.setDate(effectiveEndDate.getDate() + evaluationConfig.evaluationWindowDays);
+
+        if (practice.PRACTICES_STATUS !== 2) {
+          canEvaluate = false;
+          periodMessage = 'La práctica no está inscrita.';
+        } else if (period.PERIOD_STATUS !== '2') {
+          canEvaluate = false;
+          periodMessage = 'El periodo académico no está activo.';
+        } else if (now < startDate) {
+          canEvaluate = false;
+          periodMessage = 'El periodo académico aún no ha iniciado.';
+        } else if (now > effectiveEndDate) {
+          canEvaluate = false;
+          periodMessage = `La ventana de evaluación cerró el ${effectiveEndDate.toLocaleDateString('es-VE')}.`;
+        }
+      }
+
+      // Construir status map
+      const statusMap: Record<string, any> = {};
+      evaluatorTypes.forEach(type => {
+        if (type === 'COMITE') {
+          statusMap[type] = { completed: false, score: 0, completedCount: '0/3', members: [], evaluatorName: '' };
+        } else {
+          statusMap[type] = { completed: false, score: 0, evaluatorName: '' };
+        }
+      });
+
+      practiceEvals.forEach((e: any) => {
+        if (e.EVALUATOR_TYPE === 'COMITE') {
+          const comite = statusMap['COMITE'];
+          comite.members.push({
+            memberIndex: e.COMITE_MEMBER_INDEX,
+            score: e.TOTAL_SCORE,
+            evaluatorName: e.EVALUATOR_NAME,
+            evaluationId: e.EVALUATION_ID
+          });
+          comite.completedCount = `${comite.members.length}/3`;
+          comite.score = comite.members.length > 0
+            ? parseFloat((comite.members.reduce((sum: number, m: any) => sum + m.score, 0) / comite.members.length).toFixed(1))
+            : 0;
+          comite.evaluatorName = comite.members.map((m: any) => m.evaluatorName).join(', ');
+        } else if (statusMap[e.EVALUATOR_TYPE]) {
+          statusMap[e.EVALUATOR_TYPE] = {
+            completed: true,
+            score: e.TOTAL_SCORE,
+            evaluatorName: e.EVALUATOR_NAME,
+            evaluationId: e.EVALUATION_ID
+          };
+        }
+      });
+
+      if (statusMap['COMITE']?.members?.length === 3) {
+        statusMap['COMITE'].completed = true;
+      }
+
+      const completedCount = Object.values(statusMap).filter((s: any) => s.completed).length;
+      let evaluationStatus = 'pending';
+      if (completedCount === evaluatorTypes.length) {
+        evaluationStatus = 'completed';
+      } else if (completedCount > 0) {
+        evaluationStatus = 'partial';
+      }
+
+      let finalGrade = 0;
+      if (completedCount === evaluatorTypes.length) {
+        const scores: Record<string, number> = {};
+        evaluatorTypes.forEach(type => { scores[type] = statusMap[type]?.score || 0; });
+        finalGrade = calculateWeightedGrade(scores);
+      }
+
+      result[practice.PROFESSIONAL_PRACTICE_ID] = {
+        practiceId: String(practice.PROFESSIONAL_PRACTICE_ID),
+        currentGrade: practice.GRADE,
+        evaluationStatus,
+        evaluations: statusMap,
+        finalGrade: finalGrade.toFixed(1),
+        completedCount,
+        canEvaluate,
+        periodMessage
+      };
+    });
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('[Evaluation] Error getting batch status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener estados de evaluación'
+    });
+  }
+};
+
+/**
  * GET /api/evaluations/practice/:practiceId/tutor-info
  * Retorna el nombre y CI de la persona encargada de evaluar según el tipo:
  * - INSTITUCIONAL → responsable de la institución (t_institution_manager via MANAGER_ID)
@@ -688,11 +869,16 @@ export const getPracticeTutorInfo = async (req: AuthRequest, res: Response) => {
     }
 
     // ACADEMICO → obtener el tutor académico asignado
+    // Nota: NO se puede usar t_persons!inner directo sobre t_professional_practices_tutor
+    // porque no hay FK directa. La cadena es:
+    // t_professional_practices_tutor → t_tutors (via TUTOR_ID) → t_persons (via person_id)
     const { data: tutorAssignment } = await supabase
       .from('t_professional_practices_tutor')
       .select(`
         TUTOR_ID,
-        t_persons!inner (ci, first_name, middle_name, last_name, second_last_name)
+        t_tutors!inner (
+          t_persons!inner (ci, first_name, middle_name, last_name, second_last_name)
+        )
       `)
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
       .eq('TUTOR_TYPE', 'ACADEMICO')
@@ -702,17 +888,18 @@ export const getPracticeTutorInfo = async (req: AuthRequest, res: Response) => {
       return res.json({ success: true, data: null });
     }
 
-    const tFirst = getPersonField((tutorAssignment as any).t_persons, 'first_name') || '';
-    const tMiddle = getPersonField((tutorAssignment as any).t_persons, 'middle_name') || '';
-    const tLast = getPersonField((tutorAssignment as any).t_persons, 'last_name') || '';
-    const tSecondLast = getPersonField((tutorAssignment as any).t_persons, 'second_last_name') || '';
+    const tutorPerson = (tutorAssignment as any).t_tutors?.t_persons;
+    const tFirst = getPersonField(tutorPerson, 'first_name') || '';
+    const tMiddle = getPersonField(tutorPerson, 'middle_name') || '';
+    const tLast = getPersonField(tutorPerson, 'last_name') || '';
+    const tSecondLast = getPersonField(tutorPerson, 'second_last_name') || '';
     const fullName = [tFirst, tMiddle, tLast, tSecondLast].filter(Boolean).join(' ').trim();
 
     res.json({
       success: true,
       data: {
         name: fullName,
-        ci: getPersonField((tutorAssignment as any).t_persons, 'ci')
+        ci: getPersonField(tutorPerson, 'ci')
       }
     });
 
@@ -765,14 +952,12 @@ async function updatePracticeGrade(practiceId: number): Promise<void> {
   const allCompleted = evaluatorTypes.every(type => typeScores[type] !== undefined);
 
   if (allCompleted) {
-    const finalGrade = evaluatorTypes.reduce((sum, type) => {
-      return sum + (typeScores[type] || 0) * evaluationConfig.weights[type as keyof typeof evaluationConfig.weights];
-    }, 0);
+    const finalGrade = calculateWeightedGrade(typeScores);
 
     await supabase
       .from('t_professional_practices')
       .update({ 
-        GRADE: parseFloat(finalGrade.toFixed(1)),
+        GRADE: finalGrade,
         EVALUATION_STATUS: 'completed'
       })
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId);

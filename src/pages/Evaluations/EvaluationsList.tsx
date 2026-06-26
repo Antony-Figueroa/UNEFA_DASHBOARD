@@ -47,7 +47,7 @@ export default function EvaluationsPage() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
 
-  const { getPracticeStatus } = useEvaluations();
+  const { getPracticeStatus, getBatchStatus } = useEvaluations();
 
   const tabsState = useTabs({ defaultTab: 'institucional' });
 
@@ -89,17 +89,14 @@ export default function EvaluationsPage() {
 
   useEffect(() => {
     if (practices.length > 0) {
-      practices.forEach(async (practice) => {
-        const status = await getPracticeStatus(practice.professionalPracticeId);
-        if (status) {
-          setPracticeStatuses(prev => ({
-            ...prev,
-            [practice.professionalPracticeId]: status
-          }));
+      const ids = practices.map(p => p.professionalPracticeId);
+      getBatchStatus(ids).then(statuses => {
+        if (Object.keys(statuses).length > 0) {
+          setPracticeStatuses(prev => ({ ...prev, ...statuses }));
         }
       });
     }
-  }, [practices, getPracticeStatus]);
+  }, [practices, getBatchStatus]);
 
   const filteredPractices = useMemo(() => {
     if (!searchTerm) return practices;

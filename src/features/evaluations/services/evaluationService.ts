@@ -145,6 +145,20 @@ export const evaluationService = {
       console.error('[evaluationService] Error getting evaluation status:', error);
       throw error;
     }
+  },
+
+  getBatchPracticeStatus: async (practiceIds: number[]): Promise<Record<number, EvaluationStatus>> => {
+    try {
+      const ids = practiceIds.join(',');
+      const response = await apiClient.get<{ success: boolean; data: Record<number, EvaluationStatus> }>(
+        `${API_URL}/batch-status`,
+        { params: { ids } }
+      );
+      return response.data.data || {};
+    } catch (error) {
+      console.error('[evaluationService] Error getting batch status:', error);
+      throw error;
+    }
   }
 };
 

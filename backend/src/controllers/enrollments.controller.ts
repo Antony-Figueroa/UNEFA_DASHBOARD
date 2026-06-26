@@ -43,6 +43,7 @@ const handleDbError = (res: Response, error: unknown) => {
 interface TutorAssociation {
   TUTOR_ID: number;
   TUTOR_TYPE: string;
+  ACTIVE?: boolean;
   t_tutors?: {
     t_persons?: {
       first_name: string;
@@ -133,6 +134,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
           t_professional_practices_tutor (
             TUTOR_ID,
             TUTOR_TYPE,
+            ACTIVE,
             t_tutors (
               t_persons!inner (first_name, last_name, phone)
             )
@@ -172,8 +174,10 @@ export const getEnrollments = async (req: Request, res: Response) => {
       const rawCi = getPersonField(item.t_persons, 'ci') || '';
       const ciParts = rawCi.split('-') || ['', ''];
 
-      const academicTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'ACADEMICO');
-      const methodologicalTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'METODOLOGICO');
+      // Solo mostrar tutores activos
+      const activeTutors = item.t_professional_practices_tutor?.filter((t: any) => t.ACTIVE !== false) || [];
+      const academicTutor = activeTutors.find((t: TutorAssociation) => t.TUTOR_TYPE === 'ACADEMICO');
+      const methodologicalTutor = activeTutors.find((t: TutorAssociation) => t.TUTOR_TYPE === 'METODOLOGICO');
 
       const getFullName = (val: string | undefined) => {
         if (!val) return '';
@@ -330,12 +334,16 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         {
           TUTOR_ID: parseInt(academicTutorId),
           PROFESSIONAL_PRACTICE_ID: practice.PROFESSIONAL_PRACTICE_ID,
-          TUTOR_TYPE: 'ACADEMICO'
+          TUTOR_TYPE: 'ACADEMICO',
+          ACTIVE: true,
+          CREATED_AT: new Date().toISOString()
         },
         {
           TUTOR_ID: parseInt(methodologicalTutorId),
           PROFESSIONAL_PRACTICE_ID: practice.PROFESSIONAL_PRACTICE_ID,
-          TUTOR_TYPE: 'METODOLOGICO'
+          TUTOR_TYPE: 'METODOLOGICO',
+          ACTIVE: true,
+          CREATED_AT: new Date().toISOString()
         }
       ];
 
@@ -367,6 +375,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
           t_professional_practices_tutor (
             TUTOR_ID,
             TUTOR_TYPE,
+            ACTIVE,
             t_tutors (
               t_persons!inner (first_name, last_name)
             )
@@ -379,8 +388,9 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
 
       const item = fullData as unknown as ProfessionalPractice;
       const ciParts = (getPersonField(item.t_persons, 'ci') || '').split('-') || ['', ''];
-      const academicTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'ACADEMICO');
-      const methodologicalTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'METODOLOGICO');
+      const activeTutors = item.t_professional_practices_tutor?.filter((t: any) => t.ACTIVE !== false) || [];
+      const academicTutor = activeTutors.find((t: TutorAssociation) => t.TUTOR_TYPE === 'ACADEMICO');
+      const methodologicalTutor = activeTutors.find((t: TutorAssociation) => t.TUTOR_TYPE === 'METODOLOGICO');
 
       return {
         enrollmentId: item.PROFESSIONAL_PRACTICE_ID?.toString() || '',
@@ -450,6 +460,32 @@ export const updateEnrollment = async (req: AuthRequest, res: Response) => {
         .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
         .single();
 
+      // Guardar cambios de campos antes de actualizar
+      const changes: { fieldName: string; oldValue: string | null; newValue: string | null }[] = [];
+
+      if (institutionId && oldData && oldData.INSTITUTION_ID !== parseInt(institutionId)) {
+        const { data: oldInst } = await supabase.from('t_institution').select('INSTITUTION_NAME').eq('INSTITUTION_ID', oldData.INSTITUTION_ID).maybeSingle();
+        const { data: newInst } = await supabase.from('t_institution').select('INSTITUTION_NAME').eq('INSTITUTION_ID', parseInt(institutionId)).maybeSingle();
+        changes.push({ fieldName: 'INSTITUTION', oldValue: oldInst?.INSTITUTION_NAME || String(oldData.INSTITUTION_ID), newValue: newInst?.INSTITUTION_NAME || institutionId });
+      }
+      if (institutionResponsibleId && oldData && oldData.MANAGER_ID !== parseInt(institutionResponsibleId)) {
+        const { data: oldResp } = await supabase.from('t_institution_manager').select('t_persons!inner(first_name, last_name)').eq('MANAGER_ID', oldData.MANAGER_ID).maybeSingle();
+        const { data: newResp } = await supabase.from('t_institution_manager').select('t_persons!inner(first_name, last_name)').eq('MANAGER_ID', parseInt(institutionResponsibleId)).maybeSingle();
+        const oldName = oldResp?.t_persons ? `${(oldResp.t_persons as any).first_name} ${(oldResp.t_persons as any).last_name}` : String(oldData.MANAGER_ID);
+        const newName = newResp?.t_persons ? `${(newResp.t_persons as any).first_name} ${(newResp.t_persons as any).last_name}` : institutionResponsibleId;
+        changes.push({ fieldName: 'INSTITUTION_RESPONSIBLE', oldValue: oldName, newValue: newName });
+      }
+      if (periodId && oldData && oldData.PERIOD_ID !== periodId) {
+        const { data: oldP } = await supabase.from('t_internships_period').select('DESCRIPTION').eq('PERIOD_ID', oldData.PERIOD_ID).maybeSingle();
+        const { data: newP } = await supabase.from('t_internships_period').select('DESCRIPTION').eq('PERIOD_ID', periodId).maybeSingle();
+        changes.push({ fieldName: 'PERIOD', oldValue: oldP?.DESCRIPTION || String(oldData.PERIOD_ID), newValue: newP?.DESCRIPTION || String(periodId) });
+      }
+      if (internshipTypeId && oldData && oldData.INTERNSHIP_TYPE_ID !== internshipTypeId) {
+        const { data: oldT } = await supabase.from('t_internship_type').select('NAME').eq('INTERNSHIP_TYPE_ID', oldData.INTERNSHIP_TYPE_ID).maybeSingle();
+        const { data: newT } = await supabase.from('t_internship_type').select('NAME').eq('INTERNSHIP_TYPE_ID', internshipTypeId).maybeSingle();
+        changes.push({ fieldName: 'PRACTICE_TYPE', oldValue: oldT?.NAME || String(oldData.INTERNSHIP_TYPE_ID), newValue: newT?.NAME || String(internshipTypeId) });
+      }
+
       const { data: practice, error: practiceError } = await supabase
         .from(TABLE_NAME)
         .update(updateData)
@@ -463,26 +499,72 @@ export const updateEnrollment = async (req: AuthRequest, res: Response) => {
         await auditUpdate(req, 't_professional_practices', oldData as Record<string, any>, updateData as Record<string, any>, ENROLLMENT_COLUMNS_TO_AUDIT);
       }
 
-      // 3. Actualizar Tutores (borrar y volver a insertar es más simple)
+      // Guardar cambios en tabla de historial
+      const userId = req.user?.userId || 0;
+      if (changes.length > 0) {
+        const changeRows = changes.map(c => ({
+          PROFESSIONAL_PRACTICE_ID: parseInt(id),
+          FIELD_NAME: c.fieldName,
+          OLD_VALUE: c.oldValue,
+          NEW_VALUE: c.newValue,
+          CHANGED_BY: userId
+        }));
+        const { error: changeError } = await supabase
+          .from('t_enrollment_field_changes')
+          .insert(changeRows);
+        if (changeError) console.error('[updateEnrollment] Error saving field changes:', changeError);
+      }
+
+      // 3. Actualizar Tutores (soft-delete + insert)
       if (academicTutorId || methodologicalTutorId) {
+        // Obtener tutores actuales para el history
+        const { data: oldTutors } = await supabase
+          .from('t_professional_practices_tutor')
+          .select('TUTOR_ID, TUTOR_TYPE, t_tutors(t_persons!inner(first_name, last_name))')
+          .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
+          .eq('ACTIVE', true);
+
+        // Soft-delete: marcar como inactivos
         await supabase
           .from('t_professional_practices_tutor')
-          .delete()
-          .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id));
+          .update({ ACTIVE: false, UPDATED_AT: new Date().toISOString() })
+          .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
+          .eq('ACTIVE', true);
 
+        const tutorChanges = [];
         const tutorsToInsert = [];
+
         if (academicTutorId) {
+          const oldTutor = oldTutors?.find((t: any) => t.TUTOR_TYPE === 'ACADEMICO');
+          const oldName = oldTutor?.t_tutors?.t_persons ? `${(oldTutor.t_tutors.t_persons as any).first_name} ${(oldTutor.t_tutors.t_persons as any).last_name}` : '';
+          const { data: newTutor } = await supabase.from('t_tutors').select('t_persons!inner(first_name, last_name)').eq('TUTOR_ID', parseInt(academicTutorId)).maybeSingle();
+          const newName = newTutor?.t_persons ? `${(newTutor.t_persons as any).first_name} ${(newTutor.t_persons as any).last_name}` : academicTutorId;
+          if (oldName && oldName !== newName) {
+            tutorChanges.push({ fieldName: 'TUTOR_ACADEMICO', oldValue: oldName, newValue: newName });
+          }
           tutorsToInsert.push({
             TUTOR_ID: parseInt(academicTutorId),
             PROFESSIONAL_PRACTICE_ID: parseInt(id),
-            TUTOR_TYPE: 'ACADEMICO'
+            TUTOR_TYPE: 'ACADEMICO',
+            ACTIVE: true,
+            CREATED_AT: new Date().toISOString()
           });
         }
+
         if (methodologicalTutorId) {
+          const oldTutor = oldTutors?.find((t: any) => t.TUTOR_TYPE === 'METODOLOGICO');
+          const oldName = oldTutor?.t_tutors?.t_persons ? `${(oldTutor.t_tutors.t_persons as any).first_name} ${(oldTutor.t_tutors.t_persons as any).last_name}` : '';
+          const { data: newTutor } = await supabase.from('t_tutors').select('t_persons!inner(first_name, last_name)').eq('TUTOR_ID', parseInt(methodologicalTutorId)).maybeSingle();
+          const newName = newTutor?.t_persons ? `${(newTutor.t_persons as any).first_name} ${(newTutor.t_persons as any).last_name}` : methodologicalTutorId;
+          if (oldName && oldName !== newName) {
+            tutorChanges.push({ fieldName: 'TUTOR_METODOLOGICO', oldValue: oldName, newValue: newName });
+          }
           tutorsToInsert.push({
             TUTOR_ID: parseInt(methodologicalTutorId),
             PROFESSIONAL_PRACTICE_ID: parseInt(id),
-            TUTOR_TYPE: 'METODOLOGICO'
+            TUTOR_TYPE: 'METODOLOGICO',
+            ACTIVE: true,
+            CREATED_AT: new Date().toISOString()
           });
         }
 
@@ -491,6 +573,21 @@ export const updateEnrollment = async (req: AuthRequest, res: Response) => {
             .from('t_professional_practices_tutor')
             .insert(tutorsToInsert);
           if (tutorsError) throw tutorsError;
+        }
+
+        // Guardar cambios de tutores en tabla de historial
+        if (tutorChanges.length > 0) {
+          const changeRows = tutorChanges.map(c => ({
+            PROFESSIONAL_PRACTICE_ID: parseInt(id),
+            FIELD_NAME: c.fieldName,
+            OLD_VALUE: c.oldValue,
+            NEW_VALUE: c.newValue,
+            CHANGED_BY: userId
+          }));
+          const { error: changeError } = await supabase
+            .from('t_enrollment_field_changes')
+            .insert(changeRows);
+          if (changeError) console.error('[updateEnrollment] Error saving tutor changes:', changeError);
         }
       }
 
@@ -562,7 +659,8 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
         ),
         t_professional_practices_tutor (
           TUTOR_ID,
-          TUTOR_TYPE
+          TUTOR_TYPE,
+          ACTIVE
         )
       `)
       .eq('STATUS', 1)
@@ -588,7 +686,7 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
         institutionName: p.t_institution?.INSTITUTION_NAME || 'Sin institución',
         evaluationStatus: p.EVALUATION_STATUS || 'pending',
         grade: p.GRADE,
-        tutorAssignments: p.t_professional_practices_tutor || []
+        tutorAssignments: (p.t_professional_practices_tutor || []).filter((t: any) => t.ACTIVE !== false)
       };
     });
 
@@ -622,6 +720,32 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
     res.status(500).json({ 
       success: false, 
       message: 'Error al obtener prácticas para evaluación' 
+    });
+  }
+};
+
+/**
+ * Obtiene el historial de cambios de una inscripción
+ */
+export const getEnrollmentChanges = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const supabase = dbManager.getConnection();
+
+    const { data, error } = await supabase
+      .from('t_enrollment_field_changes')
+      .select('*')
+      .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
+      .order('CHANGED_AT', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ success: true, data: data || [] });
+  } catch (error) {
+    console.error('[Enrollments] Error fetching changes:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener historial de cambios' 
     });
   }
 };

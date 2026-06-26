@@ -46,6 +46,7 @@ export default function VisitRegistration() {
   });
   const [practiceInfo, setPracticeInfo] = useState<TrackingDetailDTO | null>(null);
   const [loadingPractice, setLoadingPractice] = useState(false);
+  const [practiceError, setPracticeError] = useState<string | null>(null);
   const tabsState = useTabs({ defaultTab: 'active' });
   const [statsKey, setStatsKey] = useState(0);
   const [restoreDialog, setRestoreDialog] = useState<{ isOpen: boolean; visitId: number | null }>({
@@ -78,12 +79,15 @@ export default function VisitRegistration() {
       
       // Fetch tracking info immediately (independent of visits)
       setLoadingPractice(true);
+      setPracticeError(null);
       getTrackingById(id)
         .then(data => {
           setPracticeInfo(data);
+          setPracticeError(null);
         })
         .catch(err => {
           console.error('[VisitRegistration] Error fetching tracking info:', err);
+          setPracticeError(err.response?.data?.error || err.message || 'Error al cargar información de la práctica');
         })
         .finally(() => {
           setLoadingPractice(false);
@@ -227,6 +231,33 @@ export default function VisitRegistration() {
               <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">Total Horas</p>
               <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{stats?.totalHours || 0} hrs</p>
             </div>
+          </div>
+        </ComponentCard>
+      ) : practiceError ? (
+        <ComponentCard title="Información de la Práctica" className="mb-6">
+          <div className="p-6 text-center">
+            <p className="text-sm text-error-500 mb-3">{practiceError}</p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (id) {
+                  setLoadingPractice(true);
+                  setPracticeError(null);
+                  getTrackingById(id)
+                    .then(data => {
+                      setPracticeInfo(data);
+                    })
+                    .catch(err => {
+                      setPracticeError(err.response?.data?.error || err.message || 'Error al cargar información');
+                    })
+                    .finally(() => {
+                      setLoadingPractice(false);
+                    });
+                }
+              }}
+            >
+              Reintentar
+            </Button>
           </div>
         </ComponentCard>
       ) : null}

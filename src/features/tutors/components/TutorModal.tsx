@@ -30,7 +30,7 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PASSPORT_MAX_LENGTH, PHONE_LOCAL_MAX_LENGTH } from "../../../utils/inputFormat";
 import { getTutorByCi } from "../services/tutorsService";
 import { checkAvailability as checkPersonAvailability } from "../../persons/services/personService";
 import { lookupCi } from "../../students/services/studentsService";
@@ -145,9 +145,7 @@ export default function TutorModal({
   const tutorSchema = useMemo(() => z.object({
     identificationPrefix: z.string().min(1, "Seleccione el tipo"),
     identificationNumber: z.string()
-      .min(6, "La cédula debe tener al menos 6 dígitos")
-      .max(CEDULA_MAX_DIGITS, `La cédula no puede exceder los ${CEDULA_MAX_DIGITS} dígitos`)
-      .regex(/^\d+$/, "Solo se admiten números"),
+      .min(1, "La identificación es obligatoria"),
     firstName: z.string()
       .min(1, "El primer nombre es obligatorio")
       .max(100, "El nombre es demasiado largo")
@@ -229,6 +227,40 @@ export default function TutorModal({
       .transform(val => val.toUpperCase()),
     carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
   }).superRefine((data, ctx) => {
+    // Validación condicional de identificación
+    const num = data.identificationNumber || "";
+    if (data.identificationPrefix === "P") {
+      if (!/^[A-Za-z0-9]+$/.test(num)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Solo se admiten letras y números",
+          path: ["identificationNumber"],
+        });
+      }
+    } else {
+      if (!/^\d+$/.test(num)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Solo se admiten números",
+          path: ["identificationNumber"],
+        });
+      }
+      if (num.length < 6) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "La cédula debe tener al menos 6 dígitos",
+          path: ["identificationNumber"],
+        });
+      }
+      if (num.length > CEDULA_MAX_DIGITS) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `La cédula no puede exceder los ${CEDULA_MAX_DIGITS} dígitos`,
+          path: ["identificationNumber"],
+        });
+      }
+    }
+
     // Validar duplicidad de cédula
     const currentId = editingTutor?.tutorId ?? existingTutor?.tutorId;
     // Validar duplicidad de cédula
@@ -322,16 +354,15 @@ export default function TutorModal({
   }, [formValues]);
 
   const ciDisabled = !!editingTutor?.tutorId;
+  const currentPrefix = watch("identificationPrefix") || "V";
+  const isPassport = currentPrefix === "P";
   const isFieldValid = useCallback((fieldName: string) =>
     !!(touchedFields as any)[fieldName] && !(errors as any)[fieldName],
     [touchedFields, errors]);
   const isFieldDisabled = useCallback((fieldName: string) => {
     if (viewOnlyMode) return true;
-    const apiLock = ciLoadedFromApi && (academicConfig?.lockApiLoadedFields ?? true);
-    const nameFields = ["firstName", "middleName", "lastName", "secondLastName"];
-    if (apiLock && nameFields.includes(fieldName)) return true;
     return false;
-  }, [viewOnlyMode, ciLoadedFromApi, academicConfig]);
+  }, [viewOnlyMode]);
 
   const {
     showConfirmation,
@@ -352,19 +383,30 @@ export default function TutorModal({
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
-    const formatted = formatCedulaDisplay(digitsOnly, false);
-    setDisplayIdentificationNumber(formatted);
-    setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
+    let cleanedValue = "";
+    const prefix = watch("identificationPrefix") || "V";
+    const isPassport = prefix === "P";
+    
+    if (isPassport) {
+      cleanedValue = input.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, PASSPORT_MAX_LENGTH);
+      const formatted = formatCedulaDisplay(cleanedValue, false);
+      setDisplayIdentificationNumber(formatted);
+      setValue("identificationNumber", cleanedValue, { shouldValidate: true, shouldDirty: true });
+    } else {
+      cleanedValue = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+      const formatted = formatCedulaDisplay(cleanedValue, false);
+      setDisplayIdentificationNumber(formatted);
+      setValue("identificationNumber", cleanedValue, { shouldValidate: true, shouldDirty: true });
+    }
     clearErrors("identificationNumber");
     
     // Si se cambia la cédula y hay un existingTutor o existingPerson, limpiar el formulario
     if (existingTutor || existingPerson) {
-      const currentStoredDigits = existingTutor
-        ? existingTutor.identificationNumber?.replace(/\D/g, '') || ''
+      const currentStoredValue = existingTutor
+        ? existingTutor.identificationNumber || ''
         : '';
       // Si el usuario borró al menos 1 carácter o cambió algo
-      if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits || !existingTutor) {
+      if (cleanedValue.length < currentStoredValue.length || cleanedValue !== currentStoredValue || !existingTutor) {
         setExistingTutor(null);
         setExistingPerson(null);
         setCiLoadedFromApi(false);
@@ -396,10 +438,9 @@ export default function TutorModal({
     }
     
     // Verificar si la cédula existe mientras escribe (7 u 8 dígitos)
-    if (!existingTutor && !existingPerson && !editingTutor && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
+    if (!existingTutor && !existingPerson && !editingTutor && (cleanedValue.length === 7 || cleanedValue.length === 8)) {
       setIsCheckingCi(true);
-      const prefix = watch("identificationPrefix") || 'V';
-      const fullCi = `${prefix}-${digitsOnly}`;
+      const fullCi = `${prefix}-${cleanedValue}`;
       try {
         const result = await getTutorByCi(fullCi);
         if (result?.tutor) {
@@ -1130,9 +1171,9 @@ export default function TutorModal({
                       value={displayIdentificationNumber}
                       onChange={handleIdentificationNumberChange}
                       onBlur={handleCiBlur}
-                      placeholder="V-12.345.678"
+                      placeholder={isPassport ? "ABC123456" : "V-12.345.678"}
                       disabled={ciDisabled}
-                      maxLength={CEDULA_MAX_LENGTH}
+                      maxLength={isPassport ? PASSPORT_MAX_LENGTH : CEDULA_MAX_LENGTH}
                       autoComplete="off"
                       className="tracking-widest"
                       error={!!errors.identificationNumber}
@@ -1144,7 +1185,7 @@ export default function TutorModal({
                         : undefined)
                       }
                     />
-                    {!ciDisabled && (
+                    {!ciDisabled && !isPassport && (
                       <button
                         type="button"
                         onClick={handleCiLookup}

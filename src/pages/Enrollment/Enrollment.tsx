@@ -741,7 +741,7 @@ export default function EnrollmentPage() {
                                                     'PRACTICE_TYPE': 'Tipo de Práctica',
                                                     'TUTOR_ACADEMICO': 'Tutor Académico',
                                                     'TUTOR_METODOLOGICO': 'Tutor Metodológico',
-                                                }[change.FIELD_NAME] || change.FIELD_NAME}
+                                                }[change.FIELD_NAME as string] || change.FIELD_NAME}
                                             </p>
                                             <p className="text-xs text-text-secondary mt-1">
                                                 {change.OLD_VALUE ? (

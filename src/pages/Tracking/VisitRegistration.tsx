@@ -14,9 +14,10 @@ import { EmptyState } from "../../components/ui/table/EmptyState";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { useVisits } from "../../features/visits/hooks/useVisits";
-import { Visit, CreateVisitPayload, UpdateVisitPayload, VISIT_TYPES } from "../../features/visits/types";
+import { Visit, CreateVisitPayload, UpdateVisitPayload, VISIT_TYPES, LEGACY_VISIT_CASES } from "../../features/visits/types";
 import VisitModal from "../../features/visits/components/VisitModal";
 import { getTrackingById, TrackingDetailDTO } from "../../features/tracking/services/trackingService";
+import { useLists } from "../../features/lists/hooks/useLists";
 
 export default function VisitRegistration() {
   const { id } = useParams<{ id: string }>();
@@ -55,6 +56,9 @@ export default function VisitRegistration() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const { fetchMultipleLists } = useLists();
+  const [visitTypeLabelMap, setVisitTypeLabelMap] = useState<Record<string, string>>({});
+  const [visitCaseLabelMap, setVisitCaseLabelMap] = useState<Record<string, string>>({});
 
   // Filtrar visitas según la pestaña activa (mismo patrón que Periods)
   const tableData = useMemo(() => visits
@@ -107,6 +111,20 @@ export default function VisitRegistration() {
     }
   }, [stats]);
 
+  // Cargar listas dinámicas para resolver IDs a nombres (VISIT_TYPE, VISIT_CASE)
+  useEffect(() => {
+    fetchMultipleLists(['VISIT_TYPE', 'VISIT_CASE']).then(lists => {
+      const typeMap: Record<string, string> = {};
+      const caseMap: Record<string, string> = {};
+      (lists.VISIT_TYPE || []).forEach(v => { typeMap[v.id] = v.name; });
+      (lists.VISIT_CASE || []).forEach(v => { caseMap[v.id] = v.name; });
+      setVisitTypeLabelMap(typeMap);
+      setVisitCaseLabelMap(caseMap);
+    }).catch(() => {
+      // Fallback: no hacer nada, los labels legacy ya están cargados
+    });
+  }, [fetchMultipleLists]);
+
   const handleOpenModal = (visit?: Visit) => {
     setSelectedVisit(visit || null);
     setIsModalOpen(true);
@@ -117,18 +135,25 @@ export default function VisitRegistration() {
     setSelectedVisit(null);
   };
 
+  const refreshStats = () => {
+    if (id) fetchStats({ practiceId: parseInt(id) });
+  };
+
   const handleSubmit = async (data: CreateVisitPayload | UpdateVisitPayload): Promise<boolean> => {
+    let success = false;
     if (selectedVisit) {
       const result = await updateVisit(selectedVisit.visitId, data as UpdateVisitPayload);
-      return result !== null;
+      success = result !== null;
     } else {
       const result = await createVisit({
         ...data as CreateVisitPayload,
         practiceId: parseInt(id!),
         tutorId: 1
       });
-      return result !== null;
+      success = result !== null;
     }
+    if (success) refreshStats();
+    return success;
   };
 
   const handleDelete = async () => {
@@ -136,6 +161,7 @@ export default function VisitRegistration() {
       const success = await deleteVisit(deleteDialog.visitId);
       if (success) {
         setDeleteDialog({ isOpen: false, visitId: null });
+        refreshStats();
       }
     }
   };
@@ -145,21 +171,31 @@ export default function VisitRegistration() {
       const success = await restoreVisit(restoreDialog.visitId);
       if (success) {
         setRestoreDialog({ isOpen: false, visitId: null });
+        refreshStats();
       }
     }
   };
 
+  const getVisitTypeLabel = (type: string) => {
+    return VISIT_TYPES.find(t => t.value === type)?.label || visitTypeLabelMap[type] || type;
+  };
+
+  const getVisitCaseLabel = (visitCase: string) => {
+    return LEGACY_VISIT_CASES.find(c => c.value === visitCase)?.label || visitCaseLabelMap[visitCase] || visitCase;
+  };
+
   const getVisitTypeBadge = (type: string) => {
+    const label = getVisitTypeLabel(type).toUpperCase();
     const variants: Record<string, 'primary' | 'success' | 'warning'> = {
       PRESENCIAL: 'success',
       VIRTUAL: 'primary',
       TELEFONICA: 'warning'
     };
+    // Normalizar: si el label resuelto contiene palabras clave
+    if (label.includes('PRESENCIAL')) return 'success';
+    if (label.includes('VIRTUAL')) return 'primary';
+    if (label.includes('TEL') || label.includes('LLAMADA')) return 'warning';
     return variants[type] || 'primary';
-  };
-
-  const getVisitTypeLabel = (type: string) => {
-    return VISIT_TYPES.find(t => t.value === type)?.label || type;
   };
 
   const formatDate = (dateStr: string) => {
@@ -224,10 +260,12 @@ export default function VisitRegistration() {
             </div>
           </div>
         </ComponentCard>
-      ) : practiceError ? (
+      ) : (
         <ComponentCard title="Información de la Práctica" className="mb-6">
           <div className="p-6 text-center">
-            <p className="text-sm text-error-500 mb-3">{practiceError}</p>
+            <p className="text-sm text-error-500 mb-3">
+              {practiceError || 'No se pudieron cargar los datos de la práctica. Verifica la conexión.'}
+            </p>
             <Button
               variant="outline"
               onClick={() => {
@@ -251,7 +289,7 @@ export default function VisitRegistration() {
             </Button>
           </div>
         </ComponentCard>
-      ) : null}
+      )}
 
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" key={`stats-${statsKey}`}>
@@ -302,7 +340,7 @@ export default function VisitRegistration() {
                   <TableCell isHeader>Tipo</TableCell>
                   <TableCell isHeader>Horas</TableCell>
                   <TableCell isHeader>Actividades</TableCell>
-                  <TableCell isHeader>Acciones</TableCell>
+                  <TableCell isHeader></TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -446,7 +484,7 @@ export default function VisitRegistration() {
                   <div className="sm:col-span-2">
                     <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Caso de Visita</label>
                     <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                      {viewDialog.visit.visitCase?.replace(/_/g, ' ') || 'Seguimiento Regular'}
+                      {getVisitCaseLabel(viewDialog.visit.visitCase || '') || 'Seguimiento Regular'}
                     </p>
                   </div>
                 </div>

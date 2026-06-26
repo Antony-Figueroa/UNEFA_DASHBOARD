@@ -12,7 +12,7 @@ export const getDefaults = async (_req: Request, res: Response) => {
   try {
     const { data, error } = await dbManager.getConnection()
       .from(CONFIG_TABLE)
-      .select('DEFAULT_ENROLLMENT_GRACE_DAYS, DEFAULT_EVALUATION_GRACE_DAYS, LOCK_API_LOADED_FIELDS, ALLOW_MULTIPLE_VISITS_PER_DAY, MAX_VISITS_PER_DAY')
+      .select('DEFAULT_ENROLLMENT_GRACE_DAYS, DEFAULT_EVALUATION_GRACE_DAYS, LOCK_API_LOADED_FIELDS, allow_multiple_visits_per_day, max_visits_per_day, ALLOW_MULTIPLE_VISITS_PER_DAY, MAX_VISITS_PER_DAY')
       .eq('CONFIG_ID', 1)
       .single();
 
@@ -22,8 +22,12 @@ export const getDefaults = async (_req: Request, res: Response) => {
       defaultEnrollmentGraceDays: data.DEFAULT_ENROLLMENT_GRACE_DAYS,
       defaultEvaluationGraceDays: data.DEFAULT_EVALUATION_GRACE_DAYS,
       lockApiLoadedFields: data.LOCK_API_LOADED_FIELDS ?? true,
-      allowMultipleVisitsPerDay: data.ALLOW_MULTIPLE_VISITS_PER_DAY ?? true,
-      maxVisitsPerDay: data.MAX_VISITS_PER_DAY ?? null,
+      allowMultipleVisitsPerDay: data.allow_multiple_visits_per_day !== undefined
+        ? data.allow_multiple_visits_per_day
+        : (data.ALLOW_MULTIPLE_VISITS_PER_DAY ?? true),
+      maxVisitsPerDay: data.max_visits_per_day !== undefined
+        ? data.max_visits_per_day
+        : (data.MAX_VISITS_PER_DAY ?? null),
     });
   } catch (error) {
     res.json({
@@ -82,7 +86,10 @@ export const updateDefaults = async (req: AuthRequest, res: Response) => {
       updateData.LOCK_API_LOADED_FIELDS = Boolean(lockApiLoadedFields);
     }
     if (allowMultipleVisitsPerDay !== undefined) {
-      updateData.ALLOW_MULTIPLE_VISITS_PER_DAY = Boolean(allowMultipleVisitsPerDay);
+      const val = Boolean(allowMultipleVisitsPerDay);
+      // Sincronizar ambas columnas (lowercase nuevas + uppercase legacy)
+      updateData.allow_multiple_visits_per_day = val;
+      updateData.ALLOW_MULTIPLE_VISITS_PER_DAY = val;
     }
     if (maxVisitsPerDay !== undefined) {
       if (maxVisitsPerDay !== null && maxVisitsPerDay !== '' && maxVisitsPerDay !== undefined) {
@@ -94,8 +101,10 @@ export const updateDefaults = async (req: AuthRequest, res: Response) => {
             code: 'INVALID_MAX_VISITS',
           });
         }
+        updateData.max_visits_per_day = val;
         updateData.MAX_VISITS_PER_DAY = val;
       } else {
+        updateData.max_visits_per_day = null;
         updateData.MAX_VISITS_PER_DAY = null;
       }
     }

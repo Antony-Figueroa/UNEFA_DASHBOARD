@@ -260,9 +260,11 @@ export const getVisitById = async (req: Request, res: Response) => {
  * Lee la configuración de visitas desde t_academic_config.
  */
 const getVisitsConfig = async (supabase: any): Promise<{ allowMultiple: boolean; maxPerDay: number | null }> => {
+  // Nota: la BD tiene columnas legacy UPPERCASE y nuevas lower_snake_case.
+  // Las del UI escriben en las lowercase, por eso leemos ambas con fallback.
   const { data, error } = await supabase
     .from('t_academic_config')
-    .select('ALLOW_MULTIPLE_VISITS_PER_DAY, MAX_VISITS_PER_DAY')
+    .select('allow_multiple_visits_per_day, max_visits_per_day, ALLOW_MULTIPLE_VISITS_PER_DAY, MAX_VISITS_PER_DAY')
     .eq('CONFIG_ID', 1)
     .single();
 
@@ -270,10 +272,15 @@ const getVisitsConfig = async (supabase: any): Promise<{ allowMultiple: boolean;
     return { allowMultiple: true, maxPerDay: null };
   }
 
-  return {
-    allowMultiple: data.ALLOW_MULTIPLE_VISITS_PER_DAY ?? true,
-    maxPerDay: data.MAX_VISITS_PER_DAY ?? null,
-  };
+  // Preferir lowercase (nuevas) sobre uppercase (legacy)
+  const allowMultiple = data.allow_multiple_visits_per_day !== undefined
+    ? data.allow_multiple_visits_per_day
+    : (data.ALLOW_MULTIPLE_VISITS_PER_DAY ?? true);
+  const maxPerDay = data.max_visits_per_day !== undefined
+    ? data.max_visits_per_day
+    : (data.MAX_VISITS_PER_DAY ?? null);
+
+  return { allowMultiple, maxPerDay };
 };
 
 /**

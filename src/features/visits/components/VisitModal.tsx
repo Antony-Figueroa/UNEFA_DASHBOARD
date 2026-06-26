@@ -604,13 +604,8 @@ export default function VisitModal({
           : 'La visita de seguimiento ha sido registrada'
       });
       onClose();
-    } else {
-      addToast({
-        variant: 'error',
-        title: 'Error',
-        message: 'No se pudo guardar la visita. Intente de nuevo.'
-      });
     }
+    // NOTA: el mensaje de error real lo muestra useVisits (toast.error) desde el hook
   };
 
   const handleClose = () => {

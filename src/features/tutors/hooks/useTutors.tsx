@@ -56,9 +56,13 @@ export const useTutors = () => {
     try {
       const careersData = await getCareers();
       setCareers(unwrapData(careersData));
+    } catch (e) {
+      console.error('[useTutors] Error loading careers:', e);
+    }
+    try {
       await refreshTutorsBase();
     } catch (e) {
-      console.error("[useTutors] Error loading careers:", e);
+      console.error('[useTutors] Error loading tutors:', e);
     }
   }, [refreshTutorsBase]);
 

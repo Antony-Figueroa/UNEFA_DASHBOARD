@@ -552,13 +552,6 @@ export default function PeriodModal({
 
                 // --- Validate type dates within parent period range ---
                 const typeNameMap = new Map(internshipTypes.map(t => [t.id, t.name]));
-                
-                // Parse Y-m-d strings to local-noon dates for consistent comparison
-                const parseYmd = (str: string): Date => {
-                    const [y, m, d] = str.split('-').map(Number);
-                    return new Date(y, m - 1, d, 12, 0, 0);
-                };
-
                 for (const [typeIdStr, dates] of typeDatesEntries) {
                     const typeName = typeNameMap.get(parseInt(typeIdStr)) || `Tipo #${typeIdStr}`;
 

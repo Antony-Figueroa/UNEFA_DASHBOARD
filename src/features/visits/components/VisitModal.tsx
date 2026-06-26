@@ -31,7 +31,10 @@ const visitSchema = z.object({
   visitDate: z.string().min(1, 'La fecha es requerida'),
   visitType: z.string().min(1, 'El tipo de visita es requerido'),
   visitCase: z.string().min(1, 'El caso de seguimiento es requerido'),
-  hoursWorked: z.coerce.number().min(0, 'Las horas deben ser positivas').max(24, 'Máximo 24 horas'),
+  hoursWorked: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined) ? 0 : val,
+    z.coerce.number().min(0, 'Las horas deben ser positivas').max(24, 'Máximo 24 horas')
+  ),
   activitiesPerformed: z.string()
     .min(10, 'Mínimo 10 caracteres')
     .max(2000, "El texto es demasiado largo")
@@ -314,7 +317,8 @@ export default function VisitModal({
     const tutorTypeMap = new Map<string, string>();
     (assignedTutors || []).forEach(a => tutorTypeMap.set(String(a.tutorId), a.tutorType));
 
-    const options = (showAllTutors ? tutors : tutors.filter(t => assignedIds.has(String(t.tutorId))))
+    const hasAssignedTutors = (assignedTutors || []).length > 0;
+    const options = (showAllTutors || !hasAssignedTutors ? tutors : tutors.filter(t => assignedIds.has(String(t.tutorId))))
       .map(t => {
         const isAssigned = assignedIds.has(String(t.tutorId));
         const visitCount = practiceTutorVisitCounts?.find(tc => String(tc.tutorId) === String(t.tutorId))?.visitCount || 0;
@@ -788,7 +792,7 @@ export default function VisitModal({
             {/* Horas trabajadas */}
             <div className="max-w-xs">
               <label htmlFor="hoursWorked" className="text-sm font-medium text-text-primary dark:text-white/90">
-                Horas Trabajadas <span className="text-red-500">*</span>
+                Horas Trabajadas
               </label>
               <div className="relative">
                 <Input

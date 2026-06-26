@@ -419,11 +419,23 @@ export const createVisit = async (req: Request, res: Response) => {
       });
     }
 
+    // Resolver tutor_person_id desde t_tutors (columna NOT NULL)
+    let tutorPersonId: number | null = null;
+    if (tutorId) {
+      const { data: tutor } = await supabase
+        .from('t_tutors')
+        .select('person_id')
+        .eq('TUTOR_ID', tutorId)
+        .single();
+      tutorPersonId = (tutor as any)?.person_id || null;
+    }
+
     const { data, error } = await supabase
       .from('t_practice_visits')
       .insert([{
         PROFESSIONAL_PRACTICE_ID: practiceId,
         TUTOR_ID: tutorId,
+        tutor_person_id: tutorPersonId,
         VISIT_DATE: visitDate || new Date().toISOString(),
         VISIT_TYPE: sanitizeText(visitType) ?? 'PRESENCIAL',
         VISIT_CASE: sanitizeText(visitCase) ?? 'SEGUIMIENTO_REGULAR',

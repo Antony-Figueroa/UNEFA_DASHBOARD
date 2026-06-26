@@ -227,6 +227,10 @@ export const createRole = async (req: Request, res: Response) => {
       res.status(400).json({ message: 'El nombre del rol es requerido' });
       return;
     }
+    if (!permissionIds || permissionIds.length === 0) {
+      res.status(400).json({ message: 'Debe asignar al menos un permiso al rol' });
+      return;
+    }
 
     const supabase = dbManager.getConnection();
 

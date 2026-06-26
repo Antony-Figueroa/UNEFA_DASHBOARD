@@ -180,6 +180,11 @@ export default function EnrollmentPage() {
     const [editingEntry, setEditingEntry] = useState<Enrollment | null>(null);
     const [viewItem, setViewItem] = useState<EnrollmentRowData | null>(null);
 
+    // Historial de cambios
+    const [historyItem, setHistoryItem] = useState<EnrollmentRowData | null>(null);
+    const [historyData, setHistoryData] = useState<any[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+
     type ConfirmationInfo = {
         isOpen: boolean;
         title: string;
@@ -264,6 +269,21 @@ export default function EnrollmentPage() {
     /**
      * Opens the modal to create a new enrollment.
      */
+    const handleViewHistory = async (row: EnrollmentRowData) => {
+        setHistoryItem(row);
+        setHistoryLoading(true);
+        try {
+            const { default: apiClient } = await import("../../api/apiClient");
+            const res = await apiClient.get(`/enrollments/${row.enrollmentId}/changes`);
+            setHistoryData(res.data?.data || []);
+        } catch (err) {
+            console.error("Error fetching history:", err);
+            setHistoryData([]);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
     const handleCreate = () => {
         setEditingEntry(null);
         setIsModalOpen(true);
@@ -290,7 +310,11 @@ export default function EnrollmentPage() {
         const trySave = async (override: boolean) => {
             try {
                 if (isEditing) {
-                    await editEnrollment(payload as UpdateEnrollmentPayload);
+                    await editEnrollment(
+                        override
+                            ? { ...(payload as UpdateEnrollmentPayload), overridePeriodValidation: true }
+                            : (payload as UpdateEnrollmentPayload),
+                    );
                 } else {
                     await addEnrollment(
                         override
@@ -300,7 +324,7 @@ export default function EnrollmentPage() {
                 }
                 setIsModalOpen(false);
                 setConfirmation(null);
-            } catch (e: any) {
+                    } catch (e: any) {
                 const errorCode = e?.response?.data?.code;
                 if (errorCode === "DATE_OUTSIDE_PERIOD" || errorCode === "PERIOD_NOT_ACTIVE") {
                     // Cerrar el diálogo actual y mostrar el de override en el próximo tick
@@ -310,9 +334,9 @@ export default function EnrollmentPage() {
                         setConfirmation({
                             isOpen: true,
                             title: "Período Cerrado",
-                            message: `El período de inscripción ha finalizado. ¿Desea registrar la inscripción de todas formas?`,
+                            message: `El período de inscripción ha finalizado. ¿Desea ${isEditing ? "guardar los cambios" : "registrar la inscripción"} de todas formas?`,
                             onConfirm: () => trySave(true),
-                            confirmText: "Registrar de todas formas",
+                            confirmText: isEditing ? "Guardar cambios" : "Registrar de todas formas",
                             variant: "warning",
                         });
                     }, 0);
@@ -424,6 +448,7 @@ export default function EnrollmentPage() {
                                 onEdit={handleEdit}
                                 onToggleStatus={handleToggleStatus}
                                 onView={setViewItem}
+                                onViewHistory={handleViewHistory}
                                 loading={loadingAction}
                                 periodOptions={periodOptions}
                                 practiceTypeOptions={practiceTypeOptions}
@@ -683,6 +708,61 @@ export default function EnrollmentPage() {
                         variant={confirmation?.variant || "info"}
                         isLoading={loadingAction}
                     />
+
+                    {/* Diálogo de historial de cambios */}
+                    <UnifiedDialog
+                        isOpen={!!historyItem}
+                        onClose={() => setHistoryItem(null)}
+                        title="Historial de Cambios"
+                        message={
+                            historyLoading
+                                ? "Cargando historial..."
+                                : historyData.length === 0
+                                ? "No hay cambios registrados para esta inscripción."
+                                : undefined
+                        }
+                        size="lg"
+                    >
+                        {!historyLoading && historyData.length > 0 && (
+                            <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                                {historyData.map((change: any, i: number) => (
+                                    <div key={change.CHANGE_ID || i} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-white/5 border border-border-light dark:border-white/10">
+                                        <div className="flex-shrink-0 mt-0.5">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-brand-500">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                            </svg>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold text-text-primary dark:text-white">
+                                                {{
+                                                    'INSTITUTION': 'Institución',
+                                                    'INSTITUTION_RESPONSIBLE': 'Responsable Institucional',
+                                                    'PERIOD': 'Período',
+                                                    'PRACTICE_TYPE': 'Tipo de Práctica',
+                                                    'TUTOR_ACADEMICO': 'Tutor Académico',
+                                                    'TUTOR_METODOLOGICO': 'Tutor Metodológico',
+                                                }[change.FIELD_NAME] || change.FIELD_NAME}
+                                            </p>
+                                            <p className="text-xs text-text-secondary mt-1">
+                                                {change.OLD_VALUE ? (
+                                                    <span className="text-error-500 line-through mr-2">{change.OLD_VALUE}</span>
+                                                ) : null}
+                                                <span className="text-success-600 font-medium">{change.NEW_VALUE}</span>
+                                            </p>
+                                            {change.CHANGED_AT && (
+                                                <p className="text-[10px] text-text-tertiary mt-1">
+                                                    {new Date(change.CHANGED_AT).toLocaleDateString("es-ES", {
+                                                        day: "numeric", month: "short", year: "numeric",
+                                                        hour: "2-digit", minute: "2-digit"
+                                                    })}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </UnifiedDialog>
                 </div>
             </div>
         </>

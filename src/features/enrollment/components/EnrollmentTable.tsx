@@ -44,6 +44,8 @@ interface EnrollmentTableProps {
   onToggleStatus?: (item: EnrollmentRowData) => void;
   /** Callback for when an item is selected for viewing */
   onView?: (item: EnrollmentRowData) => void;
+  /** Callback for when an item's history is requested */
+  onViewHistory?: (item: EnrollmentRowData) => void;
   /** The currently active tab ('Activas' or 'Inactivas') */
   activeTab?: "Activas" | "Inactivas";
   /** External loading state */
@@ -75,6 +77,7 @@ interface ActionButtonsProps {
   onView?: () => void;
   onEdit?: () => void;
   onToggleStatus?: () => void;
+  onViewHistory?: () => void;
   status: boolean;
   isMobile?: boolean;
   canEdit?: boolean;
@@ -88,6 +91,7 @@ const ActionButtons = ({
   onView,
   onEdit,
   onToggleStatus,
+  onViewHistory,
   status,
   isMobile = false,
   canEdit = false,
@@ -119,6 +123,20 @@ const ActionButtons = ({
           fullWidth={isMobile}
         />
       )}
+      {onViewHistory && (
+        <AsyncActionButton
+          onClick={async () => onViewHistory()}
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          }
+          tooltip="Ver historial de cambios"
+          label={isMobile ? "Ver historial" : undefined}
+          variant="primary"
+          fullWidth={isMobile}
+        />
+      )}
       {canToggle && onToggleStatus && (
         <AsyncActionButton
           onClick={async () => onToggleStatus()}
@@ -146,6 +164,7 @@ export default function EnrollmentTable({
   onEdit,
   onToggleStatus,
   onView,
+  onViewHistory,
   activeTab = "Activas",
   loading: externalLoading,
   periodOptions = [],
@@ -558,6 +577,7 @@ export default function EnrollmentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
+                                            onViewHistory={onViewHistory ? () => onViewHistory(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             status={s.status}
                                             canEdit={!!onEdit}
@@ -639,6 +659,7 @@ export default function EnrollmentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
+                                            onViewHistory={onViewHistory ? () => onViewHistory(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             status={s.status}
                                             canEdit={!!onEdit}

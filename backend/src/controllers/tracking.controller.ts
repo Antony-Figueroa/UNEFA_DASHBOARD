@@ -396,26 +396,21 @@ export const getTrackingById = async (req: Request, res: Response) => {
           )
         )
       `)
-      .eq('PROFESSIONAL_PRACTICE_ID', id)
-      .eq('STATUS', 1)
-      .single();
+      .eq('PROFESSIONAL_PRACTICE_ID', id);
 
-    console.log("[TrackingController] Query result - data:", !!data, "error:", error);
-    if (data) {
-      console.log("[TrackingController] Found practice:", data.PROFESSIONAL_PRACTICE_ID);
-    }
+    console.log("[TrackingController] Query result - rows:", data?.length, "error:", error);
 
     if (error) {
       console.log("[TrackingController] DB Error:", JSON.stringify(error));
       return res.status(500).json({ error: "Error de base de datos: " + error.message });
     }
     
-    if (!data) {
+    if (!data || data.length === 0) {
       console.log("[TrackingController] No data found - returning 404");
       return res.status(404).json({ error: "Seguimiento no encontrado" });
     }
 
-    const practice = data as any;
+    const practice = data[0] as any;
     const student = practice.t_persons || {};
     const career = practice.t_career || {};
     const institution = practice.t_institution || {};

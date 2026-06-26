@@ -6,7 +6,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
-import { evaluationConfig } from '../config/evaluation.config.js';
+import { evaluationConfig, calculateWeightedGrade } from '../config/evaluation.config.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 /**
@@ -379,9 +379,7 @@ export const getEvaluationStats = async (req: AuthRequest, res: Response) => {
     practiceEvals.forEach((typeScores, practiceId) => {
       const hasAll = evaluatorTypes.every(type => typeScores[type] !== undefined);
       if (hasAll) {
-        const finalGrade = evaluatorTypes.reduce((sum, type) => {
-          return sum + (typeScores[type] || 0) * evaluationConfig.weights[type as keyof typeof evaluationConfig.weights];
-        }, 0);
+        const finalGrade = calculateWeightedGrade(typeScores);
         const minGrade = practiceMinGrade.get(Number(practiceId)) || 10;
         if (finalGrade >= minGrade) approved++;
         else failed++;

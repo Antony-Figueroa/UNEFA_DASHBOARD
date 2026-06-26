@@ -28,7 +28,7 @@ import {
   StudentFormInput,
   StudentFormOutput
 } from "../constants/validation";
-import { formatCedulaDisplay, formatPhoneLocalDisplay, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneLocalDisplay, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PASSPORT_MAX_LENGTH } from "../../../utils/inputFormat";
 import { Search } from "lucide-react";
 import { PREFIX_OPTIONS } from "../../persons/types";
 import { useAcademicConfig } from "../../academic-config/hooks/useAcademicConfig";
@@ -172,13 +172,12 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   });
 
   const ciDisabled = !!editingStudent?.studentId;
+  const currentPrefix = watch("identificationPrefix") || "V";
+  const isPassport = currentPrefix === "P";
   const isFieldDisabled = useCallback((fieldName: string) => {
     if (viewOnlyMode) return true;
-    const apiLock = apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true);
-    const nameFields = ["firstName", "middleName", "lastName", "secondLastName"];
-    if (apiLock && nameFields.includes(fieldName)) return true;
     return false;
-  }, [viewOnlyMode, apiDataLoaded, academicConfig]);
+  }, [viewOnlyMode]);
   const isFieldValid = useCallback((fieldName: string) =>
     !!(touchedFields as any)[fieldName] && !(errors as any)[fieldName],
     [touchedFields, errors]);
@@ -211,17 +210,30 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    // Solo permitir números
-    const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
-    const formatted = formatCedulaDisplay(digitsOnly, false);
-    setDisplayIdentificationNumber(formatted);
-    setValue("identificationNumber", digitsOnly, { shouldValidate: true });
+    const prefix = watch("identificationPrefix") || "V";
+    const isPassport = prefix === "P";
+    
+    let cleanedValue = "";
+    if (isPassport) {
+      // Pasaporte: alfanumérico, mayúsculas, máx PASSPORT_MAX_LENGTH
+      const cleaned = input.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, PASSPORT_MAX_LENGTH);
+      const formatted = formatCedulaDisplay(cleaned, false);
+      setDisplayIdentificationNumber(formatted);
+      setValue("identificationNumber", cleaned, { shouldValidate: true });
+      cleanedValue = cleaned;
+    } else {
+      // Cédula: solo dígitos, máx CEDULA_MAX_DIGITS
+      const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+      const formatted = formatCedulaDisplay(digitsOnly, false);
+      setDisplayIdentificationNumber(formatted);
+      setValue("identificationNumber", digitsOnly, { shouldValidate: true });
+      cleanedValue = digitsOnly;
+    }
     clearErrors("identificationNumber");
     
     // Si se cambia la cédula tras una carga de API externa, limpiar el formulario
     if (apiDataLoaded) {
-      const prefix = watch("identificationPrefix") || "V";
-      const currentCi = `${prefix}-${digitsOnly}`;
+      const currentCi = `${prefix}-${cleanedValue}`;
       if (currentCi !== apiLoadedCiRef.current) {
         setApiDataLoaded(false);
         apiLoadedCiRef.current = "";
@@ -250,11 +262,11 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
 
     // Si se cambia la cédula y hay un existingStudent o existingPerson, limpiar el formulario
     if (existingStudent || existingPerson) {
-      const currentStoredDigits = existingStudent
-        ? existingStudent.identificationNumber?.replace(/\D/g, '') || ''
+      const currentStoredValue = existingStudent
+        ? existingStudent.identificationNumber || ''
         : '';
       // Si el usuario borró al menos 1 carácter o cambió algo
-      if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits || !existingStudent) {
+      if (cleanedValue.length < currentStoredValue.length || cleanedValue !== currentStoredValue || !existingStudent) {
         setExistingStudent(null);
         setExistingPerson(false);
         setViewOnlyMode(false);
@@ -282,13 +294,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       }
     }
 
-    // Verificar si la cédula existe en BD local mientras escribe (7 u 8 dígitos)
-    // NOTA: lookupCi (API externa) SOLO se llama en onBlur (handleCiBlur)
-    // para evitar múltiples consultas en cada keystroke y violaciones de reflow
-    if (!existingStudent && !existingPerson && !editingStudent && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
+    // Verificar si la cédula existe en BD local mientras escribe (7 u 8 dígitos para CID, similar para pasaporte)
+    if (!existingStudent && !existingPerson && !editingStudent && (cleanedValue.length === 7 || cleanedValue.length === 8)) {
       setIsCheckingCi(true);
-      const prefix = watch("identificationPrefix") || 'V';
-      const fullCi = `${prefix}-${digitsOnly}`;
+      const fullCi = `${prefix}-${cleanedValue}`;
       try {
         const result = await getStudentByCi(fullCi);
         if (result?.student) {
@@ -1029,9 +1038,9 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                       value={displayIdentificationNumber}
                       onChange={handleIdentificationNumberChange}
                       onBlur={handleCiBlur}
-                      placeholder="V-12.345.678"
+                      placeholder={isPassport ? "ABC123456" : "V-12.345.678"}
                       disabled={ciDisabled}
-                      maxLength={CEDULA_MAX_LENGTH}
+                      maxLength={isPassport ? PASSPORT_MAX_LENGTH : CEDULA_MAX_LENGTH}
                       autoComplete="off"
                       className="tracking-widest"
                       error={!!errors.identificationNumber}
@@ -1043,7 +1052,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                         : undefined)
                       }
                     />
-                    {!ciDisabled && (
+                    {!ciDisabled && !isPassport && (
                       <button
                         type="button"
                         onClick={handleCiLookup}

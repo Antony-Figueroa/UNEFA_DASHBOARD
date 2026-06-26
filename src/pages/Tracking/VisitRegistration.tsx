@@ -8,7 +8,7 @@ import PageMeta from "../../components/common/PageMeta";
 import { AsyncActionButton } from "../../components/common/AsyncActionButton";
 import Button from "../../components/ui/button/Button";
 import Badge from "../../components/ui/badge/Badge";
-import { ArrowLeftIcon, EditIcon, TrashIcon, EyeIcon, RefreshIcon, PlusCircleIcon } from "../../icons/actions";
+import { EditIcon, TrashIcon, EyeIcon, RefreshIcon, PlusCircleIcon } from "../../icons/actions";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../components/ui/table";
 import { EmptyState } from "../../components/ui/table/EmptyState";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
@@ -175,21 +175,12 @@ export default function VisitRegistration() {
   return (
     <>
       <PageMeta
-        title="Registro de Visitas"
-        description="Registro detallado de visitas de seguimiento"
+        title={practiceInfo ? `${practiceInfo.studentName} - Visitas` : "Registro de Visitas"}
+        description={practiceInfo ? `Visitas de seguimiento - ${practiceInfo.studentName}` : "Registro detallado de visitas de seguimiento"}
       />
-      <PageBreadcrumb pageTitle="Registro de Visitas" />
+      <PageBreadcrumb pageTitle={practiceInfo ? practiceInfo.studentName : "Registro de Visitas"} />
 
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <Button 
-          variant="outline" 
-          onClick={() => navigate('/tracking')}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-          Volver al Seguimiento
-        </Button>
-
+      <div className="mb-6 flex justify-end">
         <Button
           onClick={() => handleOpenModal()}
           className="flex items-center gap-2"
@@ -221,7 +212,7 @@ export default function VisitRegistration() {
             </div>
             <div className="p-4 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
               <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">Tutor Académico</p>
-              <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{practiceInfo.tutorName}</p>
+              <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{practiceInfo.tutorName || 'No asignado'}</p>
             </div>
             <div className="p-4 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
               <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">Tutor Metodológico</p>

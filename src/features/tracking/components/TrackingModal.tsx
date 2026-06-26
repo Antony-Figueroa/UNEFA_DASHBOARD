@@ -17,7 +17,6 @@ import AsyncButton from '../../../components/ui/button/AsyncButton';
 import InputField from '../../../components/form/input/InputField';
 import TextArea from '../../../components/form/input/TextArea';
 import CustomSelect from '../../../components/form/CustomSelect';
-import { useLists } from '../../lists/hooks/useLists';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
@@ -80,8 +79,6 @@ const TRANSFER_OPTIONS = [
  */
 export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoading = false }: TrackingModalProps) {
     const { addToast } = useToast();
-    const { fetchMultipleLists } = useLists();
-    const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingData, setPendingData] = useState<TrackingFormData | null>(null);
     const [studentCareer, setStudentCareer] = useState<string>("");
@@ -105,30 +102,6 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
         }
     }, [isOpen, tracking?.trackingId]);
 
-    // Cargar opciones dinámicas desde el servicio de listas
-    useEffect(() => {
-        const loadOptions = async () => {
-            try {
-                const data = await fetchMultipleLists(['Traslado']);
-                if (data['Traslado']) {
-                    setOptions({
-                        'Traslado': data['Traslado'].map(v => ({
-                            value: v.name.toLowerCase(),
-                            label: v.name.charAt(0).toUpperCase() + v.name.slice(1).toLowerCase()
-                        }))
-                    });
-                }
-            } catch (error) {
-                console.error("[TrackingModal] Error al cargar opciones de lista:", error);
-                addToast({ variant: "error", title: "Error", message: "No se pudieron cargar las opciones del formulario." });
-            }
-        };
-
-        if (isOpen) {
-            loadOptions();
-        }
-    }, [isOpen, fetchMultipleLists]);
-    
     const { register, handleSubmit, formState: { errors, isDirty, isValid }, reset, control, trigger } = useForm<TrackingFormData>({
         resolver: zodResolver(trackingSchema),
         mode: "onChange",
@@ -281,7 +254,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                                             render={({ field }) => (
                                                 <CustomSelect
                                                     id="transfer"
-                                                    options={(options['Traslado'] || TRANSFER_OPTIONS).map(opt => ({ value: String(opt.value), label: opt.label }))}
+                                                    options={TRANSFER_OPTIONS}
                                                     onChange={field.onChange}
                                                     value={String(field.value)}
                                                 />

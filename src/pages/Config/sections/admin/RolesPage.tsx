@@ -95,6 +95,10 @@ export default function RolesPermissionsPage() {
       toast.error("El nombre del rol es requerido");
       return;
     }
+    if (createForm.permissionIds.length === 0) {
+      toast.error("Debes seleccionar al menos un permiso");
+      return;
+    }
 
     setCreating(true);
     try {
@@ -251,16 +255,18 @@ export default function RolesPermissionsPage() {
         <ModalBody className="max-h-[60vh] overflow-y-auto">
           <div className="space-y-6 py-2">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
-                  Nombre del Rol *
-                </label>
-                <InputField
-                  value={createForm.name}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="Ej: COORDINADOR"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
+                    Nombre del Rol <span className="text-error-500">*</span>
+                  </label>
+                  <InputField
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="Ej: COORDINADOR"
+                    error={createForm.name.trim() === ""}
+                    hint={createForm.name.trim() === "" ? "El nombre es obligatorio" : undefined}
+                  />
+                </div>
               <div>
                 <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
                   Descripción
@@ -397,7 +403,7 @@ export default function RolesPermissionsPage() {
               <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleCreateRole} disabled={creating || !createForm.name.trim()} loading={creating} loadingText="Creando...">
+              <Button onClick={handleCreateRole} disabled={creating || !createForm.name.trim() || createForm.permissionIds.length === 0} loading={creating} loadingText="Creando...">
                 Crear Rol
               </Button>
             </div>

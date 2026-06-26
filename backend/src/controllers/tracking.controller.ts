@@ -388,7 +388,8 @@ export const getTrackingById = async (req: Request, res: Response) => {
         t_professional_practices_tutor (
           TUTOR_ID,
           TUTOR_TYPE,
-          t_tutors!inner(
+          ACTIVE,
+          t_tutors (
             NAME,
             SURNAME,
             SECOND_NAME,
@@ -419,8 +420,9 @@ export const getTrackingById = async (req: Request, res: Response) => {
     // Construir arreglo completo de tutores asignados (con ID, nombre y tipo)
     const assignedTutors: { tutorId: number; tutorName: string; tutorType: string }[] = [];
     
-    if (practice.t_professional_practices_tutor && practice.t_professional_practices_tutor.length > 0) {
-      practice.t_professional_practices_tutor.forEach((t: any) => {
+    const activeTutors = (practice.t_professional_practices_tutor || []).filter((t: any) => t.ACTIVE !== false);
+    if (activeTutors.length > 0) {
+      activeTutors.forEach((t: any) => {
         if (t.TUTOR_ID) {
           assignedTutors.push({
             tutorId: t.TUTOR_ID,

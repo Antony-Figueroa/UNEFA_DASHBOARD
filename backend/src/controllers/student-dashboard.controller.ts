@@ -116,6 +116,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         ),
         t_professional_practices_tutor (
           TUTOR_TYPE,
+          ACTIVE,
           t_tutors (
             t_persons!inner (
               first_name,
@@ -150,7 +151,8 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
     
     if (enrollment) {
       const practiceId = (enrollment as any).PROFESSIONAL_PRACTICE_ID;
-      const academicTutor = (enrollment as any).t_professional_practices_tutor?.find(
+      const activeTutors = ((enrollment as any).t_professional_practices_tutor || []).filter((t: any) => t.ACTIVE !== false);
+      const academicTutor = activeTutors.find(
         (t: any) => t.TUTOR_TYPE === 'ACADEMICO'
       );
 

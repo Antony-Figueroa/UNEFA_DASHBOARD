@@ -56,6 +56,7 @@ export const getTutorDashboard = async (req: AuthRequest, res: Response) => {
       .select(`
         PROFESSIONAL_PRACTICE_ID,
         TUTOR_TYPE,
+        ACTIVE,
         t_professional_practices!inner (
           PROFESSIONAL_PRACTICE_ID,
           PRACTICES_STATUS,
@@ -67,7 +68,8 @@ export const getTutorDashboard = async (req: AuthRequest, res: Response) => {
 
     if (practicesError) throw practicesError;
 
-    const practiceIds = (practices || []).map(p => p.PROFESSIONAL_PRACTICE_ID);
+    const activePractices = (practices || []).filter(p => p.ACTIVE !== false);
+    const practiceIds = activePractices.map(p => p.PROFESSIONAL_PRACTICE_ID);
 
     // ponytail: pending approvals count from activity logs
     let pendingApprovals = 0;
@@ -245,6 +247,7 @@ export const getTutorStudents = async (req: AuthRequest, res: Response) => {
       .select(`
         PROFESSIONAL_PRACTICE_ID,
         TUTOR_TYPE,
+        ACTIVE,
         t_professional_practices (
           PROFESSIONAL_PRACTICE_ID,
           START_DATE,
@@ -274,7 +277,9 @@ export const getTutorStudents = async (req: AuthRequest, res: Response) => {
 
     if (practicesError) throw practicesError;
 
-    const enrollmentIds = practices
+    const activePractices = (practices || []).filter((p: any) => p.ACTIVE !== false);
+
+    const enrollmentIds = activePractices
       ?.map((p: any) => p.t_professional_practices?.PROFESSIONAL_PRACTICE_ID)
       .filter(Boolean) || [];
 
@@ -293,7 +298,7 @@ export const getTutorStudents = async (req: AuthRequest, res: Response) => {
 
     let students: TutorStudent[] = [];
 
-    practices?.forEach((p: any) => {
+    activePractices.forEach((p: any) => {
       const practice = p.t_professional_practices;
       if (!practice || practice.STATUS !== 1) return;
 
@@ -383,6 +388,7 @@ export const getTutorTracking = async (req: AuthRequest, res: Response) => {
       .select(`
         PROFESSIONAL_PRACTICE_ID,
         TUTOR_TYPE,
+        ACTIVE,
         t_professional_practices (
           PROFESSIONAL_PRACTICE_ID,
           CREATION_DATE,
@@ -402,7 +408,7 @@ export const getTutorTracking = async (req: AuthRequest, res: Response) => {
     if (practicesError) throw practicesError;
 
     const validPractices = practices?.filter((p: any) => 
-      p.t_professional_practices && p.t_professional_practices.STATUS === 1
+      p.t_professional_practices && p.t_professional_practices.STATUS === 1 && p.ACTIVE !== false
     ) || [];
 
     let tracking: any[] = validPractices.map((p: any) => {
@@ -481,9 +487,10 @@ export const updateStudentGrade = async (req: AuthRequest, res: Response) => {
 
     const { data: tutorPractice, error: tutorPracticeError } = await supabase
       .from('t_professional_practices_tutor')
-      .select('PROFESSIONAL_PRACTICE_ID')
+      .select('PROFESSIONAL_PRACTICE_ID, ACTIVE')
       .eq('TUTOR_ID', tutorId)
       .eq('PROFESSIONAL_PRACTICE_ID', enrollmentId)
+      .eq('ACTIVE', true)
       .single();
 
     if (tutorPracticeError || !tutorPractice) {
@@ -549,6 +556,7 @@ export const getTutorReports = async (req: AuthRequest, res: Response) => {
       .select(`
         PROFESSIONAL_PRACTICE_ID,
         TUTOR_TYPE,
+        ACTIVE,
         t_professional_practices (
           PROFESSIONAL_PRACTICE_ID,
           START_DATE,
@@ -578,7 +586,8 @@ export const getTutorReports = async (req: AuthRequest, res: Response) => {
       4: 'Suspendido'
     };
 
-    const students = (practices || [])
+    const activePractices = (practices || []).filter((p: any) => p.ACTIVE !== false);
+    const students = activePractices
       .filter((p: any) => p.t_professional_practices?.STATUS === 1)
       .map((p: any) => {
         const practice = p.t_professional_practices;
@@ -741,10 +750,10 @@ export const getTutorActivityLogs = async (req: AuthRequest, res: Response) => {
 
     const { data: tutorPractices } = await supabase
       .from('t_professional_practices_tutor')
-      .select('PROFESSIONAL_PRACTICE_ID')
+      .select('PROFESSIONAL_PRACTICE_ID, ACTIVE')
       .eq('TUTOR_ID', tutorId);
 
-    const practiceIds = (tutorPractices || []).map(p => p.PROFESSIONAL_PRACTICE_ID);
+    const practiceIds = (tutorPractices || []).filter(p => p.ACTIVE !== false).map(p => p.PROFESSIONAL_PRACTICE_ID);
 
     if (practiceIds.length === 0) {
       return res.json({ success: true, data: [], meta: { total: 0 } });
@@ -812,9 +821,10 @@ export const getTutorPractice = async (req: AuthRequest, res: Response) => {
 
     const { data: tutorPractice, error: tutorPracticeError } = await supabase
       .from('t_professional_practices_tutor')
-      .select('PROFESSIONAL_PRACTICE_ID')
+      .select('PROFESSIONAL_PRACTICE_ID, ACTIVE')
       .eq('TUTOR_ID', tutorId)
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .eq('ACTIVE', true)
       .single();
 
     if (tutorPracticeError || !tutorPractice) {

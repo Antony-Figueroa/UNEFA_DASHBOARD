@@ -250,7 +250,7 @@ export default function TrackingPage() {
                                         onView={handleOpenViewModal}
                                         onDelete={handleDelete}
                                         onRestore={handleRestore}
-                                        onVisitRegistration={(item) => openTab(`/visit-registration/${item.trackingId}`, `Visita #${item.trackingId}`)}
+                                        onVisitRegistration={(item) => openTab(`/visit-registration/${item.trackingId}`, `${item.studentName}`)}
                                         onActivityLogs={(item) => openTab(`/activity-logs/${item.trackingId}`, `Actividades #${item.trackingId}`)}
                                         transferOptions={lists['Traslado'] || TRANSFER_OPTIONS}
                                     />

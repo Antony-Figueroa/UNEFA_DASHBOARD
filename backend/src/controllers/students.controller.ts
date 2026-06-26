@@ -890,6 +890,7 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
           .from('t_professional_practices_tutor')
           .select(`
             TUTOR_ID,
+            ACTIVE,
             t_tutors!inner (
               TUTOR_ID,
               t_persons!inner (first_name, last_name)
@@ -897,6 +898,7 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
           `)
           .eq('PROFESSIONAL_PRACTICE_ID', activePractice.PROFESSIONAL_PRACTICE_ID)
           .eq('TUTOR_TYPE', 'ACADEMICO')
+          .eq('ACTIVE', true)
           .maybeSingle();
         if (error) throw error;
         return data;
@@ -911,7 +913,8 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
           .from('t_professional_practices_tutor')
           .update({ TUTOR_ID: parseInt(newValue) })
           .eq('PROFESSIONAL_PRACTICE_ID', activePractice.PROFESSIONAL_PRACTICE_ID)
-          .eq('TUTOR_TYPE', 'ACADEMICO');
+          .eq('TUTOR_TYPE', 'ACADEMICO')
+          .eq('ACTIVE', true);
         if (error) throw error;
       }, 'updateTutorAssignment');
     } else if (changeType === 'institution') {

@@ -29,6 +29,14 @@ dist-ssr
 .env
 .env*.local
 
+# Database dumps (may contain credentials)
+dump-postgres-*.sql
+DB-backup-*.sql
+dump_excel.cjs
+
+# Dev scripts with credentials
+backend/dump-prod-to-local.ts
+
 # Engram AI agent memory
 .engram/
 

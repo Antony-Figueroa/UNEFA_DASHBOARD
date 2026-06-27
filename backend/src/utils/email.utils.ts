@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import sgMail from '@sendgrid/mail';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
@@ -69,6 +70,33 @@ const tryResend = async (opts: { to: string; subject: string; html: string; text
   }
 };
 
+/** Enviar via SendGrid (HTTP API, funciona en serverless) */
+const trySendGrid = async (opts: { to: string; subject: string; html: string; text?: string }): Promise<SendResult | null> => {
+  const apiKey = process.env.SENDGRID_API_KEY;
+  if (!apiKey) return null;
+
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'antonysamuel0903@gmail.com';
+  const fromName = process.env.SENDGRID_FROM_NAME || 'SIGP UNEFA';
+
+  try {
+    sgMail.setApiKey(apiKey);
+    await sgMail.send({
+      to: opts.to,
+      from: { email: fromEmail, name: fromName },
+      subject: opts.subject,
+      html: opts.html,
+      ...(opts.text && { text: opts.text }),
+    });
+
+    console.log(`✅ [SendGrid] Correo enviado a ${opts.to}`);
+    return { success: true };
+  } catch (error: any) {
+    const reason = error?.response?.body?.errors?.[0]?.message || error?.message || 'Error SendGrid';
+    console.error(`❌ [SendGrid] Error enviando a ${opts.to}:`, reason);
+    return { success: false, error: reason };
+  }
+};
+
 /** Simular envío en consola (último recurso) */
 const trySimulation = (opts: { to: string; subject: string; html: string; text?: string }): SendResult => {
   console.log(`
@@ -84,18 +112,22 @@ const trySimulation = (opts: { to: string; subject: string; html: string; text?:
 
 /**
  * Función genérica para enviar correos.
- * Prioridad: Gmail SMTP → Resend → Simulación en consola.
+ * Prioridad: Gmail SMTP → SendGrid → Resend → Simulación en consola.
  */
 export const sendEmail = async (options: { to: string; subject: string; html: string; text?: string }): Promise<SendResult> => {
-  // 1. Gmail SMTP
+  // 1. Gmail SMTP (local)
   const gmailResult = await tryGmail(options);
   if (gmailResult?.success) return gmailResult;
 
-  // 2. Resend API (fallback)
+  // 2. SendGrid API (producción — HTTP, funciona en serverless)
+  const sgResult = await trySendGrid(options);
+  if (sgResult?.success) return sgResult;
+
+  // 3. Resend API (fallback)
   const resendResult = await tryResend(options);
   if (resendResult?.success) return resendResult;
 
-  // 3. Último recurso: simulación en consola
+  // 4. Último recurso: simulación en consola
   return trySimulation(options);
 };
 

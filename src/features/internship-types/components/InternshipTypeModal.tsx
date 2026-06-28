@@ -16,7 +16,7 @@ import CustomSelect from "../../../components/form/CustomSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { InternshipType, CreateInternshipTypePayload } from "../types";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
@@ -270,15 +270,16 @@ export default function InternshipTypeModal({
             <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
               Cancelar
             </Button>
-            <AsyncButton 
+            <Button 
               type="submit" 
               form="internship-type-form" 
               loading={isLoading} 
+              loadingText="Guardando..."
               className="w-full sm:w-auto min-h-12" 
               disabled={!isValid || (editingItem ? !isDirty : false)}
             >
               {editingItem ? "Guardar Cambios" : "Guardar Tipo de Práctica"}
-            </AsyncButton>
+            </Button>
           </div>
         </ModalFooter>
       </Modal>

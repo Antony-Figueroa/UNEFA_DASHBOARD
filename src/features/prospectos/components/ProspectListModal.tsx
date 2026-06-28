@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import { UnifiedDialog } from "../../../components/ui/dialog/UnifiedDialog";
 import { SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { SearchableInput } from "../../../features/reports/components/SearchableInput";
@@ -326,9 +326,9 @@ export function ProspectListModal({ isOpen, onClose }: ProspectListModalProps) {
             Cerrar
           </Button>
           {dirty && (
-            <AsyncButton variant="primary" onClick={markAsSaved}>
+            <Button variant="primary" onClick={markAsSaved} loadingText="Guardando...">
               Guardar lista
-            </AsyncButton>
+            </Button>
           )}
         </ModalFooter>
       </Modal>

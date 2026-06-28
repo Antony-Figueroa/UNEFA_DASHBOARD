@@ -9,7 +9,7 @@ import { Tabs } from "../../../components/ui/tabs/Tabs";
 import { useTabs } from "../../../hooks/useTabs";
 import { Tutor, CreateTutorPayload, UpdateTutorPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
 
@@ -1570,13 +1570,14 @@ export default function TutorModal({
               >
                 Cancelar
               </Button>
-              <AsyncButton
+              <Button
                 onClick={handleFormSubmit}
                 loading={isLoading || confirmSaving}
+                loadingText="Guardando..."
                 disabled={!allRequiredFilled || !isDirty || isLoading || confirmSaving}
               >
                 {editingTutor || existingTutor ? 'Guardar Cambios' : 'Guardar Tutor'}
-              </AsyncButton>
+              </Button>
             </>
           )}
           {viewOnlyMode && (

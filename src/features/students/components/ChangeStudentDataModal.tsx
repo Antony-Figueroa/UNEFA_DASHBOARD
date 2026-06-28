@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import CustomSelect from "../../../components/form/CustomSelect";
 import { StudentRowData } from "../types";
 import { changeStudentRegistration } from "../services/studentsService";
@@ -239,14 +239,15 @@ export default function ChangeStudentDataModal({
           >
             Cancelar
           </button>
-          <AsyncButton
+          <Button
             type="submit"
             loading={isSubmitting}
+            loadingText="Guardando..."
             disabled={!selectedChangeType}
             className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Guardar Cambio
-          </AsyncButton>
+          </Button>
         </ModalFooter>
       </form>
     </Modal>

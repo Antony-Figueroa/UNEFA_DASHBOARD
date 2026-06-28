@@ -13,7 +13,7 @@ import { getTrackingById, TrackingDetailDTO } from '../services/trackingService'
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import { ModalSectionHeader } from '../../../components/ui/modal/ModalSectionHeader';
 import Button from '../../../components/ui/button/Button';
-import AsyncButton from '../../../components/ui/button/AsyncButton';
+
 import InputField from '../../../components/form/input/InputField';
 import TextArea from '../../../components/form/input/TextArea';
 import CustomSelect from '../../../components/form/CustomSelect';
@@ -297,9 +297,9 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                             <Button type="button" variant="outline" onClick={handleCloseAttempt}>
                                 Cancelar
                             </Button>
-                            <AsyncButton type="submit" loading={isLoading} disabled={!isValid || !isDirty}>
+                            <Button type="submit" loading={isLoading} loadingText="Guardando..." disabled={!isValid || !isDirty}>
                                 Guardar Cambios
-                            </AsyncButton>
+                            </Button>
                         </div>
                     </ModalFooter>
                 </form>

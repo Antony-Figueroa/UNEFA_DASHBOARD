@@ -15,7 +15,7 @@ import { Tabs } from "../../../components/ui/tabs/Tabs";
 import { useTabs } from "../../../hooks/useTabs";
 import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload, InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload } from "../types";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
@@ -1196,27 +1196,27 @@ export default function InstitutionModal({
           </Button>
           {existingInstitution ? (
             viewOnlyMode ? (
-              <AsyncButton 
+              <Button 
                 type="button"
                 onClick={() => {
                   setViewOnlyMode(false);
                 }}
               >
                 Habilitar Edición
-              </AsyncButton>
+              </Button>
             ) : (
-              <AsyncButton onClick={handleFormSubmit} loading={isLoading} disabled={!isValid}>
+              <Button onClick={handleFormSubmit} loading={isLoading} loadingText="Guardando..." disabled={!isValid}>
                 Guardar Cambios
-              </AsyncButton>
+              </Button>
             )
           ) : editingInst ? (
-            <AsyncButton onClick={handleFormSubmit} loading={isLoading} disabled={!isDirty}>
+            <Button onClick={handleFormSubmit} loading={isLoading} loadingText="Guardando..." disabled={!isDirty}>
               Guardar Cambios
-            </AsyncButton>
+            </Button>
           ) : (
-            <AsyncButton onClick={handleFormSubmit} loading={isLoading} disabled={!isValid}>
+            <Button onClick={handleFormSubmit} loading={isLoading} loadingText="Guardando..." disabled={!isValid}>
               Guardar Empresa
-            </AsyncButton>
+            </Button>
           )}
         </>
       </ModalFooter>
@@ -1387,13 +1387,14 @@ export default function InstitutionModal({
         >
           Cancelar
         </Button>
-        <AsyncButton
+        <Button
           onClick={handleSaveNewValue}
           loading={savingNewValue}
+          loadingText="Guardando..."
           disabled={!newValueInput.trim()}
         >
           Guardar
-        </AsyncButton>
+        </Button>
       </ModalFooter>
     </Modal>
 

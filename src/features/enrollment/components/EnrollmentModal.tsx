@@ -6,7 +6,7 @@ import Input from "../../../components/form/input/InputField";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Enrollment, CreateEnrollmentPayload, UpdateEnrollmentPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import CustomSelect from "../../../components/form/CustomSelect";
 import { Student } from "../../students/types";
 import { getStudents } from "../../students/services/studentsService";
@@ -1191,15 +1191,16 @@ export default function EnrollmentModal({
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <AsyncButton 
+          <Button 
             type="submit" 
             form="enrollment-form" 
             loading={isLoading} 
+            loadingText="Guardando..."
             className="w-full sm:w-auto min-h-12" 
             disabled={editingEntry ? !isDirty || !isValid : !isValid || !!preEnrollmentError}
           >
             {editingEntry ? "Guardar Cambios" : "Guardar Inscripción"}
-          </AsyncButton>
+          </Button>
         </div>
       </ModalFooter>
     </Modal>

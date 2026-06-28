@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import { InstitutionalResponsible } from "../types";
 import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
 import { InstitutionalResponsiblePDF } from "../../../components/ui/pdf/templates/individual";
@@ -175,9 +175,9 @@ export default function InstitutionalResponsibleViewModal({
           Generar Reporte
         </Button>
         {onEdit && (
-          <AsyncButton onClick={async () => { onEdit(responsible); onClose(); }} className="flex-1 sm:flex-none">
+          <Button onClick={() => { onEdit(responsible); onClose(); }} className="flex-1 sm:flex-none">
             Editar Información
-          </AsyncButton>
+          </Button>
         )}
       </ModalFooter>
 

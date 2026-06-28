@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
-import AsyncButton from '../../../components/ui/button/AsyncButton';
+
 import Input from '../../../components/form/input/InputField';
 import TextArea from '../../../components/form/input/TextArea';
 import CustomSelect from '../../../components/form/CustomSelect';
@@ -262,13 +262,14 @@ export default function ActivityLogModal({
           <Button variant="outline" onClick={handleClose} type="button">
             Cancelar
           </Button>
-          <AsyncButton
+          <Button
             type="submit"
             loading={isLoading}
+            loadingText="Guardando..."
             disabled={!isDirty && isEditing}
           >
             {isEditing ? 'Guardar Cambios' : 'Guardar Registro'}
-          </AsyncButton>
+          </Button>
         </ModalFooter>
       </form>
     </Modal>

@@ -87,6 +87,7 @@ export function CrudConfirmDialog({ state, onClose, isLoading = false }: CrudCon
           variant={styles.variant}
           onClick={state.onConfirm}
           loading={isLoading}
+          loadingText={state.confirmText}
           className="w-full sm:w-auto"
         >
           {state.confirmText}

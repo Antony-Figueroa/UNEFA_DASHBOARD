@@ -9,7 +9,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { ModalSectionHeader } from "../../../components/ui/modal/ModalSectionHeader";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import Badge from "../../../components/ui/badge/Badge";
 import { toTitleCase } from "../../../utils/textFormat";
 import { Tracking } from "../types";
@@ -438,15 +438,15 @@ export default function TrackingDetailModal({
           Cerrar
         </Button>
         {onEdit && (
-          <AsyncButton
-            onClick={async () => {
+          <Button
+            onClick={() => {
               onEdit(tracking);
               onClose();
             }}
             className="flex-1 sm:flex-none"
           >
             Editar Información
-          </AsyncButton>
+          </Button>
         )}
       </ModalFooter>
     </Modal>

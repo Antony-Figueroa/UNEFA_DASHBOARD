@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { prospectsService } from "../services/prospectsService";
 import toast from "react-hot-toast";
 
@@ -161,9 +160,9 @@ export function ImportButton({ listId, periodId, onImportComplete }: ImportButto
           <Button variant="outline" onClick={() => setShowPreview(false)} disabled={importing}>
             Cancelar
           </Button>
-          <AsyncButton variant="primary" onClick={handleConfirmImport} loading={importing}>
+          <Button variant="primary" onClick={handleConfirmImport} loading={importing} loadingText="Importando...">
             Importar {parsedRows.length} estudiante{parsedRows.length !== 1 ? "s" : ""}
-          </AsyncButton>
+          </Button>
         </ModalFooter>
       </Modal>
     </>

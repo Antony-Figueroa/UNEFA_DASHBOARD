@@ -8,7 +8,7 @@
 
 import React from "react";
 import { AlertTriangle, Edit3, Loader2 } from "lucide-react";
-import AsyncButton from "../ui/button/AsyncButton";
+import Button from "../ui/button/Button";
 
 /**
  * Props del componente ExistingRecordAlert
@@ -79,20 +79,21 @@ export const ExistingRecordAlert: React.FC<ExistingRecordAlertProps> = ({
           
           {isViewOnlyMode && onEnableEdit && (
             <div className="mt-3 flex flex-wrap gap-2">
-              <AsyncButton
+              <Button
                 type="button"
                 variant="warning"
                 size="sm"
                 onClick={onEnableEdit}
                 disabled={isLoading}
                 startIcon={<Edit3 className="w-4 h-4" />}
+                loadingText="Guardando..."
                 className="inline-flex"
               >
                 Habilitar Edición
-              </AsyncButton>
+              </Button>
               
               {onClear && (
-                <AsyncButton
+                <Button
                   type="button"
                   variant="ghost"
                   size="sm"
@@ -101,7 +102,7 @@ export const ExistingRecordAlert: React.FC<ExistingRecordAlertProps> = ({
                   className="inline-flex text-warning-600 dark:text-warning-400 hover:text-warning-800 dark:hover:text-warning-200"
                 >
                   Buscar otro
-                </AsyncButton>
+                </Button>
               )}
             </div>
           )}

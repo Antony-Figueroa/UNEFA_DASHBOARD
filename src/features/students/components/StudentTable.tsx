@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { PlusIcon } from "../../../icons";
 import { StudentRowData } from "../types";
@@ -550,15 +550,16 @@ export default function StudentTable({
                                 {activeTab === "Activas" ? (
                                     <>
                                         {onBatchPreEnroll && (
-                                            <AsyncButton
+                                            <Button
                                                 variant="primary"
                                                 size="sm"
                                                 onClick={async () => onBatchPreEnroll(selectedIds)}
                                                 className="gap-1.5"
+                                                loadingText="Preinscribiendo..."
                                             >
                                                 <PlusIcon className="icon-sm" />
                                                 Preinscribir en Lote
-                                            </AsyncButton>
+                                            </Button>
                                         )}
                                         <Tooltip 
                                             content={paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse) ? "Algunos estudiantes seleccionados están en uso y no pueden ser eliminados" : "Eliminar seleccionados"}
@@ -575,9 +576,9 @@ export default function StudentTable({
                                         </Tooltip>
                                     </>
                                 ) : (
-                                    <AsyncButton variant="success" size="sm" onClick={async () => onBulkRestore?.(selectedIds)}>
+                                    <Button variant="success" size="sm" onClick={async () => onBulkRestore?.(selectedIds)} loadingText="Restaurando...">
                                         Restaurar
-                                    </AsyncButton>
+                                    </Button>
                                 )}
                             </div>
                         )}

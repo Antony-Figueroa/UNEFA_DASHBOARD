@@ -15,7 +15,7 @@ import MultiSelect from "../../../components/form/MultiSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Career } from "../types";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
@@ -624,7 +624,7 @@ export default function CareerModal({
           </Button>
           {existingCareer ? (
             viewOnlyMode ? (
-              <AsyncButton 
+              <Button 
                 type="button"
                 className="w-full sm:w-auto min-h-12 bg-warning-500 hover:bg-warning-600 text-white"
                 onClick={() => {
@@ -636,16 +636,16 @@ export default function CareerModal({
                 }}
               >
                 Habilitar Edición
-              </AsyncButton>
+              </Button>
             ) : (
-              <AsyncButton type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
+              <Button type="submit" form="career-form" loading={isLoading} loadingText="Guardando..." className="w-full sm:w-auto min-h-12" disabled={!isValid}>
                 Guardar Cambios
-              </AsyncButton>
+              </Button>
             )
           ) : (
-            <AsyncButton type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid || (editingCareer ? !isDirty : false)}>
+            <Button type="submit" form="career-form" loading={isLoading} loadingText="Guardando..." className="w-full sm:w-auto min-h-12" disabled={!isValid || (editingCareer ? !isDirty : false)}>
               {editingCareer ? "Guardar Cambios" : "Guardar Carrera"}
-            </AsyncButton>
+            </Button>
           )}
         </div>
       </ModalFooter>

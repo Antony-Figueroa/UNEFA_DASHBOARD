@@ -8,7 +8,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
-import AsyncButton from '../../../components/ui/button/AsyncButton';
+
 import CustomSelect from '../../../components/form/CustomSelect';
 import TextArea from '../../../components/form/input/TextArea';
 import FlatpickrDatePicker from '../../../components/form/FlatpickrDatePicker';
@@ -917,23 +917,24 @@ export default function VisitModal({
 
         <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
           <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-4xl mx-auto">
-            <AsyncButton 
+            <Button 
               variant="outline" 
               onClick={handleCloseAttempt} 
               disabled={loading}
               className="w-full sm:w-auto min-h-12"
             >
               Cancelar
-            </AsyncButton>
-            <AsyncButton 
+            </Button>
+            <Button 
               type="submit" 
               form="visit-form"
               loading={loading}
+              loadingText="Guardando..."
               disabled={!isValid}
               className="w-full sm:w-auto min-h-12"
             >
               {isEditing ? 'Guardar Cambios' : 'Guardar Visita'}
-            </AsyncButton>
+            </Button>
           </div>
         </ModalFooter>
       </Modal>

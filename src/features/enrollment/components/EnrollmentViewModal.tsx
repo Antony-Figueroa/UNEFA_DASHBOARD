@@ -5,7 +5,7 @@
 
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import { EnrollmentRowData } from "../types";
 
 /**
@@ -143,9 +143,9 @@ export default function EnrollmentViewModal({
           Cerrar
         </Button>
         {onEdit && (
-          <AsyncButton onClick={async () => { onEdit(item); onClose(); }} className="flex-1 sm:flex-none">
+          <Button onClick={() => { onEdit(item); onClose(); }} className="flex-1 sm:flex-none">
             Editar Información
-          </AsyncButton>
+          </Button>
         )}
       </ModalFooter>
     </Modal>

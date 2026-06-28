@@ -14,7 +14,6 @@ import { useCareers } from "../../careers/hooks/useCareers";
 import { TableSkeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { maskIdentification } from "../../../utils/maskData";
@@ -525,9 +524,9 @@ export default function PreEnrollmentTable({
                                         Eliminar
                                     </Button>
                                 ) : (
-                                    <AsyncButton variant="success" size="sm" onClick={async () => onBulkRestore?.(selectedIds)}>
+                                    <Button variant="success" size="sm" onClick={() => onBulkRestore?.(selectedIds)}>
                                         Restaurar
-                                    </AsyncButton>
+                                    </Button>
                                 )}
                             </div>
                         )}

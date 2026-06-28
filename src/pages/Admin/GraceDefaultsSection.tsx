@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Shield, ShieldOff } from 'lucide-react';
 import ComponentCard from '../../components/common/ComponentCard';
-import AsyncButton from '../../components/ui/button/AsyncButton';
+
 import Switch from '../../components/form/switch/Switch';
 import { usePeriods } from '../../features/periods/hooks/usePeriods';
 import { usePermissions } from '../../features/permissions/hooks/usePermissions';
@@ -114,15 +114,16 @@ export default function GraceDefaultsSection() {
 
         {canEdit && (
           <div className="flex items-center justify-end pt-2 border-t border-border-light dark:border-border-dark">
-            <AsyncButton
+            <Button
               onClick={handleSave}
               loading={saving}
               disabled={!hasChanges || saving}
               variant="primary"
               startIcon={<Shield className="w-4 h-4" />}
+              loadingText="Guardando..."
             >
               Guardar configuración
-            </AsyncButton>
+            </Button>
           </div>
         )}
       </div>

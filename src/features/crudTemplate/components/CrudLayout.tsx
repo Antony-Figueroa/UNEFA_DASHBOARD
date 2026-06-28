@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import ComponentCard from "../../../components/common/ComponentCard";
 import PageMeta from "../../../components/common/PageMeta";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import { PlusCircleIcon } from "../../../icons/actions";
 import { CrudConfirmDialog, CrudConfirmState } from "./CrudConfirmDialog";
 
@@ -51,9 +51,9 @@ export function CrudLayout({
       <div className="flex items-center justify-between mb-6">
         <PageBreadcrumb pageTitle={breadcrumbLabel ?? title} />
         {primaryActionLabel && onPrimaryAction && (
-          <AsyncButton onClick={onPrimaryAction} className="sm:w-auto" startIcon={<PlusCircleIcon className="w-5 h-5" />}>
+          <Button onClick={onPrimaryAction} className="sm:w-auto" startIcon={<PlusCircleIcon className="w-5 h-5" />} loadingText="Guardando...">
             {primaryActionLabel}
-          </AsyncButton>
+          </Button>
         )}
       </div>
 

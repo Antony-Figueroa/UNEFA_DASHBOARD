@@ -11,7 +11,7 @@ import { Periodo, CreatePeriodPayload, UpdatePeriodPayload, PeriodTypeDate } fro
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import FlatpickrDatePicker from '../../../components/form/FlatpickrDatePicker';
 import Button from '../../../components/ui/button/Button';
-import AsyncButton from '../../../components/ui/button/AsyncButton';
+
 import { getPeriodSchema, PeriodFormData, getLapsoValue } from '../utils/periodValidations';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
@@ -1031,14 +1031,15 @@ export default function PeriodModal({
                     <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
                         Cancelar
                     </Button>
-                    <AsyncButton 
+                    <Button 
                         onClick={handleSubmit(onSubmit)} 
                         loading={isLoading} 
+                        loadingText="Guardando..."
                         disabled={!isValid || (periodo ? !isDirty : false)}
                         className="w-full sm:w-auto min-h-12" 
                     >
                         {periodo ? 'Guardar Cambios' : 'Guardar Período'}
-                    </AsyncButton>
+                    </Button>
                 </div>
             </ModalFooter>
         </Modal>

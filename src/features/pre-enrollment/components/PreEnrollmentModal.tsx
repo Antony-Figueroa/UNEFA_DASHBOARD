@@ -14,7 +14,7 @@ import { cn } from "../../../utils/cn";
 import { PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../types";
 import { InternshipType } from "../../internship-types/types";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import CustomSelect from "../../../components/form/CustomSelect";
 import Badge from "../../../components/ui/badge/Badge";
 import { useToast } from "../../../context/toast";
@@ -1068,15 +1068,16 @@ if (student) {
               <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="flex-1 sm:flex-none h-11 px-8 rounded-xl font-bold">
                 Cancelar
               </Button>
-              <AsyncButton 
+              <Button 
                 type="submit" 
                 form="pre-enrollment-form" 
                 loading={isLoading} 
+                loadingText="Guardando..."
                 className="flex-1 sm:flex-none h-11 px-10 rounded-xl font-bold bg-brand-600 hover:bg-brand-700 transition-all duration-200" 
                 disabled={editingEntry ? !isDirty || !isValid : !isValid}
               >
                 {editingEntry ? "Actualizar Pre-Inscripción" : "Guardar Registro"}
-              </AsyncButton>
+              </Button>
             </div>
           </div>
         </ModalFooter>

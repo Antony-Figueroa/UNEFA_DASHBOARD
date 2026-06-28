@@ -10,7 +10,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
 import Badge from "../../../components/ui/badge/Badge";
 import { Periodo } from "../../periods/types";
@@ -539,14 +538,15 @@ export default function BatchPreEnrollModal({
               <Button variant="outline" onClick={handleClose} className="h-10 px-6 rounded-xl font-bold text-sm">
                 Cancelar
               </Button>
-              <AsyncButton
+              <Button
                 type="submit"
                 form="batch-form"
                 disabled={!isValid}
+                loadingText="Guardando..."
                 className="h-10 px-6 rounded-xl font-bold text-sm bg-brand-600 hover:bg-brand-700"
               >
                 Pre-inscribir {students.length} estudiante(s)
-              </AsyncButton>
+              </Button>
             </div>
           </div>
         )}

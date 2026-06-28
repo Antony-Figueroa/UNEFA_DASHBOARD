@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import { CareerRowData } from "../types";
 import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
 import { CareerIndividualPDF } from "../../../components/ui/pdf/templates/individual";
@@ -130,9 +130,9 @@ export default function CareerViewModal({
           Generar Reporte
         </Button>
         {onEdit && (
-          <AsyncButton onClick={async () => { onEdit(career); onClose(); }} className="flex-1 sm:flex-none">
+          <Button onClick={() => { onEdit(career); onClose(); }} className="flex-1 sm:flex-none">
             Editar Carrera
-          </AsyncButton>
+          </Button>
         )}
       </ModalFooter>
 

@@ -8,7 +8,7 @@ import { useState, useRef, useEffect } from "react";
 
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import { Institution, InstitutionalResponsible } from "../types";
 import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
 import { InstitutionIndividualPDF } from "../../../components/ui/pdf/templates/individual";
@@ -284,9 +284,9 @@ export default function InstitutionViewModal({
                     Generar Reporte
                 </Button>
                 {onEdit && (
-                    <AsyncButton onClick={async () => { onEdit(institution); onClose(); }} className="flex-1 sm:flex-none">
+                    <Button onClick={() => { onEdit(institution); onClose(); }} className="flex-1 sm:flex-none">
                         Editar Información
-                    </AsyncButton>
+                    </Button>
                 )}
             </ModalFooter>
 

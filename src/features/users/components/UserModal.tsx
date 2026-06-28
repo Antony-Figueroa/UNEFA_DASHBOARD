@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
 import Input from "../../../components/form/input/InputField";
 
 import Checkbox from "../../../components/form/input/Checkbox";
@@ -449,15 +448,16 @@ const UserModal: React.FC<UserModalProps> = ({
           >
             Cancelar
           </Button>
-          <AsyncButton 
+          <Button 
             type="submit" 
             form="userForm" 
             loading={isSubmitting}
+            loadingText="Guardando..."
             className="w-full sm:w-auto min-h-12"
             disabled={!isValid || (user ? !isDirty : false)}
           >
             {user ? "Guardar Cambios" : "Guardar Usuario"}
-          </AsyncButton>
+          </Button>
         </div>
       </ModalFooter>
     </Modal>

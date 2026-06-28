@@ -13,7 +13,7 @@ import {
   Student 
 } from "../types";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import CustomSelect from "../../../components/form/CustomSelect";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import { useToast } from "../../../context/toast";
@@ -1434,16 +1434,17 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         </form>
       </ModalBody>
 
-      <ModalFooter className="shrink-0 px-6 sm:px-12 py-4 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark sticky-footer">
+      <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark sticky-footer">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
           {existingStudent ? (
-            <AsyncButton 
+            <Button 
               type="submit" 
               form="student-form" 
               loading={isLoading} 
+              loadingText="Guardando..."
               disabled={!isValid}
               className="w-full sm:w-auto min-h-12 shadow-none"
               onClick={async () => {
@@ -1460,12 +1461,13 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
               }}
             >
               Guardar Cambios
-            </AsyncButton>
+            </Button>
           ) : editingStudent ? (
-            <AsyncButton 
+            <Button 
               type="submit" 
               form="student-form" 
               loading={isLoading} 
+              loadingText="Guardando..."
               disabled={!isDirty}
               className="w-full sm:w-auto min-h-12 shadow-none"
               onClick={async () => {
@@ -1482,12 +1484,13 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
               }}
             >
               Guardar Cambios
-            </AsyncButton>
+            </Button>
           ) : (
-            <AsyncButton 
+            <Button 
               type="submit" 
               form="student-form" 
               loading={isLoading} 
+              loadingText="Guardando..."
               disabled={!isValid}
               className="w-full sm:w-auto min-h-12 shadow-none"
               onClick={async () => {
@@ -1504,7 +1507,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
               }}
             >
               Guardar Estudiante
-            </AsyncButton>
+            </Button>
           )}
         </div>
       </ModalFooter>
@@ -1551,9 +1554,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           <Button variant="outline" onClick={() => setIsValueModalOpen(false)} disabled={savingNewValue} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <AsyncButton 
+          <Button 
             onClick={handleSaveNewValue} 
             loading={savingNewValue} 
+            loadingText="Guardando..."
             className="w-full sm:w-auto min-h-12"
             disabled={
               savingNewValue || (
@@ -1564,7 +1568,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
             }
           >
             Guardar
-          </AsyncButton>
+          </Button>
         </div>
       </ModalFooter>
     </Modal>

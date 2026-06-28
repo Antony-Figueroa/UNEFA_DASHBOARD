@@ -20,7 +20,7 @@ import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import Input from "../../../components/form/input/InputField";
 import CustomSelect from "../../../components/form/CustomSelect";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
@@ -1299,37 +1299,39 @@ onChange={(val) => {
              >
                Cancelar
              </Button>
-             {editingResp ? (
-                <AsyncButton 
-                  variant="primary" 
-                  type="button"
-                  className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-                  loading={isLoading}
-                  disabled={!isValid && !isDirty}  // Habilitar si el formulario es válido O si hay cambios
-                  onClick={() => {
-                    const form = document.querySelector('form');
-                    if (form) {
-                      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                    }
-                  }}
-                >
-                  Guardar Cambios
-                </AsyncButton>
+              {editingResp ? (
+                 <Button 
+                   variant="primary" 
+                   type="button"
+                   className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                   loading={isLoading}
+                   loadingText="Guardando..."
+                   disabled={!isValid && !isDirty}  // Habilitar si el formulario es válido O si hay cambios
+                   onClick={() => {
+                     const form = document.querySelector('form');
+                     if (form) {
+                       form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                     }
+                   }}
+                 >
+                   Guardar Cambios
+                 </Button>
 ) : (
-                <AsyncButton 
-                  variant="primary" 
-                  type="button"
-                  className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-                  loading={isLoading}
-                  disabled={!isValid}
-                    onClick={() => {
-                    handleFormSubmit().catch(err => {
-                      console.error("[InstitutionalResponsibleModal] Error en validación:", err);
-                    });
-                  }}
-                >
-                  Guardar Responsable
-                </AsyncButton>
+                 <Button 
+                   variant="primary" 
+                   type="button"
+                   className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                   loading={isLoading}
+                   loadingText="Guardando..."
+                   disabled={!isValid}
+                     onClick={() => {
+                     handleFormSubmit().catch(err => {
+                       console.error("[InstitutionalResponsibleModal] Error en validación:", err);
+                     });
+                   }}
+                 >
+                   Guardar Responsable
+                 </Button>
               )}
            </div>
         </ModalFooter>
@@ -1415,13 +1417,14 @@ onChange={(val) => {
         >
           Cancelar
         </Button>
-        <AsyncButton
+        <Button
           onClick={handleSaveNewValue}
           loading={savingNewValue}
+          loadingText="Guardando..."
           disabled={!newValueInput.trim()}
         >
           Guardar
-        </AsyncButton>
+        </Button>
       </ModalFooter>
     </Modal>
 

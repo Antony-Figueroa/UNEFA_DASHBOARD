@@ -10,7 +10,7 @@ import { addressService } from "../../address/services/addressService";
 import type { GeoOptionsItem } from "../../address/types";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+
 import Badge from "../../../components/ui/badge/Badge";
 import { TutorRowData } from "../types";
 import { getCareers } from "../../careers/services/careersService";
@@ -259,9 +259,9 @@ export default function TutorViewModal({
                     Constancia
                 </Button>
                 {onEdit && (
-                    <AsyncButton onClick={async () => { onEdit(tutor); onClose(); }} className="flex-1 sm:flex-none">
+                    <Button onClick={() => { onEdit(tutor); onClose(); }} className="flex-1 sm:flex-none">
                         Editar Información
-                    </AsyncButton>
+                    </Button>
                 )}
             </ModalFooter>
 

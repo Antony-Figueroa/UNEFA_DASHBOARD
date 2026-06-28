@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
-import AsyncButton from '../../../components/ui/button/AsyncButton';
+
 import CustomSelect from '../../../components/form/CustomSelect';
 import Input from '../../../components/form/input/InputField';
 import TextArea from '../../../components/form/input/TextArea';
@@ -219,9 +219,9 @@ export default function AddressForm({
       </ModalBody>
       <ModalFooter>
         <Button variant="outline" onClick={onClose}>Cancelar</Button>
-        <AsyncButton onClick={handleSubmit} loading={submitting} disabled={!canSubmit}>
+        <Button onClick={handleSubmit} loading={submitting} disabled={!canSubmit} loadingText="Guardando...">
           {initialData ? 'Actualizar' : 'Agregar'}
-        </AsyncButton>
+        </Button>
       </ModalFooter>
     </Modal>
   );

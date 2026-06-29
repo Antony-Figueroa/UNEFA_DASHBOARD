@@ -236,10 +236,11 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const comiteMembers = [1, 2, 3] as const;
 
   const handleScoreChange = (criteriaId: number, score: number) => {
-    if (score >= scoreRange.min && score <= scoreRange.max) {
+    const rounded = Math.round(score * 10) / 10;
+    if (rounded >= scoreRange.min && rounded <= scoreRange.max) {
       setItemScores(prev => ({
         ...prev,
-        [criteriaId]: score
+        [criteriaId]: rounded
       }));
     }
   };
@@ -514,10 +515,17 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                             type="number"
                             min={scoreRange.min}
                             max={scoreRange.max}
-                            step={scoreStep}
+                            step={0.1}
                             value={itemScores[criterion.criteriaId] ?? midpoint}
                             onFocus={(e) => e.target.select()}
-                            onChange={(e) => handleScoreChange(criterion.criteriaId, parseFloat(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '') {
+                                handleScoreChange(criteriaId, 0);
+                              } else {
+                                handleScoreChange(criteriaId, parseFloat(val) || 0);
+                              }
+                            }}
                             className={`w-14 px-2 py-1 text-center border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white ${getScoreInputClass(criterion.criteriaId)}`}
                           />
                           <span className="text-xs text-gray-400">/{scoreRange.max}</span>

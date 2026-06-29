@@ -45,13 +45,18 @@ interface EvaluationModalProps {
   onClose: () => void;
   practiceId: number;
   evaluatorType: EvaluatorType;
-  /** Si se proporciona, el modal carga la evaluación existente y al guardar hace PUT */
   evaluationId?: number | null;
-  /** Miembros existentes del comité para auto-seleccionar el próximo slot */
   existingComiteMembers?: ComiteMemberInfo[];
-  /** Pre-asignaciones del comité para auto-completar nombre/CI al crear evaluación COMITE */
   committeeAssignments?: { memberIndex: number; evaluatorName: string; evaluatorCi?: string }[];
   onSuccess: () => void;
+}
+
+interface ComiteMemberData {
+  evaluationId?: number;
+  evaluatorName: string;
+  evaluatorCi: string;
+  observations: string;
+  scores: Record<number, number>;
 }
 
 export const EvaluationModal: React.FC<EvaluationModalProps> = ({
@@ -70,13 +75,15 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const midpoint = scoreRange.min + Math.floor((scoreRange.max - scoreRange.min) / 2);
   const scoreStep = 0.5;
   const [itemScores, setItemScores] = useState<Record<number, number>>({});
-  const [comiteMemberIndex, setComiteMemberIndex] = useState<1 | 2 | 3 | null>(null);
+  const [comiteData, setComiteData] = useState<Record<number, ComiteMemberData>>({});
+  const [activeMember, setActiveMember] = useState<1 | 2 | 3>(1);
   const [criteriaLoaded, setCriteriaLoaded] = useState<EvaluationCriteria[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [existingData, setExistingData] = useState<EvaluationWithDetails | null>(null);
   const [initialLoading, setInitialLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const isEditing = !!evaluationId;
+  const isComiteMode = evaluatorType === 'COMITE';
+  const isEditing = !isComiteMode && !!evaluationId;
   const isTutorEvaluator = evaluatorType !== 'COMITE';
 
   // Buscar reemplazo de evaluador
@@ -99,6 +106,13 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const handleSelectPerson = (p: { firstName: string; lastName: string; ci: string }) => {
     setValue('evaluatorName', [p.firstName, p.lastName].filter(Boolean).join(' ').trim());
     setValue('evaluatorCi', p.ci || '');
+    // Persist in comiteData
+    if (isComiteMode) {
+      setComiteData(prev => ({
+        ...prev,
+        [activeMember]: { ...prev[activeMember], evaluatorName: p.firstName + ' ' + p.lastName, evaluatorCi: p.ci || '' }
+      }));
+    }
     setSearchOpen(false);
     setSearchQuery('');
     setSearchResults([]);
@@ -109,6 +123,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     handleSubmit,
     reset,
     setValue,
+    getValues,
     formState: { errors }
   } = useForm<FormData>({
     // Safe: schema validates at runtime, resolver type mismatch is a known @hookform/resolvers × Zod quirk
@@ -121,48 +136,83 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     }
   });
 
-  // Auto-seleccionar próximo miembro del comité disponible
+  // ── Inicializar comiteData al abrir el modal ──
   useEffect(() => {
-    if (!isOpen || evaluatorType !== 'COMITE' || isEditing) return;
-    const existing = existingComiteMembers;
-    const used = new Set(existing.map(m => m.memberIndex));
-    const next = ([1, 2, 3] as const).find(idx => !used.has(idx)) || null;
-    setComiteMemberIndex(next);
-  }, [isOpen, evaluatorType, isEditing, existingComiteMembers]);
-
-  // Cargar datos del evaluador cuando se abre el modal
-  useEffect(() => {
-    if (!isOpen || isEditing) return;
-
-    if (evaluatorType === 'COMITE') {
-      // Auto-completar desde pre-asignación si existe
-      const assignment = comiteMemberIndex
-        ? committeeAssignments.find(a => a.memberIndex === comiteMemberIndex)
-        : null;
-      if (assignment) {
-        setValue('evaluatorName', assignment.evaluatorName);
-        setValue('evaluatorCi', assignment.evaluatorCi || '');
+    if (!isOpen) return;
+    if (isComiteMode) {
+      const init: Record<number, ComiteMemberData> = {};
+      for (const idx of [1, 2, 3] as const) {
+        const existing = existingComiteMembers.find(m => m.memberIndex === idx);
+        const assignment = committeeAssignments.find(a => a.memberIndex === idx);
+        init[idx] = {
+          evaluationId: existing?.evaluationId,
+          evaluatorName: existing?.evaluatorName || assignment?.evaluatorName || '',
+          evaluatorCi: assignment?.evaluatorCi || '',
+          observations: '',
+          scores: {},
+        };
       }
+      setComiteData(init);
+      // Auto-seleccionar primer miembro vacío, o el 1 si todos están llenos
+      const used = new Set(existingComiteMembers.map(m => m.memberIndex));
+      const firstEmpty = ([1, 2, 3] as const).find(idx => !used.has(idx));
+      setActiveMember(firstEmpty || 1);
+    }
+  }, [isOpen]); // solo al abrir
+
+  // ── Cuando cambia activeMember, cargar sus datos en el form ──
+  useEffect(() => {
+    if (!isOpen || !isComiteMode) return;
+    const member = comiteData[activeMember];
+    if (!member) return;
+
+    // Si tiene evaluationId pero scores vacíos, cargar desde API
+    if (member.evaluationId && Object.keys(member.scores).length === 0) {
+      loadMemberEvaluation(activeMember, member.evaluationId);
       return;
     }
 
-    let cancelled = false;
+    // Sincronizar form con los datos del miembro
+    setValue('evaluatorName', member.evaluatorName);
+    setValue('evaluatorCi', member.evaluatorCi);
+    setValue('observations', member.observations);
+    setItemScores(member.scores);
+    // NO hacer setDataLoaded(true) aquí — dejamos que el effect de criteria
+    // inicialice los scores con midpoint si están vacíos
+  }, [isOpen, isComiteMode, activeMember, comiteData]);
 
-    evaluationService.getPracticeTutorInfo(practiceId, evaluatorType)
-      .then((tutorData) => {
-        if (cancelled) return;
-        if (tutorData) {
-          setValue('evaluatorName', tutorData.name);
-          setValue('evaluatorCi', tutorData.ci);
+  const loadMemberEvaluation = async (memberIdx: number, evalId: number) => {
+    setInitialLoading(true);
+    try {
+      const data = await evaluationService.getEvaluationById(evalId);
+      const scores: Record<number, number> = {};
+      if (data.items) {
+        data.items.forEach(item => { scores[item.criteriaId] = item.score; });
+      }
+
+      setComiteData(prev => ({
+        ...prev,
+        [memberIdx]: {
+          ...prev[memberIdx],
+          evaluatorName: data.evaluatorName || '',
+          evaluatorCi: data.evaluatorCi || '',
+          observations: data.observations || '',
+          scores,
         }
-      })
-      .catch(() => {/* silent fail */})
-      .finally(() => { /* no-op */ });
+      }));
 
-    return () => { cancelled = true; };
-  }, [isOpen, evaluatorType, practiceId, isTutorEvaluator, comiteMemberIndex, committeeAssignments]);
+      setValue('evaluatorName', data.evaluatorName || '');
+      setValue('evaluatorCi', data.evaluatorCi || '');
+      setValue('observations', data.observations || '');
+      setItemScores(scores);
+    } catch (error) {
+      console.error('[EvaluationModal] Error loading member evaluation:', error);
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
-  // Cargar criterios y datos existentes cuando se abre el modal
+  // Cargar criterios cuando se abre
   useEffect(() => {
     if (isOpen && evaluatorType) {
       setDataLoaded(false);
@@ -171,25 +221,34 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     }
   }, [isOpen, evaluatorType, fetchCriteria]);
 
-  // Cargar datos existentes si es edición
+  // Cargar evaluación existente (no comité)
   useEffect(() => {
-    if (isOpen && evaluationId && criteria.length > 0 && !dataLoaded) {
+    if (isOpen && evaluationId && criteria.length > 0 && !dataLoaded && !isComiteMode) {
       loadExistingEvaluation(evaluationId);
     }
-  }, [isOpen, evaluationId, criteria, dataLoaded]);
+  }, [isOpen, evaluationId, criteria, dataLoaded, isComiteMode]);
 
-  // Inicializar scores cuando se cargan criterios (o datos existentes)
+  // Inicializar scores para el miembro activo en comité, o para creación normal
   useEffect(() => {
-    if (criteria.length > 0 && !dataLoaded && !evaluationId) {
-      // Create mode: inicializar con midpoint
-      setCriteriaLoaded(criteria);
-      const initialScores: Record<number, number> = {};
-      criteria.forEach(c => {
-        initialScores[c.criteriaId] = midpoint;
-      });
-      setItemScores(initialScores);
+    if (criteria.length === 0 || dataLoaded) return;
+    setCriteriaLoaded(criteria);
+
+    if (isComiteMode) {
+      const member = comiteData[activeMember];
+      // Solo inicializar si el miembro no tiene scores cargados
+      if (!member || Object.keys(member.scores).length > 0) {
+        // Ya tiene datos cargados — marcar como listo sin sobrescribir
+        setDataLoaded(true);
+        return;
+      }
     }
-  }, [criteria, dataLoaded, evaluationId]);
+
+    // Crear scores iniciales con midpoint
+    const initial: Record<number, number> = {};
+    criteria.forEach(c => { initial[c.criteriaId] = midpoint; });
+    setItemScores(initial);
+    setDataLoaded(true);
+  }, [criteria, dataLoaded, evaluationId, isComiteMode, activeMember, comiteData]);
 
   const loadExistingEvaluation = async (id: number) => {
     setInitialLoading(true);
@@ -197,34 +256,18 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       const data = await evaluationService.getEvaluationById(id);
       setExistingData(data);
 
-      // Poblar el formulario
       setValue('evaluatorName', data.evaluatorName || '');
       setValue('evaluatorCi', data.evaluatorCi || '');
       setValue('observations', data.observations || '');
 
-      // Restaurar comiteMemberIndex si es COMITE
-      if (data.comiteMemberIndex) {
-        setComiteMemberIndex(data.comiteMemberIndex as 1 | 2 | 3);
-      }
-
-      // Poblar scores desde los items existentes
       if (data.items && data.items.length > 0) {
         const scores: Record<number, number> = {};
-        data.items.forEach(item => {
-          scores[item.criteriaId] = item.score;
-        });
+        data.items.forEach(item => { scores[item.criteriaId] = item.score; });
         setItemScores(scores);
-
-        // También asegurar que los criterios tengan descripciones
-        const mergedCriteria = criteria.map(c => {
-          const existingItem = data.items.find(i => i.criteriaId === c.criteriaId);
-          return existingItem ? { ...c, criteriaId: existingItem.criteriaId } : c;
-        });
-        setCriteriaLoaded(criteria); // los criterios ya vienen con description
+        setCriteriaLoaded(criteria);
       } else {
         setCriteriaLoaded(criteria);
       }
-
       setDataLoaded(true);
     } catch (error) {
       console.error('[EvaluationModal] Error loading evaluation:', error);
@@ -242,7 +285,34 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
         ...prev,
         [criteriaId]: rounded
       }));
+      // Persistir en comiteData si es modo comité
+      if (isComiteMode) {
+        setComiteData(prev => ({
+          ...prev,
+          [activeMember]: { ...prev[activeMember], scores: { ...prev[activeMember]?.scores, [criteriaId]: rounded } }
+        }));
+      }
     }
+  };
+
+  const switchMember = (idx: 1 | 2 | 3) => {
+    // Guardar datos del miembro actual antes de cambiar
+    if (isComiteMode) {
+      const current = getValues();
+      setComiteData(prev => ({
+        ...prev,
+        [activeMember]: {
+          ...prev[activeMember],
+          evaluatorName: current.evaluatorName,
+          evaluatorCi: current.evaluatorCi || '',
+          observations: current.observations || '',
+          scores: itemScores,
+        }
+      }));
+    }
+    setConfirmed(false);
+    setDataLoaded(false);
+    setActiveMember(idx);
   };
 
   const onSubmit = async (formData: FormData) => {
@@ -261,25 +331,33 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       items
     };
 
-    if (evaluatorType === 'COMITE' && comiteMemberIndex) {
-      payload.comiteMemberIndex = comiteMemberIndex;
+    if (isComiteMode) {
+      payload.comiteMemberIndex = activeMember;
     }
 
     let result;
-    if (isEditing && evaluationId) {
-      result = await updateEvaluation(evaluationId, payload);
+    const targetEvalId = isComiteMode ? comiteData[activeMember]?.evaluationId : evaluationId;
+    if (targetEvalId) {
+      result = await updateEvaluation(targetEvalId, payload);
     } else {
       result = await createEvaluation(payload);
     }
 
     if (result) {
-      if (evaluatorType === 'COMITE' && !isEditing) {
-        // COMITE create: mantener modal abierto para cargar el próximo miembro
-        reset();
-        setExistingData(null);
-        setDataLoaded(false);
-        setItemScores({});
-        setCriteriaLoaded([]);
+      if (isComiteMode) {
+        // Actualizar comiteData con el resultado
+        setComiteData(prev => ({
+          ...prev,
+          [activeMember]: {
+            ...prev[activeMember],
+            evaluationId: result.evaluationId || prev[activeMember]?.evaluationId,
+            evaluatorName: formData.evaluatorName,
+            evaluatorCi: formData.evaluatorCi || '',
+            observations: formData.observations || '',
+            scores: itemScores,
+          }
+        }));
+        // Resetear confirmación para el próximo guardado
         setConfirmed(false);
         onSuccess();
       } else {
@@ -298,6 +376,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     setItemScores({});
     setCriteriaLoaded([]);
     setConfirmed(false);
+    setComiteData({});
+    setActiveMember(1);
     onClose();
   };
 
@@ -318,13 +398,16 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   };
 
   const committeeMin = config.committeeMinMembers ?? 3;
-  const isCommitteeFull = evaluatorType === 'COMITE' && !isEditing && existingComiteMembers.length >= committeeMin && comiteMemberIndex === null;
 
-  const modalTitle = isEditing
-    ? `Editar ${EVALUATOR_TYPE_LABELS[evaluatorType]}`
-    : `Nueva ${EVALUATOR_TYPE_LABELS[evaluatorType]}`;
+  const modalTitle = isComiteMode
+    ? `Miembro #${activeMember} - Comité Evaluador`
+    : isEditing
+      ? `Editar ${EVALUATOR_TYPE_LABELS[evaluatorType]}`
+      : `Nueva ${EVALUATOR_TYPE_LABELS[evaluatorType]}`;
 
-  const submitLabel = isCommitteeFull ? 'Cerrar' : isEditing ? 'Guardar Cambios' : 'Guardar Evaluación';
+  const submitLabel = isComiteMode
+    ? comiteData[activeMember]?.evaluationId ? 'Actualizar Miembro' : 'Guardar Miembro'
+    : isEditing ? 'Guardar Cambios' : 'Guardar Evaluación';
 
   return (
     <>
@@ -364,7 +447,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 </div>
               </div>
             )}
-            {evaluatorType === 'COMITE' && !isEditing && (
+
+            {isComiteMode && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Miembro del Comité *
@@ -398,18 +482,17 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                       <button
                         key={idx}
                         type="button"
-                        disabled={isUsed}
-                        onClick={() => !isUsed && setComiteMemberIndex(idx)}
+                        onClick={() => switchMember(idx)}
                         className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border-2 transition-all ${
-                          comiteMemberIndex === idx
+                          activeMember === idx
                             ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 shadow-sm'
                             : isUsed
-                              ? 'border-green-200 dark:border-green-800/40 bg-green-50 dark:bg-green-900/20 text-green-500 dark:text-green-400 cursor-default'
-                              : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500'
+                              ? 'border-green-200 dark:border-green-800/40 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-800/30 cursor-pointer'
+                              : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500 cursor-pointer'
                         }`}
-                        title={isUsed ? `Ya evaluado por ${existing.evaluatorName}` : `Cargar miembro #${idx}`}
+                        title={isUsed ? `Editar evaluación de ${existing.evaluatorName}` : `Cargar miembro #${idx}`}
                       >
-                        {isUsed ? `✅ #${idx}` : `Miembro #${idx}`}
+                        {isUsed ? `✅ Miembro #${idx}` : `Miembro #${idx}`}
                       </button>
                     );
                   })}
@@ -425,7 +508,16 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    {...register('evaluatorName')}
+                    {...register('evaluatorName', {
+                      onChange: (e) => {
+                        if (isComiteMode) {
+                          setComiteData(prev => ({
+                            ...prev,
+                            [activeMember]: { ...prev[activeMember], evaluatorName: e.target.value }
+                          }));
+                        }
+                      }
+                    })}
                     className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
                     placeholder="Nombre del evaluador"
                   />
@@ -521,9 +613,9 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                             onChange={(e) => {
                               const val = e.target.value;
                               if (val === '') {
-                                handleScoreChange(criteriaId, 0);
+                                handleScoreChange(criterion.criteriaId, 0);
                               } else {
-                                handleScoreChange(criteriaId, parseFloat(val) || 0);
+                                handleScoreChange(criterion.criteriaId, parseFloat(val) || 0);
                               }
                             }}
                             className={`w-14 px-2 py-1 text-center border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white ${getScoreInputClass(criterion.criteriaId)}`}
@@ -567,24 +659,14 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
             >
               Cancelar
             </Button>
-            {isCommitteeFull ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-              >
-                Cerrar
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={loading || criteriaLoaded.length === 0 || !confirmed}
-                loading={loading}
-                loadingText="Guardando..."
-              >
-                {submitLabel}
-              </Button>
-            )}
+            <Button
+              type="submit"
+              disabled={loading || criteriaLoaded.length === 0 || !confirmed}
+              loading={loading}
+              loadingText="Guardando..."
+            >
+              {submitLabel}
+            </Button>
           </ModalFooter>
         </form>
       )}

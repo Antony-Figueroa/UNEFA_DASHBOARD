@@ -21,6 +21,12 @@ export interface CulminationRecord {
 
 // --- New grouped types ---
 
+export interface ReversalInfo {
+  reason: string;
+  resolutionNumber: string;
+  createdAt: string;
+}
+
 export interface CulminationPractice {
   id: string;
   practiceType: string;
@@ -34,6 +40,7 @@ export interface CulminationPractice {
   culminationStatus: 'pending' | 'approved' | 'certified';
   certificateNumber?: string;
   certifiedAt?: string;
+  reversal?: ReversalInfo;
 }
 
 export interface CulminationGroup {
@@ -71,6 +78,11 @@ export interface CertificateResponse {
   };
 }
 
+export interface ReversalPayload {
+  reason: string;
+  resolutionNumber: string;
+}
+
 export const culminationService = {
   getAll: (params?: { status?: string; period?: string; search?: string }) =>
     apiClient.get<CulminationResponse>('/api/culmination', { params }).then(r => r.data),
@@ -80,6 +92,9 @@ export const culminationService = {
 
   generateCertificate: (practiceId: string) =>
     apiClient.post<CertificateResponse>(`/api/culmination/${practiceId}/certificate`).then(r => r.data),
+
+  reverse: (practiceId: string, payload: ReversalPayload) =>
+    apiClient.post(`/api/culmination/${practiceId}/reverse`, payload).then(r => r.data),
 };
 
 export default culminationService;

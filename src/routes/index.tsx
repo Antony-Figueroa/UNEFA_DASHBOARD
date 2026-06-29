@@ -24,6 +24,7 @@ const Backups = lazy(() => import("../pages/Config/sections/system/BackupsPage")
 const LandingConfigPage = lazy(() => import("../pages/Config/sections/customize/LandingPage"));
 const ReminderConfigPage = lazy(() => import("../pages/Config/sections/customize/RemindersPage"));
 const OrganizationConfig = lazy(() => import("../pages/Config/sections/system/OrganizationPage"));
+const EvaluationConfigPage = lazy(() => import("../pages/Config/sections/system/EvaluationConfigPage"));
 
 const DashboardConfigurator = lazy(() => import("../pages/Config/sections/customize/DashboardPage"));
 const NotificationsPage = lazy(() => import("../pages/Notifications/NotificationsPage"));
@@ -351,6 +352,14 @@ export const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredPermissions={['config:view']}>
                   <OrganizationConfig />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configure/evaluacion"
+              element={
+                <ProtectedRoute requiredPermissions={['evaluations:view']}>
+                  <EvaluationConfigPage />
                 </ProtectedRoute>
               }
             />

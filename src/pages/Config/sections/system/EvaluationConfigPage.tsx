@@ -1,0 +1,372 @@
+import { useState, useEffect } from "react";
+import { useConfirmDialog } from "../../../../hooks/useConfirmDialog";
+import PageMeta from "../../../../components/common/PageMeta";
+import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
+import ComponentCard from "../../../../components/common/ComponentCard";
+import Button from "../../../../components/ui/button/Button";
+import Badge from "../../../../components/ui/badge/Badge";
+import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
+import toast from "react-hot-toast";
+import apiClient from "../../../../api/apiClient";
+import ConfigLayout from "../../ConfigLayout";
+import type { SystemEvaluationConfig } from "../../../../features/evaluations/types";
+
+const WEIGHT_FIELDS = [
+  { key: 'INSTITUCIONAL' as const, label: 'Institucional', description: 'Peso de la evaluación institucional en la nota final' },
+  { key: 'ACADEMICO' as const, label: 'Académico', description: 'Peso de la evaluación académica en la nota final' },
+  { key: 'COMITE' as const, label: 'Comité', description: 'Peso de la evaluación del comité en la nota final' },
+];
+
+export default function EvaluationConfigPage() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [config, setConfig] = useState<SystemEvaluationConfig | null>(null);
+  const [local, setLocal] = useState<SystemEvaluationConfig | null>(null);
+  const { confirmDialog, showConfirm, hideConfirm } = useConfirmDialog();
+
+  const hasChanges = local !== null && config !== null &&
+    JSON.stringify(local) !== JSON.stringify(config);
+
+  const fetchConfig = async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get('/evaluations/system-config');
+      const data = res.data?.data ?? res.data as SystemEvaluationConfig;
+      setConfig(data);
+      setLocal({ ...data });
+    } catch {
+      toast.error('Error al cargar configuración de evaluación');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  const updateWeight = (key: string, value: number) => {
+    if (!local) return;
+    setLocal({
+      ...local,
+      weights: { ...local.weights, [key]: Math.max(0, Math.min(1, value)) },
+    });
+  };
+
+  const updateScore = (key: string, value: number) => {
+    if (!local) return;
+    setLocal({
+      ...local,
+      score: { ...local.score, [key]: value },
+    });
+  };
+
+  const updateField = (key: string, value: number) => {
+    if (!local) return;
+    setLocal({ ...local, [key]: value });
+  };
+
+  const weightsTotal = local
+    ? (local.weights['INSTITUCIONAL'] ?? 0) +
+      (local.weights['ACADEMICO'] ?? 0) +
+      (local.weights['COMITE'] ?? 0)
+    : 0;
+  const weightsValid = Math.abs(weightsTotal - 1) <= 0.01;
+
+  const handleSave = () => {
+    showConfirm({
+      title: "Guardar Configuración",
+      message: "¿Estás seguro de guardar los cambios en la configuración de evaluación?",
+      onConfirm: async () => {
+        if (!local) return;
+        try {
+          setSaving(true);
+          const res = await apiClient.put('/evaluations/system-config', {
+            weights: local.weights,
+            score: local.score,
+            committeeMinMembers: local.committeeMinMembers,
+          });
+          const updated = res.data?.data ?? res.data as SystemEvaluationConfig;
+          setConfig(updated);
+          setLocal({ ...updated });
+          toast.success('Configuración guardada correctamente');
+        } catch (err: any) {
+          const msg = err.response?.data?.message || 'Error al guardar configuración';
+          toast.error(msg);
+        } finally {
+          setSaving(false);
+          hideConfirm();
+        }
+      },
+      variant: "info",
+    });
+  };
+
+  const handleReset = () => {
+    showConfirm({
+      title: "Restaurar Valores",
+      message: "¿Estás seguro de restaurar los valores? Los cambios no guardados se perderán.",
+      onConfirm: () => {
+        if (config) setLocal({ ...config });
+        hideConfirm();
+      },
+      variant: "warning",
+    });
+  };
+
+  if (loading) {
+    return (
+      <ConfigLayout>
+        <PageMeta title="Configuración de Evaluación" description="Configuración del sistema de evaluación" />
+        <PageBreadcrumb pageTitle="Configuración de Evaluación" />
+        <div className="space-y-4 animate-fadeIn">
+          <ComponentCard title="Cargando...">
+            <div className="space-y-4 animate-pulse">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-4 rounded-lg border border-border-light dark:border-white/10">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2"></div>
+                  <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </div>
+              ))}
+            </div>
+          </ComponentCard>
+        </div>
+      </ConfigLayout>
+    );
+  }
+
+  if (!local) return null;
+
+  return (
+    <ConfigLayout>
+      <PageMeta title="Configuración de Evaluación" description="Configuración del sistema de evaluación académica" />
+      <PageBreadcrumb pageTitle="Configuración de Evaluación" />
+
+      <div className="space-y-6 animate-fadeIn">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
+              Evaluación
+            </h1>
+            <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
+              Pesos, puntuación y reglas del sistema de evaluación de prácticas profesionales
+            </p>
+          </div>
+          {hasChanges && (
+            <div className="flex items-center gap-3">
+              <Badge color="warning" variant="light" shape="rounded">
+                Cambios sin guardar
+              </Badge>
+              <Button variant="outline" onClick={handleReset} disabled={saving}>
+                Descartar
+              </Button>
+              <Button onClick={handleSave} disabled={saving || !weightsValid}>
+                {saving ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Pesos */}
+        <ComponentCard title="Ponderaciones">
+          <p className="text-xs text-text-tertiary mb-4">
+            Porcentaje que aporta cada evaluador a la nota final. Deben sumar 100%.
+          </p>
+          <div className="space-y-4">
+            {WEIGHT_FIELDS.map(({ key, label, description }) => (
+              <div
+                key={key}
+                className={`p-4 rounded-lg border transition-colors ${
+                  local.weights[key] !== config?.weights[key]
+                    ? 'border-brand-300 bg-brand-50/30 dark:bg-brand-500/5'
+                    : 'border-border-light dark:border-white/10'
+                }`}
+              >
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-text-primary dark:text-text-emphasis">
+                        {label}
+                      </label>
+                      {local.weights[key] !== config?.weights[key] && (
+                        <span className="text-[10px] font-medium text-brand-600 dark:text-brand-400">(modificado)</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-text-tertiary mt-0.5">{description}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={Math.round(local.weights[key] * 100)}
+                      onChange={(e) => updateWeight(key, parseInt(e.target.value) / 100)}
+                      className="w-32 h-2 rounded-full appearance-none cursor-pointer accent-brand-500"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={Math.round(local.weights[key] * 100)}
+                      onChange={(e) => updateWeight(key, (parseInt(e.target.value) || 0) / 100)}
+                      className="w-20 px-2 py-1.5 text-sm text-center rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                    />
+                    <span className="text-sm text-text-tertiary w-6">%</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Suma total */}
+            <div className={`flex items-center justify-end gap-2 text-sm ${
+              weightsValid ? 'text-green-600 dark:text-green-400' : 'text-red-500'
+            }`}>
+              <span>Total:</span>
+              <span className="font-semibold">{(weightsTotal * 100).toFixed(0)}%</span>
+              {!weightsValid && (
+                <span className="text-xs">— debe sumar 100%</span>
+              )}
+            </div>
+          </div>
+        </ComponentCard>
+
+        {/* Puntuación */}
+        <ComponentCard title="Rango de Puntuación">
+          <p className="text-xs text-text-tertiary mb-4">
+            Valores mínimo y máximo para las evaluaciones, y escala de visualización de la nota final.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <ScoreInput
+              label="Puntaje mínimo"
+              value={local.score.min}
+              onChange={(v) => updateScore('min', v)}
+              changed={local.score.min !== config?.score.min}
+            />
+            <ScoreInput
+              label="Puntaje máximo"
+              value={local.score.max}
+              onChange={(v) => updateScore('max', v)}
+              changed={local.score.max !== config?.score.max}
+            />
+            <ScoreInput
+              label="Escala de visualización"
+              description="La nota final se escala a este valor (ej: 20)"
+              value={local.score.displayScale}
+              onChange={(v) => updateScore('displayScale', v)}
+              changed={local.score.displayScale !== config?.score.displayScale}
+            />
+          </div>
+        </ComponentCard>
+
+        {/* Comité */}
+        <ComponentCard title="Comité Evaluador">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`p-4 rounded-lg border transition-colors ${
+              local.committeeMinMembers !== config?.committeeMinMembers
+                ? 'border-brand-300 bg-brand-50/30 dark:bg-brand-500/5'
+                : 'border-border-light dark:border-white/10'
+            }`}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-text-primary dark:text-text-emphasis">
+                      Miembros mínimos del comité
+                    </label>
+                    {local.committeeMinMembers !== config?.committeeMinMembers && (
+                      <span className="text-[10px] font-medium text-brand-600 dark:text-brand-400">(modificado)</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-text-tertiary mt-0.5">
+                    Cantidad de miembros necesarios para considerar completo el comité evaluador
+                  </p>
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={local.committeeMinMembers ?? 3}
+                  onChange={(e) => updateField('committeeMinMembers', parseInt(e.target.value) || 3)}
+                  className="w-24 px-3 py-2 text-sm text-center rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                />
+              </div>
+            </div>
+          </div>
+        </ComponentCard>
+
+        {/* ⚠️ Nota sobre cambios que afectan evaluaciones existentes */}
+        <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+          <div className="flex gap-3">
+            <svg className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Las ponderaciones, el rango de puntuación y la escala de visualización
+                <strong> no se pueden modificar</strong> si ya existen evaluaciones registradas.
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                Los miembros mínimos del comité se pueden cambiar en cualquier momento.
+                Si necesitás cambiar los pesos o puntajes, creá un nuevo período académico.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <UnifiedDialog
+        isOpen={!!confirmDialog}
+        onClose={hideConfirm}
+        onConfirm={confirmDialog?.onConfirm || (() => {})}
+        title={confirmDialog?.title || ""}
+        message={confirmDialog?.message || ""}
+        confirmLabel="Confirmar"
+        variant={confirmDialog?.variant || "info"}
+      />
+    </ConfigLayout>
+  );
+}
+
+// ── Sub-componente helper ─────────────────────────────────────────────────
+function ScoreInput({
+  label,
+  description,
+  value,
+  onChange,
+  changed,
+}: {
+  label: string;
+  description?: string;
+  value: number;
+  onChange: (v: number) => void;
+  changed: boolean;
+}) {
+  return (
+    <div className={`p-4 rounded-lg border transition-colors ${
+      changed
+        ? 'border-brand-300 bg-brand-50/30 dark:bg-brand-500/5'
+        : 'border-border-light dark:border-white/10'
+    }`}>
+      <div className="flex items-center gap-2 mb-1">
+        <label className="text-sm font-medium text-text-primary dark:text-text-emphasis">
+          {label}
+        </label>
+        {changed && (
+          <span className="text-[10px] font-medium text-brand-600 dark:text-brand-400">(modificado)</span>
+        )}
+      </div>
+      {description && (
+        <p className="text-xs text-text-tertiary mb-2">{description}</p>
+      )}
+      <input
+        type="number"
+        min="0"
+        max="100"
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+        className="w-full px-3 py-2 text-sm rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+      />
+    </div>
+  );
+}

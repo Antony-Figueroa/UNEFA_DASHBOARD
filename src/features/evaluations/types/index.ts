@@ -90,6 +90,9 @@ export interface EvaluationStatus {
   finalGrade: string;
   completedCount: number;
   canEvaluate: boolean;
+  practicesStatus?: number;
+  sequentialBlocked?: boolean;
+  extensionGranted?: boolean;
   periodMessage: string;
 }
 
@@ -104,6 +107,13 @@ export interface SystemEvaluationConfig {
     displayScale: number;
   };
   weights: Record<string, number>;
+  committeeMinMembers?: number;
+}
+
+export interface CommitteeAssignment {
+  memberIndex: number;
+  evaluatorName: string;
+  evaluatorCi?: string;
 }
 
 /**
@@ -113,7 +123,8 @@ export interface SystemEvaluationConfig {
 /** @deprecated Los valores reales vienen del backend via GET /api/evaluations/system-config */
 export const DEFAULT_EVALUATION_CONFIG: SystemEvaluationConfig = {
   score: { min: 1, max: 10, displayScale: 20 },
-  weights: { INSTITUCIONAL: 0.40, ACADEMICO: 0.30, COMITE: 0.30 }
+  weights: { INSTITUCIONAL: 0.40, ACADEMICO: 0.30, COMITE: 0.30 },
+  committeeMinMembers: 3,
 };
 
 /** @deprecated Usar SystemEvaluationConfig.weights del backend via useSystemEvaluationConfig hook */

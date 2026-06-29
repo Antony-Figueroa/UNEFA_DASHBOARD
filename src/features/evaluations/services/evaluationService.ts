@@ -6,7 +6,8 @@ import {
   EvaluationStatus,
   CreateEvaluationPayload,
   UpdateEvaluationPayload,
-  EvaluatorType
+  EvaluatorType,
+  CommitteeAssignment
 } from '../types';
 
 const API_URL = '/evaluations';
@@ -15,6 +16,7 @@ interface ApiEvaluation {
   evaluationId: number;
   professionalPracticeId: number;
   evaluatorType: EvaluatorType;
+  comiteMemberIndex?: number;
   evaluatorId?: number;
   evaluatorName: string;
   evaluatorCi?: string;
@@ -35,6 +37,7 @@ const fromApi = (data: ApiEvaluation): Evaluation => ({
   evaluationId: data.evaluationId,
   professionalPracticeId: data.professionalPracticeId,
   evaluatorType: data.evaluatorType,
+  comiteMemberIndex: data.comiteMemberIndex,
   evaluatorId: data.evaluatorId,
   evaluatorName: data.evaluatorName,
   evaluatorCi: data.evaluatorCi,
@@ -157,6 +160,69 @@ export const evaluationService = {
       return response.data.data || {};
     } catch (error) {
       console.error('[evaluationService] Error getting batch status:', error);
+      throw error;
+    }
+  },
+
+  freezeBatch: async (practiceIds: number[]): Promise<{ frozenCount: number }> => {
+    try {
+      const response = await apiClient.post<{ success: boolean; data: { frozenCount: number } }>(
+        `${API_URL}/freeze`,
+        { practiceIds }
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error('[evaluationService] Error freezing evaluations:', error);
+      throw error;
+    }
+  },
+
+  unfreeze: async (evaluationId: number, reason: string): Promise<void> => {
+    try {
+      await apiClient.post(`${API_URL}/${evaluationId}/unfreeze`, { reason });
+    } catch (error) {
+      console.error('[evaluationService] Error unfreezing evaluation:', error);
+      throw error;
+    }
+  },
+
+  unfreezePractice: async (practiceId: number, reason: string): Promise<void> => {
+    try {
+      await apiClient.post(`${API_URL}/unfreeze-practice`, { practiceId, reason });
+    } catch (error) {
+      console.error('[evaluationService] Error unfreezing practice:', error);
+      throw error;
+    }
+  },
+
+  grantExtension: async (practiceId: number, reason: string): Promise<void> => {
+    await apiClient.post(`${API_URL}/${practiceId}/grant-extension`, { reason });
+  },
+
+  revokeExtension: async (practiceId: number, reason: string): Promise<void> => {
+    await apiClient.post(`${API_URL}/${practiceId}/revoke-extension`, { reason });
+  },
+
+  getCommitteeAssignments: async (practiceId: number): Promise<CommitteeAssignment[]> => {
+    try {
+      const response = await apiClient.get<{ success: boolean; data: CommitteeAssignment[] }>(
+        `/committee-assignments/${practiceId}`
+      );
+      return response.data.data || [];
+    } catch (error) {
+      console.error('[evaluationService] Error getting committee assignments:', error);
+      throw error;
+    }
+  },
+
+  upsertCommitteeAssignments: async (
+    practiceId: number,
+    members: { memberIndex: number; evaluatorName: string; evaluatorCi?: string }[]
+  ): Promise<void> => {
+    try {
+      await apiClient.post('/committee-assignments', { practiceId, members });
+    } catch (error) {
+      console.error('[evaluationService] Error upserting committee assignments:', error);
       throw error;
     }
   }

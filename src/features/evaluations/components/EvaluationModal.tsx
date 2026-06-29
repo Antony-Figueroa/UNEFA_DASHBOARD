@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +15,8 @@ import { useEvaluations } from '../hooks/useEvaluations';
 import { useSystemEvaluationConfig } from '../hooks/useSystemEvaluationConfig';
 import { evaluationService } from '../services/evaluationService';
 import { isSafeInput } from '../../../utils/inputValidation';
+import apiClient from '../../../api/apiClient';
+import { SearchIcon } from '../../../icons';
 
 const schema = z.object({
   evaluatorName: z.string()
@@ -31,6 +33,13 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+interface ComiteMemberInfo {
+  memberIndex: number;
+  evaluatorName: string;
+  score: number;
+  evaluationId: number;
+}
+
 interface EvaluationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -38,6 +47,10 @@ interface EvaluationModalProps {
   evaluatorType: EvaluatorType;
   /** Si se proporciona, el modal carga la evaluación existente y al guardar hace PUT */
   evaluationId?: number | null;
+  /** Miembros existentes del comité para auto-seleccionar el próximo slot */
+  existingComiteMembers?: ComiteMemberInfo[];
+  /** Pre-asignaciones del comité para auto-completar nombre/CI al crear evaluación COMITE */
+  committeeAssignments?: { memberIndex: number; evaluatorName: string; evaluatorCi?: string }[];
   onSuccess: () => void;
 }
 
@@ -47,6 +60,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   practiceId,
   evaluatorType,
   evaluationId,
+  existingComiteMembers = [],
+  committeeAssignments = [],
   onSuccess
 }) => {
   const { criteria, fetchCriteria, createEvaluation, updateEvaluation, loading, error: submitError } = useEvaluations();
@@ -60,8 +75,34 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const [dataLoaded, setDataLoaded] = useState(false);
   const [existingData, setExistingData] = useState<EvaluationWithDetails | null>(null);
   const [initialLoading, setInitialLoading] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const isEditing = !!evaluationId;
   const isTutorEvaluator = evaluatorType !== 'COMITE';
+
+  // Buscar reemplazo de evaluador
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{ personId: number; firstName: string; lastName: string; ci: string }[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  const handleSearchInput = async (q: string) => {
+    setSearchQuery(q);
+    if (q.length < 2) { setSearchResults([]); return; }
+    setSearching(true);
+    try {
+      const res = await apiClient.get('/api/persons/search', { params: { q } });
+      setSearchResults(res.data.data || []);
+    } catch { /* silent fail */ }
+    setSearching(false);
+  };
+
+  const handleSelectPerson = (p: { firstName: string; lastName: string; ci: string }) => {
+    setValue('evaluatorName', [p.firstName, p.lastName].filter(Boolean).join(' ').trim());
+    setValue('evaluatorCi', p.ci || '');
+    setSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
 
   const {
     register,
@@ -80,13 +121,28 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     }
   });
 
-  // Cargar datos del tutor asignado cuando se abre el modal (solo lectura)
+  // Auto-seleccionar próximo miembro del comité disponible
+  useEffect(() => {
+    if (!isOpen || evaluatorType !== 'COMITE' || isEditing) return;
+    const existing = existingComiteMembers;
+    const used = new Set(existing.map(m => m.memberIndex));
+    const next = ([1, 2, 3] as const).find(idx => !used.has(idx)) || null;
+    setComiteMemberIndex(next);
+  }, [isOpen, evaluatorType, isEditing, existingComiteMembers]);
+
+  // Cargar datos del evaluador cuando se abre el modal
   useEffect(() => {
     if (!isOpen || isEditing) return;
 
-    if (!isTutorEvaluator) {
-      setValue('evaluatorName', '');
-      setValue('evaluatorCi', '');
+    if (evaluatorType === 'COMITE') {
+      // Auto-completar desde pre-asignación si existe
+      const assignment = comiteMemberIndex
+        ? committeeAssignments.find(a => a.memberIndex === comiteMemberIndex)
+        : null;
+      if (assignment) {
+        setValue('evaluatorName', assignment.evaluatorName);
+        setValue('evaluatorCi', assignment.evaluatorCi || '');
+      }
       return;
     }
 
@@ -104,7 +160,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       .finally(() => { /* no-op */ });
 
     return () => { cancelled = true; };
-  }, [isOpen, evaluatorType, practiceId, isTutorEvaluator]);
+  }, [isOpen, evaluatorType, practiceId, isTutorEvaluator, comiteMemberIndex, committeeAssignments]);
 
   // Cargar criterios y datos existentes cuando se abre el modal
   useEffect(() => {
@@ -145,6 +201,11 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       setValue('evaluatorName', data.evaluatorName || '');
       setValue('evaluatorCi', data.evaluatorCi || '');
       setValue('observations', data.observations || '');
+
+      // Restaurar comiteMemberIndex si es COMITE
+      if (data.comiteMemberIndex) {
+        setComiteMemberIndex(data.comiteMemberIndex as 1 | 2 | 3);
+      }
 
       // Poblar scores desde los items existentes
       if (data.items && data.items.length > 0) {
@@ -211,9 +272,21 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     }
 
     if (result) {
-      reset();
-      onClose();
-      onSuccess();
+      if (evaluatorType === 'COMITE' && !isEditing) {
+        // COMITE create: mantener modal abierto para cargar el próximo miembro
+        reset();
+        setExistingData(null);
+        setDataLoaded(false);
+        setItemScores({});
+        setCriteriaLoaded([]);
+        setConfirmed(false);
+        onSuccess();
+      } else {
+        reset();
+        setConfirmed(false);
+        onClose();
+        onSuccess();
+      }
     }
   };
 
@@ -223,6 +296,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     setDataLoaded(false);
     setItemScores({});
     setCriteriaLoaded([]);
+    setConfirmed(false);
     onClose();
   };
 
@@ -242,11 +316,14 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     return 'border-yellow-400 focus:border-yellow-500';
   };
 
+  const committeeMin = config.committeeMinMembers ?? 3;
+  const isCommitteeFull = evaluatorType === 'COMITE' && !isEditing && existingComiteMembers.length >= committeeMin && comiteMemberIndex === null;
+
   const modalTitle = isEditing
     ? `Editar ${EVALUATOR_TYPE_LABELS[evaluatorType]}`
     : `Nueva ${EVALUATOR_TYPE_LABELS[evaluatorType]}`;
 
-  const submitLabel = isEditing ? 'Guardar Cambios' : 'Guardar Evaluación';
+  const submitLabel = isCommitteeFull ? 'Cerrar' : isEditing ? 'Guardar Cambios' : 'Guardar Evaluación';
 
   return (
     <Modal
@@ -290,21 +367,50 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Miembro del Comité *
                 </label>
+                {existingComiteMembers.length > 0 && (
+                  <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-1">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Ya evaluados</p>
+                    {existingComiteMembers.map(m => (
+                      <div key={m.memberIndex} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">
+                          <span className="font-mono text-xs text-gray-400 mr-1">#{m.memberIndex}</span>
+                          {m.evaluatorName}
+                        </span>
+                        <span className="font-semibold text-green-600 dark:text-green-400">{m.score.toFixed(1)}</span>
+                      </div>
+                    ))}
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-1 mt-1">
+                      <p className="text-xs text-brand-600 dark:text-brand-400">
+                        {existingComiteMembers.length < committeeMin
+                          ? `Falta${committeeMin - existingComiteMembers.length === 1 ? ' el miembro' : 'n los miembros'} #${[1,2,3].filter(i => !existingComiteMembers.find(m => m.memberIndex === i)).join(', #')}`
+                          : 'Comité completo'}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-2">
-                  {comiteMembers.map((idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setComiteMemberIndex(idx)}
-                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border-2 transition-all ${
-                        comiteMemberIndex === idx
-                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 shadow-sm'
-                          : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500'
-                      }`}
-                    >
-                      Miembro #{idx}
-                    </button>
-                  ))}
+                  {comiteMembers.map((idx) => {
+                    const existing = existingComiteMembers.find(m => m.memberIndex === idx);
+                    const isUsed = !!existing;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        disabled={isUsed}
+                        onClick={() => !isUsed && setComiteMemberIndex(idx)}
+                        className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border-2 transition-all ${
+                          comiteMemberIndex === idx
+                            ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 shadow-sm'
+                            : isUsed
+                              ? 'border-green-200 dark:border-green-800/40 bg-green-50 dark:bg-green-900/20 text-green-500 dark:text-green-400 cursor-default'
+                              : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500'
+                        }`}
+                        title={isUsed ? `Ya evaluado por ${existing.evaluatorName}` : `Cargar miembro #${idx}`}
+                      >
+                        {isUsed ? `✅ #${idx}` : `Miembro #${idx}`}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -314,13 +420,22 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nombre del Evaluador *
                 </label>
-                <input
-                  type="text"
-                  {...register('evaluatorName')}
-                  readOnly={isTutorEvaluator}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white ${isTutorEvaluator ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : 'border-gray-300 dark:border-gray-600'}`}
-                  placeholder={isTutorEvaluator ? 'Cargando tutor asignado...' : 'Nombre completo'}
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    {...register('evaluatorName')}
+                    className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                    placeholder="Nombre del evaluador"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSearchOpen(true)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                    title="Buscar reemplazo"
+                  >
+                    <SearchIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  </button>
+                </div>
                 {errors.evaluatorName && (
                   <p className="mt-1 text-sm text-red-500">{errors.evaluatorName.message}</p>
                 )}
@@ -333,9 +448,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 <input
                   type="text"
                   {...register('evaluatorCi')}
-                  readOnly={isTutorEvaluator}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white ${isTutorEvaluator ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : 'border-gray-300 dark:border-gray-600'}`}
-                  placeholder={isTutorEvaluator ? 'Cargando...' : 'V00.000.000'}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                  placeholder="V00.000.000"
                   maxLength={12}
                 />
               </div>
@@ -412,6 +526,26 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 )}
               </div>
             </div>
+
+            {/* Firma de responsabilidad */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={confirmed}
+                  onChange={(e) => setConfirmed(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Confirmo que las calificaciones ingresadas coinciden con el acta física firmada
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Esta acción quedará registrada en la auditoría del sistema
+                  </p>
+                </div>
+              </label>
+            </div>
           </ModalBody>
 
           <ModalFooter>
@@ -423,17 +557,70 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
             >
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              disabled={loading || criteriaLoaded.length === 0}
-              loading={loading}
-              loadingText="Guardando..."
-            >
-              {submitLabel}
-            </Button>
+            {isCommitteeFull ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+              >
+                Cerrar
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={loading || criteriaLoaded.length === 0 || !confirmed}
+                loading={loading}
+                loadingText="Guardando..."
+              >
+                {submitLabel}
+              </Button>
+            )}
           </ModalFooter>
         </form>
       )}
+    </Modal>
+
+    {/* Search dialog for evaluator replacement */}
+    <Modal isOpen={searchOpen} onClose={() => { setSearchOpen(false); setSearchQuery(''); setSearchResults([]); }}>
+      <ModalHeader>
+        Buscar evaluador
+      </ModalHeader>
+      <ModalBody>
+        <div className="space-y-4">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => handleSearchInput(e.target.value)}
+            placeholder="Buscar por nombre o cédula..."
+            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+            autoFocus
+          />
+          {searching && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Buscando...</p>
+          )}
+          {!searching && searchResults.length === 0 && searchQuery.length >= 2 && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Sin resultados</p>
+          )}
+          {searchResults.length > 0 && (
+            <ul className="max-h-60 overflow-y-auto divide-y divide-gray-200 dark:divide-gray-700 border rounded-lg dark:border-gray-700">
+              {searchResults.map(p => (
+                <li key={p.personId}>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPerson(p)}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {[p.firstName, p.lastName].filter(Boolean).join(' ').trim()}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{p.ci}</p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </ModalBody>
     </Modal>
   );
 };

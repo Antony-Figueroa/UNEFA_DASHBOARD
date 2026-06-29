@@ -218,7 +218,7 @@ const navItems: NavItem[] = [
   { name: "Reportes", icon: <PieChartIcon />, path: "/reports", permissions: ['reports:view'] },
   {
     name: "Configuración", icon: <PlugInIcon />,
-    permissions: ['users:view', 'lists:view', 'activity-logs:view', 'roles:manage', 'config:view', 'backups:view'],
+    permissions: ['users:view', 'lists:view', 'activity-logs:view', 'roles:manage', 'config:view', 'backups:view', 'evaluations:view'],
     subItems: [
       // 👥 Administración
       { name: "ADMINISTRACIÓN", isHeader: true },
@@ -233,6 +233,7 @@ const navItems: NavItem[] = [
       { name: "Listas (Combos)", path: "/configure/lists", permissions: ['lists:view'] },
       { name: "Respaldos", path: "/configure/backups", permissions: ['backups:view'] },
       { name: "Mantenimiento", path: "/configure/maintenance", permissions: ['config:view'] },
+      { name: "Evaluación", path: "/configure/evaluacion", permissions: ['evaluations:view'] },
 
       // 🎨 Personalización
       { name: "PERSONALIZACIÓN", isHeader: true },

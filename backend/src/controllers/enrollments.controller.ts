@@ -5,6 +5,7 @@ import { cacheManager } from '../lib/cache-manager.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
+import { checkSequentialPrerequisite } from '../utils/sequential-validation.js';
 
 const TABLE_NAME = 't_professional_practices';
 const CACHE_PREFIX = 'enrollments:';
@@ -294,6 +295,14 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
       if (existingInPeriod && existingInPeriod.length > 0) {
         const err = new Error('El estudiante ya fue inscrito en este período anteriormente');
         (err as any).status = 409;
+        throw err;
+      }
+
+      // Validar prerrequisito secuencial (ej: HOSP debe estar culminado antes de inscribir COM)
+      const seqCheck = await checkSequentialPrerequisite(supabase, { practiceId: preEnrollmentRow.PROFESSIONAL_PRACTICE_ID });
+      if (!seqCheck.valid) {
+        const err = new Error(seqCheck.message);
+        (err as any).status = 400;
         throw err;
       }
 
@@ -647,6 +656,10 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
         PROFESSIONAL_PRACTICE_ID,
         GRADE,
         EVALUATION_STATUS,
+        PRACTICES_STATUS,
+        WITHDRAWAL_TYPE,
+        CAREER_ID,
+        INTERNSHIP_TYPE_ID,
         t_persons!inner (
           ci,
           first_name,
@@ -654,8 +667,14 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
           last_name,
           second_last_name
         ),
+        t_career (
+          MINIMUM_GRADE
+        ),
         t_institution (
           INSTITUTION_NAME
+        ),
+        t_internship_type (
+          NAME
         ),
         t_professional_practices_tutor (
           TUTOR_ID,
@@ -664,13 +683,20 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
         )
       `)
       .eq('STATUS', 1)
-      .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO);
+      .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.REPROBADO, PRACTICES_STATUS.RETIRADO]);
 
     const { data: allPractices, error } = await query;
 
     if (error) throw error;
 
-    let practices = (allPractices || []).map((p: any) => {
+    // Incluir: INSCRITO, REPROBADO, y RETIRADO+unjustified (pendiente justificativo)
+    const filteredPractices = (allPractices || []).filter((p: any) => {
+      if (p.PRACTICES_STATUS === PRACTICES_STATUS.INSCRITO || p.PRACTICES_STATUS === PRACTICES_STATUS.REPROBADO) return true;
+      if (p.PRACTICES_STATUS === PRACTICES_STATUS.RETIRADO && p.WITHDRAWAL_TYPE === 'unjustified') return true;
+      return false;
+    });
+
+    let practices = filteredPractices.map((p: any) => {
       const sFirst = getPersonField(p.t_persons, 'first_name') || '';
       const sMiddle = getPersonField(p.t_persons, 'middle_name') || '';
       const sLast = getPersonField(p.t_persons, 'last_name') || '';
@@ -679,6 +705,10 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
         ? [sFirst, sMiddle, sLast, sSecondLast].filter(Boolean).join(' ').trim()
         : 'Sin estudiante';
       
+      const minimumGrade = p.t_career?.MINIMUM_GRADE ?? 10;
+      const completed = p.EVALUATION_STATUS === 'completed';
+      const failed = completed && p.GRADE != null && p.GRADE < minimumGrade;
+
       return {
         professionalPracticeId: p.PROFESSIONAL_PRACTICE_ID,
         studentCi: getPersonField(p.t_persons, 'ci') || '',
@@ -686,6 +716,12 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
         institutionName: p.t_institution?.INSTITUTION_NAME || 'Sin institución',
         evaluationStatus: p.EVALUATION_STATUS || 'pending',
         grade: p.GRADE,
+        practicesStatus: p.PRACTICES_STATUS,
+        withdrawalType: p.WITHDRAWAL_TYPE || null,
+        result: failed ? 'failed' : (completed ? 'approved' : 'pending'),
+        practiceType: p.t_internship_type?.NAME || '',
+        practiceTypeId: p.INTERNSHIP_TYPE_ID,
+        careerId: p.CAREER_ID,
         tutorAssignments: (p.t_professional_practices_tutor || []).filter((t: any) => t.ACTIVE !== false)
       };
     });
@@ -725,6 +761,163 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
 };
 
 /**
+ * PATCH /api/enrollments/:id/withdraw
+ * Marca una práctica como RETIRADA (PRACTICES_STATUS = 0) con tipo de retiro.
+ *
+ * withdrawalType:
+ *   'justified'   — abandono con justificativo, puede reinscribirse solo en la que falta
+ *   'unjustified' — abandono sin justificativo, cuenta como reprobado
+ *
+ * Para retiros sin justificativo en prácticas secuenciales:
+ *   Si el estudiante ya había completado una práctica de mayor prioridad,
+ *   esa también se retira (cascade) — reinscripción completa desde 0.
+ */
+export const withdrawPractice = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const practiceId = parseInt(id, 10);
+    if (isNaN(practiceId)) {
+      return res.status(400).json({ success: false, message: 'ID de práctica inválido' });
+    }
+
+    const { withdrawalType, justificationReason } = req.body;
+    if (!withdrawalType || !['justified', 'unjustified'].includes(withdrawalType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe especificar withdrawalType: "justified" o "unjustified"'
+      });
+    }
+    if (withdrawalType === 'justified' && (!justificationReason || justificationReason.trim().length < 10)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe proporcionar un motivo de al menos 10 caracteres para el retiro justificado'
+      });
+    }
+
+    const supabase = dbManager.getConnection();
+
+    // Verificar que existe y no está culminada
+    const { data: practice, error: fetchError } = await supabase
+      .from(TABLE_NAME)
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        PRACTICES_STATUS,
+        STUDENTS_ID,
+        CAREER_ID,
+        INTERNSHIP_TYPE_ID
+      `)
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .single();
+
+    if (fetchError || !practice) {
+      return res.status(404).json({ success: false, message: 'Práctica no encontrada' });
+    }
+
+    if (practice.PRACTICES_STATUS === PRACTICES_STATUS.CULMINADO) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede retirar una práctica ya culminada'
+      });
+    }
+
+    // Actualizar estado + tipo de retiro
+    const updateData: Record<string, any> = {
+      PRACTICES_STATUS: PRACTICES_STATUS.RETIRADO,
+      WITHDRAWAL_TYPE: withdrawalType,
+      OBSERVATION: justificationReason
+        ? `RETIRO ${withdrawalType === 'justified' ? 'CON JUSTIFICATIVO' : 'SIN JUSTIFICATIVO'}: ${justificationReason}`
+        : undefined,
+    };
+    if (!justificationReason) delete updateData.OBSERVATION;
+
+    const { error: updateError } = await supabase
+      .from(TABLE_NAME)
+      .update(updateData)
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
+
+    if (updateError) throw updateError;
+
+    // Auditoría principal
+    await auditStatusChange(
+      req, TABLE_NAME, practiceId,
+      practice.PRACTICES_STATUS, PRACTICES_STATUS.RETIRADO
+    );
+
+    // ── Cascade: si es SIN justificativo y hay prácticas secuenciales ──
+    if (withdrawalType === 'unjustified' && practice.STUDENTS_ID && practice.CAREER_ID && practice.INTERNSHIP_TYPE_ID) {
+      const studentId = practice.STUDENTS_ID as number;
+      const careerId = practice.CAREER_ID as number;
+      try {
+        const { data: currentType } = await supabase
+          .from('t_internship_type')
+          .select('PRIORITY')
+          .eq('INTERNSHIP_TYPE_ID', practice.INTERNSHIP_TYPE_ID)
+          .single();
+
+        if (currentType && currentType.PRIORITY > 0) {
+          // Buscar prácticas de MAYOR prioridad (prerrequisitos) que ya están CULMINADAS
+          // Ej: si abandonó COMUNITARIA (PRIORITY=1) sin justificativo,
+          // HOSPITALARIA (PRIORITY=2) que ya estaba culminada también se retira
+          const { data: higherPriorityTypes } = await supabase
+            .from('t_internship_type')
+            .select('INTERNSHIP_TYPE_ID, PRIORITY, NAME')
+            .gt('PRIORITY', currentType.PRIORITY);
+
+          if (higherPriorityTypes && higherPriorityTypes.length > 0) {
+            const higherIds = higherPriorityTypes.map((t: any) => t.INTERNSHIP_TYPE_ID);
+
+            // Buscar prácticas CULMINADAS de mayor prioridad y retirarlas también
+            const { data: completedHigher } = await supabase
+              .from(TABLE_NAME)
+              .select('PROFESSIONAL_PRACTICE_ID, INTERNSHIP_TYPE_ID')
+              .eq('STUDENTS_ID', studentId)
+              .eq('CAREER_ID', careerId)
+              .eq('PRACTICES_STATUS', PRACTICES_STATUS.CULMINADO)
+              .in('INTERNSHIP_TYPE_ID', higherIds)
+              .eq('STATUS', 1);
+
+            if (completedHigher && completedHigher.length > 0) {
+              const higherIdsToCascade = completedHigher.map((p: any) => p.PROFESSIONAL_PRACTICE_ID);
+
+              const { error: cascadeError } = await supabase
+                .from(TABLE_NAME)
+                .update({
+                  PRACTICES_STATUS: PRACTICES_STATUS.RETIRADO,
+                  WITHDRAWAL_TYPE: 'unjustified',
+                  OBSERVATION: 'Retiro en cascada por abandono sin justificativo de práctica secuencial'
+                })
+                .in('PROFESSIONAL_PRACTICE_ID', higherIdsToCascade);
+
+              if (!cascadeError) {
+                // Auditoría por cada práctica afectada
+                for (const pid of higherIdsToCascade) {
+                  await auditStatusChange(
+                    req, TABLE_NAME, pid,
+                    PRACTICES_STATUS.CULMINADO, PRACTICES_STATUS.RETIRADO
+                  ).catch(() => {}); // no romper si falla auditoría
+                }
+              }
+            }
+          }
+        }
+      } catch (cascadeErr) {
+        console.warn('[Enrollments] Cascade withdrawal error (non-fatal):', cascadeErr);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: withdrawalType === 'justified'
+        ? 'Práctica retirada con justificativo'
+        : 'Práctica retirada sin justificativo'
+    });
+  } catch (error) {
+    console.error('[Enrollments] Error withdrawing practice:', error);
+    res.status(500).json({ success: false, message: 'Error al retirar práctica' });
+  }
+};
+
+/**
  * Obtiene el historial de cambios de una inscripción
  */
 export const getEnrollmentChanges = async (req: AuthRequest, res: Response) => {
@@ -747,5 +940,110 @@ export const getEnrollmentChanges = async (req: AuthRequest, res: Response) => {
       success: false, 
       message: 'Error al obtener historial de cambios' 
     });
+  }
+};
+
+/**
+ * PATCH /api/enrollments/:id/reclassify-withdrawal
+ * Reclasifica un retiro sin justificativo → con justificativo.
+ * Revierte el cascade: las prácticas previas que fueron arrastradas
+ * vuelven a CULMINADO.
+ */
+export const reclassifyWithdrawal = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const practiceId = parseInt(id, 10);
+    if (isNaN(practiceId)) {
+      return res.status(400).json({ success: false, message: 'ID de práctica inválido' });
+    }
+
+    const { justificationReason } = req.body;
+    if (!justificationReason || justificationReason.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe proporcionar un motivo de al menos 10 caracteres'
+      });
+    }
+
+    const supabase = dbManager.getConnection();
+
+    // Verificar que existe y está RETIRADO+unjustified
+    const { data: practice, error: fetchError } = await supabase
+      .from(TABLE_NAME)
+      .select('PROFESSIONAL_PRACTICE_ID, PRACTICES_STATUS, WITHDRAWAL_TYPE, STUDENTS_ID, CAREER_ID')
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .single();
+
+    if (fetchError || !practice) {
+      return res.status(404).json({ success: false, message: 'Práctica no encontrada' });
+    }
+
+    if (practice.PRACTICES_STATUS !== PRACTICES_STATUS.RETIRADO || practice.WITHDRAWAL_TYPE !== 'unjustified') {
+      return res.status(400).json({
+        success: false,
+        message: 'Solo se puede reclasificar un retiro sin justificativo'
+      });
+    }
+
+    // Cambiar a justificado
+    const { error: updateError } = await supabase
+      .from(TABLE_NAME)
+      .update({
+        WITHDRAWAL_TYPE: 'justified',
+        OBSERVATION: `RECLASIFICADO A JUSTIFICATIVO: ${justificationReason.trim()}`,
+      })
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
+
+    if (updateError) throw updateError;
+
+    // Revertir cascade: restaurar prácticas que fueron arrastradas
+    if (practice.STUDENTS_ID && practice.CAREER_ID) {
+      try {
+        const studentId = practice.STUDENTS_ID as number;
+        const careerId = practice.CAREER_ID as number;
+
+        const { data: cascadedPractices } = await supabase
+          .from(TABLE_NAME)
+          .select('PROFESSIONAL_PRACTICE_ID')
+          .eq('STUDENTS_ID', studentId)
+          .eq('CAREER_ID', careerId)
+          .eq('PRACTICES_STATUS', PRACTICES_STATUS.RETIRADO)
+          .eq('WITHDRAWAL_TYPE', 'unjustified')
+          .neq('PROFESSIONAL_PRACTICE_ID', practiceId)
+          .ilike('OBSERVATION', '%Retiro en cascada%');
+
+        if (cascadedPractices && cascadedPractices.length > 0) {
+          const cascadeIds = cascadedPractices.map((p: any) => p.PROFESSIONAL_PRACTICE_ID);
+
+          const { error: restoreError } = await supabase
+            .from(TABLE_NAME)
+            .update({
+              PRACTICES_STATUS: PRACTICES_STATUS.CULMINADO,
+              WITHDRAWAL_TYPE: null,
+              OBSERVATION: 'Restaurado por reclasificación a justificativo de práctica secuencial',
+            })
+            .in('PROFESSIONAL_PRACTICE_ID', cascadeIds);
+
+          if (!restoreError) {
+            for (const pid of cascadeIds) {
+              await auditStatusChange(
+                req, TABLE_NAME, pid,
+                PRACTICES_STATUS.RETIRADO, PRACTICES_STATUS.CULMINADO
+              ).catch(() => {});
+            }
+          }
+        }
+      } catch (restoreErr) {
+        console.warn('[Enrollments] Cascade restore error (non-fatal):', restoreErr);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Retiro reclasificado a con justificativo. Las prácticas previas fueron restauradas.'
+    });
+  } catch (error) {
+    console.error('[Enrollments] Error reclassifying withdrawal:', error);
+    res.status(500).json({ success: false, message: 'Error al reclasificar retiro' });
   }
 };

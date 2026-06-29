@@ -35,6 +35,7 @@ export interface EvalDbConfig {
   weights: EvalDbWeights;
   score: EvalDbScore;
   evaluationWindowDays: number;
+  committeeMinMembers?: number;
 }
 
 // ── Lectura desde DB ─────────────────────────────────────────────────────
@@ -78,6 +79,7 @@ export const getEvalConfig = async (): Promise<EvalDbConfig> => {
       displayScale: dbConfig?.score?.displayScale ?? fallbackConfig.score.displayScale,
     },
     evaluationWindowDays: dbConfig?.evaluationWindowDays ?? fallbackConfig.evaluationWindowDays,
+    committeeMinMembers: dbConfig?.committeeMinMembers ?? fallbackConfig.committeeMinMembers,
   };
 
   cachedEvalConfig = { data: merged, expiry: Date.now() + CACHE_TTL };

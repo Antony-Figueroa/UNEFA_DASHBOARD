@@ -603,6 +603,7 @@ const PERMISSION_SEED_DATA = [
   { name: 'periods:create', module: 'Periodos', description: 'Crear nuevos periodos' },
   { name: 'periods:edit', module: 'Periodos', description: 'Editar periodos' },
   { name: 'periods:delete', module: 'Periodos', description: 'Eliminar periodos' },
+  { name: 'periods:close', module: 'Periodos', description: 'Cerrar período académico (backup + freeze)' },
   { name: 'backups:view', module: 'Respaldos', description: 'Ver lista de respaldos' },
   { name: 'backups:create', module: 'Respaldos', description: 'Crear respaldos' },
   { name: 'backups:restore', module: 'Respaldos', description: 'Restaurar respaldos' },
@@ -630,6 +631,8 @@ const PERMISSION_SEED_DATA = [
   { name: 'evaluations:create', module: 'Evaluaciones', description: 'Crear evaluaciones' },
   { name: 'evaluations:edit', module: 'Evaluaciones', description: 'Editar evaluaciones' },
   { name: 'evaluations:delete', module: 'Evaluaciones', description: 'Eliminar evaluaciones' },
+  { name: 'evaluations:freeze', module: 'Evaluaciones', description: 'Congelar evaluaciones (cierre de actas)' },
+  { name: 'evaluations:unfreeze', module: 'Evaluaciones', description: 'Descongelar evaluaciones para corrección' },
   { name: 'notifications:view', module: 'Notificaciones', description: 'Ver notificaciones' },
   { name: 'notifications:send', module: 'Notificaciones', description: 'Enviar notificaciones' },
   { name: 'lists:view', module: 'Listas', description: 'Ver listas del sistema' },
@@ -643,10 +646,11 @@ const PERMISSION_SEED_DATA = [
   { name: 'activity-logs:view', module: 'Bitácora', description: 'Ver bitácora de actividades' },
   { name: 'activity-logs:create', module: 'Bitácora', description: 'Registrar en bitácora' },
   { name: 'academic-config:edit', module: 'Configuración Académica', description: 'Editar configuración académica global' },
+  { name: 'committee:assign', module: 'Evaluaciones', description: 'Pre-asignar miembros del comité evaluador' },
 ];
 
 const ROLE_PERMISSION_MAP: Record<number, string[]> = {
-  1: PERMISSION_SEED_DATA.map(p => p.name),
+  1: PERMISSION_SEED_DATA.map(p => p.name), // ADMIN gets everything including committee:assign
   2: ['users:view', 'students:view', 'students:create', 'students:edit', 'students:export',
       'tutors:view', 'institutions:view', 'practices:view', 'practices:create', 'practices:edit',
       'periods:view', 'periods:create', 'periods:edit', 'reports:view', 'reports:export',

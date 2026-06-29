@@ -18,6 +18,7 @@ export const PRACTICES_STATUS = {
   PRE_INSCRITO: 1,
   INSCRITO: 2,
   CULMINADO: 3,
+  REPROBADO: 4,
 } as const;
 
 export const PERIOD_STATUS = {
@@ -32,6 +33,7 @@ export const PRACTICES_STATUS_LABELS: Record<number, string> = {
   [PRACTICES_STATUS.PRE_INSCRITO]: 'Pre-inscrito',
   [PRACTICES_STATUS.INSCRITO]: 'Inscrito',
   [PRACTICES_STATUS.CULMINADO]: 'Culminado',
+  [PRACTICES_STATUS.REPROBADO]: 'Reprobado',
 };
 
 export const PERIOD_STATUS_LABELS: Record<string, string> = {

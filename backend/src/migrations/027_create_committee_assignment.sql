@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS t_committee_assignment (
+  "ASSIGNMENT_ID" SERIAL PRIMARY KEY,
+  "PROFESSIONAL_PRACTICE_ID" INTEGER NOT NULL REFERENCES t_professional_practices("PROFESSIONAL_PRACTICE_ID"),
+  "COMITE_MEMBER_INDEX" INTEGER NOT NULL CHECK ("COMITE_MEMBER_INDEX" IN (1, 2, 3)),
+  "EVALUATOR_NAME" TEXT NOT NULL,
+  "EVALUATOR_CI" TEXT,
+  "REGISTERED_BY" INTEGER REFERENCES t_user("USER_ID"),
+  "CREATED_AT" TIMESTAMPTZ DEFAULT NOW(),
+  "UPDATED_AT" TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE ("PROFESSIONAL_PRACTICE_ID", "COMITE_MEMBER_INDEX")
+);
+
+COMMENT ON TABLE t_committee_assignment IS 'Pre-asignación de miembros del comité evaluador por práctica';
+COMMENT ON COLUMN t_committee_assignment."COMITE_MEMBER_INDEX" IS '1, 2 o 3 — identifica al miembro dentro del comité';
+COMMENT ON COLUMN t_committee_assignment."EVALUATOR_NAME" IS 'Nombre completo del miembro del comité';

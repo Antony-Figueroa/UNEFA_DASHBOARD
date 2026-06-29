@@ -20,6 +20,7 @@ import CustomSelect from "../../components/form/CustomSelect";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DownloadIcon, CheckCircleIcon, EyeIcon, UserIcon, TimeIcon } from "../../icons";
 import { culminationService, CulminationGroup, CulminationPractice, CulminationMeta } from "../../features/culmination/services/culminationService";
+import Label from "../../components/form/Label";
 import { generateCertificatePDF } from "../../components/ui/pdf/templates/CertificatePDF";
 import toast from "react-hot-toast";
 import { matchSearch } from "../../utils/searchNormalizer";
@@ -192,6 +193,39 @@ export default function CulminationPage() {
     } catch (error) {
       console.error("Error downloading PDF:", error);
       toast.error("Error al descargar el PDF", { id: "pdf-download" });
+    }
+  };
+
+  // --- Reversal state ---
+  const [reversalDialog, setReversalDialog] = useState<{
+    isOpen: boolean;
+    practice?: CulminationPractice;
+    group?: CulminationGroup;
+  }>({ isOpen: false });
+  const [reversalReason, setReversalReason] = useState("");
+  const [reversalResolution, setReversalResolution] = useState("");
+
+  const handleReverse = (practice: CulminationPractice, group: CulminationGroup) => {
+    setReversalReason("");
+    setReversalResolution("");
+    setReversalDialog({ isOpen: true, practice, group });
+  };
+
+  const confirmReverse = async () => {
+    const practice = reversalDialog.practice;
+    if (!practice) return;
+
+    try {
+      await culminationService.reverse(practice.id, {
+        reason: reversalReason,
+        resolutionNumber: reversalResolution,
+      });
+      toast.success("Reversión registrada exitosamente");
+      setReversalDialog({ isOpen: false });
+      fetchData();
+    } catch (error: any) {
+      const msg = error.response?.data?.message || "Error al revertir culminación";
+      toast.error(msg);
     }
   };
 
@@ -622,7 +656,7 @@ export default function CulminationPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <div className="flex items-center justify-center gap-2">
+                          <div className="flex items-center justify-center gap-2 flex-wrap">
                             {p.culminationStatus === "pending" && (
                               <Button
                                 size="sm"
@@ -656,6 +690,17 @@ export default function CulminationPage() {
                                 }
                               >
                                 PDF
+                              </Button>
+                            )}
+                            {(p.culminationStatus === "approved" || p.culminationStatus === "certified") && !p.reversal && (
+                              <Button
+                                size="sm"
+                                variant="error"
+                                onClick={() =>
+                                  handleReverse(p, selectedGroup)
+                                }
+                              >
+                                Revertir
                               </Button>
                             )}
                           </div>
@@ -693,6 +738,67 @@ export default function CulminationPage() {
         confirmLabel="Confirmar"
         variant="info"
       />
+
+      {/* Reversal dialog */}
+      <Modal
+        isOpen={reversalDialog.isOpen}
+        onClose={() => setReversalDialog({ isOpen: false })}
+        size="md"
+        showCloseButton
+      >
+        <ModalHeader>
+          <h3 className="text-lg font-semibold">Revertir Culminación</h3>
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-4">
+            <p className="text-sm text-text-secondary">
+              Estás por registrar la reversión administrativa de la culminación de{" "}
+              <strong>{reversalDialog.practice?.practiceType}</strong> de{" "}
+              <strong>{reversalDialog.group?.studentName}</strong>.
+            </p>
+            <p className="text-xs text-warning-600 dark:text-warning-400">
+              La culminación original se conserva como histórico. Solo se registrará una
+              resolución administrativa que anula sus efectos para el sistema.
+            </p>
+
+            <div>
+              <Label>N° de Resolución Administrativa *</Label>
+              <InputField
+                type="text"
+                placeholder="Ej: RES-2025-0042"
+                value={reversalResolution}
+                onChange={(e) => setReversalResolution(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label>Motivo de la Reversión *</Label>
+              <textarea
+                className="w-full rounded-lg border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface px-4 py-2.5 text-sm text-text-primary dark:text-text-emphasis placeholder:text-text-tertiary focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-colors min-h-[100px] resize-y"
+                placeholder="Describa el motivo de la reversión..."
+                value={reversalReason}
+                onChange={(e) => setReversalReason(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setReversalDialog({ isOpen: false })}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="error"
+                onClick={confirmReverse}
+                disabled={!reversalReason.trim() || !reversalResolution.trim()}
+              >
+                Registrar Reversión
+              </Button>
+            </div>
+          </div>
+        </ModalBody>
+      </Modal>
     </>
   );
 }

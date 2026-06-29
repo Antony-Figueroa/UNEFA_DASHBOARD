@@ -47,8 +47,9 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
   };
 
   const getScoreColor = (score: number): string => {
-    if (score < 10) return "text-red-500";
-    if (score >= 16) return "text-green-500";
+    const displayScale = config.score.displayScale;
+    if (score < displayScale * 0.5) return "text-red-500";
+    if (score >= displayScale * 0.8) return "text-green-500";
     return "text-yellow-500";
   };
 

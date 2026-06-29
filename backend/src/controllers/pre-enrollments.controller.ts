@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { sanitizeText } from '../utils/text-utils.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
+import { checkSequentialPrerequisite } from '../utils/sequential-validation.js';
 
 const TABLE_NAME = 't_professional_practices';
 
@@ -498,17 +499,34 @@ export const getTypesByStudent = async (req: Request, res: Response) => {
       if (periodError) throw periodError;
       if (!periodData) return [];
 
-      const { data, error } = await supabase
+      // a. Tipos ya registrados en el período actual (excluye REPROBADO y RETIRADO sin justificativo)
+      const { data: currentPeriodTypes, error } = await supabase
         .from(TABLE_NAME)
         .select(`INTERNSHIP_TYPE_ID`)
         .eq('STUDENTS_ID', student.STUDENTS_ID)
         .eq('PERIOD_ID', periodData.PERIOD_ID)
         .eq('CAREER_ID', Number(careerId))
-        .eq('STATUS', 1);
+        .eq('STATUS', 1)
+        .neq('PRACTICES_STATUS', PRACTICES_STATUS.REPROBADO)
+        .or(`PRACTICES_STATUS.neq.${PRACTICES_STATUS.RETIRADO},WITHDRAWAL_TYPE.is.null,WITHDRAWAL_TYPE.neq.unjustified`);
 
       if (error) throw error;
 
-      return (data || []).map((r: { INTERNSHIP_TYPE_ID: number }) => r.INTERNSHIP_TYPE_ID);
+      const currentTypeIds = (currentPeriodTypes || []).map((r: { INTERNSHIP_TYPE_ID: number }) => r.INTERNSHIP_TYPE_ID);
+
+      // b. Tipos YA CULMINADOS en períodos anteriores (para evitar reinscripción)
+      const { data: completedTypes } = await supabase
+        .from(TABLE_NAME)
+        .select(`INTERNSHIP_TYPE_ID`)
+        .eq('STUDENTS_ID', student.STUDENTS_ID)
+        .eq('CAREER_ID', Number(careerId))
+        .eq('STATUS', 1)
+        .eq('PRACTICES_STATUS', PRACTICES_STATUS.CULMINADO);
+
+      const completedTypeIds = (completedTypes || []).map((r: { INTERNSHIP_TYPE_ID: number }) => r.INTERNSHIP_TYPE_ID);
+
+      // Unir: excluir tipos ya registrados en este período O ya culminados en cualquier período
+      return [...new Set([...currentTypeIds, ...completedTypeIds])];
     });
 
     res.json({ typeIds: result });
@@ -711,7 +729,33 @@ export const batchCreatePreEnrollment = async (req: Request, res: Response) => {
             continue;
           }
 
-          // e. Check completed + approved same career
+          // e. Check cross-period: already CULMINADO this same type in a previous period
+          const { data: alreadyCompleted } = await supabase
+            .from(TABLE_NAME)
+            .select('PROFESSIONAL_PRACTICE_ID')
+            .eq('STUDENTS_ID', studentRecord.STUDENTS_ID)
+            .eq('INTERNSHIP_TYPE_ID', typeData.INTERNSHIP_TYPE_ID)
+            .eq('PRACTICES_STATUS', PRACTICES_STATUS.CULMINADO)
+            .eq('STATUS', 1)
+            .limit(1);
+
+          if (alreadyCompleted && alreadyCompleted.length > 0) {
+            results.push({ ci: fullCI, status: 'failed', message: 'El estudiante ya completó este tipo de práctica en un período anterior' });
+            continue;
+          }
+
+          // f. Check sequential prerequisite (ej: HOSP must be culminated before COM)
+          const seqCheck = await checkSequentialPrerequisite(supabase, {
+            studentsId: studentRecord.STUDENTS_ID,
+            careerId: careerIdNumber ?? 0,
+            internshipTypeId: typeData.INTERNSHIP_TYPE_ID
+          });
+          if (!seqCheck.valid) {
+            results.push({ ci: fullCI, status: 'failed', message: seqCheck.message ?? 'Prerrequisito secuencial no cumplido' });
+            continue;
+          }
+
+          // g. Check completed + approved same career
           if (careerIdNumber) {
             const { data: completedRecord } = await supabase
               .from(TABLE_NAME)
@@ -737,7 +781,7 @@ export const batchCreatePreEnrollment = async (req: Request, res: Response) => {
             }
           }
 
-          // f. Check duplicate (same student + period + practice type)
+          // h. Check duplicate (same student + period + practice type)
           const { data: duplicate } = await supabase
             .from(TABLE_NAME)
             .select('PROFESSIONAL_PRACTICE_ID')

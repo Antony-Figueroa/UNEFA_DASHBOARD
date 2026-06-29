@@ -258,7 +258,7 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
       // --- Paso 1: Obtener la práctica y su PERIOD_ID + PRACTICES_STATUS ---
       const { data: practice, error: practiceError } = await supabase
         .from('t_professional_practices')
-        .select('PERIOD_ID, PRACTICES_STATUS')
+        .select('PERIOD_ID, PRACTICES_STATUS, EXTENSION_GRANTED')
         .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
         .single();
 
@@ -269,6 +269,11 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
           code: 'PRACTICE_NOT_FOUND',
         });
       }
+
+      // --- Paso 1.5: Verificar si tiene extensión concedida ---
+      // Si EXTENSION_GRANTED es true, se salta la validación de período y fechas
+      // porque la carga extemporánea fue autorizada por un administrador.
+      const extensionGranted = (practice as any).EXTENSION_GRANTED === true;
 
       // --- Paso 2: Validar PRACTICES_STATUS (opcional) ---
       if (config.requirePracticesStatusInscribed && practice.PRACTICES_STATUS !== PRACTICES_STATUS.INSCRITO) {
@@ -310,7 +315,7 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
       }
 
       // --- Paso 4: Validar que el periodo esté "En Curso" ---
-      if (!config.skipPeriodStatusCheck && period.PERIOD_STATUS !== PERIOD_STATUS.EN_CURSO) {
+      if (!config.skipPeriodStatusCheck && period.PERIOD_STATUS !== PERIOD_STATUS.EN_CURSO && !extensionGranted) {
         return res.status(403).json({
           success: false,
           message: `El periodo académico ${PERIOD_STATUS_LABELS[period.PERIOD_STATUS] || 'Desconocido'} no está activo. Solo se permite esta operación en periodos "En Curso".`,
@@ -323,7 +328,8 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
       // Si skipPeriodStatusCheck está activo, también se salta la validación de fecha
       // porque el periodo ya finalizó y la fecha actual estaría fuera de rango.
       // overridePeriodValidation: true también salta la validación de rango de fechas.
-      const dateToValidate = (config.skipPeriodStatusCheck || req.body.overridePeriodValidation === true) ? null : config.extractDate(req);
+      // extensionGranted: true salta la validación porque la carga extemporánea fue autorizada.
+      const dateToValidate = (config.skipPeriodStatusCheck || req.body.overridePeriodValidation === true || extensionGranted) ? null : config.extractDate(req);
       if (dateToValidate) {
         const dateObj = new Date(dateToValidate);
         const startDate = new Date(period.START_DATE);
@@ -383,6 +389,7 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
       (req as any).periodValidation = {
         practice,
         period,
+        extensionGranted,
       };
 
       next();

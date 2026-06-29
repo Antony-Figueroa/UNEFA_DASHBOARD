@@ -13,6 +13,8 @@ router.get('/', requirePermission('enrollments:view'), enrollmentsController.get
 router.post('/', requirePermission('enrollments:create'), validateCreateEnrollmentPeriodWithTypeDates, enrollmentsController.createEnrollment);
 router.put('/:id', requirePermission('enrollments:edit'), validateUpdateEnrollmentPeriod, enrollmentsController.updateEnrollment);
 router.get('/:id/changes', requirePermission('enrollments:view'), enrollmentsController.getEnrollmentChanges);
+router.patch('/:id/withdraw', requirePermission('enrollments:edit'), enrollmentsController.withdrawPractice);
+router.patch('/:id/reclassify-withdrawal', requirePermission('enrollments:edit'), enrollmentsController.reclassifyWithdrawal);
 router.delete('/:id', requirePermission('enrollments:delete'), enrollmentsController.deleteEnrollment);
 
 export default router;

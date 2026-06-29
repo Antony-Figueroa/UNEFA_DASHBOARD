@@ -6,7 +6,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
-import { evaluationConfig, calculateWeightedGrade } from '../config/evaluation.config.js';
+import { getEvalConfig, calculateWeightedGrade } from '../services/evaluation-config.service.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 /**
@@ -136,6 +136,9 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
     });
 
     // Procesar prácticas
+    const evalConfig = await getEvalConfig();
+    const weights = evalConfig.weights;
+
     let processedPractices = (practices as any[]).map(p => {
       const student = p.t_persons;
       const career = p.t_career;
@@ -176,7 +179,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
       let finalGrade: number | null = null;
       if (evalStatus === 'completed') {
         finalGrade = 
-          Object.entries(evaluationConfig.weights).reduce((sum, [type, weight]) => {
+          Object.entries(weights).reduce((sum, [type, weight]) => {
             return sum + ((statusMap[type]?.score || 0) * weight);
           }, 0);
         finalGrade = Math.round(finalGrade * 100) / 100;
@@ -321,6 +324,10 @@ export const getEvaluationStats = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const statsConfig = await getEvalConfig();
+    const evaluatorTypes = Object.keys(statsConfig.weights);
+    const totalEvaluatorTypes = evaluatorTypes.length;
+
     const practiceIds = (practices as any[]).map(p => p.PROFESSIONAL_PRACTICE_ID);
 
     // Obtener MINIMUM_GRADE de todas las carreras involucradas
@@ -358,8 +365,6 @@ export const getEvaluationStats = async (req: AuthRequest, res: Response) => {
     // Calcular estadísticas
     let completed = 0, partial = 0, pending = 0;
 
-    const evaluatorTypes = Object.keys(evaluationConfig.weights);
-    const totalEvaluatorTypes = evaluatorTypes.length;
     (practices as any[]).forEach(p => {
       const count = evalCountByPractice.get(p.PROFESSIONAL_PRACTICE_ID) || 0;
       if (count === totalEvaluatorTypes) completed++;
@@ -376,15 +381,15 @@ export const getEvaluationStats = async (req: AuthRequest, res: Response) => {
       practiceEvals.set(String(e.PROFESSIONAL_PRACTICE_ID), existing);
     });
 
-    practiceEvals.forEach((typeScores, practiceId) => {
+    for (const [practiceId, typeScores] of practiceEvals) {
       const hasAll = evaluatorTypes.every(type => typeScores[type] !== undefined);
       if (hasAll) {
-        const finalGrade = calculateWeightedGrade(typeScores);
+        const finalGrade = await calculateWeightedGrade(typeScores);
         const minGrade = practiceMinGrade.get(Number(practiceId)) || 10;
         if (finalGrade >= minGrade) approved++;
         else failed++;
       }
-    });
+    }
 
     res.json({
       success: true,
@@ -462,6 +467,8 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const studentEvalConfig = await getEvalConfig();
+
     const student = (practice as any).t_persons;
     const career = (practice as any).t_career;
     const period = (practice as any).t_internships_period;
@@ -502,7 +509,7 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
     let totalHours = (visits || []).reduce((sum, v) => sum + (v.HOURS_WORKED || 0), 0);
 
     // Procesar estado de evaluaciones
-    const evaluatorTypes = Object.keys(evaluationConfig.weights);
+    const evaluatorTypes = Object.keys(studentEvalConfig.weights);
     const evalStatusMap: Record<string, { completed: boolean; score: number | null }> = {};
     evaluatorTypes.forEach(type => {
       evalStatusMap[type] = { completed: false, score: null };
@@ -524,7 +531,7 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
     if (completedCount === evaluatorTypes.length) {
       evalStatus = 'completed';
       finalGrade = 
-        Object.entries(evaluationConfig.weights).reduce((sum, [type, weight]) => {
+        Object.entries(studentEvalConfig.weights).reduce((sum, [type, weight]) => {
           return sum + ((evalStatusMap[type]?.score || 0) * weight);
         }, 0);
       finalGrade = Math.round(finalGrade * 100) / 100;

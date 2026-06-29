@@ -37,6 +37,7 @@ import studentDashboardRoutes from './routes/student-dashboard.routes.js';
 import adminRequestsRoutes from './routes/admin-requests.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import evaluationRoutes from './routes/evaluation.routes.js';
+import committeeRoutes from './routes/committee.routes.js';
 import practicesRoutes from './routes/practices.routes.js';
 import backupRoutes from './routes/backup.routes.js';
 import userThemeRoutes from './routes/user-theme.routes.js';
@@ -59,11 +60,11 @@ import systemInstitutionRoutes from './routes/system-institution.routes.js';
 import systemNucleusRoutes from './routes/system-nucleus.routes.js';
 import proyeccionRoutes from './routes/proyeccion.routes.js';
 import bulkImportRoutes from './routes/bulk-import.routes.js';
-import { getSystemConfig } from './controllers/evaluation.controller.js';
+import { getSystemConfig, updateSystemConfig } from './controllers/evaluation.controller.js';
 import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
-import { authenticateToken, restrictAsistente } from './middlewares/auth.middleware.js';
+import { authenticateToken, restrictAsistente, requirePermission } from './middlewares/auth.middleware.js';
 import * as listsService from './services/lists.service.js';
 import * as usersService from './services/users.service.js';
 import { startPeriodScheduler } from './services/period-scheduler.service.js';
@@ -248,6 +249,8 @@ app.use('/api/system-institution', systemInstitutionRoutes);
 // Apply protection to all subsequent /api routes
 app.use('/api', authenticateToken, restrictAsistente);
 
+app.put('/api/evaluations/system-config', requirePermission('evaluations:edit'), updateSystemConfig);
+
 app.use('/api/system-nucleus', systemNucleusRoutes);
 
 app.use('/api/careers', careersRoutes);
@@ -275,6 +278,7 @@ app.use('/api/student', studentDashboardRoutes);
 app.use('/api/requests', adminRequestsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/evaluations', evaluationRoutes);
+app.use('/api/committee-assignments', committeeRoutes);
 app.use('/api/institutional-documents', institutionalDocumentsRoutes);
 app.use('/api/report-texts', reportTextsRoutes);
 app.use('/api/backups', backupRoutes);

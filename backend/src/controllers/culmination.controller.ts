@@ -1,9 +1,17 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
+import { checkSequentialPrerequisite } from '../utils/sequential-validation.js';
 
 // ── Tipos ─────────────────────────────────────────────────────────────────
+
+interface ReversalInfo {
+  reason: string;
+  resolutionNumber: string;
+  createdAt: string;
+}
 
 interface CulminationPractice {
   id: string;
@@ -18,6 +26,7 @@ interface CulminationPractice {
   culminationStatus: 'pending' | 'approved' | 'certified';
   certificateNumber?: string;
   certifiedAt?: string;
+  reversal?: ReversalInfo;
 }
 
 interface CulminationGroup {
@@ -114,6 +123,18 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
       culmMap.set(c.PRACTICE_ID, c);
     });
 
+    // 2b. Obtener reversals activos
+    const { data: reversals } = await supabase
+      .from('t_culmination_reversals')
+      .select('PROFESSIONAL_PRACTICE_ID, REASON, RESOLUTION_NUMBER, CREATED_AT')
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+      .eq('STATUS', 1);
+
+    const reversalMap = new Map<number, any>();
+    (reversals || []).forEach((r: any) => {
+      reversalMap.set(r.PROFESSIONAL_PRACTICE_ID, r);
+    });
+
     // 3. Obtener horas totales por práctica
     const { data: visits } = await supabase
       .from('t_practice_visits')
@@ -144,6 +165,8 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
         result = grade >= MINIMUM_GRADE ? 'approved' : 'failed';
       }
 
+      const rev = reversalMap.get(practiceId);
+
       const practice: CulminationPractice = {
         id: String(practiceId),
         practiceType: internshipType.NAME || '',
@@ -157,6 +180,11 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
         culminationStatus,
         certificateNumber: culm?.CERTIFICATE_NUMBER || undefined,
         certifiedAt: culm?.CERTIFIED_AT || undefined,
+        reversal: rev ? {
+          reason: rev.REASON,
+          resolutionNumber: rev.RESOLUTION_NUMBER,
+          createdAt: rev.CREATED_AT,
+        } : undefined,
       };
 
       const studentCi = getPersonField(p.t_persons, 'ci') || '';
@@ -230,11 +258,16 @@ export const approveCulmination = async (req: Request, res: Response) => {
     const supabase = dbManager.getConnection();
     const { practiceId } = req.params;
 
-    // 1. Obtener práctica con tipo
+    // 1. Obtener práctica con tipo y estado de evaluación
     const { data: practice, error: fetchError } = await supabase
       .from('t_professional_practices')
       .select(`
         PROFESSIONAL_PRACTICE_ID,
+        STUDENTS_ID,
+        CAREER_ID,
+        INTERNSHIP_TYPE_ID,
+        PRACTICES_STATUS,
+        EVALUATION_STATUS,
         t_internship_type (
           HOURS_REQUIRED
         )
@@ -244,6 +277,14 @@ export const approveCulmination = async (req: Request, res: Response) => {
 
     if (fetchError || !practice) {
       res.status(404).json({ message: 'Práctica no encontrada' });
+      return;
+    }
+
+    // Solo se puede culminar una práctica en estado INSCRITO
+    if ((practice as any).PRACTICES_STATUS !== PRACTICES_STATUS.INSCRITO) {
+      res.status(400).json({
+        message: 'Solo se pueden culminar prácticas en estado INSCRITO.'
+      });
       return;
     }
 
@@ -265,7 +306,22 @@ export const approveCulmination = async (req: Request, res: Response) => {
       return;
     }
 
-    // 4. Upsert en t_practice_culmination
+    // 4. Validar que las evaluaciones estén completas
+    if ((practice as any).EVALUATION_STATUS !== 'completed') {
+      res.status(400).json({
+        message: 'No se puede culminar la práctica: las evaluaciones no están completas.'
+      });
+      return;
+    }
+
+    // 4b. Validar prerrequisito secuencial (ej: HOSP debe estar culminado antes de culminar COM)
+    const seqCheck = await checkSequentialPrerequisite(supabase, { practiceId: parseInt(practiceId) });
+    if (!seqCheck.valid) {
+      res.status(400).json({ message: seqCheck.message });
+      return;
+    }
+
+    // 5. Upsert en t_practice_culmination
     const { data: existing } = await supabase
       .from('t_practice_culmination')
       .select('PRACTICE_ID')
@@ -283,7 +339,7 @@ export const approveCulmination = async (req: Request, res: Response) => {
         .insert({ PRACTICE_ID: practiceId, STATUS: 1 });
     }
 
-    // 5. Actualizar PRACTICES_STATUS
+    // 6. Actualizar PRACTICES_STATUS
     await supabase
       .from('t_professional_practices')
       .update({ PRACTICES_STATUS: PRACTICES_STATUS.CULMINADO })
@@ -393,6 +449,85 @@ export const generateCertificate = async (req: Request, res: Response) => {
     console.error('[Culmination] Certificate generation error:', error);
     res.status(500).json({
       message: 'Error al generar certificado',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+// ── POST /api/culmination/:practiceId/reverse ────────────────────────────
+
+export const reverseCulmination = async (req: AuthRequest, res: Response) => {
+  try {
+    const supabase = dbManager.getConnection();
+    const { practiceId } = req.params;
+    const { reason, resolutionNumber } = req.body;
+    const userId: number | undefined = (req as any).user?.userId;
+
+    if (!reason || !reason.trim()) {
+      res.status(400).json({ message: 'El motivo de la reversión es obligatorio' });
+      return;
+    }
+    if (!resolutionNumber || !resolutionNumber.trim()) {
+      res.status(400).json({ message: 'El número de resolución administrativa es obligatorio' });
+      return;
+    }
+    if (!userId) {
+      res.status(401).json({ message: 'Usuario no autenticado' });
+      return;
+    }
+
+    // 1. Verificar que la práctica existe y está CULMINADO
+    const { data: practice, error: practiceError } = await supabase
+      .from('t_professional_practices')
+      .select('PROFESSIONAL_PRACTICE_ID, PRACTICES_STATUS')
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .single();
+
+    if (practiceError || !practice) {
+      res.status(404).json({ message: 'Práctica no encontrada' });
+      return;
+    }
+
+    if (practice.PRACTICES_STATUS !== PRACTICES_STATUS.CULMINADO) {
+      res.status(400).json({ message: 'Solo se pueden revertir prácticas en estado CULMINADO' });
+      return;
+    }
+
+    // 2. Verificar que no tenga ya un reversal activo
+    const { data: existingReversal } = await supabase
+      .from('t_culmination_reversals')
+      .select('CULMINATION_REVERSAL_ID')
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .eq('STATUS', 1)
+      .maybeSingle();
+
+    if (existingReversal) {
+      res.status(409).json({ message: 'Esta culminación ya fue revertida anteriormente' });
+      return;
+    }
+
+    // 3. Crear reversal (NO tocamos PRACTICES_STATUS ni t_practice_culmination)
+    const { error: insertError } = await supabase
+      .from('t_culmination_reversals')
+      .insert({
+        PROFESSIONAL_PRACTICE_ID: parseInt(practiceId),
+        REASON: reason.trim(),
+        RESOLUTION_NUMBER: resolutionNumber.trim(),
+        USER_ID: userId,
+        STATUS: 1
+      });
+
+    if (insertError) throw insertError;
+
+    res.json({
+      success: true,
+      message: 'Reversión de culminación registrada exitosamente. La práctica conserva su estado CULMINADO histórico.'
+    });
+
+  } catch (error) {
+    console.error('[Culmination] Reverse error:', error);
+    res.status(500).json({
+      message: 'Error al revertir culminación',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

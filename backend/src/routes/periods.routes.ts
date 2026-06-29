@@ -8,7 +8,8 @@ import {
   getNextPendingPeriod,
   bulkDeletePeriods,
   bulkRestorePeriods,
-  togglePeriodStatus
+  togglePeriodStatus,
+  closePeriod
 } from '../controllers/periods.controller.js';
 import { updatePeriodGraceConfig } from '../controllers/grace-config.controller.js';
 import { requirePermission } from '../middlewares/auth.middleware.js';
@@ -25,6 +26,7 @@ router.patch('/:id/grace-config', requirePermission('academic-config:edit'), upd
 router.get('/:id', requirePermission('periods:view'), getPeriodById);
 router.post('/', requirePermission('periods:create'), createPeriod);
 router.put('/:id', requirePermission('periods:edit'), updatePeriod);
+router.post('/:id/close', requirePermission('periods:close'), closePeriod);
 router.patch('/:id/toggle-status', requirePermission('periods:edit'), togglePeriodStatus);
 router.delete('/:id', requirePermission('periods:delete'), deletePeriod);
 

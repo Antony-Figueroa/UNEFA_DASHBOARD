@@ -4,8 +4,9 @@ import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { sanitizeText } from '../utils/text-utils.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
 import { periodNotificationService } from '../services/period-notification.service.js';
-import { PERIOD_STATUS } from '../constants/practice-status.constants.js';
+import { PERIOD_STATUS, PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { isFeatureEnabled, getTypeDatesByPeriod } from '../services/period-type-dates.service.js';
+import { backupService } from '../services/backup.service.js';
 
 const TABLE_NAME = 't_internships_period';
 
@@ -658,6 +659,141 @@ export const deletePeriod = async (req: AuthRequest, res: Response) => {
     });
     res.status(204).send();
   } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * POST /api/periods/:id/close
+ * Cierra un período académico: backup pre-cierre, freeze de evaluaciones, detección
+ * de prácticas colgadas, cambio de estado a CULMINADO.
+ */
+export const closePeriod = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = String(req.user?.userId || '');
+    const supabase = dbManager.getConnection();
+
+    // 1. Validar período
+    const { data: period } = await supabase
+      .from('t_internships_period')
+      .select('PERIOD_ID, DESCRIPTION, PERIOD_STATUS')
+      .eq('PERIOD_ID', id)
+      .single();
+
+    if (!period) {
+      return res.status(404).json({ message: `No se encontró el período con PERIOD_ID: ${id}` });
+    }
+
+    if (period.PERIOD_STATUS !== PERIOD_STATUS.EN_CURSO) {
+      return res.status(409).json({ message: 'Solo se puede cerrar un período en curso' });
+    }
+
+    // 2. Backup pre-cierre (no bloqueante)
+    let backupId: string | null = null;
+    const warnings: string[] = [];
+    try {
+      const backupName = `Backup pre-cierre ${period.DESCRIPTION || `período ${id}`}`;
+      const backup = await backupService.createBackup(userId, backupName, `Cierre automático del período ${id}`, 'json');
+      backupId = backup.id;
+    } catch (backupError) {
+      const msg = backupError instanceof Error ? backupError.message : 'Error desconocido';
+      console.error('[Period] Error en backup pre-cierre:', msg);
+      warnings.push(`Backup pre-cierre falló: ${msg}`);
+    }
+
+    // 3-6. Operaciones dentro de withRetry
+    const result = await dbManager.withRetry(async (supabase) => {
+      // Obtener IDs de prácticas del período
+      const { data: practices } = await supabase
+        .from('t_professional_practices')
+        .select('PROFESSIONAL_PRACTICE_ID, PRACTICES_STATUS')
+        .eq('PERIOD_ID', id);
+
+      const practiceIds = (practices || []).map(p => p.PROFESSIONAL_PRACTICE_ID);
+      const totalPractices = practiceIds.length;
+
+      // Freeze evaluaciones
+      const { data: frozenData, error: freezeError } = await supabase
+        .from('t_evaluation')
+        .update({ FROZEN_AT: new Date().toISOString() })
+        .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+        .is('FROZEN_AT', null)
+        .select('EVALUATION_ID');
+
+      if (freezeError) throw freezeError;
+
+      const frozenEvaluations = frozenData?.length || 0;
+
+      // Auditoría freeze
+      if (frozenEvaluations > 0) {
+        try {
+          for (const practiceId of practiceIds) {
+            await auditCreate(req, 't_evaluation', {
+              PROFESSIONAL_PRACTICE_ID: practiceId,
+              ACTION: 'FREEZE',
+              FROZEN_AT: new Date().toISOString(),
+            }, ['PROFESSIONAL_PRACTICE_ID', 'ACTION', 'FROZEN_AT']);
+          }
+        } catch (auditError) {
+          console.error('[Audit] Error auditing batch freeze:', auditError);
+        }
+      }
+
+      // Detectar prácticas colgadas (INSCRITO sin evaluaciones completas)
+      const { data: practicesWithoutEval } = await supabase
+        .from('t_professional_practices')
+        .select('PROFESSIONAL_PRACTICE_ID')
+        .eq('PERIOD_ID', id)
+        .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO);
+
+      const practiceIdsWithoutEval: number[] = [];
+      for (const p of practicesWithoutEval || []) {
+        const { count } = await supabase
+          .from('t_evaluation')
+          .select('*', { count: 'exact', head: true })
+          .eq('PROFESSIONAL_PRACTICE_ID', p.PROFESSIONAL_PRACTICE_ID);
+
+        if (!count || count === 0) {
+          practiceIdsWithoutEval.push(p.PROFESSIONAL_PRACTICE_ID);
+        }
+      }
+
+      if (practiceIdsWithoutEval.length > 0) {
+        warnings.push(`${practiceIdsWithoutEval.length} práctica(s) en estado INSCRITO sin evaluaciones completas`);
+      }
+
+      // Cerrar período
+      const { error: closeError } = await supabase
+        .from('t_internships_period')
+        .update({ PERIOD_STATUS: PERIOD_STATUS.CULMINADO })
+        .eq('PERIOD_ID', id);
+
+      if (closeError) throw closeError;
+
+      // Auditoría
+      try {
+        await auditStatusChange(req, 't_internships_period', id, Number(PERIOD_STATUS.EN_CURSO), Number(PERIOD_STATUS.CULMINADO));
+      } catch (auditError) {
+        console.error('[Audit] Error auditing period close:', auditError);
+      }
+
+      return { totalPractices, frozenEvaluations, practiceIdsWithoutEval: practiceIdsWithoutEval.length };
+    });
+
+    res.json({
+      success: true,
+      message: 'Período cerrado exitosamente',
+      data: {
+        periodId: Number(id),
+        totalPractices: result.totalPractices,
+        frozenEvaluations: result.frozenEvaluations,
+        backupId,
+        warnings,
+      }
+    });
+
+  } catch (error) {
     handleDbError(res, error);
   }
 };

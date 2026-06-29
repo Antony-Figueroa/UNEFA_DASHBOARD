@@ -38,6 +38,13 @@ export const evaluationConfig = {
    * - -1: sin restricción (modo excepción)
    */
   evaluationWindowDays: 10,
+
+  /**
+   * Número mínimo de miembros del comité para considerar completa la evaluación de COMITE.
+   * Default: 3 (comité completo).
+   * 2 permite evaluar con 2/3 del comité (ej: ausencia de jurado).
+   */
+  committeeMinMembers: 3,
 } as const;
 
 /** Tipo inferido de la configuración para usar en tipados */

@@ -326,6 +326,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const submitLabel = isCommitteeFull ? 'Cerrar' : isEditing ? 'Guardar Cambios' : 'Guardar Evaluación';
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
@@ -515,6 +516,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                             max={scoreRange.max}
                             step={scoreStep}
                             value={itemScores[criterion.criteriaId] ?? midpoint}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => handleScoreChange(criterion.criteriaId, parseFloat(e.target.value) || 0)}
                             className={`w-14 px-2 py-1 text-center border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white ${getScoreInputClass(criterion.criteriaId)}`}
                           />
@@ -622,6 +624,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
         </div>
       </ModalBody>
     </Modal>
+    </>
   );
 };
 

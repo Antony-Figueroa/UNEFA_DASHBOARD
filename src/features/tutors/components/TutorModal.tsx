@@ -1087,12 +1087,7 @@ export default function TutorModal({
             {editingTutor || existingTutor ? "Editar" : "Registrar"} Tutor {tutorType === "methodological" ? "Metodológico" : "Académico"}
           </span>
           <p className="text-sm text-text-secondary">Complete la información del tutor {tutorType === "methodological" ? "metodológico" : "académico"}.</p>
-          {isInUse && (
-            <div className="mt-2 text-xs font-medium text-warning-700 dark:text-warning-400 bg-warning-50 dark:bg-warning-900/20 p-2.5 rounded-md border border-warning-200 dark:border-warning-800/50 flex items-start gap-2">
-              <span className="mt-0.5">⚠️</span>
-              <span>Nota: Algunos campos están restringidos porque el tutor tiene registros asociados en el sistema.</span>
-            </div>
-          )}
+
         </ModalHeader>
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
@@ -1453,7 +1448,7 @@ export default function TutorModal({
                       onChange={onChange}
                       options={CONDITION_OPTIONS}
                       error={!!errors.condition}
-                      disabled={viewOnlyMode || isInUse}
+                      disabled={viewOnlyMode}
                       onAddNew={() => openAddValueModal("Condición", "condition", "Agregar Condición")}
                     />
                   )}
@@ -1471,7 +1466,7 @@ export default function TutorModal({
                       onChange={onChange}
                       options={DEDICATION_OPTIONS}
                       error={!!errors.dedication}
-                      disabled={viewOnlyMode || isInUse}
+                      disabled={viewOnlyMode}
                       onAddNew={() => openAddValueModal("Dedicación", "dedication", "Agregar Dedicación")}
                     />
                   )}
@@ -1489,7 +1484,7 @@ export default function TutorModal({
                       onChange={onChange}
                       options={CATEGORY_OPTIONS}
                       error={!!errors.category}
-                      disabled={viewOnlyMode || isInUse}
+                      disabled={viewOnlyMode}
                       onAddNew={() => openAddValueModal("Categoría", "category", "Agregar Categoría")}
                     />
                   )}
@@ -1507,7 +1502,7 @@ export default function TutorModal({
                       onChange={onChange}
                       options={PROFESSION_OPTIONS}
                       error={!!errors.profession}
-                      disabled={viewOnlyMode || isInUse}
+                      disabled={viewOnlyMode}
                       onAddNew={() => openAddValueModal("Profesión", "profession", "Agregar Profesión")}
                     />
                   )}
@@ -1525,7 +1520,7 @@ export default function TutorModal({
                       onChange={onChange}
                       options={TITULO_OPTIONS}
                       error={!!errors.titulo}
-                      disabled={viewOnlyMode || isInUse}
+                      disabled={viewOnlyMode}
                       onAddNew={() => openAddValueModal("Título", "titulo", "Agregar Grado de Instrucción")}
                     />
                   )}
@@ -1544,12 +1539,12 @@ export default function TutorModal({
                 rules={{ required: "Debe seleccionar al menos una carrera" }}
                 render={({ field: { onChange, value } }) => (
                   <MultiSelect
-                    label={<>Carreras que puede Asignar <span className="text-red-500">*</span></>}
+                    label="Carreras asignadas"
                     value={value}
                     onChange={onChange}
                     options={careerOptions}
                     error={!!errors.carreras}
-                    disabled={viewOnlyMode || isInUse}
+                    disabled={viewOnlyMode}
                     onAddNew={() => setIsCareerModalOpen(true)}
                   />
                 )}

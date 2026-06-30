@@ -85,16 +85,16 @@ export interface ReversalPayload {
 
 export const culminationService = {
   getAll: (params?: { status?: string; period?: string; search?: string }) =>
-    apiClient.get<CulminationResponse>('/api/culmination', { params }).then(r => r.data),
+    apiClient.get<CulminationResponse>('/culmination', { params }).then(r => r.data),
 
   approve: (practiceId: string) =>
-    apiClient.post(`/api/culmination/${practiceId}/approve`).then(r => r.data),
+    apiClient.post(`/culmination/${practiceId}/approve`).then(r => r.data),
 
   generateCertificate: (practiceId: string) =>
-    apiClient.post<CertificateResponse>(`/api/culmination/${practiceId}/certificate`).then(r => r.data),
+    apiClient.post<CertificateResponse>(`/culmination/${practiceId}/certificate`).then(r => r.data),
 
   reverse: (practiceId: string, payload: ReversalPayload) =>
-    apiClient.post(`/api/culmination/${practiceId}/reverse`, payload).then(r => r.data),
+    apiClient.post(`/culmination/${practiceId}/reverse`, payload).then(r => r.data),
 };
 
 export default culminationService;

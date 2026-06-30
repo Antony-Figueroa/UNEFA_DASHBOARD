@@ -780,7 +780,7 @@ export const withdrawPractice = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: 'ID de práctica inválido' });
     }
 
-    const { withdrawalType, justificationReason } = req.body;
+    const { withdrawalType, justificationReason, withdrawComment } = req.body;
     if (!withdrawalType || !['justified', 'unjustified'].includes(withdrawalType)) {
       return res.status(400).json({
         success: false,
@@ -821,14 +821,18 @@ export const withdrawPractice = async (req: AuthRequest, res: Response) => {
     }
 
     // Actualizar estado + tipo de retiro
+    let observation = justificationReason
+      ? `RETIRO ${withdrawalType === 'justified' ? 'CON JUSTIFICATIVO' : 'SIN JUSTIFICATIVO'}: ${justificationReason}`
+      : undefined;
+    if (withdrawComment) {
+      observation += `\nComentario: ${withdrawComment}`;
+    }
     const updateData: Record<string, any> = {
       PRACTICES_STATUS: PRACTICES_STATUS.RETIRADO,
       WITHDRAWAL_TYPE: withdrawalType,
-      OBSERVATION: justificationReason
-        ? `RETIRO ${withdrawalType === 'justified' ? 'CON JUSTIFICATIVO' : 'SIN JUSTIFICATIVO'}: ${justificationReason}`
-        : undefined,
+      OBSERVATION: observation,
     };
-    if (!justificationReason) delete updateData.OBSERVATION;
+    if (!observation) delete updateData.OBSERVATION;
 
     const { error: updateError } = await supabase
       .from(TABLE_NAME)

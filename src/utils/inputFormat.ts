@@ -29,7 +29,17 @@ export const formatCedulaDisplay = (value: string, includePrefix: boolean = true
   const prefixMatch = cleaned.match(/^([A-Z])/);
   const prefix = prefixMatch ? prefixMatch[1] : '';
   
-  if (!prefix) return includePrefix ? prefix : '';
+  // ponytail: no prefix letter → format digits with dots, no prefix shown
+  if (!prefix) {
+    const digits = cleaned.replace(/\D/g, '').slice(0, CEDULA_MAX_DIGITS);
+    if (!digits) return '';
+    const len = digits.length;
+    const formatted = len <= 4 ? digits
+      : len <= 6 ? `${digits.slice(0, 2)}.${digits.slice(2)}`
+      : len === 7 ? `${digits.slice(0, 1)}.${digits.slice(1, 4)}.${digits.slice(4, 7)}`
+      : `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}`;
+    return formatted;
+  }
   
   const isPassport = prefix === PASSPORT_PREFIX;
   const body = cleaned.slice(1); // todo después del prefijo

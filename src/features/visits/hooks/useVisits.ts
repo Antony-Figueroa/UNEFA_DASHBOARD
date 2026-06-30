@@ -147,7 +147,8 @@ export const useVisits = (): UseVisitsReturn => {
       const response = await visitsService.deleteVisit(id);
       if (response.success) {
         toast.success(TOAST_SUCCESS.deleted(resourceName));
-        setVisits(prev => prev.filter(v => v.visitId !== id));
+        // Soft delete: cambiar status a false para que aparezca en inactivas
+        setVisits(prev => prev.map(v => v.visitId === id ? { ...v, status: false } : v));
         return true;
       }
       return false;
@@ -190,6 +191,7 @@ export const useVisits = (): UseVisitsReturn => {
       }
     } catch (err: any) {
       console.error('Error fetching visit stats:', err);
+      // No mostramos toast porque las stats no son críticas, el reintento es automático
     }
   }, []);
 

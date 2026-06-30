@@ -25,6 +25,13 @@ interface StoredData {
   activeTabId: string | null;
 }
 
+// ponytail: session-only tab paths — close on page reload
+const SESSION_TAB_PREFIXES = ['/visit-registration/', '/activity-logs/'];
+
+function isSessionTab(path: string): boolean {
+  return SESSION_TAB_PREFIXES.some(p => path.startsWith(p));
+}
+
 function loadTabs(): { tabs: Tab[]; activeTabId: string | null } | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -34,15 +41,20 @@ function loadTabs(): { tabs: Tab[]; activeTabId: string | null } | null {
     if (!Array.isArray(data.tabs) || data.tabs.length === 0) return null;
 
     const now = Date.now();
-    const tabs: Tab[] = data.tabs.map((st) => ({
-      id: st.id,
-      path: st.path,
-      label: st.label,
-      icon: st.icon,
-      pinned: st.pinned,
-      createdAt: st.createdAt ?? now,
-      lastAccessedAt: st.lastAccessedAt ?? st.createdAt ?? now,
-    }));
+    // ponytail: filter out session-only tabs (visit registration, activity logs)
+    const tabs: Tab[] = data.tabs
+      .filter(st => st.pinned || !isSessionTab(st.path))
+      .map((st) => ({
+        id: st.id,
+        path: st.path,
+        label: st.label,
+        icon: st.icon,
+        pinned: st.pinned,
+        createdAt: st.createdAt ?? now,
+        lastAccessedAt: st.lastAccessedAt ?? st.createdAt ?? now,
+      }));
+
+    if (tabs.length === 0) return null;
 
     const activeTabId = data.activeTabId ?? null;
     const activeStillExists = activeTabId && tabs.some((t) => t.id === activeTabId);

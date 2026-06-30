@@ -3,7 +3,7 @@
  * @description Gestiona la validación de campos, fechas del período académico y confirmación de guardado.
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,6 +19,7 @@ import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
 import Input from '../../../components/form/input/InputField';
 import { SAFE_LONG_TEXT_PATTERN, isSafeInput } from '../../../utils/inputValidation';
+import Button from '../../../components/ui/button/Button';
 import { useTutors } from '../../tutors/hooks/useTutors';
 import TutorModal from '../../tutors/components/TutorModal';
 import { createTutor } from '../../tutors/services/tutorsService';
@@ -26,7 +27,8 @@ import { createTutor } from '../../tutors/services/tutorsService';
 import { useLists } from '../../lists/hooks/useLists';
 import * as listsService from '../../lists/services/listsService';
 
-const visitSchema = z.object({
+// Schema base sin validación de período (se crea dinámicamente abajo)
+const visitSchemaBase = z.object({
   tutorId: z.string().min(1, 'El tutor es requerido'),
   visitDate: z.string().min(1, 'La fecha es requerida'),
   visitType: z.string().min(1, 'El tipo de visita es requerido'),
@@ -52,7 +54,7 @@ const visitSchema = z.object({
     .max(1000, "Las recomendaciones son demasiado largas")
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
     .optional()
-}).refine(
+  }).refine(
   (data) => {
     // Validación: la fecha no puede ser futura
     const visitDateParsed = new Date(data.visitDate);
@@ -91,7 +93,7 @@ const visitSchema = z.object({
   }
 );
 
-type VisitFormData = z.infer<typeof visitSchema>;
+type VisitFormData = z.infer<typeof visitSchemaBase>;
 
 interface VisitModalProps {
   isOpen: boolean;
@@ -192,6 +194,28 @@ export default function VisitModal({
   const maxHtmlDate = periodEndDate && periodEndDate < today ? periodEndDate : today;
   const maxDateLocal = formatLocalDateTime(maxHtmlDate);
 
+  // Schema dinámico con validación de período (se recrea cuando cambian las fechas)
+  const dynamicSchema = useMemo(() => {
+    return visitSchemaBase.refine(
+      (data) => {
+        const d = new Date(data.visitDate);
+        if (isNaN(d.getTime())) return true;
+        if (periodStartDate && d < periodStartDate) return false;
+        if (periodEndDate) {
+          const maxAllowed = new Date(periodEndDate.getFullYear(), periodEndDate.getMonth(), periodEndDate.getDate(), 23, 59, 59);
+          if (d > maxAllowed) return false;
+        }
+        return true;
+      },
+      {
+        message: periodStartDate && periodEndDate
+          ? `La fecha debe estar entre ${periodStartDate.toLocaleDateString('es-VE')} y ${periodEndDate.toLocaleDateString('es-VE')}`
+          : 'La fecha está fuera del período académico',
+        path: ['visitDate'] as const
+      }
+    );
+  }, [periodStartDate, periodEndDate]);
+
   const {
     register,
     handleSubmit,
@@ -200,7 +224,7 @@ export default function VisitModal({
     setValue,
     formState: { errors, isDirty, isValid }
   } = useForm({
-    resolver: zodResolver(visitSchema) as any,
+    resolver: zodResolver(dynamicSchema) as any,
     mode: 'all',
     defaultValues: {
       tutorId: '',

@@ -34,6 +34,8 @@ export interface UnifiedDialogProps {
   children?: React.ReactNode;
   /** Etiqueta para el botón de confirmar. */
   confirmLabel?: string;
+  /** Icono para el botón de confirmar. */
+  confirmStartIcon?: React.ReactNode;
   /** Etiqueta para el botón de cancelar. Por defecto "Cancelar". */
   cancelLabel?: string;
   /** Indica si la acción de confirmación está en estado de carga. */
@@ -67,6 +69,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
   message,
   children,
   confirmLabel,
+  confirmStartIcon,
   cancelLabel = "Cancelar",
   isLoading = false,
   size = "md",
@@ -187,6 +190,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
               )}
               loading={showLoading}
               loadingText={confirmLabel}
+              startIcon={confirmStartIcon}
             >
               {confirmLabel || "Confirmar"}
             </Button>

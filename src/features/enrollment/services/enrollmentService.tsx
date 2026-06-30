@@ -55,6 +55,27 @@ export const updateEnrollment = async (payload: UpdateEnrollmentPayload): Promis
 };
 
 /**
+ * Withdraws (retira/abandona) a practice with a given type and justification.
+ *
+ * @param practiceId - The practice ID.
+ * @param withdrawalType - 'justified' for retiro justificado, 'unjustified' for abandono.
+ * @param justificationReason - Required reason (min 10 chars for justified).
+ * @returns A promise that resolves when the operation is complete.
+ */
+export const withdrawPractice = async (
+  practiceId: string,
+  withdrawalType: 'justified' | 'unjustified',
+  justificationReason: string,
+  withdrawComment?: string,
+): Promise<void> => {
+  await apiClient.patch(`${API_URL}/${practiceId}/withdraw`, {
+    withdrawalType,
+    justificationReason,
+    withdrawComment,
+  });
+};
+
+/**
  * Deletes (soft-deactivates) an enrollment record by its ID.
  * 
  * @param id - The unique identifier of the enrollment.

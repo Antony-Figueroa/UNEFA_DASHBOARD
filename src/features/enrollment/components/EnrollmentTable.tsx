@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import Button from "../../../components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
-import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
+import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon, ThreeDotsIcon } from "../../../icons/actions";
 import { EnrollmentRowData } from "../types";
 import { getStudents } from "../../students/services/studentsService";
 import { getCareers } from "../../careers/services/careersService";
@@ -14,6 +14,7 @@ import { TableSkeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { generateMatricula } from "../../../utils/matricula";
 import { maskIdentification } from "../../../utils/maskData";
+import { cn } from "../../../utils/cn";
 import { matchSearch } from "../../../utils/searchNormalizer";
 
 /**
@@ -40,8 +41,12 @@ interface EnrollmentTableProps {
   error: Error | null;
   /** Callback for when an item is selected for editing */
   onEdit?: (item: EnrollmentRowData) => void;
-  /** Callback for when an item's status is toggled */
-  onToggleStatus?: (item: EnrollmentRowData) => void;
+  /** Callback for inactivar */
+  onInactivate?: (item: EnrollmentRowData) => void;
+  /** Callback for retiro justificado */
+  onWithdrawJustified?: (item: EnrollmentRowData) => void;
+  /** Callback for abandono */
+  onWithdrawUnjustified?: (item: EnrollmentRowData) => void;
   /** Callback for when an item is selected for viewing */
   onView?: (item: EnrollmentRowData) => void;
   /** Callback for when an item's history is requested */
@@ -76,12 +81,15 @@ type SortOrder = "asc" | "desc";
 interface ActionButtonsProps {
   onView?: () => void;
   onEdit?: () => void;
-  onToggleStatus?: () => void;
   onViewHistory?: () => void;
+  onInactivate?: () => void;
+  onWithdrawJustified?: () => void;
+  onWithdrawUnjustified?: () => void;
   status: boolean;
+  enrollmentId?: string;
+  studentName?: string;
   isMobile?: boolean;
   canEdit?: boolean;
-  canToggle?: boolean;
 }
 
 /**
@@ -90,15 +98,30 @@ interface ActionButtonsProps {
 const ActionButtons = ({
   onView,
   onEdit,
-  onToggleStatus,
   onViewHistory,
+  onInactivate,
+  onWithdrawJustified,
+  onWithdrawUnjustified,
   status,
   isMobile = false,
   canEdit = false,
-  canToggle = false,
 }: ActionButtonsProps) => {
-  const containerClasses = isMobile 
-    ? "flex flex-col gap-3 pt-2" 
+  const [kebabOpen, setKebabOpen] = useState(false);
+  const kebabRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar kebab al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (kebabRef.current && !kebabRef.current.contains(e.target as Node)) {
+        setKebabOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const containerClasses = isMobile
+    ? "flex flex-col gap-3 pt-2"
     : "flex justify-end gap-3";
 
   return (
@@ -137,16 +160,56 @@ const ActionButtons = ({
           fullWidth={isMobile}
         />
       )}
-      {canToggle && onToggleStatus && (
+
+      {/* Kebab menu */}
+      <div className="relative" ref={kebabRef}>
         <AsyncActionButton
-          onClick={async () => onToggleStatus()}
-          icon={status ? <TrashIcon /> : <RefreshIcon />}
-          tooltip={status ? "Eliminar" : "Restaurar"}
-          label={isMobile ? (status ? "Eliminar Inscripción" : "Restaurar Inscripción") : undefined}
-          variant={status ? "error" : "success"}
+          onClick={async () => setKebabOpen(!kebabOpen)}
+          icon={<ThreeDotsIcon />}
+          tooltip="Acciones"
+          variant="secondary"
           fullWidth={isMobile}
         />
-      )}
+        {kebabOpen && (
+          <div className={cn(
+            "absolute z-50 min-w-[200px] bg-white dark:bg-bg-dark rounded-xl border border-border-light dark:border-white/10 shadow-lg py-1",
+            isMobile ? "static mt-1" : "right-0 top-full"
+          )}>
+            {onInactivate && (
+              <button
+                onClick={() => { setKebabOpen(false); onInactivate(); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
+              >
+                <TrashIcon className="w-4 h-4 text-warning-500" />
+                <span>Inactivar</span>
+              </button>
+            )}
+            {onWithdrawJustified && (
+              <button
+                onClick={() => { setKebabOpen(false); onWithdrawJustified(); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-blue-500">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <span>Retiro Justificado</span>
+              </button>
+            )}
+            {onWithdrawUnjustified && (
+              <button
+                onClick={() => { setKebabOpen(false); onWithdrawUnjustified(); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-error-500">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 14.25 12 18l3.75-3.75M12 18V11.25" />
+                </svg>
+                <span>Abandono</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -162,7 +225,9 @@ export default function EnrollmentTable({
   status,
   error,
   onEdit,
-  onToggleStatus,
+  onInactivate,
+  onWithdrawJustified,
+  onWithdrawUnjustified,
   onView,
   onViewHistory,
   activeTab = "Activas",
@@ -578,10 +643,11 @@ export default function EnrollmentTable({
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
                                             onViewHistory={onViewHistory ? () => onViewHistory(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
+                                            onInactivate={onInactivate ? () => onInactivate(s) : undefined}
+                                            onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
+                                            onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
                                             status={s.status}
                                             canEdit={!!onEdit}
-                                            canToggle={!!onToggleStatus}
                                         />
                                     </TableCell>
                                 </TableRow>
@@ -660,10 +726,11 @@ export default function EnrollmentTable({
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
                                             onViewHistory={onViewHistory ? () => onViewHistory(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
+                                            onInactivate={onInactivate ? () => onInactivate(s) : undefined}
+                                            onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
+                                            onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
                                             status={s.status}
                                             canEdit={!!onEdit}
-                                            canToggle={!!onToggleStatus}
                                             isMobile={true}
                                         />
                                     </div>

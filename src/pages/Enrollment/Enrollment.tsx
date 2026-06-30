@@ -146,6 +146,7 @@ export default function EnrollmentPage() {
         addEnrollment,
         editEnrollment,
         toggleStatus,
+        withdraw,
     } = useEnrollment();
 
     const { addPreEnrollment, loadingAction: preEnrollmentLoading } = usePreEnrollment();
@@ -184,6 +185,15 @@ export default function EnrollmentPage() {
     const [historyItem, setHistoryItem] = useState<EnrollmentRowData | null>(null);
     const [historyData, setHistoryData] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
+
+    // Diálogo de retiro / abandono
+    const [withdrawDialog, setWithdrawDialog] = useState<{
+        type: 'justified' | 'unjustified';
+        enrollment: EnrollmentRowData;
+    } | null>(null);
+    const [withdrawReason, setWithdrawReason] = useState('');
+    const [withdrawComment, setWithdrawComment] = useState('');
+    const [withdrawSubmitting, setWithdrawSubmitting] = useState(false);
 
     type ConfirmationInfo = {
         isOpen: boolean;
@@ -358,24 +368,16 @@ export default function EnrollmentPage() {
     };
 
     /**
-     * Handles toggling the active status of an enrollment.
-     * 
-     * @param row - The row data of the enrollment to toggle.
+     * Inactiva (toggle status) una inscripción.
      */
-    const handleToggleStatus = (row: EnrollmentRowData) => {
+    const handleInactivate = (row: EnrollmentRowData) => {
         const original = enrollments.find((e) => e.enrollmentId === row.enrollmentId);
         if (!original) return;
 
-        const isDeactivating = original.status;
-        const actionVerb = isDeactivating ? "desactivar" : "activar";
-        const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación";
-        const variant = isDeactivating ? "error" : "success";
-        const confirmText = isDeactivating ? "Desactivar" : "Activar";
-
         setConfirmation({
             isOpen: true,
-            title: confirmTitle,
-            message: `¿Estás seguro de que deseas ${actionVerb} la inscripción de ${row.studentName}?`,
+            title: "Confirmar Desactivación",
+            message: `¿Estás seguro de que deseas inactivar la inscripción de ${row.studentName}?`,
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
@@ -385,9 +387,35 @@ export default function EnrollmentPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: confirmText,
-            variant: variant as DialogVariant,
+            confirmText: "Inactivar",
+            variant: "warning" as DialogVariant,
         });
+    };
+
+    /**
+     * Abre el diálogo de retiro justificado / abandono.
+     */
+    const handleWithdraw = (type: 'justified' | 'unjustified', row: EnrollmentRowData) => {
+        setWithdrawDialog({ type, enrollment: row });
+        setWithdrawReason('');
+        setWithdrawComment('');
+    };
+
+    /**
+     * Confirma el retiro / abandono y llama al backend.
+     */
+    const handleWithdrawConfirm = async () => {
+        if (!withdrawDialog) return;
+        const { type, enrollment } = withdrawDialog;
+        setWithdrawSubmitting(true);
+        try {
+            await withdraw(enrollment.enrollmentId || '', type, withdrawReason, withdrawComment);
+            setWithdrawDialog(null);
+        } catch (error) {
+            console.error("[EnrollmentPage] Error withdrawing:", error);
+        } finally {
+            setWithdrawSubmitting(false);
+        }
     };
 
     return (
@@ -446,7 +474,9 @@ export default function EnrollmentPage() {
                                 error={null}
                                 activeTab={tabsState.activeTab as "Activas" | "Inactivas"}
                                 onEdit={handleEdit}
-                                onToggleStatus={handleToggleStatus}
+                                onInactivate={handleInactivate}
+                                onWithdrawJustified={(row) => handleWithdraw('justified', row)}
+                                onWithdrawUnjustified={(row) => handleWithdraw('unjustified', row)}
                                 onView={setViewItem}
                                 onViewHistory={handleViewHistory}
                                 loading={loadingAction}
@@ -762,6 +792,58 @@ export default function EnrollmentPage() {
                                 ))}
                             </div>
                         )}
+                    </UnifiedDialog>
+
+                    {/* Diálogo de Retiro Justificado / Abandono */}
+                    <UnifiedDialog
+                        isOpen={!!withdrawDialog}
+                        onClose={() => setWithdrawDialog(null)}
+                        onConfirm={handleWithdrawConfirm}
+                        title={withdrawDialog?.type === 'justified' ? 'Retiro Justificado' : 'Abandono'}
+                        confirmLabel="Confirmar"
+                        confirmStartIcon={
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+                        }
+                        variant="warning"
+                        isLoading={withdrawSubmitting}
+                    >
+                        <div className="w-full text-left space-y-4">
+                            <p className="text-sm text-text-secondary">
+                                {withdrawDialog?.type === 'justified'
+                                    ? `Registrar retiro justificado para ${withdrawDialog?.enrollment?.studentName || ''}.`
+                                    : `Registrar abandono para ${withdrawDialog?.enrollment?.studentName || ''}.`
+                                }
+                            </p>
+                            <div>
+                                <label className="block text-sm font-semibold text-text-primary mb-1">
+                                    Motivo <span className="text-error-500">*</span>
+                                </label>
+                                <textarea
+                                    value={withdrawReason}
+                                    onChange={(e) => setWithdrawReason(e.target.value)}
+                                    className="w-full h-24 rounded-xl border border-border-medium bg-transparent p-3 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none resize-none"
+                                    placeholder="Describa el motivo del retiro..."
+                                />
+                                {withdrawReason.trim().length > 0 && withdrawReason.trim().length < 10 && (
+                                    <p className="text-xs text-error-500 mt-1">Mínimo 10 caracteres</p>
+                                )}
+                            </div>
+                            {withdrawDialog?.type === 'justified' && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-text-primary mb-1">
+                                        Comentario <span className="text-text-tertiary">(opcional)</span>
+                                    </label>
+                                    <textarea
+                                        value={withdrawComment}
+                                        onChange={(e) => setWithdrawComment(e.target.value)}
+                                        className="w-full h-20 rounded-xl border border-border-medium bg-transparent p-3 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none resize-none"
+                                        placeholder="Comentarios adicionales..."
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </UnifiedDialog>
                 </div>
             </div>

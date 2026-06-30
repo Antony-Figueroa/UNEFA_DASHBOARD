@@ -589,11 +589,57 @@ export const MyTable = ({ data, onEdit, onDelete }) => {
 
 ---
 
-## 10. Agent Behavior Rules
+## 10. MCP Tools Usage — Agent Behavior Rules
 
-### ⚠️ Priority: Use Context7 MCP for Documentation
+Este proyecto está instrumentado con múltiples servidores MCP. Las siguientes reglas son **obligatorias** para cualquier agente/IA que trabaje en el codebase.
 
-**Context7** es una herramienta fundamental que debe usarse ANTES de leer código fuente o escribir código. Proporciona documentación actualizada y ejemplos de librerías/frameworks.
+---
+
+### ⚠️ Priority 1: Use Codebase Memory (knowledge graph) antes de explorar código
+
+**Codebase Memory** indexó el proyecto en un grafo de conocimiento: **13.941 nodos, 28.990 aristas** — funciones, rutas, interfaces, clusters con 85% de cohesión.
+
+**CUANDO USAR Codebase Memory:**
+- Para entender un flujo completo sin leer archivos: `trace_path`
+- Para buscar funciones, componentes o tipos: `search_graph`
+- Para explorar un feature antes de modificarlo: `search_graph(query: "...")` + `trace_path`
+- Para obtener la arquitectura general: `get_architecture(aspects: ['all'])`
+- Para medir impacto de cambios sin commitear: `detect_changes`
+- Para encontrar hot spots / código de alto riesgo: `query_graph` con filtros de complejidad
+- Para hacer preguntas estructurales (quién llama esto, quién implementa esto): `trace_path` y `search_graph`
+
+**CÓMO USAR Codebase Memory:**
+
+```text
+# Entender qué llama  una función
+trace_path(function_name="getStudents", direction="both", depth=3)
+
+# Buscar algo por nombre
+search_graph(name_pattern=".*Period.*", label="Function")
+
+# Busqueda semántica (entiende contexto)
+search_graph(query="periodos academicos con fechas")
+
+# Arquitectura completa
+get_architecture(aspects=['all'])
+
+# Cambios sin commitear + impacto
+detect_changes()
+
+# Cypher query — encontrar dead code
+query_graph(query="MATCH (f:Function) WHERE NOT EXISTS { (f)<-[:CALLS]-() } AND NOT f.is_entry_point AND f.qualified_name STARTS WITH 'C-Users-Server-Admin-Documents-GitHub-UNEFA_DASHBOARD.src' AND size(f.file_path) > 0 RETURN f.name, f.file_path")
+
+# Cypher query — funciones complejas
+query_graph(query="MATCH (f:Function) WHERE f.complexity > 15 RETURN f.name, f.file_path, f.complexity, f.cognitive ORDER BY f.complexity DESC")
+```
+
+**ANTES DE** leer 3+ archivos para entender algo, preguntale al grafo. Una `trace_path` reemplaza 10-15 tool calls de grep/read.
+
+---
+
+### ⚠️ Priority 2: Use Context7 MCP for Documentation
+
+**Context7** proporciona documentación actualizada y ejemplos de librerías/frameworks.
 
 **CUANDO USAR Context7:**
 - Antes de implementar cualquier feature nueva
@@ -625,29 +671,50 @@ context7_query-docs(libraryId: "/react/react", query: "tu pregunta específica")
 
 ---
 
-### Systematic Debugging
-1. **Reproduce** el error first
-2. **Check logs**: Browser console + backend terminal
-3. **Isolate** the issue (frontend vs backend vs database)
-4. **Fix** with minimal changes
-5. **Test** the fix thoroughly
-6. **Document** en CHANGELOG si es relevante
+### ⚠️ Priority 3: Use Engram (persistent memory)
 
-### Planning Before Coding
-1. **Understand** the requirement completely
-2. **Check** existing patterns and  features
-3. **Design** the solution (diagramas si es complejo)
-4. **Get approval** for large changes
-5. **Implement** incrementally
-6. **Test** at each step
+**Engram** guarda contexto entre sesiones — archivos modificados, decisiones, bugs, descubrimientos.
 
-### Performance First
+**CUANDO USAR Engram:**
+- Cada vez que terminás una tarea sustancial: `mem_save` con el resumen
+- Al empezar una sesión: preguntar primero si hay contexto previo
+- Si te referís a "como hicimos X antes": buscar con `mem_search`
+- Si completás un cambio importante: `mem_session_summary`
+
+---
+
+### ⚠️ Priority 4: Systematic Debugging
+1. **Reproduce** the error first
+2. **Check logs**: Browser console + backend terminal (Supabase MCP: `get_logs`)
+3. **Isolate** (frontend vs backend vs database — usá `trace_path` si es code flow)
+4. **Use Codebase Memory** para entender el flujo del bug: `trace_path(funcion, direction="inbound")`
+5. **Use Context7** si el bug involucra una librería externa
+6. **Fix** with minimal changes
+7. **Test** the fix thoroughly
+8. **Save discovery** a Engram: `mem_save` con tipo `bugfix`
+
+---
+
+### ⚠️ Priority 5: Planning Before Coding (con grafo)
+1. **Use `detect_changes()`** para ver impacto de cambios no commiteados
+2. **Use `get_architecture()`** si es un cambio grande
+3. **Use `trace_path()`** o `search_graph()`** para entender el feature completo
+4. **Use Context7** para documentación de librerías involucradas
+5. **Check** existing patterns and features
+6. **Design** the solution
+7. **Implement** incrementally
+
+---
+
+### Performance & Quality
 - ✅ Use `React.memo` for expensive components
 - ✅ Lazy load routes and heavy components
 - ✅ Debounce search inputs
 - ✅ Optimize images and assets
 - ✅ Use pagination for large lists
 - ✅ Implement proper caching strategies
+- ✅ Use Codebase Memory `query_graph` para encontrar código complejo antes de refactors
+- ✅ Usar `detect_changes` antes de commits grandes para verificar impacto
 
 ### Aesthetics & UX
 - ✅ Follow design system religiously

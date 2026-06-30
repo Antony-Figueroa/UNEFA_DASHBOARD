@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { useTabs } from "../../hooks/useTabs";
 import { useParams, useNavigate } from 'react-router';
@@ -18,6 +18,12 @@ import { Visit, CreateVisitPayload, UpdateVisitPayload, VISIT_TYPES, LEGACY_VISI
 import VisitModal from "../../features/visits/components/VisitModal";
 import { getTrackingById, TrackingDetailDTO } from "../../features/tracking/services/trackingService";
 import { useLists } from "../../features/lists/hooks/useLists";
+
+/** Parsea una fecha YYYY-MM-DD de la API como fecha LOCAL (no UTC) */
+const parseApiDate = (dateStr: string): Date => {
+  const [y, m, d] = dateStr.split('T')[0].split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
 
 export default function VisitRegistration() {
   const { id } = useParams<{ id: string }>();
@@ -77,27 +83,35 @@ export default function VisitRegistration() {
     setCurrentPage(1);
   }, [tabsState.activeTab]);
 
+  const fetchPracticeInfo = useCallback(async (retries = 2) => {
+    if (!id) return;
+    setLoadingPractice(true);
+    setPracticeError(null);
+    for (let attempt = 1; attempt <= retries + 1; attempt++) {
+      try {
+        const data = await getTrackingById(id);
+        setPracticeInfo(data);
+        setPracticeError(null);
+        return;
+      } catch (err: any) {
+        const msg = err.response?.data?.error || err.message || 'Error al cargar información de la práctica';
+        if (attempt <= retries) {
+          console.warn(`[VisitRegistration] Retry ${attempt}/${retries} for tracking info:`, msg);
+          await new Promise(r => setTimeout(r, attempt * 1000));
+        } else {
+          console.error('[VisitRegistration] Error fetching tracking info after retries:', err);
+          setPracticeError(msg);
+        }
+      } finally {
+        setLoadingPractice(false);
+      }
+    }
+  }, [id]);
+
   useEffect(() => {
     if (id) {
       const practiceId = parseInt(id);
-      
-      // Fetch tracking info immediately (independent of visits)
-      setLoadingPractice(true);
-      setPracticeError(null);
-      getTrackingById(id)
-        .then(data => {
-          setPracticeInfo(data);
-          setPracticeError(null);
-        })
-        .catch(err => {
-          console.error('[VisitRegistration] Error fetching tracking info:', err);
-          setPracticeError(err.response?.data?.error || err.message || 'Error al cargar información de la práctica');
-        })
-        .finally(() => {
-          setLoadingPractice(false);
-        });
-      
-      // Fetch ALL visits (including inactive) and stats
+      fetchPracticeInfo();
       fetchVisitsByPractice(practiceId, true);
       fetchStats({ practiceId });
     }
@@ -148,7 +162,6 @@ export default function VisitRegistration() {
       const result = await createVisit({
         ...data as CreateVisitPayload,
         practiceId: parseInt(id!),
-        tutorId: 1
       });
       success = result !== null;
     }
@@ -268,22 +281,7 @@ export default function VisitRegistration() {
             </p>
             <Button
               variant="outline"
-              onClick={() => {
-                if (id) {
-                  setLoadingPractice(true);
-                  setPracticeError(null);
-                  getTrackingById(id)
-                    .then(data => {
-                      setPracticeInfo(data);
-                    })
-                    .catch(err => {
-                      setPracticeError(err.response?.data?.error || err.message || 'Error al cargar información');
-                    })
-                    .finally(() => {
-                      setLoadingPractice(false);
-                    });
-                }
-              }}
+              onClick={() => fetchPracticeInfo()}
             >
               Reintentar
             </Button>
@@ -337,6 +335,7 @@ export default function VisitRegistration() {
               <TableHeader>
                 <TableRow>
                   <TableCell isHeader>Fecha</TableCell>
+                  <TableCell isHeader>Tutor</TableCell>
                   <TableCell isHeader>Tipo</TableCell>
                   <TableCell isHeader>Horas</TableCell>
                   <TableCell isHeader>Actividades</TableCell>
@@ -349,6 +348,11 @@ export default function VisitRegistration() {
                     <TableCell className="whitespace-nowrap">
                       <span className="font-medium text-text-primary dark:text-text-emphasis">
                         {formatDate(visit.visitDate)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <span className="text-sm text-text-secondary dark:text-text-tertiary">
+                        {visit.tutorName || '—'}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -432,8 +436,8 @@ export default function VisitRegistration() {
         tutorId={1}
         loading={loading}
         mode="edit"
-        periodStartDate={practiceInfo?.periodStartDate ? new Date(practiceInfo.periodStartDate) : undefined}
-        periodEndDate={practiceInfo?.periodEndDate ? new Date(practiceInfo.periodEndDate) : undefined}
+        periodStartDate={practiceInfo?.periodStartDate ? parseApiDate(practiceInfo.periodStartDate) : undefined}
+        periodEndDate={practiceInfo?.periodEndDate ? parseApiDate(practiceInfo.periodEndDate) : undefined}
         studentName={practiceInfo?.studentName}
         assignedTutors={practiceInfo?.assignedTutors || []}
         tutorVisitCounts={visits.reduce<{ tutorId: number; visitCount: number }[]>((acc, v) => {

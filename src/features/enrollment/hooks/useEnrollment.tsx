@@ -124,6 +124,37 @@ export const useEnrollment = () => {
   };
 
   /**
+   * Withdraws (retira justificadamente / abandono) a practice.
+   * @param practiceId - The practice ID.
+   * @param withdrawalType - 'justified' o 'unjustified'
+   * @param justificationReason - Motivo del retiro
+   */
+  const withdraw = async (
+    practiceId: string,
+    withdrawalType: 'justified' | 'unjustified',
+    justificationReason: string,
+    withdrawComment?: string,
+  ) => {
+    try {
+      await enrollmentService.withdrawPractice(practiceId, withdrawalType, justificationReason, withdrawComment);
+      addToast({
+        variant: "warning",
+        category: "ESTUDIANTE",
+        title: withdrawalType === 'justified' ? "Retiro Justificado" : "Abandono Registrado",
+        message: `La práctica ha sido marcada como ${withdrawalType === 'justified' ? 'retiro justificado' : 'abandono'}.`,
+      });
+      refreshEnrollments();
+    } catch (e: any) {
+      console.error("[useEnrollment] Error withdrawing practice:", e);
+      addToast({
+        variant: "error",
+        title: "Error",
+        message: e.response?.data?.message || "No se pudo procesar la solicitud.",
+      });
+    }
+  };
+
+  /**
    * Toggles the active status of an enrollment record.
    * @param item - The enrollment record to toggle.
    */
@@ -194,6 +225,7 @@ export const useEnrollment = () => {
     addEnrollment,
     editEnrollment,
     toggleStatus,
+    withdraw,
     refreshEnrollments,
   };
 };

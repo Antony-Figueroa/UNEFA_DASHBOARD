@@ -9,7 +9,7 @@ export interface CreateNotificationParams {
   userId: number;
   title: string;
   message: string;
-  type?: 'info' | 'success' | 'warning' | 'error';
+  type?: 'info' | 'success' | 'warning' | 'error' | 'system';
   relatedEntity?: string;
   relatedEntityId?: number;
 }
@@ -81,7 +81,7 @@ export const notifyEvaluationCreated = async (
   return await notificationService.notifyAdmins({
     title: 'Nueva Evaluación Creada',
     message: `El evaluador ${evaluatorName} ha evaluado al estudiante ${studentName}`,
-    type: 'info',
+    type: 'system',
     relatedEntity: 'evaluation',
     relatedEntityId: practiceId
   });
@@ -95,7 +95,7 @@ export const notifyRequestCreated = async (
   return await notificationService.notifyAdmins({
     title: 'Nueva Solicitud',
     message: `El estudiante ${studentName} ha creado una nueva solicitud: ${requestType}`,
-    type: 'warning',
+    type: 'system',
     relatedEntity: 'request',
     relatedEntityId: requestId
   });
@@ -111,7 +111,7 @@ export const notifyTutorAssigned = async (
   const adminResult = await notificationService.notifyAdmins({
     title: 'Tutor Asignado',
     message: `El tutor ${tutorName} ha sido asignado al estudiante ${studentName}`,
-    type: 'info',
+    type: 'system',
     relatedEntity: 'practice',
     relatedEntityId: practiceId
   });

@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
+import { lookup as dnsLookup } from 'dns';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -15,12 +16,18 @@ const tryGmail = async (opts: { to: string; subject: string; html: string; text?
   if (!user || !pass) return null; // no configurado
 
   try {
+    // Forzar IPv4 — Render no tiene salida IPv6
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: { user, pass },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000,
+      lookup: (hostname, opts, cb) => {
+        dnsLookup(hostname, { ...opts, family: 4 }, cb);
+      },
     });
 
     await transporter.sendMail({
@@ -123,10 +130,10 @@ const trySimulation = (opts: { to: string; subject: string; html: string; text?:
 
 /**
  * Función genérica para enviar correos.
- * Prioridad: Gmail SMTP → Brevo → Resend → Simulación en consola.
+ * Prioridad: Gmail SMTP (IPv4 forced) → Brevo API → Resend → Simulación.
  */
 export const sendEmail = async (options: { to: string; subject: string; html: string; text?: string }): Promise<SendResult> => {
-  // 1. Gmail SMTP (local)
+  // 1. Gmail SMTP (IPv4 forced — funciona en Render)
   const gmailResult = await tryGmail(options);
   if (gmailResult?.success) return gmailResult;
 

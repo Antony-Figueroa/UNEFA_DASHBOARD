@@ -1,5 +1,4 @@
 import { Resend } from 'resend';
-import sgMail from '@sendgrid/mail';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
@@ -70,29 +69,41 @@ const tryResend = async (opts: { to: string; subject: string; html: string; text
   }
 };
 
-/** Enviar via SendGrid (HTTP API, funciona en serverless) */
-const trySendGrid = async (opts: { to: string; subject: string; html: string; text?: string }): Promise<SendResult | null> => {
-  const apiKey = process.env.SENDGRID_API_KEY;
+/** Enviar via Brevo API (HTTP, funciona en serverless, 300 emails/día gratis) */
+const tryBrevo = async (opts: { to: string; subject: string; html: string; text?: string }): Promise<SendResult | null> => {
+  const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) return null;
 
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'antonysamuel0903@gmail.com';
-  const fromName = process.env.SENDGRID_FROM_NAME || 'SIGP UNEFA';
+  const fromEmail = process.env.BREVO_FROM_EMAIL || 'antonysamuel0903@gmail.com';
+  const fromName = process.env.BREVO_FROM_NAME || 'SIGP UNEFA';
 
   try {
-    sgMail.setApiKey(apiKey);
-    await sgMail.send({
-      to: opts.to,
-      from: { email: fromEmail, name: fromName },
-      subject: opts.subject,
-      html: opts.html,
-      ...(opts.text && { text: opts.text }),
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { email: fromEmail, name: fromName },
+        to: [{ email: opts.to }],
+        subject: opts.subject,
+        htmlContent: opts.html,
+        ...(opts.text && { textContent: opts.text }),
+      }),
     });
 
-    console.log(`✅ [SendGrid] Correo enviado a ${opts.to}`);
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      const msg = errBody?.message || `HTTP ${response.status}`;
+      throw new Error(msg);
+    }
+
+    console.log(`✅ [Brevo] Correo enviado a ${opts.to}`);
     return { success: true };
   } catch (error: any) {
-    const reason = error?.response?.body?.errors?.[0]?.message || error?.message || 'Error SendGrid';
-    console.error(`❌ [SendGrid] Error enviando a ${opts.to}:`, reason);
+    const reason = error?.message || 'Error Brevo';
+    console.error(`❌ [Brevo] Error enviando a ${opts.to}:`, reason);
     return { success: false, error: reason };
   }
 };
@@ -112,16 +123,16 @@ const trySimulation = (opts: { to: string; subject: string; html: string; text?:
 
 /**
  * Función genérica para enviar correos.
- * Prioridad: Gmail SMTP → SendGrid → Resend → Simulación en consola.
+ * Prioridad: Gmail SMTP → Brevo → Resend → Simulación en consola.
  */
 export const sendEmail = async (options: { to: string; subject: string; html: string; text?: string }): Promise<SendResult> => {
   // 1. Gmail SMTP (local)
   const gmailResult = await tryGmail(options);
   if (gmailResult?.success) return gmailResult;
 
-  // 2. SendGrid API (producción — HTTP, funciona en serverless)
-  const sgResult = await trySendGrid(options);
-  if (sgResult?.success) return sgResult;
+  // 2. Brevo API (producción — HTTP, funciona en serverless)
+  const brevoResult = await tryBrevo(options);
+  if (brevoResult?.success) return brevoResult;
 
   // 3. Resend API (fallback)
   const resendResult = await tryResend(options);

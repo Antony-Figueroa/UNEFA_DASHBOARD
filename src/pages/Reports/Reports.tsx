@@ -181,6 +181,26 @@ export default function ReportsPage() {
     setPaginationInfo({ page: newPage, totalPages, totalRecords: loaded.meta?.total || loaded.data.length });
   }, [loadReportPage, careerIdsFilter]);
 
+  /** Cambia filtros dentro del preview y recarga datos */
+  const handlePreviewFilterChange = useCallback(async (period: string, careerIds: number[]) => {
+    const ref = activeReportConfigRef.current;
+    if (!ref) return;
+    const periodNum = period ? parseInt(period.split('-')[0]) : undefined;
+    const effectiveCareerIds = careerIds.length > 0 ? careerIds : undefined;
+    try {
+      const result = await fetchReportData(ref.type, periodNum, undefined, 0, 50, effectiveCareerIds);
+      if (!result?.data) {
+        toast.error('No se encontraron datos');
+        return;
+      }
+      setTableData(result.data);
+      const totalPages = result.meta?.total ? Math.ceil(result.meta.total / (result.meta?.limit || 50)) : 1;
+      setPaginationInfo({ page: 0, totalPages, totalRecords: result.meta?.total || result.data.length });
+    } catch (error) {
+      toast.error('Error al cargar datos');
+    }
+  }, [fetchReportData]);
+
   const handleExportExcel = useCallback(async (type: string, preSelectedTutorId?: number) => {
     if (type === "proyeccion-pasantias") {
       setIsProyeccionModalOpen(true);
@@ -496,6 +516,36 @@ export default function ReportsPage() {
               totalRecords: paginationInfo.totalRecords,
               onPageChange: handleTablePageChange,
             } : undefined}
+            renderFilters={() => (
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                    Período
+                  </label>
+                  <CustomSelect
+                    options={[
+                      { value: "", label: "Todos los períodos" },
+                      ...availablePeriods
+                    ]}
+                    value={periodFilter}
+                    onChange={(e) => handlePreviewFilterChange(e as unknown as string, careerIdsFilter)}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                    Carrera
+                  </label>
+                  <MultiSelect
+                    label=""
+                    options={careerOptions}
+                    value={careerIdsFilter.map(String)}
+                    onChange={(selected) => handlePreviewFilterChange(periodFilter, selected.map(Number))}
+                    placeholder="Todas las carreras"
+                  />
+                </div>
+              </div>
+            )}
           />
         )}
 

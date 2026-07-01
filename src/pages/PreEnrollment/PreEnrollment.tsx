@@ -277,8 +277,8 @@ export default function PreEnrollmentPage() {
         const isEditing = !!editingEntry;
         setConfirmation({
             isOpen: true,
-            title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
-            message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios de" : "registrar"} esta pre-inscripción?`,
+            title: isEditing ? "Confirmar Actualización" : "Confirmar Registro",
+            message: `¿Estás seguro de que deseas ${isEditing ? "actualizar" : "registrar"} esta pre-inscripción?`,
             onConfirm: async () => {
                 try {
                     if (isEditing && editingEntry) {
@@ -296,7 +296,7 @@ export default function PreEnrollmentPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: isEditing ? "Guardar" : "Registrar",
+            confirmText: isEditing ? "Actualizar" : "Registrar",
             variant: "info",
         });
     };

@@ -230,8 +230,8 @@ export default function TutorsPage() {
         const isEditing = !!editingTutor;
         setConfirmation({
             isOpen: true,
-            title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
-            message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios de" : "registrar a"} este tutor?`,
+            title: isEditing ? "Confirmar Actualización" : "Confirmar Registro",
+            message: `¿Estás seguro de que deseas ${isEditing ? "actualizar" : "registrar a"} este tutor?`,
             onConfirm: async () => {
                 try {
                     if (isEditing && editingTutor) {
@@ -254,7 +254,7 @@ export default function TutorsPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: isEditing ? "Guardar" : "Registrar",
+            confirmText: isEditing ? "Actualizar" : "Registrar",
             variant: "info",
         });
     };

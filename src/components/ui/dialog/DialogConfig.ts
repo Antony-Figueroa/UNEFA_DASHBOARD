@@ -91,8 +91,8 @@ export const TOAST_TITLES = {
 export const CONFIRM_MESSAGES = {
   create: (resource: string): DialogTextConfig => ({
     title: 'Confirmar registro',
-    message: `¿Estás seguro de que deseas crear ${resource.toLowerCase()}?`,
-    confirmLabel: 'Crear',
+    message: `¿Estás seguro de que deseas registrar ${resource.toLowerCase()}?`,
+    confirmLabel: 'Registrar',
   }),
   update: (resource: string): DialogTextConfig => ({
     title: 'Confirmar cambios',

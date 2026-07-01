@@ -335,7 +335,7 @@ export default function TutorsPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: "Restaurar",
+            confirmText: "Restaurar Todos",
             variant: "success",
         });
     };

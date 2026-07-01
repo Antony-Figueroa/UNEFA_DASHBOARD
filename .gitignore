@@ -77,3 +77,6 @@ backend/dist/
 
 # Database backup dumps
 backups/
+
+# Windows reserved device name
+/NUL

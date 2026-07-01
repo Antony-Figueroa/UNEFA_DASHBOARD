@@ -484,7 +484,7 @@ export default function CareersPage() {
           setConfirmation(null);
         }
       },
-      confirmText: "Restaurar",
+      confirmText: "Restaurar Todos",
       variant: "success",
     });
   };
@@ -506,7 +506,7 @@ export default function CareersPage() {
           setConfirmation(null);
         }
       },
-      confirmText: "Restaurar",
+      confirmText: "Restaurar Todos",
       variant: "success",
     });
   };

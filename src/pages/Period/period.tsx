@@ -226,8 +226,8 @@ export default function Period() {
     const handleActivatePeriod = async (periodoToActivate: PeriodoRowData) => {
         setConfirmation({
             isOpen: true,
-            title: 'Confirmar Restauración',
-            message: `¿Estás seguro de que deseas restaurar el periodo "${periodoToActivate.description}"? Esto lo pondrá "En Curso" y permitirá registrar actividades.`,
+            title: 'Confirmar Activación',
+            message: `¿Estás seguro de que deseas activar el periodo "${periodoToActivate.description}"? Esto lo pondrá "En Curso" y permitirá registrar actividades.`,
             onConfirm: async () => {
                 try {
                     const originalPeriodo = periodos.find(p => p.periodId === periodoToActivate.periodId);
@@ -240,7 +240,7 @@ export default function Period() {
                     setConfirmation(null);
                 }
             },
-            confirmText: 'Restaurar',
+            confirmText: 'Activar',
             variant: 'success'
         });
     };
@@ -335,15 +335,26 @@ export default function Period() {
      * Maneja la restauración masiva de periodos.
      */
     const handleBulkRestore = async (periodosRow: PeriodoRowData[]) => {
-        try {
-            const ids = periodosRow
-                .map(p => periodos.find(o => o.periodId === p.periodId)?.periodId)
-                .filter((id): id is string => Boolean(id));
+        setConfirmation({
+            isOpen: true,
+            title: 'Confirmar Restauración Masiva',
+            message: `¿Estás seguro de que deseas restaurar los ${periodosRow.length} períodos seleccionados?`,
+            confirmText: 'Restaurar Todos',
+            variant: 'success',
+            onConfirm: async () => {
+                try {
+                    const ids = periodosRow
+                        .map(p => periodos.find(o => o.periodId === p.periodId)?.periodId)
+                        .filter((id): id is string => Boolean(id));
 
-            await bulkRestorePeriods(ids);
-        } catch (e) {
-            console.error("[PeriodPage] Error al restaurar periodos:", e);
-        }
+                    await bulkRestorePeriods(ids);
+                } catch (e) {
+                    console.error("[PeriodPage] Error al restaurar periodos:", e);
+                } finally {
+                    setConfirmation(null);
+                }
+            }
+        });
     };
 
     // Memoizamos los datos formateados para la tabla para evitar recálculos innecesarios.

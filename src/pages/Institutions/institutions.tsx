@@ -356,7 +356,7 @@ export default function InstitutionsPage() {
     const actionVerb = isInactivating ? "desactivar" : "restaurar";
     const confirmTitle = isInactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Masiva";
     const variant = isInactivating ? "error" : "success";
-    const confirmText = isInactivating ? "Desactivar Todos" : "Restaurar";
+    const confirmText = isInactivating ? "Desactivar Todos" : "Restaurar Todos";
 
     setConfirmation({
       isOpen: true,
@@ -385,7 +385,7 @@ export default function InstitutionsPage() {
     const actionVerb = isInactivating ? "desactivar" : "restaurar";
     const confirmTitle = isInactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Masiva";
     const variant = isInactivating ? "error" : "success";
-    const confirmText = isInactivating ? "Desactivar Todos" : "Restaurar";
+    const confirmText = isInactivating ? "Desactivar Todos" : "Restaurar Todos";
 
     setConfirmation({
       isOpen: true,

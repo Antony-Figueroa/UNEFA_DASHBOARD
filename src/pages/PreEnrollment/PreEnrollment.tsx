@@ -369,7 +369,7 @@ export default function PreEnrollmentPage() {
             isOpen: true,
             title: "Confirmar Restauración Masiva",
             message: `¿Estás seguro de que deseas restaurar las ${ids.length} pre-inscripciones seleccionadas?`,
-            confirmText: "Restaurar",
+            confirmText: "Restaurar Todos",
             variant: "success",
             onConfirm: async () => {
                 try {

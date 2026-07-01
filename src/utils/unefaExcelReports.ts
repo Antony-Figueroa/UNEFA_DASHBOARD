@@ -415,6 +415,65 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
   }
 }
 
+export async function generateRelacionInstitucionesSolicitanExcel(data: any[], period: string, fileName: string) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Relacion Instituciones');
+  const totalCols = 7;
+
+  worksheet.columns = [
+    { key: 'empresa', width: 50 }, { key: 'rif', width: 18 },
+    { key: 'responsable', width: 30 }, { key: 'telefono', width: 18 },
+    { key: 'tipoEmpresa', width: 14 }, { key: 'carreras', width: 35 },
+    { key: 'estudiantes', width: 10 },
+  ];
+
+  applyInstitutionalHeader(worksheet, totalCols);
+
+  applyTitleRow(worksheet, 7, `RELACIÓN DE INSTITUCIONES QUE SOLICITAN ASIGNACIÓN DE PASANTES - ${period}`, totalCols);
+
+  const row9 = worksheet.getRow(9);
+  row9.height = 40;
+
+  const headers = [
+    'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN',
+    'RIF',
+    'RESPONSABLE',
+    'NÚMERO DE\nCONTACTO',
+    'TIPO DE\nEMPRESA',
+    'CARRERAS',
+    'CANTIDAD DE\nESTUDIANTES',
+  ];
+
+  headers.forEach((text, i) => {
+    const cell = row9.getCell(i + 1);
+    cell.value = text;
+    cell.style = HEADER_STYLE;
+  });
+
+  let currentRow = 10;
+  data.forEach(item => {
+    const row = worksheet.getRow(currentRow);
+    row.height = 25;
+
+    applyDataCell(worksheet, currentRow, 1, (item.empresa || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 2, (item.rif || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 3, (item.responsable || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 4, (item.numeroContacto || 'N/A').toUpperCase());
+    applyDataCell(worksheet, currentRow, 5, (item.tipoEmpresa || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 6, (item.carreras || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 7, item.cantidadEstudiantes || 0);
+
+    currentRow++;
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  if (typeof window !== 'undefined') {
+    const { saveAs } = await import('file-saver');
+    saveAs(blob, `${fileName}.xlsx`);
+  }
+}
+
 export async function generateDistribucionTutoresExcel(data: any[], period: string, fileName: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Distribucion Tutores');

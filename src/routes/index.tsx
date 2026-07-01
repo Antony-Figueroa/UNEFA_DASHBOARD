@@ -29,6 +29,7 @@ const EvaluationConfigPage = lazy(() => import("../pages/Config/sections/system/
 const DashboardConfigurator = lazy(() => import("../pages/Config/sections/customize/DashboardPage"));
 const NotificationsPage = lazy(() => import("../pages/Notifications/NotificationsPage"));
 const Reports = lazy(() => import("../pages/Reports/Reports"));
+const TestEvaluacionFinal = lazy(() => import("../pages/TestEvaluacionFinal"));
 const CulminatedStudentsReport = lazy(() => import("../pages/Reports/CulminatedStudentsReport"));
 const Manuals = lazy(() => import("../pages/Manuals/Manuals"));
 
@@ -191,6 +192,9 @@ export const AppRoutes = () => {
             {/* Reports */}
             <Route path="/reports" element={<ProtectedRoute requiredPermissions={['reports:view']}><Reports /></ProtectedRoute>} />
             <Route path="/reports/culminated-students" element={<ProtectedRoute requiredPermissions={['reports:view']}><CulminatedStudentsReport /></ProtectedRoute>} />
+
+            {/* Test route — remove after testing */}
+            <Route path="/test-evaluacion-final" element={<TestEvaluacionFinal />} />
 
 {/* Manuals */}
             <Route path="/manuals" element={<Manuals />} />

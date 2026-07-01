@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
-import { generateWorkbook, generateTutoresAcademicosWorkbook, generateResumenPasantiasWorkbook, generateRelacionEmpresasWorkbook } from '../services/excel-export.service.js';
+import { generateWorkbook, generateTutoresAcademicosWorkbook, generateResumenPasantiasWorkbook, generateRelacionEmpresasWorkbook, generateRelacionInstitucionesSolicitanWorkbook } from '../services/excel-export.service.js';
 import type { IndividualTutorSheetConfig, IndividualTutorRow, ResumenPasantiaRow } from '../services/excel-export.service.js';
 
 interface PeriodInfo {
@@ -1708,6 +1708,123 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         }));
 
         workbook = await generateRelacionEmpresasWorkbook(rows, periodDesc);
+        break;
+      }
+
+      case 'relacion-instituciones-solicitan': {
+        let query = supabase
+          .from('t_professional_practices')
+          .select(`
+            PROFESSIONAL_PRACTICE_ID,
+            PERIOD_ID,
+            CAREER_ID,
+            t_institution (INSTITUTION_NAME, RIF, INSTITUTION_TYPE, INSTITUTION_CONTACT),
+            t_institution_manager!inner (MANAGER_ID, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, CONTACT_PHONE),
+            t_career (CAREER_NAME)
+          `)
+          .eq('STATUS', 1);
+
+        if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
+        if (careerIds.length > 0) query = query.in('CAREER_ID', careerIds);
+
+        const { data: practices } = await query;
+
+        // If no practices with managers found, try without manager join
+        let practicesWithManager = practices || [];
+        let practicesWithoutManager: any[] = [];
+
+        if (practicesWithManager.length === 0) {
+          // Try query without inner join to get institutions without managers
+          let fallbackQuery = supabase
+            .from('t_professional_practices')
+            .select(`
+              PROFESSIONAL_PRACTICE_ID,
+              PERIOD_ID,
+              CAREER_ID,
+              t_institution (INSTITUTION_NAME, RIF, INSTITUTION_TYPE, INSTITUTION_CONTACT),
+              t_career (CAREER_NAME)
+            `)
+            .eq('STATUS', 1);
+
+          if (periodId) fallbackQuery = fallbackQuery.eq('PERIOD_ID', Number(periodId));
+          if (careerIds.length > 0) fallbackQuery = fallbackQuery.in('CAREER_ID', careerIds);
+
+          const { data: fallbackPractices } = await fallbackQuery;
+          practicesWithoutManager = fallbackPractices || [];
+        }
+
+        const periodDesc = await getPeriodDescription(supabase, periodId as string);
+
+        const instMap = new Map<string, {
+          empresa: string; rif: string; tipo: string; telefono: string;
+          manager: any; carreras: Set<string>; estudiantes: number;
+        }>();
+
+        // Process practices with managers (from inner join)
+        (practicesWithManager || []).forEach((p: any) => {
+          const inst: any = p.t_institution;
+          const mgr: any = p.t_institution_manager;
+          if (!inst) return;
+          const key = inst.INSTITUTION_NAME || 'unknown';
+          const carrera = (p.t_career as any)?.CAREER_NAME || '';
+
+          if (!instMap.has(key)) {
+            // Phone priority: INSTITUTION_CONTACT → manager CONTACT_PHONE → 'N/A'
+            const phone = inst.INSTITUTION_CONTACT || mgr?.CONTACT_PHONE || 'N/A';
+            instMap.set(key, {
+              empresa: inst.INSTITUTION_NAME || '',
+              rif: inst.RIF || '',
+              tipo: inst.INSTITUTION_TYPE || '',
+              telefono: phone,
+              manager: mgr,
+              carreras: new Set(),
+              estudiantes: 0,
+            });
+          }
+          const entry = instMap.get(key)!;
+          entry.carreras.add(carrera);
+          entry.estudiantes++;
+        });
+
+        // Process practices without managers (from fallback query)
+        (practicesWithoutManager || []).forEach((p: any) => {
+          const inst: any = p.t_institution;
+          if (!inst) return;
+          const key = inst.INSTITUTION_NAME || 'unknown';
+          const carrera = (p.t_career as any)?.CAREER_NAME || '';
+
+          if (!instMap.has(key)) {
+            // No manager: use N/A for responsable, INSTITUTION_CONTACT for phone
+            const phone = inst.INSTITUTION_CONTACT || 'N/A';
+            instMap.set(key, {
+              empresa: inst.INSTITUTION_NAME || '',
+              rif: inst.RIF || '',
+              tipo: inst.INSTITUTION_TYPE || '',
+              telefono: phone,
+              manager: null,
+              carreras: new Set(),
+              estudiantes: 0,
+            });
+          }
+          const entry = instMap.get(key)!;
+          entry.carreras.add(carrera);
+          entry.estudiantes++;
+        });
+
+        const rows = Array.from(instMap.values()).map((e) => ({
+          empresa: e.empresa,
+          rif: e.rif,
+          responsable: e.manager
+            ? [e.manager.NAME, e.manager.SECOND_NAME, e.manager.SURNAME, e.manager.SECOND_SURNAME]
+                .filter(Boolean).join(' ')
+            : 'N/A',
+          telefono: e.telefono,
+          tipoEmpresa: e.tipo,
+          carreras: Array.from(e.carreras).join(', '),
+          cantidadEstudiantes: e.estudiantes,
+        }));
+
+        workbook = await generateRelacionInstitucionesSolicitanWorkbook(rows, periodDesc);
         break;
       }
 

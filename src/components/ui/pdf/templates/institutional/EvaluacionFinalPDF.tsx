@@ -7,26 +7,31 @@ const styles = StyleSheet.create({
   title: { textAlign: 'center', fontSize: 14, fontWeight: 'bold', marginBottom: 25, textDecoration: 'underline' },
   paragraph: { marginBottom: 20, textAlign: 'justify' },
 
-  infoRow: { flexDirection: 'row', marginBottom: 3 },
-  infoLabel: { fontWeight: 'bold', width: 200, fontSize: 10 },
-  infoValue: { flex: 1, fontSize: 10 },
+  /* ── Pseudo-table: Student info ── */
   infoSection: { marginBottom: 20 },
+  infoTable: { borderWidth: 1, borderColor: '#000' },
+  infoRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000' },
+  infoRowLast: { flexDirection: 'row' },
+  infoLabel: { width: 240, fontWeight: 'bold', fontSize: 10, paddingVertical: 6, paddingHorizontal: 6, borderRightWidth: 1, borderRightColor: '#000' },
+  infoValue: { flex: 1, fontSize: 10, paddingVertical: 6, paddingHorizontal: 6 },
 
-  table: { marginTop: 10, marginBottom: 10 },
-  tableHeaderRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderTopWidth: 1, borderTopColor: '#000', paddingVertical: 5, backgroundColor: '#f5f5f5' },
-  tableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#ccc', paddingVertical: 4 },
-  thDesc: { flex: 2.5, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
-  thWeight: { flex: 1, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
-  thParcial: { flex: 1.2, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
-  thProp: { flex: 1.3, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
-  tdDesc: { flex: 2.5, fontSize: 9, paddingLeft: 4 },
-  tdWeight: { flex: 1, fontSize: 9, textAlign: 'center' },
-  tdParcial: { flex: 1.2, fontSize: 9, textAlign: 'center' },
-  tdProp: { flex: 1.3, fontSize: 9, textAlign: 'center' },
+  /* ── Pseudo-table: Evaluation ── */
+  table: { marginTop: 10, marginBottom: 10, borderWidth: 1, borderColor: '#000' },
+  tableHeaderRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', backgroundColor: '#e8e8e8' },
+  tableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000' },
+  tableRowLast: { flexDirection: 'row' },
+  thDesc: { flex: 2.5, fontWeight: 'bold', fontSize: 9, textAlign: 'center', paddingVertical: 5, paddingHorizontal: 4, borderRightWidth: 1, borderRightColor: '#000' },
+  thWeight: { flex: 1, fontWeight: 'bold', fontSize: 9, textAlign: 'center', paddingVertical: 5, paddingHorizontal: 4, borderRightWidth: 1, borderRightColor: '#000' },
+  thParcial: { flex: 1.2, fontWeight: 'bold', fontSize: 9, textAlign: 'center', paddingVertical: 5, paddingHorizontal: 4, borderRightWidth: 1, borderRightColor: '#000' },
+  thProp: { flex: 1.3, fontWeight: 'bold', fontSize: 9, textAlign: 'center', paddingVertical: 5, paddingHorizontal: 4 },
+  tdDesc: { flex: 2.5, fontSize: 9, paddingVertical: 5, paddingHorizontal: 6, borderRightWidth: 1, borderRightColor: '#000' },
+  tdWeight: { flex: 1, fontSize: 9, textAlign: 'center', paddingVertical: 5, paddingHorizontal: 4, borderRightWidth: 1, borderRightColor: '#000' },
+  tdParcial: { flex: 1.2, fontSize: 9, textAlign: 'center', paddingVertical: 5, paddingHorizontal: 4, borderRightWidth: 1, borderRightColor: '#000' },
+  tdProp: { flex: 1.3, fontSize: 9, textAlign: 'center', paddingVertical: 5, paddingHorizontal: 4 },
 
-  totalRow: { flexDirection: 'row', borderTopWidth: 2, borderTopColor: '#000', paddingVertical: 5, marginTop: 2 },
-  totalLabel: { flex: 3.5, fontWeight: 'bold', fontSize: 10, textAlign: 'right', paddingRight: 10 },
-  totalValue: { flex: 1.3, fontWeight: 'bold', fontSize: 10, textAlign: 'center' },
+  totalRow: { flexDirection: 'row', borderTopWidth: 2, borderTopColor: '#000' },
+  totalLabel: { flex: 3.5, fontWeight: 'bold', fontSize: 10, textAlign: 'right', paddingVertical: 5, paddingHorizontal: 10, borderRightWidth: 1, borderRightColor: '#000' },
+  totalValue: { flex: 1.3, fontWeight: 'bold', fontSize: 10, textAlign: 'center', paddingVertical: 5, paddingHorizontal: 4 },
   totalEmpty: { flex: 1.2 },
 
   finalGrade: { marginTop: 15, alignItems: 'center', marginBottom: 15 },
@@ -93,47 +98,49 @@ export function EvaluacionFinalPDF({ data, textos }: Props) {
       <Text style={styles.title}>EVALUACIÓN FINAL DE LA PRÁCTICA PROFESIONAL</Text>
       <Text style={styles.paragraph}>{cuerpo}</Text>
 
-      {/* Student info */}
+      {/* Student info — pseudo-table with borders */}
       <View style={styles.infoSection}>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Apellidos y Nombres:</Text>
-          <Text style={styles.infoValue}>{formatNombreCompleto(data.estudiante)}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Cédula de Identidad:</Text>
-          <Text style={styles.infoValue}>{formatCI(data.estudiante.ci)}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Carrera que cursa:</Text>
-          <Text style={styles.infoValue}>{data.carrera.nombre}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Nombre de la Institución:</Text>
-          <Text style={styles.infoValue}>{data.institucion?.nombre || 'No asignada'}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Fecha de inicio de la PP:</Text>
-          <Text style={styles.infoValue}>{formatFecha(data.practica.startDate)}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Fecha de culminación de la PP:</Text>
-          <Text style={styles.infoValue}>{formatFecha(data.practica.endDate)}</Text>
+        <View style={styles.infoTable}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>APELLIDOS Y NOMBRES:</Text>
+            <Text style={styles.infoValue}>{formatNombreCompleto(data.estudiante)}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>CÉDULA DE IDENTIDAD:</Text>
+            <Text style={styles.infoValue}>{formatCI(data.estudiante.ci)}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>CARRERA QUE CURSA:</Text>
+            <Text style={styles.infoValue}>{data.carrera.nombre}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>NOMBRE DE LA INSTITUCIÓN DONDE REALIZÓ LA PRÁCTICA PROFESIONAL:</Text>
+            <Text style={styles.infoValue}>{data.institucion?.nombre || 'No asignada'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>FECHA DE INICIO DE LA PP:</Text>
+            <Text style={styles.infoValue}>{formatFecha(data.practica.startDate)}</Text>
+          </View>
+          <View style={styles.infoRowLast}>
+            <Text style={styles.infoLabel}>FECHA DE CULMINACIÓN DE LA PP:</Text>
+            <Text style={styles.infoValue}>{formatFecha(data.practica.endDate)}</Text>
+          </View>
         </View>
       </View>
 
-      {/* Weighted evaluation table */}
+      {/* Weighted evaluation table — pseudo-table with borders */}
       {evaluaciones && (
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
-            <Text style={styles.thDesc}>Evaluación del/de la Estudiante</Text>
-            <Text style={styles.thWeight}>Valor %</Text>
-            <Text style={styles.thParcial}>Calif. Parcial (1-20)</Text>
-            <Text style={styles.thProp}>Calif. Proporcional al %</Text>
+            <Text style={styles.thDesc}>Evaluación del (de la) Estudiante</Text>
+            <Text style={styles.thWeight}>Valor Porcentual</Text>
+            <Text style={styles.thParcial}>Calificación Parcial (Escala 1-20)</Text>
+            <Text style={styles.thProp}>Calificación Parcial Proporcional al Porcentaje</Text>
           </View>
 
           {evaluaciones.tutorInstitucional && (
             <View style={styles.tableRow}>
-              <Text style={styles.tdDesc}>A. Por parte del Tutor(a) Institucional</Text>
+              <Text style={styles.tdDesc}>A. Por parte del (de la) Tutor(a) Institucional</Text>
               <Text style={styles.tdWeight}>{weightToPercent(evaluaciones.tutorInstitucional.weight)}%</Text>
               <Text style={styles.tdParcial}>{evaluaciones.tutorInstitucional.parcial}</Text>
               <Text style={styles.tdProp}>{calcProp(evaluaciones.tutorInstitucional.parcial, evaluaciones.tutorInstitucional.weight)}</Text>
@@ -142,7 +149,7 @@ export function EvaluacionFinalPDF({ data, textos }: Props) {
 
           {evaluaciones.tutorAcademico && (
             <View style={styles.tableRow}>
-              <Text style={styles.tdDesc}>B. Por parte del Tutor(a) Académico</Text>
+              <Text style={styles.tdDesc}>B. Por parte del (de la) Tutor(a) Académico</Text>
               <Text style={styles.tdWeight}>{weightToPercent(evaluaciones.tutorAcademico.weight)}%</Text>
               <Text style={styles.tdParcial}>{evaluaciones.tutorAcademico.parcial}</Text>
               <Text style={styles.tdProp}>{calcProp(evaluaciones.tutorAcademico.parcial, evaluaciones.tutorAcademico.weight)}</Text>
@@ -150,7 +157,7 @@ export function EvaluacionFinalPDF({ data, textos }: Props) {
           )}
 
           {evaluaciones.comiteEvaluador && (
-            <View style={styles.tableRow}>
+            <View style={styles.tableRowLast}>
               <Text style={styles.tdDesc}>C. Por parte del Comité Evaluador</Text>
               <Text style={styles.tdWeight}>{weightToPercent(evaluaciones.comiteEvaluador.weight)}%</Text>
               <Text style={styles.tdParcial}>{evaluaciones.comiteEvaluador.parcial}</Text>

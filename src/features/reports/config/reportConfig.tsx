@@ -24,6 +24,7 @@ export type ReportType =
   | "culminated-students"
   | "resumen-pasantias"
   | "relacion-empresas"
+  | "relacion-instituciones-solicitan"
   | "distribucion-tutores"
   | "distribucion-tutores-v2"
   | "relacion-individual-docente"
@@ -83,6 +84,7 @@ export const DOCUMENT_SECTIONS: SectionGroup[] = [
       { id: "tutores-academicos", title: "Relación de Tutores Acad.", subtitle: "ANEXO 4 - Tutores y Estudiantes Atendidos", icon: "table", type: "excel" },
       { id: "resumen-pasantias", title: "Resumen de Pasantías", subtitle: "Resumen General de Prácticas Profesionales", icon: "table", type: "excel" },
       { id: "relacion-empresas", title: "Relación de Empresas", subtitle: "Instituciones que Demandan Pasantes", icon: "spreadsheet", type: "excel" },
+      { id: "relacion-instituciones-solicitan", title: "Relación de Instituciones", subtitle: "Instituciones que Solicitan Asignación de Pasantes", icon: "spreadsheet", type: "excel" },
       { id: "distribucion-tutores", title: "Distribución de Tutores", subtitle: "Asignación de Tutores por Estudiante", icon: "spreadsheet", type: "excel" },
       { id: "distribucion-tutores-v2", title: "Dist. Tutores (Detallada)", subtitle: "Distribución con Horario Detallado", icon: "spreadsheet", type: "excel" },
       { id: "relacion-individual-docente", title: "Relación Individual Doc.", subtitle: "Reporte Individual por Docente", icon: "spreadsheet", type: "excel" },
@@ -245,6 +247,24 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       { header: "Privada", accessor: "privada", className: "text-center" },
       { header: "Carrera", accessor: "carrera" },
       { header: "Est.", accessor: "cantidadEstudiantes", className: "text-center font-bold" },
+    ],
+  },
+  "relacion-instituciones-solicitan": {
+    title: "Relación de Instituciones",
+    subtitle: "Instituciones que Solicitan Asignación de Pasantes",
+    type: "excel",
+    loadData: async (periodId, careerId, page, limit, careerIds) => {
+      const response = await reportsService.getRelacionInstitucionesSolicitan(periodId, careerId, page, limit, careerIds);
+      return { data: response?.data || [], meta: response?.meta };
+    },
+    columns: [
+      { header: "Nombre de la Empresa o Institución", accessor: "empresa" },
+      { header: "RIF", accessor: "rif" },
+      { header: "Responsable", accessor: "responsable" },
+      { header: "Número de Contacto", accessor: "numeroContacto", className: "text-center" },
+      { header: "Tipo de Empresa", accessor: "tipoEmpresa", className: "text-center" },
+      { header: "Carreras", accessor: "carreras" },
+      { header: "Cantidad de Estudiantes", accessor: "cantidadEstudiantes", className: "text-center font-bold" },
     ],
   },
   "distribucion-tutores": {

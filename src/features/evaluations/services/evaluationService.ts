@@ -54,6 +54,15 @@ const fromApiWithDetails = (data: ApiEvaluation): EvaluationWithDetails => ({
 });
 
 export const evaluationService = {
+  updateCriteria: async (criteria: { criteriaId: number; description: string }[]): Promise<void> => {
+    try {
+      await apiClient.put(`${API_URL}/criteria`, { criteria });
+    } catch (error) {
+      console.error('[evaluationService] Error updating criteria:', error);
+      throw error;
+    }
+  },
+
   getCriteria: async (type?: EvaluatorType): Promise<EvaluationCriteria[]> => {
     try {
       const params = type ? { type } : {};
@@ -64,15 +73,6 @@ export const evaluationService = {
       return response.data.data || [];
     } catch (error) {
       console.error('[evaluationService] Error getting criteria:', error);
-      throw error;
-    }
-  },
-
-  updateCriteria: async (id: number, data: Partial<EvaluationCriteria>): Promise<void> => {
-    try {
-      await apiClient.put(`${API_URL}/criteria/${id}`, data);
-    } catch (error) {
-      console.error('[evaluationService] Error updating criteria:', error);
       throw error;
     }
   },

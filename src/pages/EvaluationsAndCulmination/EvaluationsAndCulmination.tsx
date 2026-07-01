@@ -35,7 +35,6 @@ import {
 // ─── Tabs ─────────────────────────────────────────────────
 const EVAL_TABS = [
   { id: 'evaluations', label: 'Evaluaciones' },
-  { id: 'results', label: 'Resultados' },
   { id: 'culmination', label: 'Culminación' },
 ];
 
@@ -200,93 +199,6 @@ export default function EvaluationsAndCulminationPage() {
       )}
     </>
   );
-
-  // ─── Render: Results tab ────────────────────────────────
-  const renderResultsTab = () => {
-    const resultsFiltered = hook.filteredPractices.filter(p =>
-      hook.filters.result ? p.result === hook.filters.result : true
-    );
-    const resultsPaginated = resultsFiltered.slice(
-      (hook.currentPage - 1) * hook.itemsPerPage,
-      hook.currentPage * hook.itemsPerPage
-    );
-    const resultsTotalPages = Math.ceil(resultsFiltered.length / hook.itemsPerPage);
-
-    return (
-      <>
-        <StatsCardsGrid
-          stats={[
-            { title: 'Total', value: hook.evaluationStats.total },
-            { title: 'Aprobados', value: hook.evaluationStats.approved, color: 'success',
-              subtitle: `${hook.evaluationStats.total > 0 ? ((hook.evaluationStats.approved / hook.evaluationStats.total) * 100).toFixed(1) : 0}%` },
-            { title: 'Reprobados', value: hook.evaluationStats.failed, color: 'warning',
-              subtitle: `${hook.evaluationStats.total > 0 ? ((hook.evaluationStats.failed / hook.evaluationStats.total) * 100).toFixed(1) : 0}%` },
-          ]}
-        />
-
-        <div className="flex flex-wrap gap-4 mb-4">
-          <select
-            value={hook.filters.result || ''}
-            onChange={(e) => hook.updateFilter('result', e.target.value)}
-            className="w-40 px-3 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm"
-          >
-            {RESULT_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableCell isHeader>Estudiante</TableCell>
-                <TableCell isHeader>Período</TableCell>
-                <TableCell isHeader>Carrera</TableCell>
-                <TableCell isHeader>Tipo</TableCell>
-                <TableCell isHeader className="text-center">Nota Final</TableCell>
-                <TableCell isHeader className="text-center">Resultado</TableCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {resultsPaginated.map(practice => (
-                <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
-                  <TableCell>
-                    <div className="font-medium text-text-primary dark:text-text-emphasis">
-                      {practice.studentName}
-                    </div>
-                    <div className="text-xs text-text-tertiary">{practice.studentCi}</div>
-                  </TableCell>
-                  <TableCell className="text-text-secondary">{practice.periodName}</TableCell>
-                  <TableCell className="text-text-secondary">{practice.careerName}</TableCell>
-                  <TableCell className="text-text-secondary">{practice.practiceTypeName}</TableCell>
-                  <TableCell className="text-center">
-                    <span className="text-lg font-bold text-brand-500">
-                      {practice.finalGrade?.toFixed(1) ?? '-'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {getResultBadge(practice.result)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        {resultsTotalPages > 1 && (
-          <Pagination
-            currentPage={hook.currentPage}
-            totalPages={resultsTotalPages}
-            totalItems={resultsFiltered.length}
-            itemsPerPage={hook.itemsPerPage}
-            onPageChange={hook.setCurrentPage}
-            onItemsPerPageChange={(items) => { hook.setItemsPerPage(items); hook.setCurrentPage(1); }}
-            itemsPerPageOptions={[10, 25, 50]}
-          />
-        )}
-      </>
-    );
-  };
 
   // ─── Render: Culmination tab ────────────────────────────
   const renderCulminationTab = () => {
@@ -453,7 +365,7 @@ export default function EvaluationsAndCulminationPage() {
   // ─── Tab content switch ─────────────────────────────────
   const renderTabContent = () => {
     if (hook.loading) {
-      return <TableSkeleton columns={tabsState.activeTab === 'evaluations' ? 9 : tabsState.activeTab === 'results' ? 6 : 7} rows={10} />;
+      return <TableSkeleton columns={tabsState.activeTab === 'evaluations' ? 9 : 7} rows={10} />;
     }
 
     if (hook.filteredPractices.length === 0) {
@@ -467,7 +379,6 @@ export default function EvaluationsAndCulminationPage() {
 
     switch (tabsState.activeTab) {
       case 'evaluations': return renderEvaluationsTab();
-      case 'results': return renderResultsTab();
       case 'culmination': return renderCulminationTab();
       default: return null;
     }

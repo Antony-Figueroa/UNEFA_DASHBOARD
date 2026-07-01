@@ -4,6 +4,7 @@ import { validateCreateEvaluationPeriod, validateUpdateEvaluationPeriod } from '
 import {
   getCriteria,
   updateCriteria,
+  updateCriteriaBatch,
   getEvaluations,
   getEvaluationById,
   getBatchPracticeStatus,
@@ -23,6 +24,7 @@ import {
 const router = Router();
 
 router.get('/criteria', requirePermission('evaluations:view'), getCriteria);
+router.put('/criteria', requirePermission('evaluations:edit'), updateCriteriaBatch);
 router.put('/criteria/:id', requirePermission('evaluations:edit'), updateCriteria);
 router.get('/practice/:practiceId/status', requirePermission('evaluations:view'), getPracticeEvaluationStatus);
 router.get('/practice/:practiceId/tutor-info', requirePermission('evaluations:view'), getPracticeTutorInfo);

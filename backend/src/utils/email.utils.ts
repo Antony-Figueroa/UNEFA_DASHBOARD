@@ -25,10 +25,10 @@ const tryGmail = async (opts: { to: string; subject: string; html: string; text?
       connectionTimeout: 15000,
       greetingTimeout: 15000,
       socketTimeout: 20000,
-      lookup: (hostname, opts, cb) => {
+      lookup: (hostname: string, opts: any, cb: (err: any, addr: string, fam: number) => void) => {
         dnsLookup(hostname, { ...opts, family: 4 }, cb);
       },
-    });
+    } as any);
 
     await transporter.sendMail({
       from: `"SIGP UNEFA" <${user}>`,

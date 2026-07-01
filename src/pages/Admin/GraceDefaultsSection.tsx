@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Shield, ShieldOff } from 'lucide-react';
 import ComponentCard from '../../components/common/ComponentCard';
+import Button from '../../components/ui/button/Button';
 
 import Switch from '../../components/form/switch/Switch';
 import { usePeriods } from '../../features/periods/hooks/usePeriods';

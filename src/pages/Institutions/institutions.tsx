@@ -300,10 +300,10 @@ export default function InstitutionsPage() {
     if (!original) return;
 
     const isDeactivating = original.status;
-    const actionVerb = isDeactivating ? "desactivar" : "activar";
-    const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación";
+    const actionVerb = isDeactivating ? "desactivar" : "restaurar";
+    const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Restauración";
     const variant = isDeactivating ? "error" : "success";
-    const confirmText = isDeactivating ? "Desactivar" : "Activar";
+    const confirmText = isDeactivating ? "Desactivar" : "Restaurar";
 
     setConfirmation({
       isOpen: true,
@@ -328,10 +328,10 @@ export default function InstitutionsPage() {
     if (!original) return;
 
     const isDeactivating = original.status;
-    const actionVerb = isDeactivating ? "desactivar" : "activar";
-    const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación";
+    const actionVerb = isDeactivating ? "desactivar" : "restaurar";
+    const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Restauración";
     const variant = isDeactivating ? "error" : "success";
-    const confirmText = isDeactivating ? "Desactivar" : "Activar";
+    const confirmText = isDeactivating ? "Desactivar" : "Restaurar";
 
     setConfirmation({
       isOpen: true,
@@ -354,7 +354,7 @@ export default function InstitutionsPage() {
   const handleBulkInstAction = (ids: string[], action: "inactivate" | "restore") => {
     const isInactivating = action === "inactivate";
     const actionVerb = isInactivating ? "desactivar" : "restaurar";
-    const confirmTitle = isInactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Múltiple";
+    const confirmTitle = isInactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Masiva";
     const variant = isInactivating ? "error" : "success";
     const confirmText = isInactivating ? "Desactivar Todos" : "Restaurar";
 
@@ -383,7 +383,7 @@ export default function InstitutionsPage() {
   const handleBulkRespAction = (ids: string[], action: "inactivate" | "restore") => {
     const isInactivating = action === "inactivate";
     const actionVerb = isInactivating ? "desactivar" : "restaurar";
-    const confirmTitle = isInactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Múltiple";
+    const confirmTitle = isInactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Masiva";
     const variant = isInactivating ? "error" : "success";
     const confirmText = isInactivating ? "Desactivar Todos" : "Restaurar";
 

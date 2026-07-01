@@ -333,8 +333,8 @@ export default function CareersPage() {
     } else {
       setConfirmation({
         isOpen: true,
-        title: "Confirmar Activación",
-        message: `¿Estás seguro de que deseas activar la carrera "${original.careerName}"?`,
+        title: "Confirmar Restauración",
+        message: `¿Estás seguro de que deseas restaurar la carrera "${original.careerName}"?`,
         onConfirm: async () => {
           try {
             await toggleStatus(careerId, true);
@@ -344,7 +344,7 @@ export default function CareersPage() {
             setConfirmation(null);
           }
         },
-        confirmText: "Activar",
+        confirmText: "Restaurar",
         variant: "success",
       });
     }
@@ -378,8 +378,8 @@ export default function CareersPage() {
     } else {
       setConfirmation({
         isOpen: true,
-        title: "Confirmar Activación",
-        message: `¿Estás seguro de que deseas activar el tipo de práctica "${original.name}"?`,
+        title: "Confirmar Restauración",
+        message: `¿Estás seguro de que deseas restaurar el tipo de práctica "${original.name}"?`,
         onConfirm: async () => {
           try {
             await toggleTypeStatus(id, true);
@@ -389,7 +389,7 @@ export default function CareersPage() {
             setConfirmation(null);
           }
         },
-        confirmText: "Activar",
+        confirmText: "Restaurar",
         variant: "success",
       });
     }

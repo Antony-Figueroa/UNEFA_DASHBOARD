@@ -312,10 +312,10 @@ export default function PreEnrollmentPage() {
         if (!original) return;
 
         const isDeactivating = original.status;
-        const actionVerb = isDeactivating ? "desactivar" : "activar";
-        const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación";
+        const actionVerb = isDeactivating ? "desactivar" : "restaurar";
+        const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Restauración";
         const variant = isDeactivating ? "error" : "success";
-        const confirmText = isDeactivating ? "Desactivar" : "Activar";
+        const confirmText = isDeactivating ? "Desactivar" : "Restaurar";
 
         setConfirmation({
             isOpen: true,

@@ -11,6 +11,7 @@ import { useToast } from "../../../context/toast";
 import { useTutors } from "../../tutors/hooks/useTutors";
 import { useInstitutions } from "../../institutions/hooks/useInstitutions";
 import { useStudents } from "../hooks/useStudents";
+import Button from "../../../components/ui/button/Button";
 
 const changeSchema = z.object({
   changeType: z.enum(["institution", "tutor"]),

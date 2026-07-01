@@ -350,7 +350,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
           ...prev,
           [activeMember]: {
             ...prev[activeMember],
-            evaluationId: result.evaluationId || prev[activeMember]?.evaluationId,
+            evaluationId: (result && typeof result !== 'boolean' ? result.evaluationId : undefined) || prev[activeMember]?.evaluationId,
             evaluatorName: formData.evaluatorName,
             evaluatorCi: formData.evaluatorCi || '',
             observations: formData.observations || '',

@@ -300,7 +300,7 @@ export default function TutorsPage() {
     const handleBulkDelete = (ids: string[]) => {
         setConfirmation({
             isOpen: true,
-            title: "Confirmar Desactivación Múltiple",
+            title: "Confirmar Desactivación Masiva",
             message: `¿Estás seguro de que deseas desactivar los ${ids.length} tutores seleccionados?`,
             onConfirm: async () => {
                 try {
@@ -311,7 +311,7 @@ export default function TutorsPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: "Desactivar",
+            confirmText: "Desactivar Todos",
             variant: "error",
         });
     };

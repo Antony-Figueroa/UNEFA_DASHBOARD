@@ -354,9 +354,9 @@ export default function InstitutionsPage() {
   const handleBulkInstAction = (ids: string[], action: "inactivate" | "restore") => {
     const isInactivating = action === "inactivate";
     const actionVerb = isInactivating ? "desactivar" : "restaurar";
-    const confirmTitle = isInactivating ? "Confirmar Desactivación Múltiple" : "Confirmar Restauración Múltiple";
+    const confirmTitle = isInactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Múltiple";
     const variant = isInactivating ? "error" : "success";
-    const confirmText = isInactivating ? "Desactivar" : "Restaurar";
+    const confirmText = isInactivating ? "Desactivar Todos" : "Restaurar";
 
     setConfirmation({
       isOpen: true,
@@ -383,9 +383,9 @@ export default function InstitutionsPage() {
   const handleBulkRespAction = (ids: string[], action: "inactivate" | "restore") => {
     const isInactivating = action === "inactivate";
     const actionVerb = isInactivating ? "desactivar" : "restaurar";
-    const confirmTitle = isInactivating ? "Confirmar Desactivación Múltiple" : "Confirmar Restauración Múltiple";
+    const confirmTitle = isInactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Múltiple";
     const variant = isInactivating ? "error" : "success";
-    const confirmText = isInactivating ? "Desactivar" : "Restaurar";
+    const confirmText = isInactivating ? "Desactivar Todos" : "Restaurar";
 
     setConfirmation({
       isOpen: true,

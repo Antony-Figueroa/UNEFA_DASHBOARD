@@ -574,9 +574,9 @@ export default function VisitRegistration() {
       <UnifiedDialog
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, visitId: null })}
-        title="Eliminar Visita"
-        message="¿Estás seguro de que deseas eliminar esta visita? Podrás restaurarla desde la pestaña de inactivas."
-        confirmLabel="Eliminar"
+        title="Confirmar Desactivación"
+        message="¿Estás seguro de que deseas desactivar esta visita? Podrás restaurarla desde la pestaña de inactivas."
+        confirmLabel="Desactivar"
         variant="error"
         onConfirm={handleDelete}
       />
@@ -584,7 +584,7 @@ export default function VisitRegistration() {
       <UnifiedDialog
         isOpen={restoreDialog.isOpen}
         onClose={() => setRestoreDialog({ isOpen: false, visitId: null })}
-        title="Restaurar Visita"
+        title="Confirmar Restauración"
         message="¿Estás seguro de que deseas restaurar esta visita? Volverá a aparecer en la pestaña de activos."
         confirmLabel="Restaurar"
         variant="success"

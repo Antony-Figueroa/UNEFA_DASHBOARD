@@ -155,10 +155,10 @@ const UserManagementPage = () => {
       return;
     }
 
-    const actionVerb = isDeactivating ? "desactivar" : "activar";
-    const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación";
+    const actionVerb = isDeactivating ? "desactivar" : "restaurar";
+    const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Restauración";
     const variant = isDeactivating ? "error" : "success";
-    const confirmText = isDeactivating ? "Desactivar" : "Activar";
+    const confirmText = isDeactivating ? "Desactivar" : "Restaurar";
 
     setConfirmation({
       isOpen: true,
@@ -223,10 +223,10 @@ const UserManagementPage = () => {
   const handleBulkAction = () => {
     const newStatus = activeTab === "Activos" ? 0 : 1;
     const isDeactivating = activeTab === "Activos";
-    const actionVerb = isDeactivating ? "desactivar" : "activar";
-    const confirmTitle = isDeactivating ? "Confirmar Desactivación Masiva" : "Confirmar Activación Masiva";
+    const actionVerb = isDeactivating ? "desactivar" : "restaurar";
+    const confirmTitle = isDeactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Masiva";
     const variant = isDeactivating ? "error" : "success";
-    const confirmText = isDeactivating ? "Desactivar Todos" : "Activar Todos";
+    const confirmText = isDeactivating ? "Desactivar Todos" : "Restaurar Todos";
     
     setConfirmation({
       isOpen: true,

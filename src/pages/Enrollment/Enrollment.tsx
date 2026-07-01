@@ -377,7 +377,7 @@ export default function EnrollmentPage() {
         setConfirmation({
             isOpen: true,
             title: "Confirmar Desactivación",
-            message: `¿Estás seguro de que deseas inactivar la inscripción de ${row.studentName}?`,
+            message: `¿Estás seguro de que deseas desactivar la inscripción de ${row.studentName}?`,
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
@@ -387,7 +387,7 @@ export default function EnrollmentPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: "Inactivar",
+            confirmText: "Desactivar",
             variant: "warning" as DialogVariant,
         });
     };

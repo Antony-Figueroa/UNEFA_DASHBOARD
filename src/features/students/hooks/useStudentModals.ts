@@ -129,14 +129,14 @@ export function useStudentModals({
     const isDeactivating = original.status;
     setConfirmation({
       isOpen: true,
-      title: isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación",
-      message: `¿Estás seguro de que deseas ${isDeactivating ? "desactivar" : "activar"} al estudiante "${row.fullNames}"?`,
+      title: isDeactivating ? "Confirmar Desactivación" : "Confirmar Restauración",
+      message: `¿Estás seguro de que deseas ${isDeactivating ? "desactivar" : "restaurar"} al estudiante "${row.fullNames}"?`,
       onConfirm: async () => {
         try { await toggleStatus(original); }
         catch (e) { console.error("[useStudentModals] Error toggling status:", e); }
         finally { setConfirmation(null); }
       },
-      confirmText: isDeactivating ? "Desactivar" : "Activar",
+      confirmText: isDeactivating ? "Desactivar" : "Restaurar",
       variant: (isDeactivating ? "error" : "success") as DialogVariant,
     });
   }, [students, toggleStatus]);
@@ -144,7 +144,7 @@ export function useStudentModals({
   const handleBulkDelete = useCallback((ids: string[]) => {
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Eliminación Masiva",
+      title: "Confirmar Desactivación Masiva",
       message: `¿Estás seguro de que deseas desactivar ${ids.length} estudiantes seleccionados?`,
       onConfirm: async () => {
         try { await bulkRemoveStudents(ids); setSelectedIds([]); }

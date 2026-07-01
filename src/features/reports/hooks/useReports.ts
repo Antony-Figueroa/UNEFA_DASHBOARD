@@ -5,6 +5,7 @@ import {
   generateRelacionGeneralTutoresExcel,
   generateResumenPasantiasExcel,
   generateRelacionEmpresasExcel,
+  generateRelacionInstitucionesSolicitanExcel,
   generateDistribucionTutoresExcel,
   generateRelacionIndividualDocenteExcel,
   generateDistribucionTutoresV2Excel,
@@ -33,6 +34,9 @@ export function useReports() {
           break;
         case 'relacion-empresas':
           await generateRelacionEmpresasExcel(data, period, fileName);
+          break;
+        case 'relacion-instituciones-solicitan':
+          await generateRelacionInstitucionesSolicitanExcel(data, period, fileName);
           break;
         case 'distribucion-tutores':
           await generateDistribucionTutoresExcel(data, period, fileName);

@@ -76,6 +76,16 @@ export interface IndividualTutorSheetConfig {
   rows: IndividualTutorRow[];
 }
 
+export interface RelacionInstitucionesExcelRow {
+  empresa: string;
+  rif: string;
+  responsable: string;
+  telefono: string;
+  tipoEmpresa: string;
+  carreras: string;
+  cantidadEstudiantes: number;
+}
+
 // ============================================================
 // Membrete institucional
 // ============================================================
@@ -468,6 +478,144 @@ interface RelacionEmpresaExcelRow {
 // ============================================================
 // Generador: Relación de Empresas (formato oficial Form-002-2019)
 // ============================================================
+
+export async function generateRelacionInstitucionesSolicitanWorkbook(
+  rows: RelacionInstitucionesExcelRow[],
+  periodLabel: string,
+): Promise<Workbook> {
+  const workbook = new ExcelJS.Workbook();
+  const TOTAL = 7; // A-G
+
+  if (rows.length === 0) {
+    const ws = workbook.addWorksheet('Sin Datos');
+    addEmptySheet(ws, 'No se encontraron registros para el período seleccionado.');
+    return workbook;
+  }
+
+  const ws = workbook.addWorksheet('RELACIÓN');
+  const FONT = 'Arial';
+  const HDR_BG = 'FF92D050';
+  const SUB_BG = 'FF76923C';
+  const TOTAL_BG = 'FFD6E3BC';
+
+  // ── Fila 1: Membrete (120px) + logos ──
+  ws.getRow(1).height = 120;
+  ws.mergeCells(1, 1, 1, TOTAL);
+  const mem = ws.getCell(1, 1);
+  mem.value = MEMBRETE_TEXT;
+  mem.font = { name: FONT, size: 9 };
+  mem.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  addLogos(workbook, ws, TOTAL);
+
+  // ── Fila 2: spacer ──
+  ws.getRow(2).height = 6;
+
+  // ── Fila 3: Form code ──
+  ws.getRow(3).height = 18;
+  ws.mergeCells(3, 1, 3, TOTAL);
+  const code = ws.getCell(3, 1);
+  code.value = 'Form-002-2019 CPA-VAC_jp';
+  code.font = { name: FONT, size: 8, bold: true };
+  code.alignment = { horizontal: 'left', vertical: 'middle' };
+
+  // ── Fila 4: spacer ──
+  ws.getRow(4).height = 6;
+
+  // ── Fila 5: Título (60px) ──
+  ws.getRow(5).height = 60;
+  ws.mergeCells(5, 1, 5, TOTAL);
+  const title = ws.getCell(5, 1);
+  title.value = {
+    richText: [
+      { text: 'RELACIÓN DE INSTITUCIONES QUE SOLICITAN ASIGNACIÓN DE PASANTES', font: { name: FONT, size: 11, bold: true } },
+      { text: `\nPARA EL PERÍODO ACADÉMICO ${periodLabel}`, font: { name: FONT, size: 11, bold: true, color: { argb: 'FFFF0000' } } },
+    ],
+  };
+  title.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+  // ── Estilo header ──
+  const hdr = {
+    font: { name: FONT, size: 9, bold: true },
+    fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: HDR_BG } },
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
+    border: { top: { style: 'thin' as const }, bottom: { style: 'thin' as const }, left: { style: 'thin' as const }, right: { style: 'thin' as const } },
+  };
+  const setH = (c: any, v: string) => { c.value = v; c.font = hdr.font; c.fill = hdr.fill; c.alignment = hdr.alignment; c.border = hdr.border; };
+
+  // ── Fila 6: HEADER ROW (36px) ──
+  ws.getRow(6).height = 36;
+  setH(ws.getCell(6, 1), 'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN');
+  setH(ws.getCell(6, 2), 'RIF');
+  setH(ws.getCell(6, 3), 'RESPONSABLE');
+  setH(ws.getCell(6, 4), 'NÚMERO DE\nCONTACTO');
+  setH(ws.getCell(6, 5), 'TIPO DE\nEMPRESA');
+  setH(ws.getCell(6, 6), 'CARRERAS');
+  setH(ws.getCell(6, 7), 'CANTIDAD DE\nESTUDIANTES');
+
+  // ── Column widths ──
+  const empresaW = Math.min(Math.max(...rows.map(r => (r.empresa || '').length), 10) + 3, 55);
+  const carrerasW = Math.min(Math.max(...rows.map(r => (r.carreras || '').length), 10) + 3, 35);
+  [empresaW, 16, 24, 16, 12, carrerasW, 10].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+
+  // ── Data rows ──
+  const center = { vertical: 'middle' as const, wrapText: true, horizontal: 'center' as const };
+  const left = { vertical: 'middle' as const, wrapText: true, horizontal: 'left' as const };
+  const dataStyle = { font: { name: FONT, size: 9 }, border: { top: { style: 'thin' as const }, bottom: { style: 'thin' as const }, left: { style: 'thin' as const }, right: { style: 'thin' as const } } };
+
+  rows.forEach((r, i) => {
+    const er = ws.getRow(7 + i);
+    er.height = 24;
+    const vals = [r.empresa, r.rif, r.responsable, r.telefono, r.tipoEmpresa, r.carreras, r.cantidadEstudiantes];
+    vals.forEach((v, ci) => {
+      const cell = er.getCell(ci + 1);
+      cell.value = v !== null && v !== undefined ? (typeof v === 'string' ? v.toUpperCase() : v) : '';
+      cell.font = dataStyle.font;
+      cell.alignment = [4, 5, 7].includes(ci + 1) ? center : left;
+      cell.border = dataStyle.border;
+    });
+  });
+
+  // ── Subtotals ──
+  const dataEnd = 7 + rows.length;
+  const pub = rows.filter(r => r.tipoEmpresa.toUpperCase() === 'PÚBLICA').length;
+  const priv = rows.filter(r => r.tipoEmpresa.toUpperCase() === 'PRIVADA').length;
+  const totalEst = rows.reduce((s, r) => s + (r.cantidadEstudiantes || 0), 0);
+
+  const sub = (c: any) => {
+    c.font = { name: FONT, size: 10, bold: true, color: { argb: 'FF000000' } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SUB_BG } };
+    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+  };
+
+  ws.getRow(dataEnd).height = 24;
+  ws.mergeCells(dataEnd, 2, dataEnd, 3);
+  sub(ws.getCell(dataEnd, 2)); ws.getCell(dataEnd, 2).value = 'SUB-TOTALES';
+  [{ c: 4, v: rows.length }, { c: 5, v: pub }, { c: 6, v: priv }, { c: 7, v: totalEst }].forEach(({ c, v }) => {
+    sub(ws.getCell(dataEnd, c));
+    ws.getCell(dataEnd, c).value = v;
+  });
+
+  // ── Total instituciones ──
+  const r1 = dataEnd + 1;
+  ws.getRow(r1).height = 28;
+  const tot = (c: any) => {
+    c.font = { name: FONT, size: 11, bold: true };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TOTAL_BG } };
+    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+  };
+  ws.mergeCells(r1, 2, r1, 3); tot(ws.getCell(r1, 2)); ws.getCell(r1, 2).value = 'TOTAL INSTITUCIONES';
+  tot(ws.getCell(r1, 4)); ws.getCell(r1, 4).value = rows.length;
+
+  // ── Total estudiantes solicitados ──
+  const r2 = r1 + 1;
+  ws.getRow(r2).height = 36;
+  ws.mergeCells(r2, 2, r2, 3); tot(ws.getCell(r2, 2)); ws.getCell(r2, 2).value = `TOTAL ESTUDIANTES SOLICITADOS\nPARA EL ${periodLabel}`;
+  tot(ws.getCell(r2, 4)); ws.getCell(r2, 4).value = totalEst;
+
+  return workbook;
+}
 
 export async function generateRelacionEmpresasWorkbook(
   rows: RelacionEmpresaExcelRow[],

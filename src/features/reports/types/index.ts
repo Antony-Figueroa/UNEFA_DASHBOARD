@@ -123,6 +123,16 @@ export interface RelacionEmpresasRow {
   cantidadEstudiantes: number;
 }
 
+export interface RelacionInstitucionesSolicitanRow {
+  empresa: string;
+  rif: string;
+  responsable: string;
+  numeroContacto: string;
+  tipoEmpresa: string;
+  carreras: string;
+  cantidadEstudiantes: number;
+}
+
 export interface DistribucionTutoresRow {
   nro: number;
   carrera: string;

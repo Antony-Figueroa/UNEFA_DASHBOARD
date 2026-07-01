@@ -747,13 +747,14 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
  */
 export const searchPractices = async (req: Request, res: Response) => {
   try {
+    const conn = dbManager.getConnection();
     const q = String(req.query.q || '').trim();
     if (!q || q.length < 2) {
       return res.json({ success: true, data: [] });
     }
 
     const term = `%${q}%`;
-    const { data, error } = await supabase
+    const { data, error } = await conn
       .from('t_professional_practices')
       .select(`
         PROFESSIONAL_PRACTICE_ID,
@@ -769,7 +770,7 @@ export const searchPractices = async (req: Request, res: Response) => {
         t_institution(INSTITUTION_NAME),
         t_internships_period(DESCRIPTION)
       `)
-      .or(`t_students.t_persons.ci.ilike.${term},t_students.t_persons.first_name.ilike.${term},t_students.t_persons.last_name.ilike.${term}`)
+      .or(`ci.ilike.${term},first_name.ilike.${term},last_name.ilike.${term}`, { foreignTable: 't_students.t_persons' })
       .limit(20);
 
     if (error) {
@@ -804,13 +805,14 @@ export const searchPractices = async (req: Request, res: Response) => {
  */
 export const searchTutors = async (req: Request, res: Response) => {
   try {
+    const conn = dbManager.getConnection();
     const q = String(req.query.q || '').trim();
     if (!q || q.length < 2) {
       return res.json({ success: true, data: [] });
     }
 
     const term = `%${q}%`;
-    const { data, error } = await supabase
+    const { data, error } = await conn
       .from('t_tutors')
       .select(`
         TUTOR_ID,
@@ -860,6 +862,7 @@ export const searchTutors = async (req: Request, res: Response) => {
  */
 export const listPractices = async (req: Request, res: Response) => {
   try {
+    const conn = dbManager.getConnection();
     const page = parseInt(String(req.query.page || '0'), 10);
     const limit = parseInt(String(req.query.limit || '10'), 10);
     const q = String(req.query.q || '').trim();
@@ -875,10 +878,10 @@ export const listPractices = async (req: Request, res: Response) => {
     if (documentType) {
       if (documentType === 'aceptacion-tutor') {
         // Prácticas que tienen al menos un tutor asignado
-        const { data: ppt } = await supabase
+        const { data: ppt } = await conn
           .from('t_professional_practices_tutor')
           .select('PROFESSIONAL_PRACTICE_ID');
-        eligibleIds = [...new Set((ppt || []).map((r: any) => r.PROFESSIONAL_PRACTICE_ID))];
+        eligibleIds = [...new Set((ppt || []).map((r: any) => Number(r.PROFESSIONAL_PRACTICE_ID)))] as number[];
       } else if (['evaluacion-final', 'evaluacion-tutor-institucional', 'evaluacion-tutor-academico', 'evaluacion-comite'].includes(documentType)) {
         const evalTypeMap: Record<string, string> = {
           'evaluacion-tutor-institucional': 'INSTITUCIONAL',
@@ -886,18 +889,18 @@ export const listPractices = async (req: Request, res: Response) => {
           'evaluacion-comite': 'COMITE',
         };
         const evaluatorType = evalTypeMap[documentType];
-        let query = supabase.from('t_evaluation').select('PROFESSIONAL_PRACTICE_ID');
+        let evalQuery = conn.from('t_evaluation').select('PROFESSIONAL_PRACTICE_ID');
         if (evaluatorType) {
-          query = query.eq('EVALUATOR_TYPE', evaluatorType);
+          evalQuery = evalQuery.eq('EVALUATOR_TYPE', evaluatorType);
         }
-        const { data: evals } = await query;
-        eligibleIds = [...new Set((evals || []).map((r: any) => r.PROFESSIONAL_PRACTICE_ID))];
+        const { data: evals } = await evalQuery;
+        eligibleIds = [...new Set((evals || []).map((r: any) => Number(r.PROFESSIONAL_PRACTICE_ID)))] as number[];
       }
       // Para otros tipos (solicitud-institucion, carta-postulacion, acta-validacion):
       // se filtran por STATUS = 1 abajo
     }
 
-    let query = supabase
+    let query = conn
       .from('t_professional_practices')
       .select(`
         PROFESSIONAL_PRACTICE_ID,
@@ -926,7 +929,7 @@ export const listPractices = async (req: Request, res: Response) => {
     }
 
     if (term) {
-      query = (query as any).or(`t_students.t_persons.ci.ilike.${term},t_students.t_persons.first_name.ilike.${term},t_students.t_persons.last_name.ilike.${term}`);
+      query = (query as any).or(`ci.ilike.${term},first_name.ilike.${term},last_name.ilike.${term}`, { foreignTable: 't_students.t_persons' });
     }
 
     const { data, error, count } = await query
@@ -969,6 +972,7 @@ export const listPractices = async (req: Request, res: Response) => {
  */
 export const listTutors = async (req: Request, res: Response) => {
   try {
+    const conn = dbManager.getConnection();
     const page = parseInt(String(req.query.page || '0'), 10);
     const limit = parseInt(String(req.query.limit || '10'), 10);
     const q = String(req.query.q || '').trim();
@@ -977,7 +981,7 @@ export const listTutors = async (req: Request, res: Response) => {
     const from = page * limit;
     const to = from + limit - 1;
 
-    let query = supabase
+    let query = conn
       .from('t_tutors')
       .select(`
         TUTOR_ID,

@@ -229,6 +229,17 @@ export const reportsService = {
     return response.data;
   },
 
+  getRelacionInstitucionesSolicitan: async (periodId?: number, careerId?: number, page?: number, limit?: number, careerIds?: number[]) => {
+    const params = new URLSearchParams();
+    if (periodId) params.append('periodId', periodId.toString());
+    if (careerId) params.append('careerId', careerId.toString());
+    if (careerIds && careerIds.length > 0) params.append('careerIds', careerIds.join(','));
+    if (page !== undefined) params.append('page', page.toString());
+    if (limit !== undefined) params.append('limit', limit.toString());
+    const response = await apiClient.get(`/reports/relacion-instituciones-solicitan?${params.toString()}`);
+    return response.data;
+  },
+
   getDistribucionTutores: async (periodId?: number, careerId?: number, page?: number, limit?: number, careerIds?: number[]) => {
     const params = new URLSearchParams();
     if (periodId) params.append('periodId', periodId.toString());

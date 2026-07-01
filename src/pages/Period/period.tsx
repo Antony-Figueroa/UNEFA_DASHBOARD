@@ -226,8 +226,8 @@ export default function Period() {
     const handleActivatePeriod = async (periodoToActivate: PeriodoRowData) => {
         setConfirmation({
             isOpen: true,
-            title: 'Confirmar Activación',
-            message: `¿Estás seguro de que deseas activar el periodo "${periodoToActivate.description}"? Esto lo pondrá "En Curso" y permitirá registrar actividades.`,
+            title: 'Confirmar Restauración',
+            message: `¿Estás seguro de que deseas restaurar el periodo "${periodoToActivate.description}"? Esto lo pondrá "En Curso" y permitirá registrar actividades.`,
             onConfirm: async () => {
                 try {
                     const originalPeriodo = periodos.find(p => p.periodId === periodoToActivate.periodId);
@@ -240,7 +240,7 @@ export default function Period() {
                     setConfirmation(null);
                 }
             },
-            confirmText: 'Activar',
+            confirmText: 'Restaurar',
             variant: 'success'
         });
     };

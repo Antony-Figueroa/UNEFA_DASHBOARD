@@ -962,8 +962,7 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
   // ── Filas de datos ──
   rows.forEach((row, rowIdx) => {
     const excelRow = ws.getRow(ROW_INDIVIDUAL_DATA_START + rowIdx);
-    excelRow.height = 28;
-
+    excelRow.height = 47;
     const data = [
       row.nro,
       row.region,
@@ -991,16 +990,16 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
       cell.value = val !== null && val !== undefined
         ? (typeof val === 'string' ? val.toUpperCase() : val)
         : '';
-      // Center-align sex/tipo/cedula columns
-      const centerCols = [1, 8, 9, 10, 11, 12, 13, 14];
       cell.font = INDIVIDUAL_DATA_STYLE.font;
       cell.alignment = {
         ...INDIVIDUAL_DATA_STYLE.alignment,
-        horizontal: centerCols.includes(colIdx + 1) ? 'center' : 'left',
+        horizontal: 'center',
       };
       cell.border = INDIVIDUAL_DATA_STYLE.border;
     });
   });
+
+  // ponytail: sin altura fija en filas → Excel auto-ajusta para cadenas largas
 }
 
 // ============================================================
@@ -1045,12 +1044,6 @@ function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetS
   const STYLE_CELL_LEFT = { ...STYLE_CELL, border: { ...STYLE_CELL.border, left: { style: 'medium' as const } } };
   const STYLE_CELL_RIGHT = { ...STYLE_CELL, border: { ...STYLE_CELL.border, right: { style: 'medium' as const } } };
   const STYLE_CELL_BOTH = { ...STYLE_CELL, border: { ...STYLE_CELL.border, left: { style: 'medium' as const }, right: { style: 'medium' as const } } };
-
-  // Columnas que se centran
-  const CENTER_KEYS: Record<string, boolean> = {
-    nro: true, region: true, nucleo: true, extension: true,
-    cedula: true, telefono: true, cantidadEstudiantes: true,
-  };
 
   // ── Anchos de columna ──
   const COL_WIDTHS = [3, 5, 14, 14, 14, 24, 14, 14, 14, 14, 14, 14, 14, 14, 14, 20, 14, 18];
@@ -1199,7 +1192,7 @@ function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetS
       cell.alignment = {
         vertical: 'middle',
         wrapText: true,
-        horizontal: CENTER_KEYS[key] ? 'center' : 'left',
+        horizontal: 'center',
       };
       // Bordes: medium en laterales
       const isFirstDataCol = (physCol === COL_FIRST);
@@ -1242,36 +1235,40 @@ function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetS
     cell.alignment = { vertical: 'top', wrapText: true };
   });
 
+  // ── Fila en blanco para separar notas de las firmas ──
+  const blankBeforeSig = noteStartRow + notes.length + 1;
+  ws.getRow(blankBeforeSig).height = 28;
+
   // ============================================================
-  // LÍNEAS DE FIRMA (vacías con borde inferior)
+  // FIRMAS — una fila, 3 firmantes con separación
   // ============================================================
   const sigLabels = section.signatures ?? DEFAULT_SIGNATURES;
-  const sigStartRow = noteStartRow + notes.length + 1;
+  const sigRow = blankBeforeSig + 1;
+  const sigRowObj = ws.getRow(sigRow);
+  sigRowObj.height = 54;
 
-  // Fila de líneas vacías para firmar (borde inferior solamente)
-  const lineRow = sigStartRow;
-  ws.getRow(lineRow).height = 57;
-  for (let c = COL_FIRST; c <= COL_LAST; c++) {
-    const cell = ws.getCell(lineRow, c);
-    cell.border = { bottom: { style: 'thin' } };
-  }
-
-  // Fila de etiquetas de firma (3 secciones horizontales)
-  const labelRow = sigStartRow + 1;
-  ws.getRow(labelRow).height = 63;
-
-  // Distribuir 3 firmas horizontalmente
+  // cada firmante tiene su rango con espacio separador entre sí
   const sigSections = [
-    { text: sigLabels[0] || '', start: 2, end: 6 },
-    { text: sigLabels[1] || '', start: 7, end: 11 },
-    { text: sigLabels[2] || '', start: 12, end: 18 },
+    { text: sigLabels[0] || '', start: 2, end: 5, sepAfter: 6 },
+    { text: sigLabels[1] || '', start: 7, end: 10, sepAfter: 11 },
+    { text: sigLabels[2] || '', start: 12, end: 17, sepAfter: null },
   ];
 
-  sigSections.forEach(({ text, start, end }) => {
-    if (end > start) {
-      ws.mergeCells(labelRow, start, labelRow, end);
+  sigSections.forEach(({ text, start, end, sepAfter }) => {
+    // Línea de firma (borde superior) en el rango del firmante
+    for (let c = start; c <= end; c++) {
+      const cell = ws.getCell(sigRow, c);
+      cell.border = { top: { style: 'thin' } };
     }
-    const cell = ws.getCell(labelRow, start);
+    // Borrar borde en la columna separadora (sin línea)
+    if (sepAfter) {
+      ws.getCell(sigRow, sepAfter).border = {};
+    }
+    // Etiqueta centrada
+    if (end > start) {
+      ws.mergeCells(sigRow, start, sigRow, end);
+    }
+    const cell = ws.getCell(sigRow, start);
     cell.value = text;
     cell.font = { name: FONT, size: 9 };
     cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };

@@ -1972,7 +1972,10 @@ CREATE TABLE IF NOT EXISTS "public"."t_professional_practices_tutor" (
     "TUTOR_ID" integer NOT NULL,
     "PROFESSIONAL_PRACTICE_ID" integer NOT NULL,
     "TUTOR_TYPE" character varying(45) NOT NULL,
-    "tutor_person_id" integer
+    "tutor_person_id" integer,
+    "ACTIVE" boolean DEFAULT true NOT NULL,
+    "CREATED_AT" timestamp with time zone DEFAULT now() NOT NULL,
+    "UPDATED_AT" timestamp with time zone
 );
 
 

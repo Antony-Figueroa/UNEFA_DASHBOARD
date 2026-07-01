@@ -91,19 +91,6 @@ export default function EvaluationConfigPage() {
     }
   };
 
-  const fetchCriteria = async () => {
-    setCriteriaLoading(true);
-    try {
-      const data = await evaluationService.getCriteria();
-      setCriteriaList(data);
-      setCriteriaOriginal(JSON.parse(JSON.stringify(data)));
-    } catch {
-      toast.error('Error al cargar criterios');
-    } finally {
-      setCriteriaLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchConfig();
     fetchCriteria();

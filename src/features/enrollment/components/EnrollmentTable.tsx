@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
-import Badge from "../../../components/ui/badge/Badge";
 import Button from "../../../components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon, ThreeDotsIcon } from "../../../icons/actions";
@@ -44,6 +43,8 @@ interface EnrollmentTableProps {
   onEdit?: (item: EnrollmentRowData) => void;
   /** Callback for inactivar */
   onInactivate?: (item: EnrollmentRowData) => void;
+  /** Callback for reactivar */
+  onReactivate?: (item: EnrollmentRowData) => void;
   /** Callback for retiro justificado */
   onWithdrawJustified?: (item: EnrollmentRowData) => void;
   /** Callback for abandono */
@@ -87,8 +88,6 @@ interface ActionButtonsProps {
   onWithdrawJustified?: () => void;
   onWithdrawUnjustified?: () => void;
   status: boolean;
-  recordType?: 'active' | 'inactivated' | 'withdrawn';
-  withdrawalType?: string | null;
   enrollmentId?: string;
   studentName?: string;
   isMobile?: boolean;
@@ -106,8 +105,6 @@ const ActionButtons = ({
   onWithdrawJustified,
   onWithdrawUnjustified,
   status,
-  recordType = 'active',
-  withdrawalType,
   isMobile = false,
   canEdit = false,
 }: ActionButtonsProps) => {
@@ -129,52 +126,6 @@ const ActionButtons = ({
     ? "flex flex-col gap-3 pt-2"
     : "flex justify-end gap-3";
 
-  // ── Registros retirados: badge y ver/historial ──
-  if (recordType === 'withdrawn') {
-    const isJustified = withdrawalType === 'justified';
-    return (
-      <div className={containerClasses}>
-        {onView && (
-          <AsyncActionButton onClick={async () => onView()} icon={<EyeIcon />} tooltip="Ver Detalles" label={isMobile ? "Ver Detalles" : undefined} variant="primary" fullWidth={isMobile} />
-        )}
-        {onViewHistory && (
-          <AsyncActionButton onClick={async () => onViewHistory()} icon={
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-          } tooltip="Ver historial de cambios" label={isMobile ? "Ver historial" : undefined} variant="primary" fullWidth={isMobile} />
-        )}
-        <Badge color={isJustified ? "warning" : "error"} size="sm">
-          {isJustified ? "Retiro Justificado" : "Abandono"}
-        </Badge>
-      </div>
-    );
-  }
-
-  // ── Registros inactivados: solo reactivar ──
-  if (recordType === 'inactivated') {
-    return (
-      <div className={containerClasses}>
-        {onView && (
-          <AsyncActionButton onClick={async () => onView()} icon={<EyeIcon />} tooltip="Ver Detalles" label={isMobile ? "Ver Detalles" : undefined} variant="primary" fullWidth={isMobile} />
-        )}
-        {onViewHistory && (
-          <AsyncActionButton onClick={async () => onViewHistory()} icon={
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-          } tooltip="Ver historial de cambios" label={isMobile ? "Ver historial" : undefined} variant="primary" fullWidth={isMobile} />
-        )}
-        {onInactivate && (
-          <Button size="sm" onClick={() => onInactivate()}>
-            Reactivar
-          </Button>
-        )}
-      </div>
-    );
-  }
-
-  // ── Registros activos: kebab menu completo ──
   return (
     <div className={containerClasses}>
       {onView && (
@@ -698,8 +649,6 @@ export default function EnrollmentTable({
                                             onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
                                             onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
                                             status={s.status}
-                                            recordType={s.recordType}
-                                            withdrawalType={s.withdrawalType}
                                             canEdit={!!onEdit}
                                         />
                                     </TableCell>
@@ -783,8 +732,6 @@ export default function EnrollmentTable({
                                             onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
                                             onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
                                             status={s.status}
-                                            recordType={s.recordType}
-                                            withdrawalType={s.withdrawalType}
                                             canEdit={!!onEdit}
                                             isMobile={true}
                                         />

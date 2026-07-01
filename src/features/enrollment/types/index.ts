@@ -94,4 +94,8 @@ export interface UpdateEnrollmentPayload extends Partial<CreateEnrollmentPayload
 export interface EnrollmentRowData extends Omit<Enrollment, "enrollmentDate"> {
   /** Date formatted as a string for display */
   enrollmentDate: string;
+  /** Tipo de registro (ej: 'NUEVO', 'REINGRESO') */
+  recordType?: string;
+  /** Tipo de retiro (ej: 'JUSTIFICADO', 'NO JUSTIFICADO') */
+  withdrawalType?: string;
 }

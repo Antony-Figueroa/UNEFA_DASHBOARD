@@ -359,10 +359,10 @@ export default function EnrollmentPage() {
 
         setConfirmation({
             isOpen: true,
-            title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
-            message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios de" : "registrar"} esta inscripción?`,
+            title: isEditing ? "Confirmar Actualización" : "Confirmar Registro",
+            message: `¿Estás seguro de que deseas ${isEditing ? "actualizar" : "registrar"} esta inscripción?`,
             onConfirm: () => trySave(false),
-            confirmText: isEditing ? "Guardar" : "Registrar",
+            confirmText: isEditing ? "Actualizar" : "Registrar",
             variant: "info",
         });
     };

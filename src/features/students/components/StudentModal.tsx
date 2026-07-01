@@ -1671,8 +1671,8 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         isLoading={confirmSaving}
         variant="confirm"
         title={editingStudent ? "Confirmar actualización" : "Confirmar registro"}
-        message={editingStudent ? "¿Desea actualizar los datos del estudiante?" : "¿Desea guardar el nuevo estudiante?"}
-        confirmLabel={editingStudent ? "Actualizar" : "Guardar"}
+        message={editingStudent ? "¿Desea actualizar los datos del estudiante?" : "¿Desea registrar el nuevo estudiante?"}
+        confirmLabel={editingStudent ? "Actualizar" : "Registrar"}
       />
     )}
 

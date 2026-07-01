@@ -650,6 +650,39 @@ export const updateLocale = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const sendCredentials = async (req: AuthRequest, res: Response) => {
+  try {
+    const adminUserId = req.user?.userId;
+    if (!adminUserId) return res.status(401).json({ success: false, message: 'Sesión no válida' });
+
+    const { userIds } = req.body;
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Se requiere un array de userIds' });
+    }
+
+    const result = await authService.sendCredentialsToUsers(userIds, adminUserId);
+    res.json(result);
+  } catch (error) {
+    console.error('[Auth] Error en sendCredentials:', error);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+};
+
+export const claimCredentials = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query;
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ success: false, message: 'Token requerido' });
+    }
+
+    const result = await authService.claimCredentials(token);
+    res.json(result);
+  } catch (error) {
+    console.error('[Auth] Error en claimCredentials:', error);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+};
+
 export const getPasswordPolicy = async (_req: Request, res: Response) => {
   try {
     const config = await getConfig();

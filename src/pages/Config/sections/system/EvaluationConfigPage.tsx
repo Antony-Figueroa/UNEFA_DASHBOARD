@@ -9,7 +9,7 @@ import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
 import toast from "react-hot-toast";
 import apiClient from "../../../../api/apiClient";
 import ConfigLayout from "../../ConfigLayout";
-import type { SystemEvaluationConfig } from "../../../../features/evaluations/types";
+import type { SystemEvaluationConfig, EvaluationCriteria } from "../../../../features/evaluations/types";
 
 const WEIGHT_FIELDS = [
   { key: 'INSTITUCIONAL' as const, label: 'Institucional', description: 'Peso de la evaluación institucional en la nota final' },
@@ -22,6 +22,7 @@ export default function EvaluationConfigPage() {
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<SystemEvaluationConfig | null>(null);
   const [local, setLocal] = useState<SystemEvaluationConfig | null>(null);
+  const [criteria, setCriteria] = useState<EvaluationCriteria[]>([]);
   const { confirmDialog, showConfirm, hideConfirm } = useConfirmDialog();
 
   const hasChanges = local !== null && config !== null &&
@@ -41,8 +42,16 @@ export default function EvaluationConfigPage() {
     }
   };
 
+  const fetchCriteria = async () => {
+    try {
+      const res = await apiClient.get('/evaluations/criteria');
+      setCriteria(res.data?.data || []);
+    } catch { /* criteria fetch error, silently fail */ }
+  };
+
   useEffect(() => {
     fetchConfig();
+    fetchCriteria();
   }, []);
 
   const updateWeight = (key: string, value: number) => {
@@ -100,6 +109,16 @@ export default function EvaluationConfigPage() {
       },
       variant: "info",
     });
+  };
+
+  const handleUpdateCriteria = async (id: number, description: string) => {
+    try {
+      await apiClient.put(`/evaluations/criteria/${id}`, { description });
+      setCriteria(prev => prev.map(c => c.criteriaId === id ? { ...c, description } : c));
+      toast.success('Criterio actualizado');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error al actualizar criterio');
+    }
   };
 
   const handleReset = () => {
@@ -295,6 +314,41 @@ export default function EvaluationConfigPage() {
           </div>
         </ComponentCard>
 
+        {/* Criterios de Evaluación */}
+        <ComponentCard title="Criterios de Evaluación">
+          <p className="text-xs text-text-tertiary mb-4">
+            Cada criterio puede editarse directamente. Los cambios se guardan individualmente.
+          </p>
+          <div className="space-y-4">
+            {(['INSTITUCIONAL', 'ACADEMICO', 'COMITE'] as const).map(type => {
+              const group = criteria.filter(c => c.evaluatorType === type);
+              if (group.length === 0) return null;
+              const label = { INSTITUCIONAL: 'Institucional', ACADEMICO: 'Académico', COMITE: 'Comité' }[type];
+              return (
+                <details key={type} className="group border border-border-light dark:border-white/10 rounded-lg">
+                  <summary className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg [&::-webkit-details-marker]:hidden">
+                    <span className="text-sm font-medium text-text-primary dark:text-text-emphasis">
+                      {label} ({group.length} criterios)
+                    </span>
+                    <svg className="w-4 h-4 text-text-tertiary transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <div className="border-t border-border-light dark:border-white/10 divide-y divide-border-light dark:divide-white/5">
+                    {group.map(c => (
+                      <CriteriaRow
+                        key={c.criteriaId}
+                        criteria={c}
+                        onSave={handleUpdateCriteria}
+                      />
+                    ))}
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        </ComponentCard>
+
         {/* ⚠️ Nota sobre cambios que afectan evaluaciones existentes */}
         <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
           <div className="flex gap-3">
@@ -328,7 +382,44 @@ export default function EvaluationConfigPage() {
   );
 }
 
-// ── Sub-componente helper ─────────────────────────────────────────────────
+// ── Sub-componente helper: fila de criterio editable ──────────────────────
+function CriteriaRow({ criteria, onSave }: { criteria: EvaluationCriteria; onSave: (id: number, description: string) => Promise<void> }) {
+  const [draft, setDraft] = useState(criteria.description);
+  const [saving, setSaving] = useState(false);
+  const changed = draft !== criteria.description;
+
+  useEffect(() => { setDraft(criteria.description); }, [criteria.description]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    await onSave(criteria.criteriaId, draft);
+    setSaving(false);
+  };
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5">
+      <span className="w-8 text-xs font-semibold text-text-tertiary text-center shrink-0">
+        #{criteria.itemNumber}
+      </span>
+      <input
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+      />
+      {changed && (
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50 transition-colors"
+        >
+          {saving ? '...' : 'Guardar'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ScoreInput({
   label,
   description,

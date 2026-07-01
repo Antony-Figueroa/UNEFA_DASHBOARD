@@ -68,6 +68,15 @@ export const evaluationService = {
     }
   },
 
+  updateCriteria: async (id: number, data: Partial<EvaluationCriteria>): Promise<void> => {
+    try {
+      await apiClient.put(`${API_URL}/criteria/${id}`, data);
+    } catch (error) {
+      console.error('[evaluationService] Error updating criteria:', error);
+      throw error;
+    }
+  },
+
   getEvaluations: async (practiceId?: number): Promise<Evaluation[]> => {
     try {
       const params = practiceId ? { practiceId } : {};

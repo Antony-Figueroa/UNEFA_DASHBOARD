@@ -19,6 +19,8 @@ router.get('/preset-questions', rateLimit(20, 60 * 1000), authController.getPres
 router.post('/verify-questions', rateLimit(5, 60 * 1000), authController.verifySecurityQuestions);
 router.post('/verify-answers-reset', rateLimit(5, 15 * 60 * 1000), authController.verifySecurityAnswersAndReset);
 router.post('/reset-password', rateLimit(5, 60 * 1000), authenticateToken, authorizeRole([ROLES.ADMIN]), authController.resetPassword);
+router.post('/send-credentials', authenticateToken, authorizeRole([ROLES.ADMIN]), authController.sendCredentials);
+router.get('/claim-credentials', rateLimit(10, 60 * 1000), authController.claimCredentials);
 router.post('/request-recovery', rateLimit(3, 60 * 1000), authController.requestPasswordReset);
 router.post('/reset-with-token', rateLimit(5, 60 * 1000), authController.resetPasswordWithToken);
 router.get('/password-policy', rateLimit(10, 60 * 1000), authController.getPasswordPolicy);

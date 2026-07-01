@@ -44,6 +44,7 @@ export const routeComponents: Record<
   "/configure/backups": lazyPreload(() => import("../pages/Config/sections/system/BackupsPage")),
   "/configure/landing": lazyPreload(() => import("../pages/Config/sections/customize/LandingPage")),
   "/configure/organizacion": lazyPreload(() => import("../pages/Config/sections/system/OrganizationPage")),
+  "/configure/evaluacion": lazyPreload(() => import("../pages/Config/sections/system/EvaluationConfigPage")),
   "/configure/academic": lazyPreload(() => import("../pages/Config/sections/system/OrganizationPage")),
   "/configure/reminders": lazyPreload(() => import("../pages/Config/sections/customize/RemindersPage")),
   "/dashboard/configure": lazyPreload(() => import("../pages/Config/sections/customize/DashboardPage")),

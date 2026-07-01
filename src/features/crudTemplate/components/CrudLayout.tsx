@@ -5,6 +5,7 @@ import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 
 import { PlusCircleIcon } from "../../../icons/actions";
 import { CrudConfirmDialog, CrudConfirmState } from "./CrudConfirmDialog";
+import Button from "../../../components/ui/button/Button";
 
 export interface CrudLayoutProps {
   title: string;

@@ -87,21 +87,34 @@ export default function EvaluationConfigPage() {
       title: "Guardar Configuración",
       message: "¿Estás seguro de guardar los cambios en la configuración de evaluación?",
       onConfirm: async () => {
-        if (!local) return;
+        if (!local || !config) return;
+
+        // Mandar solo lo que realmente cambió — evita 409 falsos
+        const payload: Record<string, any> = {};
+        if (JSON.stringify(local.weights) !== JSON.stringify(config.weights)) {
+          payload.weights = local.weights;
+        }
+        if (JSON.stringify(local.score) !== JSON.stringify(config.score)) {
+          payload.score = local.score;
+        }
+        if (local.committeeMinMembers !== config.committeeMinMembers) {
+          payload.committeeMinMembers = local.committeeMinMembers;
+        }
+        if (Object.keys(payload).length === 0) {
+          hideConfirm();
+          return;
+        }
+
         try {
           setSaving(true);
-          const res = await apiClient.put('/evaluations/system-config', {
-            weights: local.weights,
-            score: local.score,
-            committeeMinMembers: local.committeeMinMembers,
-          });
+          const res = await apiClient.put('/evaluations/system-config', payload);
           const updated = res.data?.data ?? res.data as SystemEvaluationConfig;
           setConfig(updated);
           setLocal({ ...updated });
           toast.success('Configuración guardada correctamente');
         } catch (err: any) {
           const msg = err.response?.data?.message || 'Error al guardar configuración';
-          toast.error(msg);
+          toast.error(msg, { duration: 6000 });
         } finally {
           setSaving(false);
           hideConfirm();

@@ -362,7 +362,7 @@ export default function VisitRegistration() {
                   <TableCell isHeader>Tipo</TableCell>
                   <TableCell isHeader>Horas</TableCell>
                   <TableCell isHeader>Actividades</TableCell>
-                  <TableCell isHeader></TableCell>
+                  <TableCell isHeader>{' '}</TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody>

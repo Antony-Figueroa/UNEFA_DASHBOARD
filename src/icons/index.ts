@@ -60,6 +60,7 @@ import CheckIcon from "./check.svg?react";
 import UsersIcon from "./users.svg?react";
 import ShieldCheckIcon from "./shield-check.svg?react";
 import KeyRoundIcon from "./key.svg?react";
+import { EditIcon } from "./actions";
 
 export {
   ErrorHexaIcon,
@@ -124,4 +125,5 @@ export {
   UsersIcon,
   ShieldCheckIcon,
   KeyRoundIcon,
+  EditIcon,
 };

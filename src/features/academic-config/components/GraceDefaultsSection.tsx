@@ -5,6 +5,7 @@ import ComponentCard from '../../../components/common/ComponentCard';
 import Switch from '../../../components/form/switch/Switch';
 import { usePeriods } from '../../periods/hooks/usePeriods';
 import { usePermissions } from '../../permissions/hooks/usePermissions';
+import Button from '../../../components/ui/button/Button';
 
 export default function GraceDefaultsSection() {
   const { graceDefaults, loadGraceDefaults, updateGraceDefaults } = usePeriods();

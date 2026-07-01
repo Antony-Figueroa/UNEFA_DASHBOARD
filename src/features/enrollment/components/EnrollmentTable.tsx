@@ -167,7 +167,7 @@ const ActionButtons = ({
           onClick={async () => setKebabOpen(!kebabOpen)}
           icon={<ThreeDotsIcon />}
           tooltip="Acciones"
-          variant="secondary"
+          variant="info"
           fullWidth={isMobile}
         />
         {kebabOpen && (

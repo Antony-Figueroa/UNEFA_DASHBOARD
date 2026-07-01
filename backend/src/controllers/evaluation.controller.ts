@@ -83,6 +83,59 @@ export const getCriteria = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/**
+ * PUT /api/evaluations/criteria/:id
+ * Actualiza la descripción o tipo de evaluador de un criterio existente.
+ */
+export const updateCriteria = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { description, evaluatorType } = req.body;
+    const supabase = dbManager.getConnection();
+
+    const { data: existing, error: checkError } = await supabase
+      .from('t_evaluation_criteria')
+      .select('CRITERIA_ID')
+      .eq('CRITERIA_ID', id)
+      .single();
+
+    if (checkError || !existing) {
+      return res.status(404).json({ success: false, message: 'Criterio no encontrado' });
+    }
+
+    const updates: Record<string, any> = {};
+    if (description !== undefined) updates.DESCRIPTION = description;
+    if (evaluatorType !== undefined) updates.EVALUATOR_TYPE = evaluatorType;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ success: false, message: 'No hay campos para actualizar' });
+    }
+
+    const { error: updateError } = await supabase
+      .from('t_evaluation_criteria')
+      .update(updates)
+      .eq('CRITERIA_ID', id);
+
+    if (updateError) throw updateError;
+
+    // Auditoría
+    try {
+      await auditUpdate(req, 't_evaluation_criteria',
+        { CRITERIA_ID: id },
+        updates,
+        Object.keys(updates)
+      );
+    } catch (auditError) {
+      console.error('[Audit] Error auditing criteria update:', auditError);
+    }
+
+    res.json({ success: true, message: 'Criterio actualizado exitosamente' });
+  } catch (error) {
+    console.error('[Evaluation] Error updating criteria:', error);
+    res.status(500).json({ success: false, message: 'Error al actualizar criterio' });
+  }
+};
+
 export const getEvaluations = async (req: AuthRequest, res: Response) => {
   try {
     const { practiceId, status } = req.query;

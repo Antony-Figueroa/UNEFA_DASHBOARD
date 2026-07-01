@@ -1,3 +1,10 @@
+import dns from 'dns';
+
+// Forzar resolución DNS IPv4 para todas las conexiones salientes del backend.
+// Render usa IPv6 internamente pero la conectividad IPv6 con servicios externos
+// (Supabase, Gmail SMTP, etc.) es intermitente y causa timeouts/connection resets.
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { DatabaseAdapter, DbConnection } from './db-adapter.js';

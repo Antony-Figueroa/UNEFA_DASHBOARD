@@ -83,37 +83,60 @@ export default function VisitRegistration() {
     setCurrentPage(1);
   }, [tabsState.activeTab]);
 
-  const fetchPracticeInfo = useCallback(async (retries = 2) => {
+  const fetchPracticeInfo = useCallback(async () => {
     if (!id) return;
     setLoadingPractice(true);
     setPracticeError(null);
-    for (let attempt = 1; attempt <= retries + 1; attempt++) {
-      try {
-        const data = await getTrackingById(id);
-        setPracticeInfo(data);
-        setPracticeError(null);
-        return;
-      } catch (err: any) {
-        const msg = err.response?.data?.error || err.message || 'Error al cargar información de la práctica';
-        if (attempt <= retries) {
-          console.warn(`[VisitRegistration] Retry ${attempt}/${retries} for tracking info:`, msg);
-          await new Promise(r => setTimeout(r, attempt * 1000));
-        } else {
-          console.error('[VisitRegistration] Error fetching tracking info after retries:', err);
-          setPracticeError(msg);
-        }
-      } finally {
-        setLoadingPractice(false);
-      }
+    const tag = `[VisitReg:${id}]`;
+    console.log(tag, 'fetchPracticeInfo START');
+    try {
+      const data = await getTrackingById(id);
+      console.log(tag, 'fetchPracticeInfo OK', data?.studentName);
+      setPracticeInfo(data);
+      setPracticeError(null);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.error || err?.message || 'Error desconocido';
+      console.error(tag, `fetchPracticeInfo FAIL status=${status}`, msg);
+      setPracticeError(msg);
+    } finally {
+      setLoadingPractice(false);
+      console.log(tag, 'fetchPracticeInfo END loadingPractice=false');
     }
   }, [id]);
 
   useEffect(() => {
     if (id) {
       const practiceId = parseInt(id);
+      const tag = `[VisitReg:${id}]`;
+      console.log(tag, '=== PAGE MOUNT === practiceId=', practiceId);
+
+      // Envolver fetchVisitsByPractice con logs sin modificar el hook
+      const loggedFetchVisits = async () => {
+        console.log(tag, 'fetchVisitsByPractice START');
+        const start = performance.now();
+        try {
+          await fetchVisitsByPractice(practiceId, true);
+          console.log(tag, `fetchVisitsByPractice OK (${Math.round(performance.now() - start)}ms)`);
+        } catch (e: any) {
+          console.error(tag, 'fetchVisitsByPractice FAIL', e?.message || e);
+        }
+      };
+
+      const loggedFetchStats = async () => {
+        console.log(tag, 'fetchStats START');
+        const start = performance.now();
+        try {
+          await fetchStats({ practiceId });
+          console.log(tag, `fetchStats OK (${Math.round(performance.now() - start)}ms)`);
+        } catch (e: any) {
+          console.error(tag, 'fetchStats FAIL', e?.message || e);
+        }
+      };
+
       fetchPracticeInfo();
-      fetchVisitsByPractice(practiceId, true);
-      fetchStats({ practiceId });
+      loggedFetchVisits();
+      loggedFetchStats();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

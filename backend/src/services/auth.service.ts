@@ -1,6 +1,6 @@
 import { dbManager } from '../lib/db-manager.js';
 import { comparePassword, hashPassword, generateToken, verifyToken as verifyJWT } from '../utils/auth.utils.js';
-import { sendLoginNotification, sendSecurityAlert, sendPasswordRecoveryEmail, sendPasswordChangedNotification } from '../utils/email.utils.js';
+import { sendLoginNotification, sendSecurityAlert, sendPasswordRecoveryEmail, sendPasswordChangedNotification, sendCredentialNotification } from '../utils/email.utils.js';
 import { nowStringVenezuela, nowInVenezuela } from '../utils/date.utils.js';
 import { getConfig } from '../services/config.service.js';
 import crypto from 'crypto';
@@ -1340,6 +1340,117 @@ export const updateLocale = async (userId: number, locale: string) => {
     if (error) throw error;
 
     return { success: true, locale };
+  });
+};
+
+// ─── Credential Delivery (Option A — secure link) ───
+
+/**
+ * Admin: genera tokens de credenciales para usuarios y envía emails con enlace seguro.
+ * Las credenciales NO viajan en el email — solo un link de un solo uso.
+ */
+export const sendCredentialsToUsers = async (userIds: number[], adminUserId: number) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data: users } = await supabase
+      .from('t_user')
+      .select('USER_ID, NAME, EMAIL, STATUS')
+      .in('USER_ID', userIds);
+
+    if (!users || users.length === 0) {
+      return { success: false, message: 'No se encontraron usuarios' };
+    }
+
+    const config = await getConfig();
+    const constKeyLength = config?.USER_LENGTH || 12;
+    const { generateSecurePassword } = await import('../utils/security.utils.js');
+    const results: Array<{ userId: number; email: string; success: boolean; error?: string }> = [];
+
+    for (const user of users) {
+      if (user.STATUS === 0) {
+        results.push({ userId: user.USER_ID, email: user.EMAIL || '', success: false, error: 'Usuario inactivo' });
+        continue;
+      }
+      if (!user.EMAIL) {
+        results.push({ userId: user.USER_ID, email: '', success: false, error: 'Usuario sin email' });
+        continue;
+      }
+
+      try {
+        const tempPassword = await generateSecurePassword();
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiry = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+
+        const { error: insertError } = await supabase.from('t_credential_tokens').insert({
+          USER_ID: user.USER_ID,
+          TOKEN: token,
+          TEMP_PASSWORD: tempPassword,
+          EXPIRES_AT: expiry,
+          CREATED_BY: adminUserId,
+        });
+
+        if (insertError) throw insertError;
+
+        await sendCredentialNotification(user.EMAIL, user.NAME, token);
+        results.push({ userId: user.USER_ID, email: user.EMAIL, success: true });
+      } catch (err: any) {
+        console.error(`[CredentialDelivery] Error para user ${user.USER_ID}:`, err);
+        results.push({ userId: user.USER_ID, email: user.EMAIL || '', success: false, error: err.message });
+      }
+    }
+
+    return {
+      success: true,
+      message: `Credenciales enviadas: ${results.filter(r => r.success).length}/${userIds.length}`,
+      data: results,
+    };
+  });
+};
+
+/**
+ * Usuario retira (claim) sus credenciales usando el token del link seguro.
+ * Token de un solo uso + expiración de 48h.
+ */
+export const claimCredentials = async (token: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data: cred, error } = await supabase
+      .from('t_credential_tokens')
+      .select('*')
+      .eq('TOKEN', token)
+      .single();
+
+    if (error || !cred) {
+      return { success: false, message: 'Token inválido' };
+    }
+
+    if (cred.USED_AT) {
+      return { success: false, message: 'Este enlace ya fue utilizado. Contactá al administrador para generar uno nuevo.' };
+    }
+
+    if (new Date(cred.EXPIRES_AT) < new Date()) {
+      return { success: false, message: 'Este enlace ha expirado. Contactá al administrador para generar uno nuevo.' };
+    }
+
+    const { data: user } = await supabase
+      .from('t_user')
+      .select('USER_CI, NAME')
+      .eq('USER_ID', cred.USER_ID)
+      .single();
+
+    // Marcar como usado
+    await supabase
+      .from('t_credential_tokens')
+      .update({ USED_AT: new Date().toISOString() })
+      .eq('ID', cred.ID);
+
+    return {
+      success: true,
+      data: {
+        userCi: user?.USER_CI || '',
+        name: user?.NAME || '',
+        tempPassword: cred.TEMP_PASSWORD,
+      },
+      message: 'Credenciales verificadas. Cambiá tu contraseña al iniciar sesión.',
+    };
   });
 };
 

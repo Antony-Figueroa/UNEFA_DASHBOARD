@@ -407,6 +407,44 @@ export const sendSecurityAlert = async (email: string, name: string, type: 'FAIL
 };
 
 /**
+ * Envía notificación con enlace seguro para ver credenciales de acceso (Option A — sin credenciales en texto plano)
+ */
+export const sendCredentialNotification = async (email: string, name: string, token: string): Promise<{ success: boolean; error?: string }> => {
+  const portalUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const claimUrl = `${portalUrl}/claim-credentials?token=${token}`;
+  const validityHours = 48;
+
+  const body = `
+    <h2 style="color: #1e40af; font-size: 20px; margin: 0 0 16px;">Credenciales de Acceso</h2>
+    <p style="margin: 0 0 8px;">Hola <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px; color: #475569;">
+      Un administrador ha generado tus credenciales de acceso al <strong>SIGP UNEFA</strong>.
+    </p>
+    <p style="margin: 0 0 20px; color: #475569;">
+      Hacé clic en el siguiente botón para ver tus credenciales de forma segura:
+    </p>
+    ${ctaButton(claimUrl, 'Ver mis Credenciales')}
+    <p style="margin: 16px 0 8px; font-size: 13px; color: #64748b;">
+      Si el botón no funciona, copiá y pegá este enlace en tu navegador:
+    </p>
+    <p style="word-break: break-all; color: #2563eb; font-size: 13px; background: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 0 0 20px; font-family: monospace;">${claimUrl}</p>
+    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px 16px; margin: 16px 0;">
+      <p style="margin: 0; font-size: 13px; color: #991b1b;">
+        <strong>🔒 Importante:</strong> Este enlace es de <strong>un solo uso</strong> y expira en ${validityHours} horas.
+        No compartas este enlace con nadie. Si no solicitaste estas credenciales, contactá al administrador.
+      </p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: 'Credenciales de Acceso - SIGP UNEFA',
+    html: buildEmailHtml(body, { headerSubtitle: 'Credenciales de Acceso' }),
+    text: `Hola ${name}. Un administrador generó tus credenciales. Accedé de forma segura en: ${claimUrl}. Este enlace expira en ${validityHours} horas y es de un solo uso.`
+  });
+};
+
+/**
  * Envía notificaciones de período académico por email a múltiples usuarios
  */
 export const sendPeriodNotification = async (

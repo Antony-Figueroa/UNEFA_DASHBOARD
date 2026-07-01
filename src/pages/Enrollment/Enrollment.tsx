@@ -393,6 +393,31 @@ export default function EnrollmentPage() {
     };
 
     /**
+     * Reactiva una inscripción inactivada.
+     */
+    const handleReactivate = (row: EnrollmentRowData) => {
+        const original = enrollments.find((e) => e.enrollmentId === row.enrollmentId);
+        if (!original) return;
+
+        setConfirmation({
+            isOpen: true,
+            title: "Confirmar Reactivación",
+            message: `¿Estás seguro de que deseas reactivar la inscripción de ${row.studentName}?`,
+            onConfirm: async () => {
+                try {
+                    await toggleStatus(original);
+                } catch (error) {
+                    console.error("[EnrollmentPage] Error toggling status:", error);
+                } finally {
+                    setConfirmation(null);
+                }
+            },
+            confirmText: "Reactivar",
+            variant: "info" as DialogVariant,
+        });
+    };
+
+    /**
      * Abre el diálogo de retiro justificado / abandono.
      */
     const handleWithdraw = (type: 'justified' | 'unjustified', row: EnrollmentRowData) => {
@@ -475,6 +500,7 @@ export default function EnrollmentPage() {
                                 activeTab={tabsState.activeTab as "Activas" | "Inactivas"}
                                 onEdit={handleEdit}
                                 onInactivate={handleInactivate}
+                                onReactivate={handleReactivate}
                                 onWithdrawJustified={(row) => handleWithdraw('justified', row)}
                                 onWithdrawUnjustified={(row) => handleWithdraw('unjustified', row)}
                                 onView={setViewItem}

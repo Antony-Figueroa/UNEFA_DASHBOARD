@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
-import { lookup as dnsLookup } from 'dns';
+import { promises as dnsPromises } from 'dns';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -9,6 +9,23 @@ dotenv.config();
 
 type SendResult = { success: true } | { success: false; error: string };
 
+// Ponytail: resolver smtp.gmail.com a IPv4 UNA SOLA VEZ al arrancar.
+// Render no tiene salida IPv6, y nodemailer ignora lookup con family:4.
+// Se resuelve en el primer llamado y se cachea para los siguientes.
+let smtpHostV4Promise: Promise<string> | null = null;
+const getSmtpHostV4 = (): Promise<string> => {
+  if (!smtpHostV4Promise) {
+    smtpHostV4Promise = dnsPromises.resolve4('smtp.gmail.com').then(
+      addrs => (console.log(`[Email] SMTP IPv4 resuelto: ${addrs[0]}`), addrs[0]),
+      () => {
+        console.warn('[Email] No se pudo resolver smtp.gmail.com a IPv4, usando hostname');
+        return 'smtp.gmail.com';
+      }
+    );
+  }
+  return smtpHostV4Promise;
+};
+
 /** Enviar via Gmail SMTP con contraseña de aplicación */
 const tryGmail = async (opts: { to: string; subject: string; html: string; text?: string }): Promise<SendResult | null> => {
   const user = process.env.GMAIL_USER;
@@ -16,18 +33,15 @@ const tryGmail = async (opts: { to: string; subject: string; html: string; text?
   if (!user || !pass) return null; // no configurado
 
   try {
-    // Forzar IPv4 — Render no tiene salida IPv6
+    const host = await getSmtpHostV4();
     const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
+      host,
       port: 465,
       secure: true,
       auth: { user, pass },
       connectionTimeout: 15000,
       greetingTimeout: 15000,
       socketTimeout: 20000,
-      lookup: (hostname: string, opts: any, cb: (err: any, addr: string, fam: number) => void) => {
-        dnsLookup(hostname, { ...opts, family: 4 }, cb);
-      },
     } as any);
 
     await transporter.sendMail({

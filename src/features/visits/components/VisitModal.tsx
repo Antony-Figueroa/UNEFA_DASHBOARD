@@ -112,6 +112,9 @@ interface VisitModalProps {
   modalId?: string;
   /** Nombre del estudiante para mostrar en el header (opcional) */
   studentName?: string;
+  /** Cédula del estudiante */
+  studentCi?: string;
+
   /** Horas acumuladas de prácticas para mostrar como referencia (opcional) */
   hoursAccumulated?: number;
   /** Tutores asignados a la práctica profesional del estudiante (solo estos se muestran en el selector) */
@@ -139,6 +142,7 @@ export default function VisitModal({
   periodEndDate,
   modalId,
   studentName,
+  studentCi,
   hoursAccumulated,
   assignedTutors,
   tutorVisitCounts: practiceTutorVisitCounts,
@@ -652,11 +656,9 @@ export default function VisitModal({
               {isEditing ? 'Editar Visita de Seguimiento' : 'Registrar Nueva Visita'}
             </span>
             <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary font-normal">
-              {studentName 
-                ? `Estudiante: ${studentName}`
-                : (isEditing 
-                  ? 'Modifica los detalles de la visita de seguimiento' 
-                  : 'Completa la información de la visita de seguimiento')
+              {isEditing 
+                ? 'Modifica los detalles de la visita de seguimiento' 
+                : 'Completa la información de la visita de seguimiento'
               }
             </p>
           </div>
@@ -664,6 +666,15 @@ export default function VisitModal({
 
         <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
           <form id="visit-form" onSubmit={handleSubmit(onSubmitForm as any)} className="space-y-6 w-full">
+            {/* Datos del Estudiante */}
+            {studentName && (
+              <div className="p-4 rounded-lg bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20">
+                <p className="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 mb-1">Estudiante</p>
+                <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{studentName}</p>
+                {studentCi && <p className="text-sm text-text-secondary">{studentCi}</p>}
+              </div>
+            )}
+
             {/* Fila 0: Selector de Tutor (primero) */}
             <div className="grid grid-cols-1 gap-x-6 gap-y-5">
               <div>

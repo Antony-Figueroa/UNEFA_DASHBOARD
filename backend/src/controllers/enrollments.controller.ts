@@ -441,12 +441,13 @@ export const updateEnrollment = async (req: AuthRequest, res: Response) => {
       institutionId,
       institutionResponsibleId,
       practiceType,
-      period
+      period,
+      status
     } = req.body;
 
     const result = await dbManager.withRetry(async (supabase) => {
       let periodId, internshipTypeId;
-      
+
       if (period) {
         const { data: p } = await supabase.from('t_internships_period').select('PERIOD_ID').eq('DESCRIPTION', period).single();
         periodId = p?.PERIOD_ID;
@@ -462,6 +463,7 @@ export const updateEnrollment = async (req: AuthRequest, res: Response) => {
       if (institutionResponsibleId) updateData.MANAGER_ID = parseInt(institutionResponsibleId);
       if (periodId) updateData.PERIOD_ID = periodId;
       if (internshipTypeId) updateData.INTERNSHIP_TYPE_ID = internshipTypeId;
+      if (status !== undefined) updateData.STATUS = status ? 1 : 0;
 
       const { data: oldData } = await supabase
         .from(TABLE_NAME)

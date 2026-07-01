@@ -8,6 +8,7 @@ import Badge from "../../../../components/ui/badge/Badge";
 import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
 import toast from "react-hot-toast";
 import apiClient from "../../../../api/apiClient";
+import evaluationService from "../../../../features/evaluations/services/evaluationService";
 import ConfigLayout from "../../ConfigLayout";
 import type { SystemEvaluationConfig, EvaluationCriteria } from "../../../../features/evaluations/types";
 
@@ -22,11 +23,59 @@ export default function EvaluationConfigPage() {
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<SystemEvaluationConfig | null>(null);
   const [local, setLocal] = useState<SystemEvaluationConfig | null>(null);
-  const [criteria, setCriteria] = useState<EvaluationCriteria[]>([]);
   const { confirmDialog, showConfirm, hideConfirm } = useConfirmDialog();
 
   const hasChanges = local !== null && config !== null &&
     JSON.stringify(local) !== JSON.stringify(config);
+
+  // ── Criteria editor state ────────────────────────────────────────────────
+  const [criteriaList, setCriteriaList] = useState<EvaluationCriteria[]>([]);
+  const [criteriaOriginal, setCriteriaOriginal] = useState<EvaluationCriteria[]>([]);
+  const [criteriaSaving, setCriteriaSaving] = useState(false);
+  const [expandedType, setExpandedType] = useState<string | null>(null);
+  const [criteriaLoading, setCriteriaLoading] = useState(false);
+
+  const criteriaDirty = criteriaList.some(
+    (c, i) => c.description !== criteriaOriginal[i]?.description
+  );
+
+  const criteriaByType = (type: string) =>
+    criteriaList.filter(c => c.evaluatorType === type).sort((a, b) => a.itemNumber - b.itemNumber);
+
+  const updateCriteriaDesc = (criteriaId: number, description: string) => {
+    setCriteriaList(prev => prev.map(c => c.criteriaId === criteriaId ? { ...c, description } : c));
+  };
+
+  const fetchCriteria = async () => {
+    setCriteriaLoading(true);
+    try {
+      const data = await evaluationService.getCriteria();
+      setCriteriaList(data);
+      setCriteriaOriginal(JSON.parse(JSON.stringify(data)));
+    } catch {
+      toast.error('Error al cargar criterios');
+    } finally {
+      setCriteriaLoading(false);
+    }
+  };
+
+  const handleSaveCriteria = async () => {
+    const changed = criteriaList
+      .filter((c, i) => c.description !== criteriaOriginal[i]?.description)
+      .map(c => ({ criteriaId: c.criteriaId, description: c.description }));
+    if (changed.length === 0) return;
+
+    setCriteriaSaving(true);
+    try {
+      await evaluationService.updateCriteria(changed);
+      setCriteriaOriginal(JSON.parse(JSON.stringify(criteriaList)));
+      toast.success(`${changed.length} criterio${changed.length > 1 ? 's' : ''} actualizado${changed.length > 1 ? 's' : ''}`);
+    } catch {
+      toast.error('Error al guardar criterios');
+    } finally {
+      setCriteriaSaving(false);
+    }
+  };
 
   const fetchConfig = async () => {
     setLoading(true);
@@ -43,10 +92,16 @@ export default function EvaluationConfigPage() {
   };
 
   const fetchCriteria = async () => {
+    setCriteriaLoading(true);
     try {
-      const res = await apiClient.get('/evaluations/criteria');
-      setCriteria(res.data?.data || []);
-    } catch { /* criteria fetch error, silently fail */ }
+      const data = await evaluationService.getCriteria();
+      setCriteriaList(data);
+      setCriteriaOriginal(JSON.parse(JSON.stringify(data)));
+    } catch {
+      toast.error('Error al cargar criterios');
+    } finally {
+      setCriteriaLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -122,16 +177,6 @@ export default function EvaluationConfigPage() {
       },
       variant: "info",
     });
-  };
-
-  const handleUpdateCriteria = async (id: number, description: string) => {
-    try {
-      await apiClient.put(`/evaluations/criteria/${id}`, { description });
-      setCriteria(prev => prev.map(c => c.criteriaId === id ? { ...c, description } : c));
-      toast.success('Criterio actualizado');
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Error al actualizar criterio');
-    }
   };
 
   const handleReset = () => {
@@ -330,36 +375,74 @@ export default function EvaluationConfigPage() {
         {/* Criterios de Evaluación */}
         <ComponentCard title="Criterios de Evaluación">
           <p className="text-xs text-text-tertiary mb-4">
-            Cada criterio puede editarse directamente. Los cambios se guardan individualmente.
+            Descripciones de cada criterio por tipo de evaluador. Los cambios se guardan en batch.
           </p>
-          <div className="space-y-4">
-            {(['INSTITUCIONAL', 'ACADEMICO', 'COMITE'] as const).map(type => {
-              const group = criteria.filter(c => c.evaluatorType === type);
-              if (group.length === 0) return null;
-              const label = { INSTITUCIONAL: 'Institucional', ACADEMICO: 'Académico', COMITE: 'Comité' }[type];
-              return (
-                <details key={type} className="group border border-border-light dark:border-white/10 rounded-lg">
-                  <summary className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg [&::-webkit-details-marker]:hidden">
-                    <span className="text-sm font-medium text-text-primary dark:text-text-emphasis">
-                      {label} ({group.length} criterios)
-                    </span>
-                    <svg className="w-4 h-4 text-text-tertiary transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </summary>
-                  <div className="border-t border-border-light dark:border-white/10 divide-y divide-border-light dark:divide-white/5">
-                    {group.map(c => (
-                      <CriteriaRow
-                        key={c.criteriaId}
-                        criteria={c}
-                        onSave={handleUpdateCriteria}
-                      />
-                    ))}
+
+          {criteriaLoading ? (
+            <div className="space-y-3 animate-pulse">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 rounded" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {(['INSTITUCIONAL', 'ACADEMICO', 'COMITE'] as const).map(type => {
+                const items = criteriaByType(type);
+                const isOpen = expandedType === type;
+                const hasDirty = items.some(
+                  c => c.description !== criteriaOriginal.find(o => o.criteriaId === c.criteriaId)?.description
+                );
+                return (
+                  <div key={type} className="border border-border-light dark:border-white/10 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setExpandedType(isOpen ? null : type)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-text-primary dark:text-text-emphasis hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        <span>{type === 'INSTITUCIONAL' ? 'Institucional' : type === 'ACADEMICO' ? 'Académico' : 'Comité'}</span>
+                        <span className="text-xs text-text-tertiary">({items.length} criterios)</span>
+                      </div>
+                      {hasDirty && <Badge color="warning" variant="light" shape="rounded">modificado</Badge>}
+                    </button>
+
+                    {isOpen && (
+                      <div className="px-4 pb-4 space-y-3 border-t border-border-light dark:border-white/10 pt-3">
+                        {items.map(c => {
+                          const origDesc = criteriaOriginal.find(o => o.criteriaId === c.criteriaId)?.description;
+                          const changed = c.description !== origDesc;
+                          return (
+                            <div key={c.criteriaId} className={`p-2 rounded border transition-colors ${changed ? 'border-brand-300 bg-brand-50/30 dark:bg-brand-500/5' : 'border-transparent'}`}>
+                              <div className="flex items-start gap-2">
+                                <span className="text-xs text-text-tertiary w-6 pt-2 shrink-0">{c.itemNumber}.</span>
+                                <textarea
+                                  rows={2}
+                                  value={c.description}
+                                  onChange={(e) => updateCriteriaDesc(c.criteriaId, e.target.value)}
+                                  className="w-full px-2 py-1.5 text-sm rounded border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 resize-none"
+                                />
+                              </div>
+                              {changed && <span className="text-[10px] text-brand-600 dark:text-brand-400 ml-8">modificado</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </details>
-              );
-            })}
-          </div>
+                );
+              })}
+
+              {criteriaDirty && (
+                <div className="flex justify-end pt-2">
+                  <Button onClick={handleSaveCriteria} disabled={criteriaSaving} size="sm">
+                    {criteriaSaving ? 'Guardando...' : 'Guardar cambios en criterios'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </ComponentCard>
 
         {/* ⚠️ Nota sobre cambios que afectan evaluaciones existentes */}

@@ -87,21 +87,16 @@ export default function VisitRegistration() {
     if (!id) return;
     setLoadingPractice(true);
     setPracticeError(null);
-    const tag = `[VisitReg:${id}]`;
-    console.log(tag, 'fetchPracticeInfo START');
     try {
       const data = await getTrackingById(id);
-      console.log(tag, 'fetchPracticeInfo OK', data?.studentName);
       setPracticeInfo(data);
       setPracticeError(null);
     } catch (err: any) {
-      const status = err?.response?.status;
-      const msg = err?.response?.data?.error || err?.message || 'Error desconocido';
-      console.error(tag, `fetchPracticeInfo FAIL status=${status}`, msg);
+      const msg = err.response?.data?.error || err.message || 'Error al cargar información de la práctica';
+      console.error('[VisitRegistration] Error fetching tracking info:', err);
       setPracticeError(msg);
     } finally {
       setLoadingPractice(false);
-      console.log(tag, 'fetchPracticeInfo END loadingPractice=false');
     }
   }, [id]);
 
@@ -462,6 +457,9 @@ export default function VisitRegistration() {
         periodStartDate={practiceInfo?.periodStartDate ? parseApiDate(practiceInfo.periodStartDate) : undefined}
         periodEndDate={practiceInfo?.periodEndDate ? parseApiDate(practiceInfo.periodEndDate) : undefined}
         studentName={practiceInfo?.studentName}
+        studentCi={practiceInfo?.studentIdNumber}
+        careerName={practiceInfo?.careerName}
+        institutionName={practiceInfo?.institutionName}
         assignedTutors={practiceInfo?.assignedTutors || []}
         tutorVisitCounts={visits.reduce<{ tutorId: number; visitCount: number }[]>((acc, v) => {
           const existing = acc.find(c => c.tutorId === v.tutorId);

@@ -85,7 +85,7 @@ export const getCriteria = async (req: AuthRequest, res: Response) => {
 
 /**
  * PUT /api/evaluations/criteria/:id
- * Actualiza la descripción o tipo de evaluador de un criterio existente.
+ * Actualiza la descripción o tipo de evaluador de un criterio existente (individual).
  */
 export const updateCriteria = async (req: AuthRequest, res: Response) => {
   try {
@@ -118,21 +118,58 @@ export const updateCriteria = async (req: AuthRequest, res: Response) => {
 
     if (updateError) throw updateError;
 
-    // Auditoría
-    try {
-      await auditUpdate(req, 't_evaluation_criteria',
-        { CRITERIA_ID: id },
-        updates,
-        Object.keys(updates)
-      );
-    } catch (auditError) {
-      console.error('[Audit] Error auditing criteria update:', auditError);
-    }
+    await auditUpdate(req, 't_evaluation_criteria',
+      { CRITERIA_ID: id },
+      updates,
+      Object.keys(updates)
+    ).catch(e => console.error('[Audit] Error auditing criteria update:', e));
 
     res.json({ success: true, message: 'Criterio actualizado exitosamente' });
   } catch (error) {
     console.error('[Evaluation] Error updating criteria:', error);
     res.status(500).json({ success: false, message: 'Error al actualizar criterio' });
+  }
+};
+
+/**
+ * PUT /api/evaluations/criteria
+ * Actualiza descripciones de múltiples criterios en batch (usado por el UI).
+ */
+export const updateCriteriaBatch = async (req: AuthRequest, res: Response) => {
+  try {
+    const { criteria } = req.body;
+    if (!Array.isArray(criteria) || criteria.length === 0) {
+      res.status(400).json({ success: false, message: 'Se requiere un array de criterios' });
+      return;
+    }
+
+    const supabase = dbManager.getConnection();
+
+    for (const c of criteria) {
+      if (!c.criteriaId || !c.description?.trim()) {
+        res.status(400).json({
+          success: false,
+          message: 'Cada criterio debe tener criteriaId y description'
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('t_evaluation_criteria')
+        .update({ DESCRIPTION: c.description.trim() })
+        .eq('CRITERIA_ID', c.criteriaId);
+
+      if (error) throw error;
+    }
+
+    res.json({ success: true, message: 'Criterios actualizados correctamente' });
+
+  } catch (error) {
+    console.error('[Evaluation] Error updating criteria batch:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar criterios de evaluación'
+    });
   }
 };
 

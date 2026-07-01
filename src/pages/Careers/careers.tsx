@@ -428,8 +428,8 @@ export default function CareersPage() {
   const handleBulkDelete = (ids: (string | number)[]) => {
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Envío a Inactivos (Masivo)",
-      message: `¿Estás seguro de que deseas enviar las ${ids.length} carreras seleccionadas a Inactivos?`,
+      title: "Confirmar Desactivación Masiva",
+      message: `¿Estás seguro de que deseas desactivar las ${ids.length} carreras seleccionadas?`,
       onConfirm: async () => {
         try {
           await bulkRemoveCareers(ids);
@@ -439,7 +439,7 @@ export default function CareersPage() {
           setConfirmation(null);
         }
       },
-      confirmText: "Confirmar",
+      confirmText: "Desactivar Todos",
       variant: "error",
     });
   };
@@ -450,8 +450,8 @@ export default function CareersPage() {
   const handleBulkDeleteTypes = (ids: number[]) => {
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Envío a Inactivos (Masivo)",
-      message: `¿Estás seguro de que deseas enviar los ${ids.length} tipos de prácticas seleccionados a Inactivos?`,
+      title: "Confirmar Desactivación Masiva",
+      message: `¿Estás seguro de que deseas desactivar los ${ids.length} tipos de prácticas seleccionados?`,
       onConfirm: async () => {
         try {
           await bulkRemoveTypes(ids);
@@ -461,7 +461,7 @@ export default function CareersPage() {
           setConfirmation(null);
         }
       },
-      confirmText: "Confirmar",
+      confirmText: "Desactivar Todos",
       variant: "error",
     });
   };

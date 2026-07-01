@@ -289,8 +289,8 @@ export default function Period() {
 
         setConfirmation({
             isOpen: true,
-            title: 'Confirmar Envío a Inactivos',
-            message: `¿Estás seguro de que deseas enviar el período "${originalPeriodo.description}" a Inactivos?`,
+            title: 'Confirmar Desactivación',
+            message: `¿Estás seguro de que deseas desactivar el período "${originalPeriodo.description}"?`,
             onConfirm: async () => {
                 try {
                     await removePeriod(originalPeriodo.periodId);
@@ -300,7 +300,7 @@ export default function Period() {
                     setConfirmation(null);
                 }
             },
-            confirmText: 'Confirmar',
+            confirmText: 'Desactivar',
             variant: 'error'
         });
     };
@@ -311,8 +311,8 @@ export default function Period() {
     const handleBulkDelete = async (periodosRow: PeriodoRowData[]) => {
         setConfirmation({
             isOpen: true,
-            title: 'Confirmar Envío a Inactivos',
-            message: `¿Estás seguro de que deseas enviar ${periodosRow.length} período${periodosRow.length > 1 ? 's' : ''} a Inactivos?`,
+            title: 'Confirmar Desactivación Masiva',
+            message: `¿Estás seguro de que deseas desactivar los ${periodosRow.length} períodos seleccionados?`,
             onConfirm: async () => {
                 try {
                     const ids = periodosRow
@@ -326,7 +326,7 @@ export default function Period() {
                     setConfirmation(null);
                 }
             },
-            confirmText: 'Confirmar',
+            confirmText: 'Desactivar Todos',
             variant: 'error'
         });
     };

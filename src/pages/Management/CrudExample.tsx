@@ -216,9 +216,9 @@ export default function CrudExample() {
   const handleBulkDelete = (selected: ExampleEntity[]) => {
     setConfirmState({
       isOpen: true,
-      title: "Confirmar Envío a Inactivos (Masivo)",
-      message: `¿Estás seguro de que deseas enviar los ${selected.length} elementos seleccionados a Inactivos?`,
-      confirmText: "Confirmar",
+      title: "Confirmar Desactivación Masiva",
+      message: `¿Estás seguro de que deseas desactivar los ${selected.length} elementos seleccionados?`,
+      confirmText: "Desactivar Todos",
       variant: "error",
       onConfirm: async () => {
         try {
@@ -279,9 +279,9 @@ export default function CrudExample() {
       onClick: (item) => {
         setConfirmState({
           isOpen: true,
-          title: "Confirmar Envío a Inactivos",
-          message: `¿Estás seguro de que deseas enviar el elemento "${item.name}" a Inactivos?`,
-          confirmText: "Confirmar",
+          title: "Confirmar Desactivación",
+          message: `¿Estás seguro de que deseas desactivar el elemento "${item.name}"?`,
+          confirmText: "Desactivar",
           variant: "error",
           onConfirm: async () => {
             try {

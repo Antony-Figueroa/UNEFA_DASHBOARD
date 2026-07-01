@@ -345,7 +345,7 @@ export default function PreEnrollmentPage() {
             isOpen: true,
             title: "Confirmar Desactivación Masiva",
             message: `¿Estás seguro de que deseas desactivar las ${ids.length} pre-inscripciones seleccionadas?`,
-            confirmText: "Desactivar",
+            confirmText: "Desactivar Todos",
             variant: "error",
             onConfirm: async () => {
                 try {

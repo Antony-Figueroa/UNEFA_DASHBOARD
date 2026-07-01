@@ -114,6 +114,10 @@ interface VisitModalProps {
   studentName?: string;
   /** Cédula del estudiante */
   studentCi?: string;
+  /** Nombre de la carrera del estudiante */
+  careerName?: string | null;
+  /** Nombre de la institución */
+  institutionName?: string | null;
 
   /** Horas acumuladas de prácticas para mostrar como referencia (opcional) */
   hoursAccumulated?: number;

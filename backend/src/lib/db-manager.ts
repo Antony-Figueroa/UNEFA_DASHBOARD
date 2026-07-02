@@ -5,6 +5,11 @@ import dns from 'dns';
 // (Supabase, Gmail SMTP, etc.) es intermitente y causa timeouts/connection resets.
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
+// Preferir IPv4 sobre IPv6 en todas las resoluciones DNS.
+// Node 17+ soporta 'ipv4first' que afecta a dns.lookup() usado por
+// fetch(), http.request(), y nodemailer internamente.
+dns.setDefaultResultOrder('ipv4first');
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { DatabaseAdapter, DbConnection } from './db-adapter.js';

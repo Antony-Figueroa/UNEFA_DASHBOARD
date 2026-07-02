@@ -129,44 +129,44 @@ const tryBrevo = async (opts: { to: string; subject: string; html: string; text?
   }
 };
 
-/** Enviar via SendPulse API (API key directa o OAuth2, 12.000 emails/mes gratis) */
+// Ponytail: cache del token OAuth2 para no pedir uno nuevo en cada mail
+let sendpulseToken: { access: string; expiresAt: number } | null = null;
+
+/** Enviar via SendPulse API (OAuth2 + HTTP, 12.000 emails/mes gratis) */
 const trySendPulse = async (opts: { to: string; subject: string; html: string; text?: string }): Promise<SendResult | null> => {
-  const apiKey = process.env.SENDPULSE_API_KEY;
   const clientId = process.env.SENDPULSE_CLIENT_ID;
   const clientSecret = process.env.SENDPULSE_CLIENT_SECRET;
-  if (!apiKey && (!clientId || !clientSecret)) return null; // no configurado
+  if (!clientId || !clientSecret) return null; // no configurado
 
   const fromEmail = process.env.SENDPULSE_FROM_EMAIL || 'antonysamuel0903@gmail.com';
   const fromName = process.env.SENDPULSE_FROM_NAME || 'SIGP UNEFA';
 
   try {
-    // 1. Obtener access token (API key directa > OAuth2)
-    let accessToken: string;
-    if (apiKey) {
-      accessToken = apiKey;
-    } else {
+    // 1. Obtener access token via OAuth2 (con cache)
+    if (!sendpulseToken || Date.now() >= sendpulseToken.expiresAt) {
       const tokenRes = await fetch('https://api.sendpulse.com/oauth/access_token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           grant_type: 'client_credentials',
-          client_id: clientId!,
-          client_secret: clientSecret!,
+          client_id: clientId,
+          client_secret: clientSecret,
         }),
       });
       if (!tokenRes.ok) {
         const errBody = await tokenRes.json().catch(() => ({}));
         throw new Error(errBody?.message || `Token HTTP ${tokenRes.status}`);
       }
-      const data = await tokenRes.json() as { access_token: string };
-      accessToken = data.access_token;
+      const data = await tokenRes.json() as { access_token: string; expires_in: number };
+      // expires_in viene en segundos, restamos 60s de margen
+      sendpulseToken = { access: data.access_token, expiresAt: Date.now() + (data.expires_in - 60) * 1000 };
     }
 
     // 2. Enviar email via SMTP API
     const sendRes = await fetch('https://api.sendpulse.com/smtp/emails', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${sendpulseToken.access}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -183,6 +183,8 @@ const trySendPulse = async (opts: { to: string; subject: string; html: string; t
     if (!sendRes.ok) {
       const errBody = await sendRes.json().catch(() => ({}));
       const msg = errBody?.message || `HTTP ${sendRes.status}`;
+      // si el token expiró, forzar refresh en el próximo intento
+      if (sendRes.status === 401) sendpulseToken = null;
       throw new Error(msg);
     }
 

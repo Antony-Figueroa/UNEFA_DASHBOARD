@@ -418,13 +418,14 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
 export async function generateRelacionInstitucionesSolicitanExcel(data: any[], period: string, fileName: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Relacion Instituciones');
-  const totalCols = 7;
+  const totalCols = 10;
 
   worksheet.columns = [
-    { key: 'empresa', width: 50 }, { key: 'rif', width: 18 },
-    { key: 'responsable', width: 30 }, { key: 'telefono', width: 18 },
-    { key: 'tipoEmpresa', width: 14 }, { key: 'carreras', width: 35 },
-    { key: 'estudiantes', width: 10 },
+    { key: 'region', width: 12 }, { key: 'nucleo', width: 16 },
+    { key: 'extension', width: 16 }, { key: 'empresa', width: 50 },
+    { key: 'rif', width: 18 }, { key: 'responsable', width: 30 },
+    { key: 'telefono', width: 18 }, { key: 'tipoEmpresa', width: 14 },
+    { key: 'carreras', width: 35 }, { key: 'estudiantes', width: 10 },
   ];
 
   applyInstitutionalHeader(worksheet, totalCols);
@@ -435,6 +436,9 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
   row9.height = 40;
 
   const headers = [
+    'REGIÓN',
+    'NÚCLEO',
+    'EXTENSIÓN',
     'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN',
     'RIF',
     'RESPONSABLE',
@@ -455,13 +459,16 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
     const row = worksheet.getRow(currentRow);
     row.height = 25;
 
-    applyDataCell(worksheet, currentRow, 1, (item.empresa || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 2, (item.rif || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 3, (item.responsable || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 4, (item.numeroContacto || 'N/A').toUpperCase());
-    applyDataCell(worksheet, currentRow, 5, (item.tipoEmpresa || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 6, (item.carreras || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 7, item.cantidadEstudiantes || 0);
+    applyDataCell(worksheet, currentRow, 1, (item.region || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 2, (item.nucleo || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 3, (item.extension || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 4, (item.empresa || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 5, (item.rif || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 6, (item.responsable || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 7, (item.numeroContacto || 'N/A').toUpperCase());
+    applyDataCell(worksheet, currentRow, 8, (item.tipoEmpresa || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 9, (item.carreras || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 10, item.cantidadEstudiantes || 0);
 
     currentRow++;
   });

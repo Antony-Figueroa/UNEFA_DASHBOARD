@@ -258,6 +258,9 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       return { data: response?.data || [], meta: response?.meta };
     },
     columns: [
+      { header: "Región", accessor: "region" },
+      { header: "Núcleo", accessor: "nucleo" },
+      { header: "Extensión", accessor: "extension" },
       { header: "Nombre de la Empresa o Institución", accessor: "empresa" },
       { header: "RIF", accessor: "rif" },
       { header: "Responsable", accessor: "responsable" },

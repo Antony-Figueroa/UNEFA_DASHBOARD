@@ -860,6 +860,132 @@ export const getRelacionEmpresasDemandan = async (req: Request, res: Response) =
   }
 };
 
+export const getRelacionInstitucionesSolicitan = async (req: Request, res: Response) => {
+  try {
+    const supabase = dbManager.getConnection();
+    const { periodId, careerId, careerIds: careerIdsQuery, page: pageQuery, limit: limitQuery } = req.query;
+    const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
+    const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
+    const careerIds = careerIdsQuery
+      ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
+      : [];
+
+    // Query with manager join
+    let query = supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        t_institution (INSTITUTION_NAME, RIF, INSTITUTION_TYPE, INSTITUTION_CONTACT),
+        t_institution_manager!inner (MANAGER_ID, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, CONTACT_PHONE),
+        t_career (CAREER_NAME)
+      `)
+      .eq('STATUS', 1);
+
+    if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
+    if (careerId) query = query.eq('CAREER_ID', Number(careerId));
+    if (careerIds.length > 0) query = query.in('CAREER_ID', careerIds);
+
+    const { data: practices, error } = await query;
+    if (error) throw error;
+
+    let practicesWithManager = practices || [];
+    let practicesWithoutManager: any[] = [];
+
+    // Fallback: query without manager inner join if no results
+    if (practicesWithManager.length === 0) {
+      let fallbackQuery = supabase
+        .from('t_professional_practices')
+        .select(`
+          PROFESSIONAL_PRACTICE_ID,
+          t_institution (INSTITUTION_NAME, RIF, INSTITUTION_TYPE, INSTITUTION_CONTACT),
+          t_career (CAREER_NAME)
+        `)
+        .eq('STATUS', 1);
+
+      if (periodId) fallbackQuery = fallbackQuery.eq('PERIOD_ID', Number(periodId));
+      if (careerId) fallbackQuery = fallbackQuery.eq('CAREER_ID', Number(careerId));
+      if (careerIds.length > 0) fallbackQuery = fallbackQuery.in('CAREER_ID', careerIds);
+
+      const { data: fallbackPractices } = await fallbackQuery;
+      practicesWithoutManager = fallbackPractices || [];
+    }
+
+    const instMap = new Map<string, {
+      empresa: string; rif: string; tipo: string; telefono: string;
+      manager: any; carreras: Set<string>; estudiantes: number;
+    }>();
+
+    // Process practices with managers
+    for (const p of practicesWithManager) {
+      const inst: any = p.t_institution;
+      const mgr: any = p.t_institution_manager;
+      if (!inst) continue;
+      const key = inst.INSTITUTION_NAME || 'unknown';
+      const carrera = (p.t_career as any)?.CAREER_NAME || '';
+
+      if (!instMap.has(key)) {
+        const phone = inst.INSTITUTION_CONTACT || mgr?.CONTACT_PHONE || 'N/A';
+        instMap.set(key, {
+          empresa: inst.INSTITUTION_NAME || '',
+          rif: inst.RIF || '',
+          tipo: inst.INSTITUTION_TYPE || '',
+          telefono: phone,
+          manager: mgr,
+          carreras: new Set(),
+          estudiantes: 0,
+        });
+      }
+      const entry = instMap.get(key)!;
+      entry.carreras.add(carrera);
+      entry.estudiantes++;
+    }
+
+    // Process practices without managers (fallback)
+    for (const p of practicesWithoutManager) {
+      const inst: any = p.t_institution;
+      if (!inst) continue;
+      const key = inst.INSTITUTION_NAME || 'unknown';
+      const carrera = (p.t_career as any)?.CAREER_NAME || '';
+
+      if (!instMap.has(key)) {
+        const phone = inst.INSTITUTION_CONTACT || 'N/A';
+        instMap.set(key, {
+          empresa: inst.INSTITUTION_NAME || '',
+          rif: inst.RIF || '',
+          tipo: inst.INSTITUTION_TYPE || '',
+          telefono: phone,
+          manager: null,
+          carreras: new Set(),
+          estudiantes: 0,
+        });
+      }
+      const entry = instMap.get(key)!;
+      entry.carreras.add(carrera);
+      entry.estudiantes++;
+    }
+
+    const result = Array.from(instMap.values()).map(e => ({
+      empresa: e.empresa,
+      rif: e.rif,
+      responsable: e.manager
+        ? [e.manager.NAME, e.manager.SECOND_NAME, e.manager.SURNAME, e.manager.SECOND_SURNAME]
+            .filter(Boolean).join(' ')
+        : 'N/A',
+      numeroContacto: e.telefono,
+      tipoEmpresa: e.tipo,
+      carreras: Array.from(e.carreras).join(', '),
+      cantidadEstudiantes: e.estudiantes,
+    }));
+
+    const totalCount = result.length;
+    const paginatedResult = result.slice(pageNum * limitNum, (pageNum + 1) * limitNum);
+    res.json({ success: true, data: paginatedResult, meta: { total: totalCount, page: pageNum, limit: limitNum } });
+  } catch (error) {
+    console.error('[reports] getRelacionInstitucionesSolicitan error:', error);
+    res.status(500).json({ message: 'Error al obtener relación de instituciones que solicitan' });
+  }
+};
+
 export const getDistribucionTutores = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
@@ -1812,6 +1938,9 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         });
 
         const rows = Array.from(instMap.values()).map((e) => ({
+          region: sysLoc.region,
+          nucleo: sysLoc.nucleus,
+          extension: sysLoc.extension,
           empresa: e.empresa,
           rif: e.rif,
           responsable: e.manager

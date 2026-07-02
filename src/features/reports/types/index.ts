@@ -124,6 +124,9 @@ export interface RelacionEmpresasRow {
 }
 
 export interface RelacionInstitucionesSolicitanRow {
+  region: string;
+  nucleo: string;
+  extension: string;
   empresa: string;
   rif: string;
   responsable: string;

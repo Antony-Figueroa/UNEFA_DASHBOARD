@@ -77,6 +77,9 @@ export interface IndividualTutorSheetConfig {
 }
 
 export interface RelacionInstitucionesExcelRow {
+  region: string;
+  nucleo: string;
+  extension: string;
   empresa: string;
   rif: string;
   responsable: string;
@@ -484,7 +487,7 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
   periodLabel: string,
 ): Promise<Workbook> {
   const workbook = new ExcelJS.Workbook();
-  const TOTAL = 7; // A-G
+  const TOTAL = 10; // A-J
 
   if (rows.length === 0) {
     const ws = workbook.addWorksheet('Sin Datos');
@@ -494,7 +497,7 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
 
   const ws = workbook.addWorksheet('RELACIÓN');
   const FONT = 'Arial';
-  const HDR_BG = 'FF92D050';
+  const HDR_BG = 'FF8DB3E2'; // Blue header like relacion de empresas
   const SUB_BG = 'FF76923C';
   const TOTAL_BG = 'FFD6E3BC';
 
@@ -544,18 +547,21 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
 
   // ── Fila 6: HEADER ROW (36px) ──
   ws.getRow(6).height = 36;
-  setH(ws.getCell(6, 1), 'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN');
-  setH(ws.getCell(6, 2), 'RIF');
-  setH(ws.getCell(6, 3), 'RESPONSABLE');
-  setH(ws.getCell(6, 4), 'NÚMERO DE\nCONTACTO');
-  setH(ws.getCell(6, 5), 'TIPO DE\nEMPRESA');
-  setH(ws.getCell(6, 6), 'CARRERAS');
-  setH(ws.getCell(6, 7), 'CANTIDAD DE\nESTUDIANTES');
+  setH(ws.getCell(6, 1), 'REGIÓN');
+  setH(ws.getCell(6, 2), 'NÚCLEO');
+  setH(ws.getCell(6, 3), 'EXTENSIÓN');
+  setH(ws.getCell(6, 4), 'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN');
+  setH(ws.getCell(6, 5), 'RIF');
+  setH(ws.getCell(6, 6), 'RESPONSABLE');
+  setH(ws.getCell(6, 7), 'NÚMERO DE\nCONTACTO');
+  setH(ws.getCell(6, 8), 'TIPO DE\nEMPRESA');
+  setH(ws.getCell(6, 9), 'CARRERAS');
+  setH(ws.getCell(6, 10), 'CANTIDAD DE\nESTUDIANTES');
 
   // ── Column widths ──
   const empresaW = Math.min(Math.max(...rows.map(r => (r.empresa || '').length), 10) + 3, 55);
   const carrerasW = Math.min(Math.max(...rows.map(r => (r.carreras || '').length), 10) + 3, 35);
-  [empresaW, 16, 24, 16, 12, carrerasW, 10].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  [12, 16, 16, empresaW, 16, 24, 16, 12, carrerasW, 10].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
   // ── Data rows ──
   const center = { vertical: 'middle' as const, wrapText: true, horizontal: 'center' as const };
@@ -565,15 +571,20 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
   rows.forEach((r, i) => {
     const er = ws.getRow(7 + i);
     er.height = 24;
-    const vals = [r.empresa, r.rif, r.responsable, r.telefono, r.tipoEmpresa, r.carreras, r.cantidadEstudiantes];
+    const vals = [r.region, r.nucleo, r.extension, r.empresa, r.rif, r.responsable, r.telefono, r.tipoEmpresa, r.carreras, r.cantidadEstudiantes];
     vals.forEach((v, ci) => {
       const cell = er.getCell(ci + 1);
       cell.value = v !== null && v !== undefined ? (typeof v === 'string' ? v.toUpperCase() : v) : '';
       cell.font = dataStyle.font;
-      cell.alignment = [4, 5, 7].includes(ci + 1) ? center : left;
+      cell.alignment = [7, 8, 10].includes(ci + 1) ? center : left;
       cell.border = dataStyle.border;
     });
   });
+
+  // ── Merge region across entire column A (rowspan=rows.length) ──
+  if (rows.length > 1) {
+    ws.mergeCells(7, 1, 7 + rows.length - 1, 1);
+  }
 
   // ── Subtotals ──
   const dataEnd = 7 + rows.length;
@@ -591,7 +602,7 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
   ws.getRow(dataEnd).height = 24;
   ws.mergeCells(dataEnd, 2, dataEnd, 3);
   sub(ws.getCell(dataEnd, 2)); ws.getCell(dataEnd, 2).value = 'SUB-TOTALES';
-  [{ c: 4, v: rows.length }, { c: 5, v: pub }, { c: 6, v: priv }, { c: 7, v: totalEst }].forEach(({ c, v }) => {
+  [{ c: 4, v: rows.length }, { c: 5, v: pub }, { c: 6, v: priv }, { c: 10, v: totalEst }].forEach(({ c, v }) => {
     sub(ws.getCell(dataEnd, c));
     ws.getCell(dataEnd, c).value = v;
   });

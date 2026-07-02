@@ -16,9 +16,12 @@ import type { RelacionInstitucionesExcelRow } from '../../src/services/excel-exp
 // ============================================================
 
 describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => {
-  it('generates workbook with 7 columns and correct headers', async () => {
+  it('generates workbook with 10 columns and correct headers', async () => {
     const rows: RelacionInstitucionesExcelRow[] = [
       {
+        region: 'Región Capital',
+        nucleo: 'Caracas',
+        extension: 'UCV',
         empresa: 'Empresa Test',
         rif: 'J-12345678-9',
         responsable: 'Juan Pérez',
@@ -39,6 +42,9 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
     // Verify headers in row 6
     const headerRow = sheet.getRow(6);
     const expectedHeaders = [
+      'REGIÓN',
+      'NÚCLEO',
+      'EXTENSIÓN',
       'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN',
       'RIF',
       'RESPONSABLE',
@@ -61,9 +67,12 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
     expect(workbook.worksheets[0].name).toBe('Sin Datos');
   });
 
-  it('applies institutional formatting (green header, thin borders)', async () => {
+  it('applies institutional formatting (blue header, thin borders)', async () => {
     const rows: RelacionInstitucionesExcelRow[] = [
       {
+        region: 'Región Capital',
+        nucleo: 'Caracas',
+        extension: 'UCV',
         empresa: 'Empresa Test',
         rif: 'J-12345678-9',
         responsable: 'Juan Pérez',
@@ -77,10 +86,10 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
     const workbook = await generateRelacionInstitucionesSolicitanWorkbook(rows, 'Período: 2025-2026');
     const sheet = workbook.worksheets[0];
 
-    // Verify header row has green background (#92D050)
+    // Verify header row has blue background (#8DB3E2)
     const headerRow = sheet.getRow(6);
     const headerCell = headerRow.getCell(1);
-    expect(headerCell.fill?.fgColor?.argb).toBe('FF92D050');
+    expect(headerCell.fill?.fgColor?.argb).toBe('FF8DB3E2');
 
     // Verify data row has thin borders
     const dataRow = sheet.getRow(7);
@@ -94,6 +103,9 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
   it('concatenates manager name correctly with NULL fields', async () => {
     const rows: RelacionInstitucionesExcelRow[] = [
       {
+        region: 'Región Capital',
+        nucleo: 'Caracas',
+        extension: 'UCV',
         empresa: 'Empresa Test',
         rif: 'J-12345678-9',
         responsable: 'Juan  Pérez', // Double space due to NULL middle name
@@ -107,15 +119,18 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
     const workbook = await generateRelacionInstitucionesSolicitanWorkbook(rows, 'Período: 2025-2026');
     const sheet = workbook.worksheets[0];
 
-    // Verify responsable is in UPPERCASE
+    // Verify responsable is in UPPERCASE (column 6)
     const dataRow = sheet.getRow(7);
-    expect(String(dataRow.getCell(3).value)).toBe('JUAN  PÉREZ');
+    expect(String(dataRow.getCell(6).value)).toBe('JUAN  PÉREZ');
   });
 
   it('uses phone priority: INSTITUTION_CONTACT → manager CONTACT_PHONE → N/A', async () => {
     // Test case 1: Institution has contact phone
     const rowsWithPhone: RelacionInstitucionesExcelRow[] = [
       {
+        region: 'Región Capital',
+        nucleo: 'Caracas',
+        extension: 'UCV',
         empresa: 'Empresa Test',
         rif: 'J-12345678-9',
         responsable: 'Juan Pérez',
@@ -129,11 +144,14 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
     const workbook1 = await generateRelacionInstitucionesSolicitanWorkbook(rowsWithPhone, 'Período: 2025-2026');
     const sheet1 = workbook1.worksheets[0];
     const dataRow1 = sheet1.getRow(7);
-    expect(String(dataRow1.getCell(4).value)).toBe('0212-1234567');
+    expect(String(dataRow1.getCell(7).value)).toBe('0212-1234567');
 
     // Test case 2: No phone available (N/A)
     const rowsNoPhone: RelacionInstitucionesExcelRow[] = [
       {
+        region: 'Región Capital',
+        nucleo: 'Caracas',
+        extension: 'UCV',
         empresa: 'Empresa Test',
         rif: 'J-12345678-9',
         responsable: 'Juan Pérez',
@@ -147,12 +165,15 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
     const workbook2 = await generateRelacionInstitucionesSolicitanWorkbook(rowsNoPhone, 'Período: 2025-2026');
     const sheet2 = workbook2.worksheets[0];
     const dataRow2 = sheet2.getRow(7);
-    expect(String(dataRow2.getCell(4).value)).toBe('N/A');
+    expect(String(dataRow2.getCell(7).value)).toBe('N/A');
   });
 
   it('shows subtotals row with institution count and total students', async () => {
     const rows: RelacionInstitucionesExcelRow[] = [
       {
+        region: 'Región Capital',
+        nucleo: 'Caracas',
+        extension: 'UCV',
         empresa: 'Empresa 1',
         rif: 'J-12345678-9',
         responsable: 'Juan Pérez',
@@ -162,6 +183,9 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
         cantidadEstudiantes: 3,
       },
       {
+        region: 'Región Capital',
+        nucleo: 'Caracas',
+        extension: 'UCV',
         empresa: 'Empresa 2',
         rif: 'J-98765432-1',
         responsable: 'María López',
@@ -179,7 +203,7 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
     const subtotalsRow = sheet.getRow(9);
     expect(subtotalsRow.getCell(2).value).toBe('SUB-TOTALES');
     expect(subtotalsRow.getCell(4).value).toBe(2); // Institution count
-    expect(subtotalsRow.getCell(7).value).toBe(5); // Total students
+    expect(subtotalsRow.getCell(10).value).toBe(5); // Total students (column 10)
   });
 });
 

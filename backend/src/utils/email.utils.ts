@@ -129,6 +129,72 @@ const tryBrevo = async (opts: { to: string; subject: string; html: string; text?
   }
 };
 
+/** Enviar via SendPulse API (API key directa o OAuth2, 12.000 emails/mes gratis) */
+const trySendPulse = async (opts: { to: string; subject: string; html: string; text?: string }): Promise<SendResult | null> => {
+  const apiKey = process.env.SENDPULSE_API_KEY;
+  const clientId = process.env.SENDPULSE_CLIENT_ID;
+  const clientSecret = process.env.SENDPULSE_CLIENT_SECRET;
+  if (!apiKey && (!clientId || !clientSecret)) return null; // no configurado
+
+  const fromEmail = process.env.SENDPULSE_FROM_EMAIL || 'antonysamuel0903@gmail.com';
+  const fromName = process.env.SENDPULSE_FROM_NAME || 'SIGP UNEFA';
+
+  try {
+    // 1. Obtener access token (API key directa > OAuth2)
+    let accessToken: string;
+    if (apiKey) {
+      accessToken = apiKey;
+    } else {
+      const tokenRes = await fetch('https://api.sendpulse.com/oauth/access_token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grant_type: 'client_credentials',
+          client_id: clientId!,
+          client_secret: clientSecret!,
+        }),
+      });
+      if (!tokenRes.ok) {
+        const errBody = await tokenRes.json().catch(() => ({}));
+        throw new Error(errBody?.message || `Token HTTP ${tokenRes.status}`);
+      }
+      const data = await tokenRes.json() as { access_token: string };
+      accessToken = data.access_token;
+    }
+
+    // 2. Enviar email via SMTP API
+    const sendRes = await fetch('https://api.sendpulse.com/smtp/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: {
+          html: Buffer.from(opts.html, 'utf-8').toString('base64'),
+          text: opts.text || opts.html.replace(/<[^>]+>/g, ''),
+          subject: opts.subject,
+          from: { name: fromName, email: fromEmail },
+          to: [{ name: '', email: opts.to }],
+        },
+      }),
+    });
+
+    if (!sendRes.ok) {
+      const errBody = await sendRes.json().catch(() => ({}));
+      const msg = errBody?.message || `HTTP ${sendRes.status}`;
+      throw new Error(msg);
+    }
+
+    console.log(`✅ [SendPulse] Correo enviado a ${opts.to}`);
+    return { success: true };
+  } catch (error: any) {
+    const reason = error?.message || 'Error SendPulse';
+    console.error(`❌ [SendPulse] Error enviando a ${opts.to}:`, reason);
+    return { success: false, error: reason };
+  }
+};
+
 /** Simular envío en consola (último recurso) */
 const trySimulation = (opts: { to: string; subject: string; html: string; text?: string }): SendResult => {
   console.log(`
@@ -144,14 +210,14 @@ const trySimulation = (opts: { to: string; subject: string; html: string; text?:
 
 /**
  * Función genérica para enviar correos.
- * Prioridad: Gmail SMTP (IPv4 forced) → Brevo API → Resend → Simulación.
+ * Prioridad: SendPulse API (HTTP, sin IPv6) → Brevo API → Resend → Simulación.
  */
 export const sendEmail = async (options: { to: string; subject: string; html: string; text?: string }): Promise<SendResult> => {
-  // 1. Gmail SMTP (IPv4 forced — funciona en Render)
-  const gmailResult = await tryGmail(options);
-  if (gmailResult?.success) return gmailResult;
+  // 1. SendPulse API (HTTP — funciona en Render sin IPv6, 12K/mes gratis)
+  const sendpulseResult = await trySendPulse(options);
+  if (sendpulseResult?.success) return sendpulseResult;
 
-  // 2. Brevo API (producción — HTTP, funciona en serverless)
+  // 2. Brevo API (HTTP, 300/día gratis)
   const brevoResult = await tryBrevo(options);
   if (brevoResult?.success) return brevoResult;
 
@@ -159,7 +225,11 @@ export const sendEmail = async (options: { to: string; subject: string; html: st
   const resendResult = await tryResend(options);
   if (resendResult?.success) return resendResult;
 
-  // 4. Último recurso: simulación en consola
+  // 4. Gmail SMTP (último recurso — timeout en Render)
+  const gmailResult = await tryGmail(options);
+  if (gmailResult?.success) return gmailResult;
+
+  // 5. Último recurso: simulación en consola
   return trySimulation(options);
 };
 

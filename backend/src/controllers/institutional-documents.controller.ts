@@ -598,12 +598,12 @@ export const getDataConstanciaTutorAcademico = async (req: Request, res: Respons
           segundoApellido: (estudianteData?.t_persons?.second_last_name ?? estudianteData?.SECOND_SURNAME) || '',
         } : null,
         tutor: {
-          ci: tutor.TUTOR_CI || '',
+          ci: (tutor.t_persons?.ci ?? tutor.TUTOR_CI) || '',
           titulo: tutor.TITULO,
-          primerNombre: tutor.NAME || '',
-          segundoNombre: tutor.SECOND_NAME || '',
-          primerApellido: tutor.SURNAME || '',
-          segundoApellido: tutor.SECOND_SURNAME || '',
+          primerNombre: (tutor.t_persons?.first_name ?? tutor.NAME) || '',
+          segundoNombre: (tutor.t_persons?.middle_name ?? tutor.SECOND_NAME) || '',
+          primerApellido: (tutor.t_persons?.last_name ?? tutor.SURNAME) || '',
+          segundoApellido: (tutor.t_persons?.second_last_name ?? tutor.SECOND_SURNAME) || '',
           condicion: tutor.CONDITION || '',
           dedicacion: tutor.DEDICATION || '',
           categoria: tutor.CATEGORY || '',
@@ -629,7 +629,7 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
 
     const { data: tutor } = await supabase
       .from('t_tutors')
-      .select('TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, TITULO')
+      .select('TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, TITULO, person_id, t_persons!fk_tutors_person(ci, first_name, middle_name, last_name, second_last_name)')
       .eq('TUTOR_ID', tutorId)
       .single();
 
@@ -719,12 +719,12 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
           segundoApellido: (estudianteData?.t_persons?.second_last_name ?? estudianteData?.SECOND_SURNAME) || '',
         } : null,
         tutor: {
-          ci: tutor.TUTOR_CI || '',
+          ci: (tutor.t_persons?.ci ?? tutor.TUTOR_CI) || '',
           titulo: tutor.TITULO,
-          primerNombre: tutor.NAME || '',
-          segundoNombre: tutor.SECOND_NAME || '',
-          primerApellido: tutor.SURNAME || '',
-          segundoApellido: tutor.SECOND_SURNAME || '',
+          primerNombre: (tutor.t_persons?.first_name ?? tutor.NAME) || '',
+          segundoNombre: (tutor.t_persons?.middle_name ?? tutor.SECOND_NAME) || '',
+          primerApellido: (tutor.t_persons?.last_name ?? tutor.SURNAME) || '',
+          segundoApellido: (tutor.t_persons?.second_last_name ?? tutor.SECOND_SURNAME) || '',
         },
         institucion: institucionData ? { nombre: institucionData.INSTITUTION_NAME } : null,
         totalHours,

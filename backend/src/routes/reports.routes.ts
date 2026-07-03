@@ -9,6 +9,7 @@ import {
   getCulminatedStudentsReport,
   getResumenPasantiasReport,
   getRelacionEmpresasDemandan,
+  getRelacionInstitucionesSolicitan,
   getDistribucionTutores,
   getDistribucionTutoresV2,
   getRelacionIndividualDocente,
@@ -28,6 +29,7 @@ router.get('/tutores-academicos', requirePermission('reports:view'), getTutorsAc
 router.get('/resumen-pasantias', requirePermission('reports:view'), getResumenPasantiasReport);
 router.get('/culminated-students', requirePermission('reports:view'), getCulminatedStudentsReport);
 router.get('/relacion-empresas-demandan', requirePermission('reports:view'), getRelacionEmpresasDemandan);
+router.get('/relacion-instituciones-solicitan', requirePermission('reports:view'), getRelacionInstitucionesSolicitan);
 router.get('/distribucion-tutores', requirePermission('reports:view'), getDistribucionTutores);
 router.get('/distribucion-tutores-v2', requirePermission('reports:view'), getDistribucionTutoresV2);
 router.get('/relacion-individual-docente/:tutorId', requirePermission('reports:view'), getRelacionIndividualDocente);

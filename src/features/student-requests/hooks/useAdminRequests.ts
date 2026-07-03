@@ -2,9 +2,10 @@ import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import { adminRequestsService } from '../services/adminRequestsService';
-import type { AdminRequest, RequestStats, RequestFilters, UpdateStatusPayload } from '../types';
+import type { AdminRequest, RequestStats, PaginationMeta, RequestFilters, UpdateStatusPayload } from '../types';
 
 const resourceName = 'Solicitud';
+const DEFAULT_LIMIT = 20;
 
 export const useAdminRequests = () => {
   const [requests, setRequests] = useState<AdminRequest[]>([]);
@@ -12,35 +13,29 @@ export const useAdminRequests = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: DEFAULT_LIMIT, total: 0, totalPages: 0 });
 
   const fetchRequests = useCallback(async (filters?: RequestFilters) => {
     setLoading(true);
     setError(null);
     try {
-      if (filters) {
-        // Con filtro: stats completos (sin filtro) + datos filtrados en paralelo
-        const [allResult, filteredResult] = await Promise.all([
-          adminRequestsService.getAll(),
-          adminRequestsService.getAll(filters),
-        ]);
-        setStats(allResult.stats);
-        setRequests(filteredResult.data);
-        return filteredResult;
-      } else {
-        // Sin filtro: una sola llamada
-        const result = await adminRequestsService.getAll();
-        setStats(result.stats);
-        setRequests(result.data);
-        return result;
-      }
+      const result = await adminRequestsService.getAll(filters);
+      setStats(result.stats);
+      setRequests(result.data);
+      setPagination(result.pagination);
+      return result;
     } catch (err) {
       console.error('[useAdminRequests] Error fetching requests:', err);
       setError('Error al cargar las solicitudes');
       toast.error(TOAST_ERROR.load(resourceName));
-      return { data: [], stats: { total: 0, pending: 0, in_review: 0, approved: 0, rejected: 0 } };
+      return { data: [], stats: { total: 0, pending: 0, in_review: 0, approved: 0, rejected: 0 }, pagination: { page: 1, limit: DEFAULT_LIMIT, total: 0, totalPages: 0 } };
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const goToPage = useCallback((page: number) => {
+    return page;
   }, []);
 
   const updateRequestStatus = useCallback(async (id: string, data: UpdateStatusPayload): Promise<boolean> => {
@@ -72,7 +67,9 @@ export const useAdminRequests = () => {
     loading,
     saving,
     error,
+    pagination,
     fetchRequests,
+    goToPage,
     updateRequestStatus
   };
 };

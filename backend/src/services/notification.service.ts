@@ -38,11 +38,13 @@ class NotificationService {
    * Creates notifications for all admin users via unified service
    */
   async notifyAdmins(params: Omit<CreateNotificationParams, 'userId'>): Promise<{ success: boolean; count: number }> {
+    const data = params.relatedEntity ? { entity: params.relatedEntity, entityId: params.relatedEntityId } : undefined;
     const count = await notificationsUnified.sendToRole({
       role: 'admin',
       type: params.type || 'info',
       title: params.title,
       message: params.message,
+      data,
     });
     return { success: count !== null, count: count || 0 };
   }

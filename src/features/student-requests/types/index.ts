@@ -86,10 +86,20 @@ export interface RequestStats {
   rejected: number;
 }
 
+/** Metadatos de paginación */
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 /** Filtros para listar solicitudes (admin) */
 export interface RequestFilters {
   status?: RequestStatus;
   typeId?: string;
+  page?: number;
+  limit?: number;
 }
 
 /** Payload para actualizar el estado de una solicitud (admin) */

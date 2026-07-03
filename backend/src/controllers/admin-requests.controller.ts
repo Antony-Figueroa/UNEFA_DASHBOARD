@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
-import { notifyRequestCreated, notifyTutorAssigned } from '../services/notification.service.js';
+import { notificationService, notifyRequestCreated, notifyTutorAssigned } from '../services/notification.service.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 
@@ -25,9 +25,26 @@ interface AdminRequest {
 
 export const getAllRequests = async (req: AuthRequest, res: Response) => {
   try {
-    const { status, typeId, page = 1, limit = 20 } = req.query;
+    const { status, typeId, page: pageStr = '1', limit: limitStr = '20' } = req.query;
+    const page = Math.max(1, parseInt(pageStr as string, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(limitStr as string, 10) || 20));
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
     const supabase = dbManager.getConnection();
 
+    // 1. Count total filtered records (include=true returns count alongside data when not using range)
+    const countQuery = supabase
+      .from('t_student_requests')
+      .select('REQUEST_ID', { count: 'exact', head: true });
+
+    if (status && status !== 'all') countQuery.eq('STATUS', status);
+    if (typeId) countQuery.eq('REQUEST_TYPE_ID', typeId);
+
+    const { count: totalFiltered, error: countError } = await countQuery;
+    if (countError) throw countError;
+
+    // 2. Fetch paginated data
     let query = supabase
       .from('t_student_requests')
       .select(`
@@ -51,7 +68,8 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
           email
         )
       `)
-      .order('CREATION_DATE', { ascending: false });
+      .order('CREATION_DATE', { ascending: false })
+      .range(from, to);
 
     if (status && status !== 'all') {
       query = query.eq('STATUS', status);
@@ -107,15 +125,32 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // 3. Stats from all (unfiltered) for the stat cards
+    const { data: allData } = await supabase
+      .from('t_student_requests')
+      .select('STATUS');
+
     const stats = {
-      total: requests.length,
-      pending: requests.filter(r => r.status === 'pending').length,
-      in_review: requests.filter(r => r.status === 'in_review').length,
-      approved: requests.filter(r => r.status === 'approved').length,
-      rejected: requests.filter(r => r.status === 'rejected').length
+      total: (allData || []).length,
+      pending: (allData || []).filter(r => r.STATUS === 'pending').length,
+      in_review: (allData || []).filter(r => r.STATUS === 'in_review').length,
+      approved: (allData || []).filter(r => r.STATUS === 'approved').length,
+      rejected: (allData || []).filter(r => r.STATUS === 'rejected').length
     };
 
-    res.json({ success: true, data: requests, stats });
+    const totalPages = Math.ceil((totalFiltered || 0) / limit);
+
+    res.json({
+      success: true,
+      data: requests,
+      stats,
+      pagination: {
+        page,
+        limit,
+        total: totalFiltered || 0,
+        totalPages
+      }
+    });
 
   } catch (error) {
     console.error('[AdminRequests] Error:', error);
@@ -354,6 +389,36 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
       }
     } catch (auditError) {
       console.error('[Audit] Error auditing request update:', auditError);
+    }
+
+    // Notificar al estudiante sobre el cambio de estado
+    try {
+      const statusLabels: Record<string, string> = {
+        approved: 'Aprobada',
+        rejected: 'Rechazada',
+        in_review: 'En Revisión'
+      };
+
+      if (status !== currentRequest.STATUS && statusLabels[status]) {
+        const { data: studentUser } = await supabase
+          .from('t_students')
+          .select('USER_ID')
+          .eq('STUDENTS_ID', currentRequest.STUDENT_ID)
+          .single();
+
+        if (studentUser?.USER_ID) {
+          await notificationService.create({
+            userId: studentUser.USER_ID,
+            title: `Solicitud ${statusLabels[status]}`,
+            message: `Tu solicitud "${currentRequest.t_request_types?.NAME || 'Sin tipo'}" fue ${statusLabels[status].toLowerCase()}${response ? '. Revisa la respuesta de Coordinación.' : '.'}`,
+            type: status === 'approved' ? 'success' : status === 'rejected' ? 'error' : 'info',
+            relatedEntity: 'request',
+            relatedEntityId: parseInt(id)
+          });
+        }
+      }
+    } catch (notifError) {
+      console.error('[AdminRequests] Error notifying student:', notifError);
     }
 
     res.json({

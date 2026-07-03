@@ -1,17 +1,18 @@
 import apiClient from '../../../api/apiClient';
-import type { RequestType, UpdateStatusPayload, RequestFilters, RequestStats, AdminRequest } from '../types';
+import type { RequestType, UpdateStatusPayload, RequestFilters, RequestStats, PaginationMeta, AdminRequest } from '../types';
 
 const ADMIN_API = '/requests';
 
-interface GetAllResponse {
+export interface GetAllResponse {
   data: AdminRequest[];
   stats: RequestStats;
+  pagination: PaginationMeta;
 }
 
 export const adminRequestsService = {
   getAll: async (params?: RequestFilters): Promise<GetAllResponse> => {
     const response = await apiClient.get(ADMIN_API, { params });
-    return { data: response.data.data, stats: response.data.stats };
+    return { data: response.data.data, stats: response.data.stats, pagination: response.data.pagination };
   },
 
   getById: async (id: string): Promise<AdminRequest> => {

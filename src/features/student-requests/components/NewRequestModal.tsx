@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
+import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
+import { CONFIRM_MESSAGES } from '../../../components/ui/dialog/DialogConfig';
 import ReassignmentFields from './ReassignmentFields';
 import type { RequestType, ReassignmentOption } from '../types';
 
@@ -48,6 +50,7 @@ export const NewRequestModal = ({
 }: NewRequestModalProps) => {
   const [newRequest, setNewRequest] = useState<NewRequestFormData>(INITIAL_REQUEST);
   const [reassignmentData, setReassignmentData] = useState<ReassignmentFormData>(INITIAL_REASSIGNMENT);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const selectedType = useMemo(
     () => requestTypes.find(t => t.id === parseInt(newRequest.typeId)),
@@ -61,6 +64,11 @@ export const NewRequestModal = ({
 
   const handleSubmit = () => {
     if (!canSubmit) return;
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmDialog(false);
     onSubmit(newRequest, reassignmentData);
   };
 
@@ -78,6 +86,7 @@ export const NewRequestModal = ({
   };
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={handleClose} size="md">
       <ModalHeader>Nueva Solicitud</ModalHeader>
       <ModalBody>
@@ -154,6 +163,15 @@ export const NewRequestModal = ({
         </Button>
       </ModalFooter>
     </Modal>
+
+    <UnifiedDialog
+      isOpen={showConfirmDialog}
+      onClose={() => setShowConfirmDialog(false)}
+      onConfirm={handleConfirmSubmit}
+      {...CONFIRM_MESSAGES.create('la solicitud')}
+      isLoading={submitting}
+    />
+    </>
   );
 };
 

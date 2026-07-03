@@ -6,6 +6,7 @@ import { getInstitutions } from "../../features/institutions/services/institutio
 import { getCareers } from "../../features/careers/services/careersService";
 
 import { useStudentRequests } from "../../features/student-requests/hooks/useStudentRequests";
+import { connectToNotificationStream } from "../../features/notifications/services/notificationService";
 import RequestsStatsCards from "../../features/student-requests/components/RequestsStatsCards";
 import StudentRequestsList from "../../features/student-requests/components/StudentRequestsList";
 import RequestDetailModal from "../../features/student-requests/components/RequestDetailModal";
@@ -20,7 +21,10 @@ import type { NewRequestFormData, ReassignmentFormData } from "../../features/st
 import { STATUS_COLORS, STATUS_LABELS } from "../../features/student-requests/utils/requestUtils";
 import Badge from "../../components/ui/badge/Badge";
 import { AnimatePresence, motion } from "framer-motion";
+import { Pagination } from "../../components/ui/table/Pagination";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
+
+const ITEMS_PER_PAGE = 15;
 
 export default function StudentRequests() {
   const {
@@ -39,6 +43,7 @@ export default function StudentRequests() {
   const [selectedRequest, setSelectedRequest] = useState<StudentRequest | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [page, setPage] = useState(1);
 
   // ── Filters state ──────────────────────────────────────────────
   const [filterType, setFilterType] = useState<string>("");
@@ -72,6 +77,16 @@ export default function StudentRequests() {
 
   const hasActiveFilters = filterType !== "" || filterStatus !== "" || dateFrom !== "" || dateTo !== "";
 
+  // ── Client-side pagination ─────────────────────────────────────
+  const totalFilteredPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+  const paginatedData = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, page]);
+
+  // Resetear página cuando cambian los filtros
+  useEffect(() => { setPage(1); }, [filterType, filterStatus, dateFrom, dateTo]);
+
   // ── Inline expand toggle ───────────────────────────────────────
   const handleToggleExpand = useCallback((id: number) => {
     setExpandedId(prev => prev === id ? null : id);
@@ -83,6 +98,21 @@ export default function StudentRequests() {
     loadOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Refrescar al volver a la página (si el admin cambió el estado mientras tanto)
+  useEffect(() => {
+    const handleFocus = () => fetchRequests();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchRequests]);
+
+  // Auto-refresh en tiempo real via SSE
+  useEffect(() => {
+    const disconnect = connectToNotificationStream(() => {
+      fetchRequests();
+    });
+    return disconnect;
+  }, [fetchRequests]);
 
   const loadOptions = async () => {
     try {
@@ -224,12 +254,12 @@ export default function StudentRequests() {
                 <div key={i} className="animate-pulse h-20 bg-gray-200 dark:bg-gray-700 rounded" />
               ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : paginatedData.length === 0 ? (
             <div className="text-center py-8 text-text-secondary">
               {hasActiveFilters ? "No hay solicitudes que coincidan con los filtros" : "No tienes solicitudes registradas"}
             </div>
           ) : (
-            filtered.map((request) => {
+            paginatedData.map((request) => {
               const isExpanded = expandedId === request.id;
               return (
                 <div key={request.id} className="border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
@@ -297,6 +327,17 @@ export default function StudentRequests() {
             })
           )}
         </div>
+
+        {/* ── Pagination ──────────────────────────────────────────── */}
+        {filtered.length > ITEMS_PER_PAGE && (
+          <Pagination
+            currentPage={page}
+            totalPages={totalFilteredPages}
+            totalItems={filtered.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setPage}
+          />
+        )}
 
         {/* New request button */}
         <div className="flex justify-end">

@@ -4,6 +4,7 @@ import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate } from '../utils/audit-helpers.js';
 import { notifyRequestCreated } from '../services/notification.service.js';
 import { PRACTICES_STATUS, PRACTICES_STATUS_LABELS } from '../constants/practice-status.constants.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 interface StudentInternship {
   enrollmentId: string;
@@ -80,7 +81,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
 
     const { data: studentData, error: studentError } = await supabase
       .from('t_students')
-      .select('STUDENTS_ID, CAREER_ID, t_persons!inner(ci, first_name, last_name, email, phone)')
+      .select('STUDENTS_ID, t_persons!inner(ci, first_name, last_name, email, phone)')
       .eq('USER_ID', userId)
       .single();
 
@@ -183,11 +184,12 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         professionalPracticeId: practiceId
       };
 
-      if (studentData.CAREER_ID) {
+      const careerId = (enrollment as any).CAREER_ID;
+      if (careerId) {
         const { data: career } = await supabase
           .from('t_career')
           .select('CAREER_NAME')
-          .eq('CAREER_ID', studentData.CAREER_ID)
+          .eq('CAREER_ID', careerId)
           .single();
         internship.careerName = career?.CAREER_NAME || '';
       }
@@ -273,16 +275,11 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
       .from('t_students')
       .select(`
         STUDENTS_ID,
-        SEMESTER,
-        SECTION,
-        REGIME,
         STUDENT_TYPE,
         MILITARY_RANK,
         EMPLOYMENT,
         STATUS,
         REGISTRATION_DATE,
-        CAREER_ID,
-        t_career (CAREER_NAME),
         t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birth_date, address, marital_status)
       `)
       .eq('USER_ID', userId)
@@ -294,6 +291,19 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
         message: 'Estudiante no encontrado' 
       });
     }
+
+    // Obtener último enrollment para datos de carrera/semestre/sección
+    const { data: enrollment } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        SEMESTER, SECTION, REGIME, CAREER_ID,
+        t_career (CAREER_NAME)
+      `)
+      .eq('STUDENTS_ID', student.STUDENTS_ID)
+      .eq('STATUS', 1)
+      .order('REGISTRATION_DATE', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     res.json({
       success: true,
@@ -311,13 +321,13 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
         birthdate: (student as any)?.t_persons?.birth_date,
         address: (student as any)?.t_persons?.address,
         maritalStatus: (student as any)?.t_persons?.marital_status,
-        semester: student.SEMESTER,
-        section: student.SECTION,
-        regime: student.REGIME,
+        semester: (enrollment as any)?.SEMESTER || null,
+        section: (enrollment as any)?.SECTION || null,
+        regime: (enrollment as any)?.REGIME || null,
         studentType: student.STUDENT_TYPE,
         militaryRank: student.MILITARY_RANK,
         employment: student.EMPLOYMENT,
-        careerName: (student as any).t_career?.CAREER_NAME || '',
+        careerName: (enrollment as any)?.t_career?.CAREER_NAME || '',
         status: student.STATUS,
         registrationDate: student.REGISTRATION_DATE
       }
@@ -391,12 +401,12 @@ export const getStudentRequests = async (req: AuthRequest, res: Response) => {
         DESCRIPTION,
         STATUS,
         RESPONSE,
-        CREATED_AT,
+        CREATION_DATE,
         PROCESSED_AT,
         t_request_types (NAME)
       `)
       .eq('STUDENT_ID', student.STUDENTS_ID)
-      .order('CREATED_AT', { ascending: false });
+      .order('CREATION_DATE', { ascending: false });
 
     if (error) throw error;
 
@@ -408,7 +418,7 @@ export const getStudentRequests = async (req: AuthRequest, res: Response) => {
       description: r.DESCRIPTION,
       status: r.STATUS,
       response: r.RESPONSE,
-      createdAt: r.CREATED_AT,
+      createdAt: r.CREATION_DATE,
       processedAt: r.PROCESSED_AT
     }));
 
@@ -690,7 +700,7 @@ export const createStudentRequest = async (req: AuthRequest, res: Response) => {
 
     const { data: student } = await supabase
       .from('t_students')
-      .select('STUDENTS_ID')
+      .select('STUDENTS_ID, person_id')
       .eq('USER_ID', userId)
       .single();
 
@@ -703,9 +713,10 @@ export const createStudentRequest = async (req: AuthRequest, res: Response) => {
 
     const insertData: Record<string, unknown> = {
       STUDENT_ID: student.STUDENTS_ID,
+      student_person_id: student.person_id,
       REQUEST_TYPE_ID: typeId,
-      SUBJECT: subject,
-      DESCRIPTION: description,
+      SUBJECT: sanitizeText(subject) ?? subject,
+      DESCRIPTION: sanitizeText(description) ?? description,
       STATUS: 'pending',
       IS_REASSIGNMENT: isReassignment ? 1 : 0
     };

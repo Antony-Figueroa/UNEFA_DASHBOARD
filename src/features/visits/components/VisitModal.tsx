@@ -16,7 +16,7 @@ import { Visit, CreateVisitPayload, UpdateVisitPayload, LEGACY_VISIT_TYPES, LEGA
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import { useToast } from '../../../context/toast';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
-import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
+import { CONFIRM_MESSAGES, MODAL_CONFIG, SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
 import Input from '../../../components/form/input/InputField';
 import { SAFE_LONG_TEXT_PATTERN, isSafeInput } from '../../../utils/inputValidation';
 import Button from '../../../components/ui/button/Button';
@@ -657,13 +657,10 @@ export default function VisitModal({
         <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">
           <div className="w-full">
             <span className="text-xl font-bold text-text-primary dark:text-white/90">
-              {isEditing ? 'Editar Visita de Seguimiento' : 'Registrar Nueva Visita'}
+              {MODAL_CONFIG.titleByMode(isEditing, 'Visita de Seguimiento')}
             </span>
             <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary font-normal">
-              {isEditing 
-                ? 'Modifica los detalles de la visita de seguimiento' 
-                : 'Completa la información de la visita de seguimiento'
-              }
+              {MODAL_CONFIG.descriptionByMode(isEditing, 'visita de seguimiento')}
             </p>
           </div>
         </ModalHeader>

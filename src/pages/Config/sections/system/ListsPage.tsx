@@ -8,6 +8,7 @@ import { ShieldCheckIcon } from "../../../../icons";
 import { Modal, ModalHeader, ModalBody } from "../../../../components/ui/modal";
 import { CrudForm, CrudFieldConfig, CrudFormValues } from "../../../../features/crudTemplate/components/CrudForm";
 import { UnifiedDialog } from "../../../../components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, MODAL_CONFIG } from "../../../../components/ui/dialog/DialogConfig";
 import { useUnsavedChanges } from "../../../../hooks/useUnsavedChanges";
 import { useToast } from "../../../../context/toast";
 import { matchSearch } from "../../../../utils/searchNormalizer";
@@ -103,14 +104,15 @@ const ListsConfiguration = () => {
 
   const handleToggleValueStatus = async (value: ListValue) => {
     const isActivating = !value.status;
+    const config = isActivating
+      ? CONFIRM_MESSAGES.activate('el valor')
+      : CONFIRM_MESSAGES.deactivate('el valor');
     setConfirmation({
       isOpen: true,
-      title: isActivating ? "Confirmar Activación" : "Confirmar Desactivación",
-      message: isActivating
-        ? `¿Estás seguro de que deseas activar el valor "${value.name}"?`
-        : `¿Estás seguro de que deseas desactivar el valor "${value.name}"?`,
-      confirmText: isActivating ? "Activar" : "Desactivar",
-      variant: isActivating ? "success" : "error",
+      title: config.title,
+      message: `¿Estás seguro de que deseas ${isActivating ? 'activar' : 'desactivar'} el valor "${value.name}"?`,
+      confirmText: config.confirmLabel,
+      variant: config.variant!,
       onConfirm: async () => {
         try {
           await listsService.toggleValueStatus(value.id, isActivating);
@@ -202,7 +204,7 @@ const ListsConfiguration = () => {
 
       {/* Value Modal */}
       <Modal isOpen={isValueModalOpen} onClose={handleValueCloseAttempt}>
-        <ModalHeader>{editingValue ? "Editar Valor" : "Nuevo Valor"}</ModalHeader>
+        <ModalHeader>{MODAL_CONFIG.titleByMode(!!editingValue, 'Valor')}</ModalHeader>
         <ModalBody>
           {editingValue?.inUse && (
             <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl flex items-start gap-3">

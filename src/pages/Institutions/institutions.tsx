@@ -11,7 +11,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
+import { CONFIRM_MESSAGES, MODAL_CONFIG, DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { Tabs } from "../../components/ui/tabs/Tabs";
@@ -300,15 +300,14 @@ export default function InstitutionsPage() {
     if (!original) return;
 
     const isDeactivating = original.status;
-    const actionVerb = isDeactivating ? "desactivar" : "restaurar";
-    const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Restauración";
-    const variant = isDeactivating ? "error" : "success";
-    const confirmText = isDeactivating ? "Desactivar" : "Restaurar";
+    const config = isDeactivating
+      ? CONFIRM_MESSAGES.deactivate('la empresa o institución')
+      : CONFIRM_MESSAGES.activate('la empresa o institución');
 
     setConfirmation({
       isOpen: true,
-      title: confirmTitle,
-      message: `¿Estás seguro de que deseas ${actionVerb} la empresa o institución "${inst.name}"?`,
+      title: config.title,
+      message: `¿Estás seguro de que deseas ${isDeactivating ? 'desactivar' : 'restaurar'} la empresa o institución "${inst.name}"?`,
       onConfirm: async () => {
         try {
           await toggleInstStatus(original);
@@ -318,8 +317,8 @@ export default function InstitutionsPage() {
           setConfirmation(prev => ({ ...prev, isOpen: false }));
         }
       },
-      confirmText: confirmText,
-      variant: variant as any,
+      confirmText: config.confirmLabel,
+      variant: config.variant as DialogVariant,
     });
   };
 
@@ -328,15 +327,14 @@ export default function InstitutionsPage() {
     if (!original) return;
 
     const isDeactivating = original.status;
-    const actionVerb = isDeactivating ? "desactivar" : "restaurar";
-    const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Restauración";
-    const variant = isDeactivating ? "error" : "success";
-    const confirmText = isDeactivating ? "Desactivar" : "Restaurar";
+    const config = isDeactivating
+      ? CONFIRM_MESSAGES.deactivate('al responsable')
+      : CONFIRM_MESSAGES.activate('al responsable');
 
     setConfirmation({
       isOpen: true,
-      title: confirmTitle,
-      message: `¿Estás seguro de que deseas ${actionVerb} al responsable "${resp.firstName} ${resp.lastName}"?`,
+      title: config.title,
+      message: `¿Estás seguro de que deseas ${isDeactivating ? 'desactivar' : 'restaurar'} al responsable "${resp.firstName} ${resp.lastName}"?`,
       onConfirm: async () => {
         try {
           await toggleRespStatus(original);
@@ -346,22 +344,21 @@ export default function InstitutionsPage() {
           setConfirmation(prev => ({ ...prev, isOpen: false }));
         }
       },
-      confirmText: confirmText,
-      variant: variant as any,
+      confirmText: config.confirmLabel,
+      variant: config.variant as DialogVariant,
     });
   };
 
   const handleBulkInstAction = (ids: string[], action: "inactivate" | "restore") => {
     const isInactivating = action === "inactivate";
-    const actionVerb = isInactivating ? "desactivar" : "restaurar";
-    const confirmTitle = isInactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Masiva";
-    const variant = isInactivating ? "error" : "success";
-    const confirmText = isInactivating ? "Desactivar Todos" : "Restaurar Todos";
+    const config = isInactivating
+      ? CONFIRM_MESSAGES.deactivate('las empresas o instituciones')
+      : CONFIRM_MESSAGES.activate('las empresas o instituciones');
 
     setConfirmation({
       isOpen: true,
-      title: confirmTitle,
-      message: `¿Estás seguro de que deseas ${actionVerb} las ${ids.length} empresas o instituciones seleccionadas?`,
+      title: isInactivating ? 'Confirmar desactivación masiva' : 'Confirmar restauración masiva',
+      message: `¿Estás seguro de que deseas ${isInactivating ? 'desactivar' : 'restaurar'} las ${ids.length} empresas o instituciones seleccionadas?`,
       onConfirm: async () => {
         try {
           if (isInactivating) {
@@ -375,22 +372,21 @@ export default function InstitutionsPage() {
           setConfirmation(prev => ({ ...prev, isOpen: false }));
         }
       },
-      confirmText: confirmText,
-      variant: variant as any,
+      confirmText: isInactivating ? 'Desactivar Todos' : 'Restaurar Todos',
+      variant: config.variant as DialogVariant,
     });
   };
 
   const handleBulkRespAction = (ids: string[], action: "inactivate" | "restore") => {
     const isInactivating = action === "inactivate";
-    const actionVerb = isInactivating ? "desactivar" : "restaurar";
-    const confirmTitle = isInactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Masiva";
-    const variant = isInactivating ? "error" : "success";
-    const confirmText = isInactivating ? "Desactivar Todos" : "Restaurar Todos";
+    const config = isInactivating
+      ? CONFIRM_MESSAGES.deactivate('los responsables')
+      : CONFIRM_MESSAGES.activate('los responsables');
 
     setConfirmation({
       isOpen: true,
-      title: confirmTitle,
-      message: `¿Estás seguro de que deseas ${actionVerb} los ${ids.length} responsables seleccionados?`,
+      title: isInactivating ? 'Confirmar desactivación masiva' : 'Confirmar restauración masiva',
+      message: `¿Estás seguro de que deseas ${isInactivating ? 'desactivar' : 'restaurar'} los ${ids.length} responsables seleccionados?`,
       onConfirm: async () => {
         try {
           if (isInactivating) {
@@ -404,8 +400,8 @@ export default function InstitutionsPage() {
           setConfirmation(prev => ({ ...prev, isOpen: false }));
         }
       },
-      confirmText: confirmText,
-      variant: variant as any,
+      confirmText: isInactivating ? 'Desactivar Todos' : 'Restaurar Todos',
+      variant: config.variant as DialogVariant,
     });
   };
 
@@ -455,7 +451,7 @@ export default function InstitutionsPage() {
                     Exportación
                   </Button>
                   <Button onClick={handleOpenAddModal} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
-                    {mainTab === "Instituciones" ? "Nueva Empresa o Institución" : "Nuevo Responsable"}
+                    {MODAL_CONFIG.createTitle(mainTab === "Instituciones" ? 'Empresa o Institución' : 'Responsable')}
                   </Button>
                 </div>
             )}

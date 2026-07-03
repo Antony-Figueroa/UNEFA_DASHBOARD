@@ -18,7 +18,7 @@ import Button from "../../../components/ui/button/Button";
 
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
-import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
+import { CONFIRM_MESSAGES, MODAL_CONFIG, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import Badge from "../../../components/ui/badge/Badge";
 import { NAME_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
@@ -384,10 +384,10 @@ export default function CareerModal({
         <ModalHeader>
           <div className="max-w-4xl mx-auto w-full">
             <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-              {editingCareer ? "Editar Carrera" : "Registrar Carrera"}
+              {MODAL_CONFIG.titleByMode(editingCareer, 'Carrera')}
             </span>
             <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-              {editingCareer ? "Modifica los detalles de la carrera académica." : "Ingresa los detalles de la nueva carrera académica."}
+              {MODAL_CONFIG.descriptionByMode(editingCareer, 'carrera académica')}
             </p>
           </div>
         </ModalHeader>

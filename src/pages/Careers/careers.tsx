@@ -13,7 +13,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { CONFIRM_MESSAGES, DialogVariant } from "../../components/ui/dialog/DialogConfig";
+import { CONFIRM_MESSAGES, MODAL_CONFIG, DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { Tabs } from "../../components/ui/tabs/Tabs";
@@ -535,7 +535,7 @@ export default function CareersPage() {
                 </Button>
               )}
               <Button onClick={handleCreate} disabled={isSelecting} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
-                {mainTab === "Carreras" ? "Nueva Carrera" : "Nuevo Tipo"}
+                {MODAL_CONFIG.createTitle(mainTab === "Carreras" ? 'Carrera' : 'Tipo')}
               </Button>
             </div>
           )}

@@ -16,7 +16,7 @@ import MultiSelect from "../../../components/form/MultiSelect";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import { useAcademicConfig } from "../../academic-config/hooks/useAcademicConfig";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
-import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
+import { CONFIRM_MESSAGES, MODAL_CONFIG, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { getCareers } from "../../careers/services/careersService";
 import { Career } from "../../careers/types";
 import { unwrapData } from "../../../api/crudServiceFactory";
@@ -1084,9 +1084,9 @@ export default function TutorModal({
       >
         <ModalHeader>
           <span className="text-xl font-semibold text-text-primary dark:text-white/90">
-            {editingTutor || existingTutor ? "Editar" : "Registrar"} Tutor {tutorType === "methodological" ? "Metodológico" : "Académico"}
+            {MODAL_CONFIG.titleByMode(editingTutor || existingTutor, `Tutor ${tutorType === "methodological" ? "Metodológico" : "Académico"}`)}
           </span>
-          <p className="text-sm text-text-secondary">Complete la información del tutor {tutorType === "methodological" ? "metodológico" : "académico"}.</p>
+          <p className="text-sm text-text-secondary">{MODAL_CONFIG.descriptionByMode(editingTutor || existingTutor, `tutor ${tutorType === "methodological" ? "metodológico" : "académico"}`)}</p>
 
         </ModalHeader>
 

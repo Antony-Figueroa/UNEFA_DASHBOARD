@@ -48,11 +48,8 @@ export const RequestAttentionModal = ({
   const reassignmentData = request?.reassignmentData;
 
   const isReassignmentType = useMemo(
-    () => request?.isReassignment === true ||
-      typeName.includes('Tutor') ||
-      typeName.includes('Empresa') ||
-      typeName.includes('Carrera'),
-    [request, typeName]
+    () => request?.isReassignment === true,
+    [request]
   );
 
   // Initialize form when request changes

@@ -7,10 +7,12 @@ import Button from "../../../../components/ui/button/Button";
 import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
 import RestoreDialog from "../../../../components/ui/dialog/RestoreDialog";
 import { backupService, BackupRecord } from "../../../../features/backup/services/backupService";
-import toast from "react-hot-toast";
+import { useToast } from "../../../../context/toast";
+import { TOAST, MODAL_CONFIG } from "../../../../components/ui/dialog/DialogConfig";
 import ConfigLayout from "../../ConfigLayout";
 
 export default function BackupsPage() {
+  const { addToast } = useToast();
   const [backups, setBackups] = useState<BackupRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -29,7 +31,7 @@ export default function BackupsPage() {
       setBackups(data);
     } catch (error) {
       console.error('Error fetching backups:', error);
-      toast.error('Error al cargar los respaldos');
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -51,12 +53,12 @@ export default function BackupsPage() {
         format: backupFormat 
       });
       setBackups((prev: BackupRecord[]) => [backup, ...prev]);
-      toast.success('Respaldo creado exitosamente');
+      addToast(TOAST.created('Respaldo'));
       setShowCreateModal(false);
       setBackupName('');
     } catch (error) {
       console.error('Error creating backup:', error);
-      toast.error('Error al crear el respaldo');
+      addToast(TOAST.createError('respaldo'));
     } finally {
       setCreating(false);
     }
@@ -73,16 +75,16 @@ export default function BackupsPage() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success('Descarga iniciada');
+      addToast({ variant: "success", title: "Descarga iniciada", message: "La descarga del respaldo comenzó." });
     } catch (error) {
       console.error('Error downloading backup:', error);
-      toast.error('Error al descargar el respaldo');
+      addToast(TOAST.loadError());
     }
   };
 
   const handleRestore = (backup: BackupRecord) => {
     if (backup.format !== 'sql' && !backup.fileName?.endsWith('.sql')) {
-      toast.error('Solo se pueden restaurar respaldos en formato SQL');
+      addToast({ variant: "error", title: "Formato no soportado", message: "Solo se pueden restaurar respaldos en formato SQL." });
       return;
     }
     setSelectedBackup(backup);
@@ -95,13 +97,13 @@ export default function BackupsPage() {
     setRestoring(true);
     try {
       const result = await backupService.restoreBackup(selectedBackup.id);
-      toast.success(result.message);
+      addToast({ variant: "success", title: "Respaldo restaurado", message: result.message });
       setShowRestoreModal(false);
       setSelectedBackup(null);
       fetchBackups();
     } catch (error: any) {
       console.error('Error restoring backup:', error);
-      toast.error(error?.response?.data?.message || 'Error al restaurar el respaldo');
+      addToast(error?.response?.data?.message ? { ...TOAST.restoreError('respaldo'), message: error.response.data.message } : TOAST.restoreError('respaldo'));
     } finally {
       setRestoring(false);
     }
@@ -115,10 +117,10 @@ export default function BackupsPage() {
         try {
           await backupService.deleteBackup(backup.id);
           setBackups((prev: BackupRecord[]) => prev.filter((b: BackupRecord) => b.id !== backup.id));
-          toast.success('Respaldo eliminado');
+          addToast(TOAST.deleted('Respaldo'));
         } catch (error) {
           console.error('Error deleting backup:', error);
-          toast.error('Error al eliminar el respaldo');
+          addToast(TOAST.deleteError('respaldo'));
         } finally {
           hideConfirm();
         }
@@ -315,8 +317,8 @@ export default function BackupsPage() {
       <UnifiedDialog
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        title="Crear Nuevo Respaldo"
-        confirmLabel={creating ? "Creando..." : "Crear"}
+        title={MODAL_CONFIG.createTitle('Respaldo')}
+        confirmLabel={creating ? "Creando..." : MODAL_CONFIG.button.create}
         onConfirm={confirmCreateBackup}
         variant="info"
       >

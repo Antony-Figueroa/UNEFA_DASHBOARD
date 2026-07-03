@@ -18,7 +18,7 @@ import CustomSelect from "../../../components/form/CustomSelect";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import { useToast } from "../../../context/toast";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
-import { SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
+import { MODAL_CONFIG, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { useLists } from "../../lists/hooks/useLists";
 import { List, ListValue } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
@@ -941,10 +941,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         <ModalHeader>
           <div className="w-full">
             <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-              {editingStudent ? "Editar Estudiante" : "Registrar Estudiante"}
+              {MODAL_CONFIG.titleByMode(editingStudent, 'Estudiante')}
             </span>
             <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-              {editingStudent ? "Modifica los detalles del estudiante." : "Ingresa los detalles del nuevo estudiante."}
+              {MODAL_CONFIG.descriptionByMode(editingStudent, 'estudiante')}
             </p>
           </div>
         </ModalHeader>
@@ -1672,7 +1672,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         variant="confirm"
         title={editingStudent ? "Confirmar actualización" : "Confirmar registro"}
         message={editingStudent ? "¿Desea actualizar los datos del estudiante?" : "¿Desea registrar el nuevo estudiante?"}
-        confirmLabel={editingStudent ? "Actualizar" : "Registrar"}
+        confirmLabel={MODAL_CONFIG.confirmLabel(editingStudent)}
       />
     )}
 

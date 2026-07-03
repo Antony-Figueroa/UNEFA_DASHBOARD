@@ -10,6 +10,7 @@ import { useModal } from "../hooks/useModal";
 import PageMeta from "../components/common/PageMeta";
 import { SkeletonLoader, ChartSkeleton } from "../components/ui/skeleton";
 import FlatpickrDatePicker from "../components/form/FlatpickrDatePicker";
+import { MODAL_CONFIG } from "../components/ui/dialog/DialogConfig";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -172,7 +173,7 @@ const Calendar: React.FC = () => {
           <ModalHeader>
             <div>
               <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-                {selectedEvent ? "Editar Evento" : "Añadir Evento"}
+                {MODAL_CONFIG.titleByMode(!!selectedEvent, 'Evento')}
               </span>
               <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
                 Planifica tu próximo gran momento: programa o edita un evento para mantenerte al día
@@ -281,7 +282,7 @@ const Calendar: React.FC = () => {
               onClick={handleAddOrUpdateEvent}
               className="flex justify-center flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg bg-brand-500 hover:bg-brand-600 sm:w-auto sm:flex-none"
             >
-              {selectedEvent ? "Guardar Cambios" : "Añadir Evento"}
+              {MODAL_CONFIG.buttonByMode(!!selectedEvent)}
             </button>
           </ModalFooter>
         </Modal>

@@ -126,6 +126,55 @@ export const CONFIRM_MESSAGES = {
   }),
 };
 
+// ===== MODAL CONFIGURATION (Create/Edit/View) =====
+// Estandariza títulos, descripciones y botones de modales en todo el sistema.
+export const MODAL_CONFIG = {
+  // ── Titles ──────────────────────────────────────────
+  createTitle: (resource: string) => `Nuevo ${resource}`,
+  editTitle: (resource: string) => `Editar ${resource}`,
+  viewTitle: (resource: string) => resource,
+
+  // ── Descriptions ────────────────────────────────────
+  createDescription: (resource: string) =>
+    `Completá la información del nuevo ${resource.toLowerCase()}.`,
+  editDescription: (resource: string) =>
+    `Modificá los datos de ${resource.toLowerCase()}.`,
+  viewDescription: (resource: string) =>
+    `Detalles de ${resource.toLowerCase()}.`,
+
+  // ── Button labels ───────────────────────────────────
+  button: {
+    /** Botón de acción primaria en modo creación */
+    create: 'Guardar',
+    /** Botón de acción primaria en modo edición */
+    edit: 'Actualizar',
+    /** Confirmación de diálogo: modo creación */
+    confirmCreate: 'Registrar',
+    /** Confirmación de diálogo: modo edición */
+    confirmUpdate: 'Actualizar',
+    /** Cancelar / Cerrar */
+    cancel: 'Cancelar',
+    close: 'Cerrar',
+    /** Exportación */
+    exportExcel: 'Exportar Excel',
+    exportLoading: 'Exportando...',
+  } as const,
+
+  // ── Helpers ─────────────────────────────────────────
+  /** Retorna el botón de confirmación según el modo: create → "Registrar", edit → "Actualizar" */
+  confirmLabel: (isEditing: boolean) =>
+    isEditing ? MODAL_CONFIG.button.confirmUpdate : MODAL_CONFIG.button.confirmCreate,
+  /** Retorna el título del modal según el modo, con el resource dado */
+  titleByMode: (isEditing: boolean, resource: string) =>
+    isEditing ? MODAL_CONFIG.editTitle(resource) : MODAL_CONFIG.createTitle(resource),
+  /** Retorna la descripción del modal según el modo, con el resource dado */
+  descriptionByMode: (isEditing: boolean, resource: string) =>
+    isEditing ? MODAL_CONFIG.editDescription(resource) : MODAL_CONFIG.createDescription(resource),
+  /** Retorna el texto del botón primario según el modo */
+  buttonByMode: (isEditing: boolean) =>
+    isEditing ? MODAL_CONFIG.button.edit : MODAL_CONFIG.button.create,
+};
+
 // ===== SYSTEM DIALOGS =====
 export const SYSTEM_DIALOGS = {
   closeWithoutSaving: {

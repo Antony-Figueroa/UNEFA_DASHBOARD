@@ -13,7 +13,7 @@ import ComponentCard from "../../components/common/ComponentCard";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { useTabs } from "../../hooks/useTabs";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
+import { CONFIRM_MESSAGES, MODAL_CONFIG, DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
@@ -254,13 +254,13 @@ export default function TutorsPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: isEditing ? "Actualizar" : "Registrar",
-            variant: "info",
-        });
-    };
+		confirmText: MODAL_CONFIG.confirmLabel(isEditing),
+		variant: "info",
+		});
+	};
 
-    /**
-     * Maneja el cambio de estado (activo/inactivo) de un tutor.
+	/**
+	 * Maneja el cambio de estado (activo/inactivo) de un tutor.
      * 
      * @param row - Datos del tutor cuyo estado se desea cambiar
      */
@@ -269,15 +269,14 @@ export default function TutorsPage() {
         if (!original) return;
 
         const isDeactivating = original.status;
-        const actionVerb = isDeactivating ? "desactivar" : "restaurar";
-        const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Restauración";
-        const variant = isDeactivating ? "error" : "success";
-        const confirmText = isDeactivating ? "Desactivar" : "Restaurar";
+        const config = isDeactivating
+          ? CONFIRM_MESSAGES.deactivate('al tutor')
+          : CONFIRM_MESSAGES.activate('al tutor');
 
         setConfirmation({
             isOpen: true,
-            title: confirmTitle,
-            message: `¿Estás seguro de que deseas ${actionVerb} al tutor "${row.firstName} ${row.lastName}"?`,
+            title: config.title,
+            message: `¿Estás seguro de que deseas ${isDeactivating ? 'desactivar' : 'restaurar'} al tutor "${row.firstName} ${row.lastName}"?`,
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
@@ -287,8 +286,8 @@ export default function TutorsPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: confirmText,
-            variant: variant as DialogVariant,
+            confirmText: config.confirmLabel,
+            variant: config.variant as DialogVariant,
         });
     };
 
@@ -298,9 +297,10 @@ export default function TutorsPage() {
      * @param ids - IDs de los tutores a eliminar
      */
     const handleBulkDelete = (ids: string[]) => {
+        const config = CONFIRM_MESSAGES.deactivate('los tutores');
         setConfirmation({
             isOpen: true,
-            title: "Confirmar Desactivación Masiva",
+            title: 'Confirmar desactivación masiva',
             message: `¿Estás seguro de que deseas desactivar los ${ids.length} tutores seleccionados?`,
             onConfirm: async () => {
                 try {
@@ -312,7 +312,7 @@ export default function TutorsPage() {
                 }
             },
             confirmText: "Desactivar Todos",
-            variant: "error",
+            variant: config.variant as DialogVariant,
         });
     };
 
@@ -322,9 +322,10 @@ export default function TutorsPage() {
      * @param ids - IDs de los tutores a restaurar
      */
     const handleBulkRestore = (ids: string[]) => {
+        const config = CONFIRM_MESSAGES.activate('los tutores');
         setConfirmation({
             isOpen: true,
-            title: "Confirmar Restauración Masiva",
+            title: 'Confirmar restauración masiva',
             message: `¿Estás seguro de que deseas restaurar los ${ids.length} tutores seleccionados?`,
             onConfirm: async () => {
                 try {
@@ -336,7 +337,7 @@ export default function TutorsPage() {
                 }
             },
             confirmText: "Restaurar Todos",
-            variant: "success",
+            variant: config.variant as DialogVariant,
         });
     };
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import toast from "react-hot-toast";
 import { Modal } from "../../components/ui/modal";
+import { MODAL_CONFIG } from "../../components/ui/dialog/DialogConfig";
 import { FileIcon, ListIcon, DownloadIcon } from "../../icons";
 import CustomSelect from "../../components/form/CustomSelect";
 import MultiSelect from "../../components/form/MultiSelect";
@@ -460,7 +461,7 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <DownloadIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                {isExporting ? "Exportando..." : "Exportar a Excel"}
+                {isExporting ? MODAL_CONFIG.button.exportLoading : MODAL_CONFIG.button.exportExcel}
               </button>
             </div>
           </div>

@@ -11,7 +11,7 @@ import ComponentCard from "../../components/common/ComponentCard";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { useTabs } from "../../hooks/useTabs";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
+import { CONFIRM_MESSAGES, MODAL_CONFIG, DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
@@ -48,7 +48,7 @@ import { toTitleCase } from "../../utils/textFormat";
  * @param e - The enrollment object.
  * @returns The formatted row data.
  */
-const formatEnrollmentToRow = (e: Enrollment): EnrollmentRowData => ({
+const formatEnrollmentToRow = (e: any): EnrollmentRowData => ({
     ...e,
     enrollmentDate: formatDateTime(e.enrollmentDate),
 });
@@ -362,21 +362,22 @@ export default function EnrollmentPage() {
             title: isEditing ? "Confirmar Actualización" : "Confirmar Registro",
             message: `¿Estás seguro de que deseas ${isEditing ? "actualizar" : "registrar"} esta inscripción?`,
             onConfirm: () => trySave(false),
-            confirmText: isEditing ? "Actualizar" : "Registrar",
-            variant: "info",
-        });
-    };
+			confirmText: MODAL_CONFIG.confirmLabel(isEditing),
+			variant: "info",
+		});
+	};
 
-    /**
-     * Inactiva (toggle status) una inscripción.
-     */
+	/**
+	 * Inactiva (toggle status) una inscripción.
+	 */
     const handleInactivate = (row: EnrollmentRowData) => {
         const original = enrollments.find((e) => e.enrollmentId === row.enrollmentId);
         if (!original) return;
+        const config = CONFIRM_MESSAGES.deactivate('la inscripción');
 
         setConfirmation({
             isOpen: true,
-            title: "Confirmar Desactivación",
+            title: config.title,
             message: `¿Estás seguro de que deseas desactivar la inscripción de ${row.studentName}?`,
             onConfirm: async () => {
                 try {
@@ -387,8 +388,8 @@ export default function EnrollmentPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: "Desactivar",
-            variant: "warning" as DialogVariant,
+            confirmText: config.confirmLabel,
+            variant: config.variant as DialogVariant,
         });
     };
 
@@ -398,11 +399,12 @@ export default function EnrollmentPage() {
     const handleReactivate = (row: EnrollmentRowData) => {
         const original = enrollments.find((e) => e.enrollmentId === row.enrollmentId);
         if (!original) return;
+        const config = CONFIRM_MESSAGES.activate('la inscripción');
 
         setConfirmation({
             isOpen: true,
-            title: "Confirmar Reactivación",
-            message: `¿Estás seguro de que deseas reactivar la inscripción de ${row.studentName}?`,
+            title: config.title,
+            message: `¿Estás seguro de que deseas restaurar la inscripción de ${row.studentName}?`,
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
@@ -412,8 +414,8 @@ export default function EnrollmentPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: "Reactivar",
-            variant: "info" as DialogVariant,
+            confirmText: config.confirmLabel,
+            variant: config.variant as DialogVariant,
         });
     };
 

@@ -15,7 +15,7 @@ import Button from '../../../components/ui/button/Button';
 import { getPeriodSchema, PeriodFormData, getLapsoValue } from '../utils/periodValidations';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
-import { SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
+import { MODAL_CONFIG, SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
 import apiClient from '../../../api/apiClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
@@ -671,10 +671,10 @@ export default function PeriodModal({
                 <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">
                 <div className="max-w-3xl mx-auto w-full">
                     <span className="text-xl font-bold text-text-primary dark:text-white/90">
-                        {periodo ? 'Editar Período' : 'Registrar Período'}
+                        {MODAL_CONFIG.titleByMode(!!periodo, 'Período')}
                     </span>
                     <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary font-normal">
-                        {periodo ? 'Modifica los detalles del período académico.' : 'Ingresa los detalles del nuevo período académico.'}
+                        {MODAL_CONFIG.descriptionByMode(!!periodo, 'período académico')}
                     </p>
                 </div>
             </ModalHeader>

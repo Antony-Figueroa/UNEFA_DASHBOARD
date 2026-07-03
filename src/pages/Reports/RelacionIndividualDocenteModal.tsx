@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import { Modal } from "../../components/ui/modal";
+import { MODAL_CONFIG } from "../../components/ui/dialog/DialogConfig";
 import { FileIcon, ListIcon, DownloadIcon } from "../../icons";
 import CustomSelect from "../../components/form/CustomSelect";
 import { getPeriods } from "../../features/periods/services/periodService";
@@ -167,7 +168,7 @@ export function RelacionIndividualDocenteModal({ isOpen, onClose }: RelacionIndi
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
             >
               <DownloadIcon className="w-4 h-4" />
-              {isExporting ? "Exportando..." : "Exportar Excel"}
+              {isExporting ? MODAL_CONFIG.button.exportLoading : MODAL_CONFIG.button.exportExcel}
             </button>
           </div>
         </div>

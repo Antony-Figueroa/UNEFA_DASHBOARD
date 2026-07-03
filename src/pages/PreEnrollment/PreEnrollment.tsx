@@ -12,7 +12,7 @@ import ComponentCard from "../../components/common/ComponentCard";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { useTabs } from "../../hooks/useTabs";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
+import { CONFIRM_MESSAGES, MODAL_CONFIG, DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
@@ -296,13 +296,13 @@ export default function PreEnrollmentPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: isEditing ? "Actualizar" : "Registrar",
-            variant: "info",
-        });
-    };
+		confirmText: MODAL_CONFIG.confirmLabel(isEditing),
+		variant: "info",
+		});
+	};
 
-    /**
-     * Maneja el cambio de estado (activar/desactivar) de una pre-inscripción.
+	/**
+	 * Maneja el cambio de estado (activar/desactivar) de una pre-inscripción.
      * Muestra un diálogo de confirmación antes de proceder con la desactivación.
      * 
      * @param item - Registro de la fila seleccionada.
@@ -312,17 +312,16 @@ export default function PreEnrollmentPage() {
         if (!original) return;
 
         const isDeactivating = original.status;
-        const actionVerb = isDeactivating ? "desactivar" : "restaurar";
-        const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Restauración";
-        const variant = isDeactivating ? "error" : "success";
-        const confirmText = isDeactivating ? "Desactivar" : "Restaurar";
+        const config = isDeactivating
+          ? CONFIRM_MESSAGES.deactivate('la pre-inscripción')
+          : CONFIRM_MESSAGES.activate('la pre-inscripción');
 
         setConfirmation({
             isOpen: true,
-            title: confirmTitle,
-            message: `¿Estás seguro de que deseas ${actionVerb} la pre-inscripción de ${item.studentName}?`,
-            confirmText: confirmText,
-            variant: variant as any,
+            title: config.title,
+            message: `¿Estás seguro de que deseas ${isDeactivating ? 'desactivar' : 'restaurar'} la pre-inscripción de ${item.studentName}?`,
+            confirmText: config.confirmLabel,
+            variant: config.variant as DialogVariant,
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
@@ -341,12 +340,13 @@ export default function PreEnrollmentPage() {
      * @param ids - Arreglo de IDs de pre-inscripción a desactivar.
      */
     const handleBulkDelete = (ids: string[]) => {
+        const config = CONFIRM_MESSAGES.deactivate('las pre-inscripciones');
         setConfirmation({
             isOpen: true,
-            title: "Confirmar Desactivación Masiva",
+            title: 'Confirmar desactivación masiva',
             message: `¿Estás seguro de que deseas desactivar las ${ids.length} pre-inscripciones seleccionadas?`,
             confirmText: "Desactivar Todos",
-            variant: "error",
+            variant: config.variant as DialogVariant,
             onConfirm: async () => {
                 try {
                     await bulkToggleStatus(ids, false);
@@ -365,12 +365,13 @@ export default function PreEnrollmentPage() {
      * @param ids - Arreglo de IDs de pre-inscripción a restaurar.
      */
     const handleBulkRestore = (ids: string[]) => {
+        const config = CONFIRM_MESSAGES.activate('las pre-inscripciones');
         setConfirmation({
             isOpen: true,
-            title: "Confirmar Restauración Masiva",
+            title: 'Confirmar restauración masiva',
             message: `¿Estás seguro de que deseas restaurar las ${ids.length} pre-inscripciones seleccionadas?`,
             confirmText: "Restaurar Todos",
-            variant: "success",
+            variant: config.variant as DialogVariant,
             onConfirm: async () => {
                 try {
                     await bulkToggleStatus(ids, true);

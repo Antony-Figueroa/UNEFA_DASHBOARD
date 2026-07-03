@@ -6,6 +6,7 @@ import ComponentCard from "../../../../components/common/ComponentCard";
 import Button from "../../../../components/ui/button/Button";
 import Badge from "../../../../components/ui/badge/Badge";
 import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, MODAL_CONFIG } from "../../../../components/ui/dialog/DialogConfig";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../../components/ui/modal";
 import MultiSelect from "../../../../components/form/MultiSelect";
 import apiClient from "../../../../api/apiClient";
@@ -254,11 +255,14 @@ export default function NucleiManager() {
 
   const handleToggleStatus = (nucleus: Nucleus) => {
     const goingInactive = nucleus.status === 1;
+    const config = goingInactive
+      ? CONFIRM_MESSAGES.deactivate('el núcleo')
+      : CONFIRM_MESSAGES.activate('el núcleo');
     setConfirmDialog({
       isOpen: true,
-      title: goingInactive ? "Desactivar Núcleo" : "Activar Núcleo",
+      title: config.title,
       message: `¿Estás seguro de que deseas ${goingInactive ? "desactivar" : "activar"} el núcleo "${nucleus.name}"?`,
-      variant: goingInactive ? "error" : "success",
+      variant: config.variant!,
       onConfirm: async () => {
         setActionLoading(true);
         try {
@@ -446,7 +450,7 @@ export default function NucleiManager() {
       {/* Create/Edit Modal */}
       <Modal isOpen={modalOpen} onClose={closeModal} size="2xl" modalId="nucleus-modal">
         <ModalHeader>
-          {editingNucleus ? "Editar Núcleo" : "Nuevo Núcleo"}
+          {MODAL_CONFIG.titleByMode(!!editingNucleus, 'Núcleo')}
         </ModalHeader>
         <ModalBody>
           <div className="space-y-6">
@@ -570,7 +574,7 @@ export default function NucleiManager() {
             Cancelar
           </Button>
           <Button onClick={handleSave} loading={actionLoading}>
-            {editingNucleus ? "Actualizar" : "Crear"}
+            {MODAL_CONFIG.buttonByMode(!!editingNucleus)}
           </Button>
         </ModalFooter>
       </Modal>

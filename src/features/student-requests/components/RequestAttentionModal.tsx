@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
+import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
+import { CONFIRM_MESSAGES } from '../../../components/ui/dialog/DialogConfig';
 
 import { STATUS_OPTIONS } from '../utils/requestUtils';
 import ReassignmentFields from './ReassignmentFields';
@@ -40,6 +42,7 @@ export const RequestAttentionModal = ({
     response: '',
     reassignmentOverride: {}
   });
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const typeName = request?.typeName || '';
   const reassignmentData = request?.reassignmentData;
@@ -78,12 +81,18 @@ export const RequestAttentionModal = ({
   };
 
   const handleSubmit = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmDialog(false);
     onSubmit(formData);
   };
 
   if (!request) return null;
 
   return (
+    <>
     <Modal isOpen={!!request} onClose={onClose} size="lg">
       <ModalHeader>Atender Solicitud</ModalHeader>
       <ModalBody>
@@ -197,6 +206,15 @@ export const RequestAttentionModal = ({
         </Button>
       </ModalFooter>
     </Modal>
+
+    <UnifiedDialog
+      isOpen={showConfirmDialog}
+      onClose={() => setShowConfirmDialog(false)}
+      onConfirm={handleConfirmSubmit}
+      {...CONFIRM_MESSAGES.update('la solicitud')}
+      isLoading={saving}
+    />
+    </>
   );
 };
 

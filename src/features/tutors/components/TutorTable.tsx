@@ -10,6 +10,7 @@ import { TutorRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
 import Badge from "../../../components/ui/badge/Badge";
+import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { Career } from "../../careers/types";
 import { CrudStatus } from "../../../hooks/useCrud";
@@ -551,23 +552,27 @@ export default function TutorTable({
                         ) : (
                             <TableRow>
                                 <TableCell className="table-cell py-24 text-center" colSpan={7}>
-                                    <div className="flex flex-col items-center justify-center animate-fadeIn">
-                                        <div className="mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
-                                            <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                        </div>
-                                        <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron tutores</h3>
-                                        <p className="mt-1 text-xs text-text-tertiary dark:text-text-tertiary">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                                        {(searchTerm || careerFilter || conditionFilter) && (
-                                            <button
-                                                onClick={clearFilters}
-                                                className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
-                                            >
-                                                Ver todos los tutores
-                                            </button>
-                                        )}
-                                    </div>
+                                    <EmptyState
+                                        title={
+                                            inactiveMode
+                                                ? "No hay tutores inactivos"
+                                                : searchTerm || careerFilter || conditionFilter
+                                                ? "No se encontraron tutores"
+                                                : "No hay tutores registrados"
+                                        }
+                                        description={
+                                            inactiveMode
+                                                ? "Los tutores inactivos aparecerán aquí después de ser desactivados."
+                                                : searchTerm || careerFilter || conditionFilter
+                                                ? "Intenta ajustar los filtros para encontrar lo que buscas."
+                                                : "Comienza agregando uno nuevo."
+                                        }
+                                        action={
+                                            !inactiveMode && (searchTerm || careerFilter || conditionFilter) ? (
+                                                <Button variant="ghost" onClick={clearFilters}>Ver todos los tutores</Button>
+                                            ) : undefined
+                                        }
+                                    />
                                 </TableCell>
                             </TableRow>
                         )}
@@ -648,23 +653,27 @@ export default function TutorTable({
                         );
                     })
                 ) : (
-                    <div className="py-20 text-center animate-fadeIn">
-                        <div className="inline-flex mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
-                            <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                        <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron tutores</h3>
-                        <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                        {(searchTerm || careerFilter || conditionFilter) && (
-                            <button
-                                onClick={clearFilters}
-                                className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
-                            >
-                                Ver todos los tutores
-                            </button>
-                        )}
-                    </div>
+                    <EmptyState
+                        title={
+                            inactiveMode
+                                ? "No hay tutores inactivos"
+                                : searchTerm || careerFilter || conditionFilter
+                                ? "No se encontraron tutores"
+                                : "No hay tutores registrados"
+                        }
+                        description={
+                            inactiveMode
+                                ? "Los tutores inactivos aparecerán aquí después de ser desactivados."
+                                : searchTerm || careerFilter || conditionFilter
+                                ? "Intenta ajustar los filtros para encontrar lo que buscas."
+                                : "Comienza agregando uno nuevo."
+                        }
+                        action={
+                            !inactiveMode && (searchTerm || careerFilter || conditionFilter) ? (
+                                <Button variant="ghost" onClick={clearFilters}>Ver todos los tutores</Button>
+                            ) : undefined
+                        }
+                    />
                 )}
             </div>
 

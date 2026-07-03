@@ -371,8 +371,8 @@ export default function EvaluationsAndCulminationPage() {
     if (hook.filteredPractices.length === 0) {
       return (
         <EmptyState
-          title="No hay registros"
-          description="No se encontraron prácticas con los filtros aplicados."
+          title="No se encontraron prácticas"
+          description="Intenta ajustar los filtros para encontrar lo que buscas."
         />
       );
     }

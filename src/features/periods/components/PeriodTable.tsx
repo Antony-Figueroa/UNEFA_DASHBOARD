@@ -519,7 +519,7 @@ const PeriodTable = ({
     // RENDER
     // ============================================
     if (data.length === 0) {
-        return <EmptyState title="No hay periodos registrados" />;
+        return <EmptyState title="No hay periodos registrados" description="Comienza creando uno nuevo." />;
     }
 
     return (
@@ -916,7 +916,10 @@ const PeriodTable = ({
                         );
                     })
                 ) : (
-                    <EmptyState title="No hay periodos registrados" />
+                    <EmptyState
+                        title={searchTerm || statusFilter ? "No se encontraron periodos" : "No hay periodos registrados"}
+                        description={searchTerm || statusFilter ? "Intenta ajustar los filtros para encontrar lo que buscas." : "Comienza creando uno nuevo."}
+                    />
                 )}
             </div>
 

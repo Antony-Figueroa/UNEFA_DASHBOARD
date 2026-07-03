@@ -374,7 +374,7 @@ export default function CulminationPage() {
           ) : filteredData.length === 0 ? (
             <EmptyState
               title="No se encontraron registros de culminación"
-              description="No se encontraron estudiantes con prácticas por culminar con los filtros aplicados."
+              description="Intenta ajustar los filtros para encontrar lo que buscas."
             />
           ) : (
             <>

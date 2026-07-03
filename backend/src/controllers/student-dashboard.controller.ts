@@ -6,6 +6,25 @@ import { notifyRequestCreated } from '../services/notification.service.js';
 import { PRACTICES_STATUS, PRACTICES_STATUS_LABELS } from '../constants/practice-status.constants.js';
 import { sanitizeText } from '../utils/text-utils.js';
 
+/** Prioridad para elegir el enrollment activo: INSCRITO > PRE_INSCRITO > CULMINADO */
+const ENROLLMENT_PRIORITY: Record<number, number> = {
+  [PRACTICES_STATUS.INSCRITO]: 0,
+  [PRACTICES_STATUS.PRE_INSCRITO]: 1,
+  [PRACTICES_STATUS.CULMINADO]: 2,
+};
+
+/** Elige el mejor enrollment (mayor prioridad, desempata por fecha descendente) */
+function pickBestEnrollment(enrollments: any[]): any | null {
+  if (!enrollments || enrollments.length === 0) return null;
+  return enrollments.reduce((best, e) => {
+    const bestPrio = ENROLLMENT_PRIORITY[best.PRACTICES_STATUS] ?? 99;
+    const currPrio = ENROLLMENT_PRIORITY[e.PRACTICES_STATUS] ?? 99;
+    if (currPrio < bestPrio) return e;
+    if (currPrio === bestPrio && new Date(e.REGISTRATION_DATE || 0) > new Date(best.REGISTRATION_DATE || 0)) return e;
+    return best;
+  });
+}
+
 interface StudentInternship {
   enrollmentId: string;
   studentCi: string;
@@ -94,7 +113,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
 
     const studentId = studentData.STUDENTS_ID;
 
-    const { data: enrollment, error: enrollmentError } = await supabase
+    const { data: allEnrollments, error: enrollmentError } = await supabase
       .from('t_professional_practices')
       .select(`
         PROFESSIONAL_PRACTICE_ID,
@@ -106,6 +125,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         STATUS,
         OBSERVATION,
         PERIOD_ID,
+        CAREER_ID,
         INSTITUTION_ID,
         INTERNSHIP_TYPE_ID,
         t_internships_period (DESCRIPTION),
@@ -129,16 +149,16 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         )
       `)
       .eq('STUDENTS_ID', studentId)
-      .eq('STATUS', 1)
-      .order('REGISTRATION_DATE', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq('STATUS', 1);
+
+    const enrollment = pickBestEnrollment(allEnrollments);
 
     const statusMap: Record<number, string> = {
+      [PRACTICES_STATUS.RETIRADO]: 'withdrawn',
       [PRACTICES_STATUS.PRE_INSCRITO]: 'pre-enrolled',
       [PRACTICES_STATUS.INSCRITO]: 'active',
       [PRACTICES_STATUS.CULMINADO]: 'completed',
-      4: 'suspended'
+      [PRACTICES_STATUS.REPROBADO]: 'failed',
     };
 
     let internship: StudentInternship | null = null;
@@ -292,18 +312,18 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Obtener último enrollment para datos de carrera/semestre/sección
-    const { data: enrollment } = await supabase
+    // Obtener enrollment activo para datos de carrera/semestre/sección
+    const { data: profileEnrollments } = await supabase
       .from('t_professional_practices')
       .select(`
+        PRACTICES_STATUS, REGISTRATION_DATE,
         SEMESTER, SECTION, REGIME, CAREER_ID,
         t_career (CAREER_NAME)
       `)
       .eq('STUDENTS_ID', student.STUDENTS_ID)
-      .eq('STATUS', 1)
-      .order('REGISTRATION_DATE', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq('STATUS', 1);
+
+    const enrollment = pickBestEnrollment(profileEnrollments);
 
     res.json({
       success: true,
@@ -450,11 +470,12 @@ export const getStudentTracking = async (req: AuthRequest, res: Response) => {
 
     const studentId = studentData.STUDENTS_ID;
 
-    const { data: practice } = await supabase
+    const { data: trackEnrollments } = await supabase
       .from('t_professional_practices')
       .select(`
         PROFESSIONAL_PRACTICE_ID,
         START_DATE, END_DATE, GRADE, PRACTICES_STATUS, REGISTRATION_DATE,
+        CAREER_ID,
         t_internships_period(DESCRIPTION),
         t_internship_type(NAME, HOURS_REQUIRED),
         t_institution(INSTITUTION_NAME),
@@ -464,10 +485,9 @@ export const getStudentTracking = async (req: AuthRequest, res: Response) => {
         )
       `)
       .eq('STUDENTS_ID', studentId)
-      .eq('STATUS', 1)
-      .order('REGISTRATION_DATE', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq('STATUS', 1);
+
+    const practice = pickBestEnrollment(trackEnrollments);
 
     if (!practice) {
       return res.json({ success: true, data: { internship: null, tracking: [], visits: [], activityLogs: { totalHours: 0, totalLogs: 0, approvedLogs: 0, pendingLogs: 0, recentLogs: [] } } });
@@ -504,11 +524,30 @@ export const getStudentTracking = async (req: AuthRequest, res: Response) => {
       // t_tracking no existe
     }
 
+    // Obtener nombre de carrera
+    let careerName = '';
+    const trackCareerId = (practice as any).CAREER_ID;
+    if (trackCareerId) {
+      const { data: career } = await supabase
+        .from('t_career')
+        .select('CAREER_NAME')
+        .eq('CAREER_ID', trackCareerId)
+        .single();
+      careerName = career?.CAREER_NAME || '';
+    }
+
+    const statusMap: Record<number, string> = {
+      [PRACTICES_STATUS.PRE_INSCRITO]: 'pre-enrolled',
+      [PRACTICES_STATUS.INSCRITO]: 'active',
+      [PRACTICES_STATUS.CULMINADO]: 'completed',
+      4: 'suspended',
+    };
+
     const internship = {
-      enrollmentId: practiceId,
+      enrollmentId: String(practiceId),
       period: (practice as any).t_internships_period?.DESCRIPTION || '',
-      status: (practice as any).PRACTICES_STATUS === 2 ? 'active' : 'completed',
-      careerName: '',
+      status: statusMap[(practice as any).PRACTICES_STATUS] || 'unknown',
+      careerName,
       practiceType: (practice as any).t_internship_type?.NAME || '',
       institutionName: (practice as any).t_institution?.INSTITUTION_NAME || '',
       startDate: (practice as any).START_DATE || '',
@@ -616,10 +655,8 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
       .from('t_students')
       .select(`
         STUDENTS_ID,
-        SEMESTER, SECTION, REGIME, STUDENT_TYPE,
+        STUDENT_TYPE,
         MILITARY_RANK, EMPLOYMENT, STATUS, REGISTRATION_DATE,
-        CAREER_ID,
-        t_career (CAREER_NAME),
         t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birth_date, address, marital_status)
       `)
       .eq('USER_ID', userId)
@@ -628,6 +665,19 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
     if (!updated) {
       return res.status(500).json({ success: false, message: 'Error al recuperar perfil actualizado' });
     }
+
+    // Obtener enrollment activo para carrera/semestre/sección
+    const { data: updateEnrollments } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PRACTICES_STATUS, REGISTRATION_DATE,
+        SEMESTER, SECTION, REGIME, CAREER_ID,
+        t_career (CAREER_NAME)
+      `)
+      .eq('STUDENTS_ID', updated.STUDENTS_ID)
+      .eq('STATUS', 1);
+
+    const updateEnrollment = pickBestEnrollment(updateEnrollments);
 
     res.json({
       success: true,
@@ -646,13 +696,13 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
         birthdate: (updated as any)?.t_persons?.birth_date,
         address: (updated as any)?.t_persons?.address,
         maritalStatus: (updated as any)?.t_persons?.marital_status,
-        semester: updated.SEMESTER,
-        section: updated.SECTION,
-        regime: updated.REGIME,
+        semester: (updateEnrollment as any)?.SEMESTER || null,
+        section: (updateEnrollment as any)?.SECTION || null,
+        regime: (updateEnrollment as any)?.REGIME || null,
         studentType: updated.STUDENT_TYPE,
         militaryRank: updated.MILITARY_RANK,
         employment: updated.EMPLOYMENT,
-        careerName: (updated as any).t_career?.CAREER_NAME || '',
+        careerName: (updateEnrollment as any)?.t_career?.CAREER_NAME || '',
         status: updated.STATUS,
         registrationDate: updated.REGISTRATION_DATE
       }

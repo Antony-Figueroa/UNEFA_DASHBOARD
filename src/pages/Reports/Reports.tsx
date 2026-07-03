@@ -185,6 +185,9 @@ export default function ReportsPage() {
   const handlePreviewFilterChange = useCallback(async (period: string, careerIds: number[]) => {
     const ref = activeReportConfigRef.current;
     if (!ref) return;
+    // ponytail: sync parent state so MultiSelect reflects selection
+    setCareerIdsFilter(careerIds);
+    if (period !== undefined) setPeriodFilter(period);
     const periodNum = period ? parseInt(period.split('-')[0]) : undefined;
     const effectiveCareerIds = careerIds.length > 0 ? careerIds : undefined;
     try {

@@ -29,8 +29,22 @@ interface Props {
   textos: Record<string, string>;
 }
 
+const CUERPO_TEMPLATE = `Señor(a):
+{{institucionNombre}}
+Presente.
+
+Atención: {{tutorTitulo}} {{tutorNombreCompleto}}.
+
+    Tengo el agrado de dirigirme a usted, en la oportunidad de extender nuestro sincero agradecimiento por su apoyo y participación incondicional, al desempeñarse como Tutor Institucional de la asignatura Práctica Profesional (Pasantía) de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA), al asesorar, supervisar y evaluar estudiantes, colaborando de esta forma en el proceso formativo y de capacitación integral de estos futuros profesionales, realizando un acompañamiento con un total de {{totalHours}} horas, en el periodo académico {{periodo}}, comprendido entre las fechas {{inicioLapso}} y {{finLapso}}.
+
+    Sin otro particular al cual referirme, me despido de usted quedando a sus gratas órdenes.`;
+
 export function ConstanciaTutorInstitucionalPDF({ data, textos }: Props) {
-  const cuerpo = renderDocumentText(textos.cuerpo || '', {
+  const template = textos.cuerpo?.includes('{{tutorNombreCompleto}}')
+    ? textos.cuerpo
+    : CUERPO_TEMPLATE;
+
+  const cuerpo = renderDocumentText(template, {
     tutorTitulo: getTutorTitle(data.tutor.titulo),
     tutorNombreCompleto: formatNombreCompleto(data.tutor),
     tutorCi: formatCI(data.tutor.ci),
@@ -50,8 +64,8 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos }: Props) {
       <View style={styles.firmaContainer}>
         <Text style={styles.firmaLine}>___________________________________</Text>
         <Text style={styles.firmaNombre}>MSc. Marbelys del Valle Rivero</Text>
-        <Text style={styles.firmaRol}>Decana del Núcleo Portuguesa</Text>
-        <Text style={styles.firmaRol}>Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022</Text>
+        <Text style={styles.firmaRol}>DECANA</Text>
+        <Text style={styles.firmaRol}>Según Orden Administrativa N° 0005 de fecha 18 de Marzo 2022</Text>
       </View>
     </PDFLayout>
   );

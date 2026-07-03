@@ -129,10 +129,7 @@ export default function AdminRequests() {
         response: data.response || undefined
       };
 
-      const isReassignment = selectedRequest.isReassignment === true ||
-        selectedRequest.typeName.includes('Tutor') ||
-        selectedRequest.typeName.includes('Empresa') ||
-        selectedRequest.typeName.includes('Carrera');
+      const isReassignment = selectedRequest.isReassignment === true;
 
       if (isReassignment && data.newStatus === 'approved') {
         const merged = {

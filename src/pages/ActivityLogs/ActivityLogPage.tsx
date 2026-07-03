@@ -8,6 +8,7 @@ import Badge from '../../components/ui/badge/Badge';
 import InputField from '../../components/form/input/InputField';
 import CustomSelect from '../../components/form/CustomSelect';
 import UnifiedDialog from '../../components/ui/dialog/UnifiedDialog';
+import { CONFIRM_MESSAGES } from '../../components/ui/dialog/DialogConfig';
 import { AngleLeftIcon } from '../../icons';
 import { PlusCircleIcon } from '../../icons/actions';
 import { useActivityLogs } from '../../features/activity-logs/hooks/useActivityLogs';
@@ -344,10 +345,7 @@ export default function ActivityLogPage() {
       <UnifiedDialog
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, log: null })}
-        title="Eliminar Registro"
-        message="¿Estás seguro de que deseas eliminar este registro de actividad? Esta acción no se puede deshacer."
-        confirmLabel="Eliminar"
-        variant="error"
+        {...CONFIRM_MESSAGES.deactivate('el registro de actividad')}
         onConfirm={handleDelete}
       />
 

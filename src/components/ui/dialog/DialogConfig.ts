@@ -20,6 +20,7 @@ export interface DialogTextConfig {
   message: string;
   confirmLabel: string;
   cancelLabel?: string;
+  variant?: DialogVariant;
 }
 
 export const DIALOG_COLORS = {
@@ -103,11 +104,25 @@ export const CONFIRM_MESSAGES = {
     title: 'Confirmar eliminación',
     message: `¿Estás seguro de que deseas eliminar ${resource.toLowerCase()}? Esta acción no se puede deshacer.`,
     confirmLabel: 'Eliminar',
+    variant: 'error',
+  }),
+  deactivate: (resource: string): DialogTextConfig => ({
+    title: 'Confirmar desactivación',
+    message: `¿Estás seguro de que deseas desactivar ${resource.toLowerCase()}? Podrás restaurarlo después si es necesario.`,
+    confirmLabel: 'Desactivar',
+    variant: 'warning',
+  }),
+  activate: (resource: string): DialogTextConfig => ({
+    title: 'Confirmar restauración',
+    message: `¿Estás seguro de que deseas restaurar ${resource.toLowerCase()}?`,
+    confirmLabel: 'Restaurar',
+    variant: 'success',
   }),
   restore: (resource: string): DialogTextConfig => ({
     title: 'Confirmar restauración',
     message: `¿Estás seguro de que deseas restaurar ${resource.toLowerCase()}?`,
     confirmLabel: 'Restaurar',
+    variant: 'success',
   }),
 };
 
@@ -152,3 +167,58 @@ export const DIALOG_LAYOUT = {
   titleSize: "text-lg sm:text-xl font-bold",
   messageSize: "text-sm sm:text-base",
 };
+
+// ===== STANDARDIZED TOAST MESSAGES (addToast-compatible) =====
+// Cada función retorna { variant, title, message } listo para addToast.
+// Usar: addToast(TOAST.created('Visita'))
+
+export const TOAST = {
+  // ── Success ──────────────────────────────────────────
+  created: (resource: string) => ({
+    variant: "success" as const,
+    title: `${resource} creado`,
+    message: `${resource} creado correctamente.`,
+  }),
+  updated: (resource: string) => ({
+    variant: "success" as const,
+    title: `${resource} actualizado`,
+    message: `${resource} actualizado correctamente.`,
+  }),
+  deleted: (resource: string) => ({
+    variant: "warning" as const,
+    title: `${resource} eliminado`,
+    message: `${resource} eliminado correctamente.`,
+  }),
+  restored: (resource: string) => ({
+    variant: "success" as const,
+    title: `${resource} restaurado`,
+    message: `${resource} restaurado correctamente.`,
+  }),
+
+  // ── Error ────────────────────────────────────────────
+  createError: (resource: string) => ({
+    variant: "error" as const,
+    title: "Error al crear",
+    message: `No se pudo crear ${resource}. Intentá de nuevo.`,
+  }),
+  updateError: (resource: string) => ({
+    variant: "error" as const,
+    title: "Error al actualizar",
+    message: `No se pudo actualizar ${resource}. Intentá de nuevo.`,
+  }),
+  deleteError: (resource: string) => ({
+    variant: "error" as const,
+    title: "Error al eliminar",
+    message: `No se pudo eliminar ${resource}. Intentá de nuevo.`,
+  }),
+  loadError: () => ({
+    variant: "error" as const,
+    title: "Error al cargar",
+    message: "No se pudieron cargar los datos. Intentá de nuevo.",
+  }),
+  restoreError: (resource: string) => ({
+    variant: "error" as const,
+    title: "Error al restaurar",
+    message: `No se pudo restaurar ${resource}. Intentá de nuevo.`,
+  }),
+} as const;

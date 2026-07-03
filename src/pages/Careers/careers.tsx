@@ -13,7 +13,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
+import { CONFIRM_MESSAGES, DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { Tabs } from "../../components/ui/tabs/Tabs";
@@ -312,42 +312,26 @@ export default function CareersPage() {
     const original = careers.find((c) => String(c.careerId) === String(careerId));
     if (!original) return;
     const goingInactive = original.status === true || original.status === 1;
+    const config = goingInactive
+      ? CONFIRM_MESSAGES.deactivate('la carrera')
+      : CONFIRM_MESSAGES.activate('la carrera');
 
-    if (goingInactive) {
-      setConfirmation({
-        isOpen: true,
-        title: "Confirmar Desactivación",
-        message: `¿Estás seguro de que deseas desactivar la carrera "${original.careerName}"?`,
-        onConfirm: async () => {
-          try {
-            await toggleStatus(careerId, false);
-          } catch (e) {
-            console.error(e);
-          } finally {
-            setConfirmation(null);
-          }
-        },
-        confirmText: "Desactivar",
-        variant: "error",
-      });
-    } else {
-      setConfirmation({
-        isOpen: true,
-        title: "Confirmar Restauración",
-        message: `¿Estás seguro de que deseas restaurar la carrera "${original.careerName}"?`,
-        onConfirm: async () => {
-          try {
-            await toggleStatus(careerId, true);
-          } catch (e) {
-            console.error(e);
-          } finally {
-            setConfirmation(null);
-          }
-        },
-        confirmText: "Restaurar",
-        variant: "success",
-      });
-    }
+    setConfirmation({
+      isOpen: true,
+      title: config.title,
+      message: `¿Estás seguro de que deseas ${goingInactive ? 'desactivar' : 'restaurar'} la carrera "${original.careerName}"?`,
+      onConfirm: async () => {
+        try {
+          await toggleStatus(careerId, !goingInactive);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setConfirmation(null);
+        }
+      },
+      confirmText: config.confirmLabel,
+      variant: config.variant as DialogVariant,
+    });
   };
 
   /**
@@ -357,42 +341,26 @@ export default function CareersPage() {
     const original = internshipTypes.find((t) => t.id === id);
     if (!original) return;
     const goingInactive = original.status;
+    const config = goingInactive
+      ? CONFIRM_MESSAGES.deactivate('el tipo de práctica')
+      : CONFIRM_MESSAGES.activate('el tipo de práctica');
 
-    if (goingInactive) {
-      setConfirmation({
-        isOpen: true,
-        title: "Confirmar Desactivación",
-        message: `¿Estás seguro de que deseas desactivar el tipo de práctica "${original.name}"?`,
-        onConfirm: async () => {
-          try {
-            await toggleTypeStatus(id, false);
-          } catch (e) {
-            console.error(e);
-          } finally {
-            setConfirmation(null);
-          }
-        },
-        confirmText: "Desactivar",
-        variant: "error",
-      });
-    } else {
-      setConfirmation({
-        isOpen: true,
-        title: "Confirmar Restauración",
-        message: `¿Estás seguro de que deseas restaurar el tipo de práctica "${original.name}"?`,
-        onConfirm: async () => {
-          try {
-            await toggleTypeStatus(id, true);
-          } catch (e) {
-            console.error(e);
-          } finally {
-            setConfirmation(null);
-          }
-        },
-        confirmText: "Restaurar",
-        variant: "success",
-      });
-    }
+    setConfirmation({
+      isOpen: true,
+      title: config.title,
+      message: `¿Estás seguro de que deseas ${goingInactive ? 'desactivar' : 'restaurar'} el tipo de práctica "${original.name}"?`,
+      onConfirm: async () => {
+        try {
+          await toggleTypeStatus(id, !goingInactive);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setConfirmation(null);
+        }
+      },
+      confirmText: config.confirmLabel,
+      variant: config.variant as DialogVariant,
+    });
   };
 
   /**
@@ -402,11 +370,12 @@ export default function CareersPage() {
   const handleDelete = (careerId: string | number) => {
     const original = careers.find((c) => String(c.careerId) === String(careerId));
     if (!original) return;
+    const config = CONFIRM_MESSAGES.deactivate('la carrera');
 
     setConfirmation({
       isOpen: true,
-      title: "Eliminar Carrera Permanentemente",
-      message: `¿Estás seguro de que deseas eliminar permanentemente la carrera "${original.careerName}"? Esta acción no se puede deshacer.`,
+      title: config.title,
+      message: `¿Estás seguro de que deseas desactivar la carrera "${original.careerName}"? Podrás restaurarla después si es necesario.`,
       onConfirm: async () => {
         try {
           await removeCareer(careerId);
@@ -416,8 +385,8 @@ export default function CareersPage() {
           setConfirmation(null);
         }
       },
-      confirmText: "Confirmar",
-      variant: "error",
+      confirmText: config.confirmLabel,
+      variant: config.variant as DialogVariant,
     });
   };
 
@@ -426,9 +395,10 @@ export default function CareersPage() {
    * @param {(string | number)[]} ids - Lista de IDs de carreras a eliminar.
    */
   const handleBulkDelete = (ids: (string | number)[]) => {
+    const config = CONFIRM_MESSAGES.deactivate('las carreras');
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Desactivación Masiva",
+      title: `Confirmar desactivación masiva`,
       message: `¿Estás seguro de que deseas desactivar las ${ids.length} carreras seleccionadas?`,
       onConfirm: async () => {
         try {
@@ -440,7 +410,7 @@ export default function CareersPage() {
         }
       },
       confirmText: "Desactivar Todos",
-      variant: "error",
+      variant: config.variant as DialogVariant,
     });
   };
 
@@ -448,9 +418,10 @@ export default function CareersPage() {
    * Ejecuta la eliminación masiva de tipos de prácticas.
    */
   const handleBulkDeleteTypes = (ids: number[]) => {
+    const config = CONFIRM_MESSAGES.deactivate('los tipos de prácticas');
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Desactivación Masiva",
+      title: `Confirmar desactivación masiva`,
       message: `¿Estás seguro de que deseas desactivar los ${ids.length} tipos de prácticas seleccionados?`,
       onConfirm: async () => {
         try {
@@ -462,7 +433,7 @@ export default function CareersPage() {
         }
       },
       confirmText: "Desactivar Todos",
-      variant: "error",
+      variant: config.variant as DialogVariant,
     });
   };
 
@@ -471,9 +442,10 @@ export default function CareersPage() {
    * @param {(string | number)[]} ids - Lista de IDs de carreras a restaurar.
    */
   const handleBulkRestore = (ids: (string | number)[]) => {
+    const config = CONFIRM_MESSAGES.activate('las carreras');
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Restauración Masiva",
+      title: `Confirmar restauración masiva`,
       message: `¿Estás seguro de que deseas restaurar las ${ids.length} carreras seleccionadas?`,
       onConfirm: async () => {
         try {
@@ -493,9 +465,10 @@ export default function CareersPage() {
    * Ejecuta la restauración masiva de tipos de prácticas.
    */
   const handleBulkRestoreTypes = (ids: number[]) => {
+    const config = CONFIRM_MESSAGES.activate('los tipos de prácticas');
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Restauración Masiva",
+      title: 'Confirmar restauración masiva',
       message: `¿Estás seguro de que deseas restaurar los ${ids.length} tipos de prácticas seleccionados?`,
       onConfirm: async () => {
         try {
@@ -507,7 +480,7 @@ export default function CareersPage() {
         }
       },
       confirmText: "Restaurar Todos",
-      variant: "success",
+      variant: config.variant as DialogVariant,
     });
   };
 

@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import Button from "../../../components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
@@ -87,7 +88,10 @@ interface ActionButtonsProps {
   onInactivate?: () => void;
   onWithdrawJustified?: () => void;
   onWithdrawUnjustified?: () => void;
+  onReactivate?: () => void;
   status: boolean;
+  recordType?: string;
+  withdrawalType?: string;
   enrollmentId?: string;
   studentName?: string;
   isMobile?: boolean;
@@ -104,11 +108,16 @@ const ActionButtons = ({
   onInactivate,
   onWithdrawJustified,
   onWithdrawUnjustified,
+  onReactivate,
   status,
+  recordType,
+  withdrawalType,
   isMobile = false,
   canEdit = false,
 }: ActionButtonsProps) => {
   const [kebabOpen, setKebabOpen] = useState(false);
+  const [kebabPos, setKebabPos] = useState({ top: 0, left: 0 });
+  const kebabBtnRef = useRef<HTMLButtonElement>(null);
   const kebabRef = useRef<HTMLDivElement>(null);
 
   // Cerrar kebab al hacer click fuera
@@ -122,9 +131,59 @@ const ActionButtons = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const toggleKebab = useCallback(() => {
+    if (!kebabOpen && kebabBtnRef.current) {
+      const rect = kebabBtnRef.current.getBoundingClientRect();
+      setKebabPos({ top: rect.bottom + 4, left: rect.right - 200 });
+    }
+    setKebabOpen(prev => !prev);
+  }, [kebabOpen]);
+
+  const closeKebab = useCallback(() => setKebabOpen(false), []);
+
+  const renderKebabItems = () => (
+    <>
+      {onInactivate && (
+        <button
+          onClick={() => { closeKebab(); onInactivate!(); }}
+          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
+        >
+          <TrashIcon className="w-4 h-4 text-warning-500" />
+          <span>Inactivar</span>
+        </button>
+      )}
+      {onWithdrawJustified && (
+        <button
+          onClick={() => { closeKebab(); onWithdrawJustified!(); }}
+          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-blue-500">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+          <span>Retiro Justificado</span>
+        </button>
+      )}
+      {onWithdrawUnjustified && (
+        <button
+          onClick={() => { closeKebab(); onWithdrawUnjustified!(); }}
+          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-error-500">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 14.25 12 18l3.75-3.75M12 18V11.25" />
+          </svg>
+          <span>Abandono</span>
+        </button>
+      )}
+    </>
+  );
+
   const containerClasses = isMobile
     ? "flex flex-col gap-3 pt-2"
     : "flex justify-end gap-3";
+
+  const isWithdrawn = recordType === 'withdrawn';
+  const isInactivated = recordType === 'inactivated';
 
   return (
     <div className={containerClasses}>
@@ -138,17 +197,8 @@ const ActionButtons = ({
           fullWidth={isMobile}
         />
       )}
-      {canEdit && status && onEdit && (
-        <AsyncActionButton
-          onClick={async () => onEdit()}
-          icon={<EditIcon />}
-          tooltip="Editar"
-          label={isMobile ? "Editar Inscripción" : undefined}
-          variant="primary"
-          fullWidth={isMobile}
-        />
-      )}
-      {onViewHistory && (
+
+      {!isInactivated && onViewHistory && (
         <AsyncActionButton
           onClick={async () => onViewHistory()}
           icon={
@@ -163,55 +213,77 @@ const ActionButtons = ({
         />
       )}
 
-      {/* Kebab menu */}
-      <div className="relative" ref={kebabRef}>
+      {/* ── Withdrawn: badge + no actions ── */}
+      {isWithdrawn && (
+        <span className={cn(
+          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap",
+          withdrawalType === 'justified'
+            ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400"
+            : "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400"
+        )}>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+          </svg>
+          {withdrawalType === 'justified' ? 'Retiro Justificado' : 'Abandono'}
+        </span>
+      )}
+
+      {/* ── Inactivated: Reactivar button ── */}
+      {isInactivated && onReactivate && (
         <AsyncActionButton
-          onClick={async () => setKebabOpen(!kebabOpen)}
-          icon={<ThreeDotsIcon />}
-          tooltip="Acciones"
-          variant="info"
+          onClick={async () => onReactivate()}
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          }
+          tooltip="Reactivar inscripción"
+          label={isMobile ? "Reactivar" : undefined}
+          variant="success"
           fullWidth={isMobile}
         />
-        {kebabOpen && (
-          <div className={cn(
-            "absolute z-50 min-w-[200px] bg-white dark:bg-bg-dark rounded-xl border border-border-light dark:border-white/10 shadow-lg py-1",
-            isMobile ? "static mt-1" : "right-0 top-full"
-          )}>
-            {onInactivate && (
-              <button
-                onClick={() => { setKebabOpen(false); onInactivate(); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
+      )}
+
+      {/* ── Active: edit + kebab ── */}
+      {!isWithdrawn && !isInactivated && canEdit && onEdit && (
+        <AsyncActionButton
+          onClick={async () => onEdit()}
+          icon={<EditIcon />}
+          tooltip="Editar"
+          label={isMobile ? "Editar Inscripción" : undefined}
+          variant="primary"
+          fullWidth={isMobile}
+        />
+      )}
+
+      {!isWithdrawn && !isInactivated && (
+        <div className={isMobile ? "" : "relative"} ref={kebabRef}>
+          <AsyncActionButton
+            ref={kebabBtnRef}
+            onClick={async () => toggleKebab()}
+            icon={<ThreeDotsIcon />}
+            tooltip="Acciones"
+            variant="info"
+            fullWidth={isMobile}
+          />
+          {kebabOpen && (
+            isMobile ? (
+              <div className="min-w-[200px] bg-white dark:bg-bg-dark rounded-xl border border-border-light dark:border-white/10 shadow-lg py-1 mt-1">
+                {renderKebabItems()}
+              </div>
+            ) : createPortal(
+              <div
+                ref={kebabRef}
+                className="fixed z-[9999] min-w-[200px] bg-white dark:bg-bg-dark rounded-xl border border-border-light dark:border-white/10 shadow-lg py-1"
+                style={{ top: kebabPos.top, left: kebabPos.left }}
               >
-                <TrashIcon className="w-4 h-4 text-warning-500" />
-                <span>Inactivar</span>
-              </button>
-            )}
-            {onWithdrawJustified && (
-              <button
-                onClick={() => { setKebabOpen(false); onWithdrawJustified(); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-blue-500">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-                <span>Retiro Justificado</span>
-              </button>
-            )}
-            {onWithdrawUnjustified && (
-              <button
-                onClick={() => { setKebabOpen(false); onWithdrawUnjustified(); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-error-500">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 14.25 12 18l3.75-3.75M12 18V11.25" />
-                </svg>
-                <span>Abandono</span>
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+                {renderKebabItems()}
+              </div>,
+              document.body
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -228,6 +300,7 @@ export default function EnrollmentTable({
   error,
   onEdit,
   onInactivate,
+  onReactivate,
   onWithdrawJustified,
   onWithdrawUnjustified,
   onView,
@@ -305,7 +378,9 @@ export default function EnrollmentTable({
             const matchesPeriod = !periodSearch || s.period.toLowerCase() === periodSearch;
             const matchesPracticeType = !practiceTypeSearch || s.practiceType.toLowerCase() === practiceTypeSearch;
             const matchesCareer = !careerSearch || (s.careerName || "").toLowerCase().includes(careerSearch);
-            const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
+            const matchesTab = activeTab === "Activas"
+              ? s.recordType === 'active'
+              : s.recordType === 'inactivated' || s.recordType === 'withdrawn';
 
             return matchesSearch && matchesPeriod && matchesPracticeType && matchesCareer && matchesTab;
         });
@@ -574,7 +649,7 @@ export default function EnrollmentTable({
 
             {/* Desktop View (Table) */}
             <div className="hidden md:block max-w-full overflow-x-auto table-scrollbar">
-                <Table className="table-root">
+                <Table className="table-root overflow-visible" responsive={false}>
                     <TableHeader className="table-header-row">
                         <TableRow>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("studentName")}>
@@ -640,7 +715,7 @@ export default function EnrollmentTable({
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.period}
                                     </TableCell>
-                                    <TableCell className="table-cell text-right">
+                                    <TableCell className="table-cell text-right overflow-visible">
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
@@ -648,7 +723,10 @@ export default function EnrollmentTable({
                                             onInactivate={onInactivate ? () => onInactivate(s) : undefined}
                                             onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
                                             onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
+                                            onReactivate={onReactivate ? () => onReactivate(s) : undefined}
                                             status={s.status}
+                                            recordType={s.recordType}
+                                            withdrawalType={s.withdrawalType}
                                             canEdit={!!onEdit}
                                         />
                                     </TableCell>
@@ -659,7 +737,7 @@ export default function EnrollmentTable({
                                 <TableCell colSpan={9} className="p-0">
                                     <EmptyState
                                         title="No se encontraron inscripciones"
-                                        description={searchTerm || periodFilter ? "Pruebe ajustando sus filtros de búsqueda." : "No hay registros de inscripciones para mostrar."}
+                                        description={searchTerm || periodFilter ? "Intenta ajustar los filtros para encontrar lo que buscas." : "No hay registros de inscripciones para mostrar."}
                                     />
                                 </TableCell>
                             </TableRow>
@@ -731,7 +809,10 @@ export default function EnrollmentTable({
                                             onInactivate={onInactivate ? () => onInactivate(s) : undefined}
                                             onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
                                             onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
+                                            onReactivate={onReactivate ? () => onReactivate(s) : undefined}
                                             status={s.status}
+                                            recordType={s.recordType}
+                                            withdrawalType={s.withdrawalType}
                                             canEdit={!!onEdit}
                                             isMobile={true}
                                         />
@@ -744,7 +825,7 @@ export default function EnrollmentTable({
                     <div className="py-20 text-center animate-fadeIn">
                         <EmptyState
                             title="No se encontraron inscripciones"
-                            description={searchTerm || periodFilter ? "Pruebe ajustando sus filtros de búsqueda." : "No hay registros de inscripciones para mostrar."}
+                            description={searchTerm || periodFilter ? "Intenta ajustar los filtros para encontrar lo que buscas." : "No hay registros de inscripciones para mostrar."}
                         />
                     </div>
                 )}

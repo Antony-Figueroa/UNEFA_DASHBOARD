@@ -25,6 +25,7 @@ import { Career } from "../../careers/types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
+import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { matchSearch } from "../../../utils/searchNormalizer";
 
 /**
@@ -256,12 +257,22 @@ export default function InternshipTypeTable({
               {paged.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-12 text-center text-text-secondary dark:text-text-tertiary">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <svg className="w-8 h-8 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      No se encontraron tipos de práctica profesional
-                    </div>
+                    <EmptyState
+                      title={
+                        inactiveMode
+                          ? "No hay tipos de práctica inactivos"
+                          : searchTerm
+                          ? "No se encontraron tipos de práctica"
+                          : "No hay tipos de práctica registrados"
+                      }
+                      description={
+                        inactiveMode
+                          ? "Los tipos de práctica inactivos aparecerán aquí después de ser desactivados."
+                          : searchTerm
+                          ? "Intenta ajustar los filtros para encontrar lo que buscas."
+                          : "Comienza agregando uno nuevo."
+                      }
+                    />
                   </TableCell>
                 </TableRow>
               ) : (

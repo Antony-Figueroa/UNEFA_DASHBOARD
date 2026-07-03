@@ -38,6 +38,7 @@ import {
 import { CareerRowData } from "../types";
 import { InternshipTypeOption } from "../../internship-types/types";
 import { CrudStatus } from "../../../hooks/useCrud";
+import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { toTitleCase } from "../../../utils/textFormat";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
@@ -615,27 +616,29 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
             ) : (
               <TableRow>
                 <TableCell className="table-cell py-24 text-center" colSpan={6}>
-                  <div className="flex flex-col items-center justify-center animate-fadeIn">
-                    <div className="mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
-                      <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                    </div>
-                    <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron carreras</h3>
-                    <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-            {(searchTerm || practiceTypeFilter !== "" || careerTypeFilter !== "") && (
-                      <button
-                        onClick={() => {
-                          onSearchChange?.("");
-                          setPracticeTypeFilter("");
-                          setCareerTypeFilter("");
-                        }}
-                        className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
-                      >
-                        Ver todas las carreras
-                      </button>
-                    )}
-                  </div>
+                  <EmptyState
+                      title={
+                        inactiveMode
+                          ? "No hay carreras inactivas"
+                          : searchTerm || practiceTypeFilter !== "" || careerTypeFilter !== ""
+                          ? "No se encontraron carreras"
+                          : "No hay carreras registradas"
+                      }
+                      description={
+                        inactiveMode
+                          ? "Las carreras inactivas aparecerán aquí después de ser desactivadas."
+                          : searchTerm || practiceTypeFilter !== "" || careerTypeFilter !== ""
+                          ? "Intenta ajustar los filtros para encontrar lo que buscas."
+                          : "Comienza agregando una nueva."
+                      }
+                      action={
+                        !inactiveMode && (searchTerm || practiceTypeFilter !== "" || careerTypeFilter !== "") ? (
+                          <Button variant="ghost" onClick={() => { onSearchChange?.(""); setPracticeTypeFilter(""); setCareerTypeFilter(""); }}>
+                            Ver todas las carreras
+                          </Button>
+                        ) : undefined
+                      }
+                  />
                 </TableCell>
               </TableRow>
             )}
@@ -750,27 +753,29 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
             );
           })
         ) : (
-          <div className="py-20 text-center animate-fadeIn">
-            <div className="inline-flex mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
-              <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron carreras</h3>
-            <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-            {(searchTerm || practiceTypeFilter !== "" || careerTypeFilter !== "") && (
-              <button
-                onClick={() => {
-                  onSearchChange?.("");
-                  setPracticeTypeFilter("");
-                  setCareerTypeFilter("");
-                }}
-                className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
-              >
-                Ver todas las carreras
-              </button>
-            )}
-          </div>
+          <EmptyState
+              title={
+                inactiveMode
+                  ? "No hay carreras inactivas"
+                  : searchTerm || practiceTypeFilter !== "" || careerTypeFilter !== ""
+                  ? "No se encontraron carreras"
+                  : "No hay carreras registradas"
+              }
+              description={
+                inactiveMode
+                  ? "Las carreras inactivas aparecerán aquí después de ser desactivadas."
+                  : searchTerm || practiceTypeFilter !== "" || careerTypeFilter !== ""
+                  ? "Intenta ajustar los filtros para encontrar lo que buscas."
+                  : "Comienza agregando una nueva."
+              }
+              action={
+                !inactiveMode && (searchTerm || practiceTypeFilter !== "" || careerTypeFilter !== "") ? (
+                  <Button variant="ghost" onClick={() => { onSearchChange?.(""); setPracticeTypeFilter(""); setCareerTypeFilter(""); }}>
+                    Ver todas las carreras
+                  </Button>
+                ) : undefined
+              }
+          />
         )}
       </div>
 

@@ -420,10 +420,10 @@ export default function InstitutionTable({
                 <TableRow>
                     <TableCell colSpan={8} className="p-0">
                         <EmptyState
-                            title="No se encontraron empresas o instituciones"
+                            title={searchTerm ? "No se encontraron empresas o instituciones" : "No hay empresas o instituciones registradas"}
                             description={searchTerm
                                 ? "Intenta ajustar los filtros para encontrar lo que buscas."
-                                : "Aún no hay empresas o instituciones registradas en esta categoría."}
+                                : "Comienza agregando una nueva."}
                         />
                     </TableCell>
                 </TableRow>
@@ -501,10 +501,10 @@ export default function InstitutionTable({
             })
         ) : (
             <EmptyState
-                title="No se encontraron empresas o instituciones"
+                title={searchTerm ? "No se encontraron empresas o instituciones" : "No hay empresas o instituciones registradas"}
                 description={searchTerm
                     ? "Intenta ajustar los filtros para encontrar lo que buscas."
-                    : "Aún no hay empresas o instituciones registradas en esta categoría."}
+                    : "Comienza agregando una nueva."}
             />
         )}
       </div>

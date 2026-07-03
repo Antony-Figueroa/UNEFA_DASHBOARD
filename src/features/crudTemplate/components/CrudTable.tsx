@@ -7,6 +7,7 @@ import { SearchInput } from "../../../components/common/SearchInput";
 import type { CrudColumn, CrudFilterConfig, CrudFilterState, CrudActionConfig, CrudRowAction } from "../types";
 import { TrashIcon, RefreshIcon, EditIcon, EyeIcon } from "../../../icons/actions";
 import { matchSearch } from "../../../utils/searchNormalizer";
+import { EmptyState } from "../../../components/ui/table/EmptyState";
 
 export interface CrudTableProps<TItem extends { id: string }> {
   items: TItem[];
@@ -409,11 +410,11 @@ export function CrudTable<TItem extends { id: string }>({
               </TableRow>
             ) : pageItems.length === 0 ? (
               <TableRow>
-                <TableCell
-                  className="table-cell py-6 text-center text-text-secondary dark:text-text-tertiary"
-                  colSpan={columns.length + 1}
-                >
-                  No hay datos para mostrar.
+                <TableCell className="table-cell py-6 text-center" colSpan={columns.length + 1}>
+                  <EmptyState
+                    title="No hay datos para mostrar"
+                    description="No se encontraron registros con los filtros actuales."
+                  />
                 </TableCell>
               </TableRow>
             ) : (

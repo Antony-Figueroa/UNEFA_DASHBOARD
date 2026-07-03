@@ -545,10 +545,12 @@ export default function InstitutionalResponsibleTable({
               <TableRow>
                 <TableCell colSpan={8} className="p-0">
                   <EmptyState
-                    title="No se encontraron responsables"
+                    title={filters.search || filters.institution !== "all" || filters.dateFrom || filters.dateTo
+                      ? "No se encontraron responsables"
+                      : "No hay responsables registrados"}
                     description={filters.search || filters.institution !== "all" || filters.dateFrom || filters.dateTo
                       ? "Intenta ajustar los filtros para encontrar lo que buscas."
-                      : "Aún no hay responsables registrados en esta categoría."}
+                      : "Comienza agregando uno nuevo."}
                   />
                 </TableCell>
               </TableRow>
@@ -654,10 +656,12 @@ export default function InstitutionalResponsibleTable({
           })
         ) : (
           <EmptyState
-            title="No se encontraron responsables"
+            title={filters.search || filters.institution !== "all" || filters.dateFrom || filters.dateTo
+              ? "No se encontraron responsables"
+              : "No hay responsables registrados"}
             description={filters.search || filters.institution !== "all" || filters.dateFrom || filters.dateTo
               ? "Intenta ajustar los filtros para encontrar lo que buscas."
-              : "Aún no hay responsables registrados en esta categoría."}
+              : "Comienza agregando uno nuevo."}
           />
         )}
       </div>

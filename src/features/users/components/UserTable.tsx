@@ -5,6 +5,8 @@
 
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import { EmptyState } from "../../../components/ui/table/EmptyState";
+import Button from "../../../components/ui/button/Button";
 import { EditIcon, TrashIcon, RefreshIcon, ChevronDownIcon, KeyIcon, EyeIcon } from "../../../icons/actions";
 import { UserRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
@@ -332,8 +334,24 @@ export default function UserTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="table-cell py-12 text-center text-text-tertiary">
-                                    No se encontraron usuarios.
+                                <TableCell colSpan={6} className="table-cell py-12 text-center">
+                                    <EmptyState
+                                        title={
+                                            filters.ci || filters.name || filters.surname || filters.role
+                                                ? "No se encontraron usuarios"
+                                                : "No hay usuarios registrados"
+                                        }
+                                        description={
+                                            filters.ci || filters.name || filters.surname || filters.role
+                                                ? "Intenta ajustar los filtros para encontrar lo que buscas."
+                                                : "Comienza agregando uno nuevo."
+                                        }
+                                        action={
+                                            (filters.ci || filters.name || filters.surname || filters.role) ? (
+                                                <Button variant="ghost" onClick={onClearFilters}>Ver todos los usuarios</Button>
+                                            ) : undefined
+                                        }
+                                    />
                                 </TableCell>
                             </TableRow>
                         )}
@@ -384,23 +402,23 @@ export default function UserTable({
                         </div>
                     ))
                 ) : (
-                    <div className="py-16 text-center animate-fadeIn">
-                        <div className="inline-flex mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
-                            <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                        <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron usuarios</h3>
-                        <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                        {(filters.ci || filters.name || filters.surname || filters.role) && (
-                            <button
-                                onClick={onClearFilters}
-                                className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
-                            >
-                                Ver todos los usuarios
-                            </button>
-                        )}
-                    </div>
+                    <EmptyState
+                        title={
+                            filters.ci || filters.name || filters.surname || filters.role
+                                ? "No se encontraron usuarios"
+                                : "No hay usuarios registrados"
+                        }
+                        description={
+                            filters.ci || filters.name || filters.surname || filters.role
+                                ? "Intenta ajustar los filtros para encontrar lo que buscas."
+                                : "Comienza agregando uno nuevo."
+                        }
+                        action={
+                            (filters.ci || filters.name || filters.surname || filters.role) ? (
+                                <Button variant="ghost" onClick={onClearFilters}>Ver todos los usuarios</Button>
+                            ) : undefined
+                        }
+                    />
                 )}
             </div>
 

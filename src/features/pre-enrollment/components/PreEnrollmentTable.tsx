@@ -626,8 +626,8 @@ export default function PreEnrollmentTable({
                                         title="No se encontraron pre-inscripciones"
                                         description={
                                             searchTerm || periodFilter || practiceTypeFilter || careerFilter
-                                                ? "No se encontraron pre-inscripciones con los filtros aplicados. Intenta con otros términos."
-                                                : "No hay pre-inscripciones registradas en el sistema actualmente."
+                                                ? "Intenta ajustar los filtros para encontrar lo que buscas."
+                                                : "Comienza creando una nueva pre-inscripción."
                                         }
                                         action={
                                             searchTerm || periodFilter || practiceTypeFilter || careerFilter ? (
@@ -716,8 +716,8 @@ export default function PreEnrollmentTable({
                             title="No se encontraron pre-inscripciones"
                             description={
                                 searchTerm || periodFilter || practiceTypeFilter || careerFilter
-                                    ? "No se encontraron pre-inscripciones con los filtros aplicados. Intenta ajustar los términos."
-                                    : "No hay pre-inscripciones registradas en el sistema actualmente."
+                                    ? "Intenta ajustar los filtros para encontrar lo que buscas."
+                                    : "Comienza creando una nueva pre-inscripción."
                             }
                             action={
                                 (searchTerm || periodFilter || practiceTypeFilter || careerFilter) ? (

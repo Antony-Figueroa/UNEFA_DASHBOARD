@@ -3,7 +3,8 @@ import * as XLSX from "xlsx";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import { prospectsService } from "../services/prospectsService";
-import toast from "react-hot-toast";
+import { useToast } from "@/context/toast";
+import { TOAST } from "@/components/ui/dialog/DialogConfig";
 
 interface ImportRow {
   rowIndex: number;
@@ -18,6 +19,7 @@ interface ImportButtonProps {
 }
 
 export function ImportButton({ listId, periodId, onImportComplete }: ImportButtonProps) {
+  const { addToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [parsedRows, setParsedRows] = useState<ImportRow[]>([]);
@@ -34,14 +36,14 @@ export function ImportButton({ listId, periodId, onImportComplete }: ImportButto
       const json: Record<string, any>[] = XLSX.utils.sheet_to_json(sheet);
 
       if (json.length === 0) {
-        toast.error("El archivo no contiene datos");
+        addToast({ variant: "error", title: "Sin datos", message: "El archivo no contiene datos" });
         return;
       }
 
       const rows: ImportRow[] = json.map((row, i) => ({
         rowIndex: i + 1,
         ci: String(
-          row.ci || row.CI || row.Cédula || row.Cedula || row.cedula ||
+          row.ci || row.CI || row.cedula || row.Cedula ||
           row.identificacion || row.identification || Object.values(row)[0] || ""
         ),
         name: String(
@@ -53,7 +55,7 @@ export function ImportButton({ listId, periodId, onImportComplete }: ImportButto
       setParsedRows(rows);
       setShowPreview(true);
     } catch (error) {
-      toast.error("Error al leer el archivo. Asegurate de que sea un .xlsx o .csv válido.");
+      addToast({ variant: "error", title: "Error al leer", message: "Error al leer el archivo. Asegurate de que sea un .xlsx o .csv válido." });
       console.error("[ImportButton] Error parsing file:", error);
     }
 
@@ -94,21 +96,19 @@ export function ImportButton({ listId, periodId, onImportComplete }: ImportButto
       }
 
       if (matchedIds.length === 0) {
-        toast.error("No se encontraron estudiantes para importar");
+        addToast({ variant: "error", title: "Sin resultados", message: "No se encontraron estudiantes para importar" });
         return;
       }
 
       await prospectsService.bulkAddListItems(listId, matchedIds);
 
-      toast.success(
-        `${matchedIds.length} estudiante${matchedIds.length !== 1 ? "s" : ""} importado${matchedIds.length !== 1 ? "s" : ""}${notFound > 0 ? `, ${notFound} omitido${notFound !== 1 ? "s" : ""} (no encontrados)` : ""}`
-      );
+      addToast({ variant: "success", title: "Importado", message: `${matchedIds.length} estudiante${matchedIds.length !== 1 ? "s" : ""} importado${matchedIds.length !== 1 ? "s" : ""}${notFound > 0 ? `, ${notFound} omitido${notFound !== 1 ? "s" : ""} (no encontrados)` : ""}` });
 
       setShowPreview(false);
       onImportComplete();
     } catch (error: any) {
       const message = error.response?.data?.message || "Error al importar estudiantes";
-      toast.error(message);
+      addToast({ variant: "error", title: "Error al importar", message });
       console.error("[ImportButton] Error importing:", error);
     } finally {
       setImporting(false);
@@ -117,51 +117,57 @@ export function ImportButton({ listId, periodId, onImportComplete }: ImportButto
 
   return (
     <>
+
       <input
-        ref={fileInputRef}
         type="file"
-        accept=".xlsx,.csv"
-        className="hidden"
+        accept=".xlsx,.xls,.csv"
         onChange={handleFileSelect}
+        ref={fileInputRef}
+        style={{ display: 'none' }}
       />
-      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-        Importar Excel
+
+      <Button
+        onClick={() => fileInputRef.current?.click()}
+        variant="outline"
+        size="sm"
+      >
+        Importar
       </Button>
 
-      <Modal isOpen={showPreview} onClose={() => !importing && setShowPreview(false)} size="lg">
-        <ModalHeader>Vista previa de importación</ModalHeader>
+      <Modal isOpen={showPreview} onClose={() => setShowPreview(false)} size="lg">
+        <ModalHeader>
+          <h3>Vista previa de importación</h3>
+        </ModalHeader>
         <ModalBody>
-          <p className="text-sm text-text-secondary mb-4">
-            Se encontraron {parsedRows.length} filas en el archivo. Al confirmar se buscarán los estudiantes por CI
-            para agregarlos a la lista.
-          </p>
-          <div className="max-h-64 overflow-y-auto border border-border-light dark:border-border-dark rounded-lg">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-white/5 sticky top-0">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-bold text-text-tertiary uppercase tracking-wider">N°</th>
-                  <th className="px-3 py-2 text-left text-xs font-bold text-text-tertiary uppercase tracking-wider">CI</th>
-                  <th className="px-3 py-2 text-left text-xs font-bold text-text-tertiary uppercase tracking-wider">Nombre</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-light dark:divide-border-dark">
-                {parsedRows.map((row) => (
-                  <tr key={row.rowIndex} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                    <td className="px-3 py-2 text-text-tertiary">{row.rowIndex}</td>
-                    <td className="px-3 py-2 font-mono text-sm">{row.ci || "—"}</td>
-                    <td className="px-3 py-2 text-sm">{row.name || "—"}</td>
+          {parsedRows.length === 0 ? (
+            <p className="text-gray-500 dark:text-gray-400">No se pudieron leer datos del archivo.</p>
+          ) : (
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-2 px-3">#</th>
+                    <th className="text-left py-2 px-3">CI</th>
+                    <th className="text-left py-2 px-3">Nombre</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {parsedRows.map((row) => (
+                    <tr key={row.rowIndex} className="border-b border-gray-100 dark:border-gray-800">
+                      <td className="py-2 px-3">{row.rowIndex}</td>
+                      <td className="py-2 px-3">{row.ci}</td>
+                      <td className="py-2 px-3">{row.name}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </ModalBody>
         <ModalFooter>
-          <Button variant="outline" onClick={() => setShowPreview(false)} disabled={importing}>
-            Cancelar
-          </Button>
-          <Button variant="primary" onClick={handleConfirmImport} loading={importing} loadingText="Importando...">
-            Importar {parsedRows.length} estudiante{parsedRows.length !== 1 ? "s" : ""}
+          <Button variant="outline" onClick={() => setShowPreview(false)}>Cancelar</Button>
+          <Button onClick={handleConfirmImport} disabled={importing || parsedRows.length === 0}>
+            {importing ? "Importando..." : `Importar ${parsedRows.length} registro${parsedRows.length !== 1 ? "s" : ""}`}
           </Button>
         </ModalFooter>
       </Modal>

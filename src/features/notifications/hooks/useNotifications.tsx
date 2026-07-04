@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import toast from 'react-hot-toast';
-import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import {
   notificationService,
   connectToNotificationStream,
@@ -24,6 +24,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
   // isReady solo necesita que el usuario esté autenticado y que auth no esté cargando
   const isReady = isAuthenticated && !authLoading;
   
+  const { addToast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -79,7 +80,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error('[useNotifications] Error marking as read:', error);
-      toast.error(TOAST_ERROR.update(resourceName));
+      addToast(TOAST.updateError(resourceName));
     }
   }, [isReady]);
 
@@ -94,10 +95,10 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       );
       
       setUnreadCount(0);
-      toast.success(TOAST_SUCCESS.updated(resourceName));
+      addToast(TOAST.updated(resourceName));
     } catch (error) {
       console.error('[useNotifications] Error marking all as read:', error);
-      toast.error(TOAST_ERROR.update(resourceName));
+      addToast(TOAST.updateError(resourceName));
     }
   }, [isReady]);
 
@@ -115,7 +116,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       }
     } catch (error) {
       console.error('[useNotifications] Error deleting notification:', error);
-      toast.error(TOAST_ERROR.delete(resourceName));
+      addToast(TOAST.deleteError(resourceName));
     }
   }, [notifications, isReady]);
 

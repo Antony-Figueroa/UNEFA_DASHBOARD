@@ -10,8 +10,8 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import toast from 'react-hot-toast';
-import { TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import chatConfigService from '../services/chatConfigService';
 
 // ============================================
@@ -70,6 +70,7 @@ export const useChatConfig = () => {
   const [config, setConfig] = useState<ChatConfig>(DEFAULT_CONFIG);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const { addToast } = useToast();
 
   // Cargar configuración desde el backend al iniciar
   useEffect(() => {
@@ -104,7 +105,7 @@ export const useChatConfig = () => {
       await chatConfigService.saveConfig(newConfig);
     } catch (error) {
       console.error('[useChatConfig] Error saving to DB:', error);
-      toast.error(TOAST_ERROR.update('Configuración'));
+      addToast(TOAST.updateError('Configuración'));
     } finally {
       setIsSaving(false);
     }

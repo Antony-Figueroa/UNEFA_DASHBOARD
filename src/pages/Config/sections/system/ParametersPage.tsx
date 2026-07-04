@@ -7,7 +7,8 @@ import Button from "../../../../components/ui/button/Button";
 import Badge from "../../../../components/ui/badge/Badge";
 import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
 import { configService, ConfigItem, CategorizedConfig } from "../../../../features/config/services/configService";
-import toast from "react-hot-toast";
+import { useToast } from "../../../../context/toast";
+import { TOAST } from "../../../../components/ui/dialog/DialogConfig";
 import ConfigLayout from "../../ConfigLayout";
 
 // ponytail: lookup table en vez de 6 condicionales inline con SVGs repetidos
@@ -22,6 +23,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default function ParametersPage() {
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<CategorizedConfig[]>([]);
   const [activeCategory, setActiveCategory] = useState("");
@@ -40,7 +42,7 @@ export default function ParametersPage() {
       }
     } catch (error) {
       console.error('Error fetching config:', error);
-      toast.error('Error al cargar la configuración');
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -71,11 +73,11 @@ export default function ParametersPage() {
           await configService.updateConfig(localChanges);
           setHasChanges(false);
           setLocalChanges({});
-          toast.success('Configuración guardada correctamente');
+          addToast({ variant: "success", title: "Configuración guardada", message: "La configuración se guardó correctamente." });
           await fetchConfig();
         } catch (error) {
           console.error('Error saving config:', error);
-          toast.error('Error al guardar la configuración');
+          addToast(TOAST.updateError('configuración'));
         } finally {
           hideConfirm();
         }

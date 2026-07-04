@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
 
-import toast from 'react-hot-toast';
-import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import reportsService, { PracticeSearchResult, TutorSearchResult } from '../services/reportsService';
 import type { EligibleStudent } from '../../prospectos/types';
 
@@ -122,6 +122,7 @@ interface DocumentReportModalProps {
 }
 
 export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentReportModalProps) {
+  const { addToast } = useToast();
   const config = DOCUMENT_CONFIG[documentType];
   const isPracticeDoc = PRACTICE_DOCS.has(documentType);
   const isTutorDoc = TUTOR_DOCS.has(documentType);
@@ -167,7 +168,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
     e.preventDefault();
     const id = parseInt(recordId, 10);
     if (!id || id <= 0) {
-      toast.error('Ingrese un ID válido');
+      addToast({ variant: "error", title: "Dato inválido", message: "Ingrese un ID válido" });
       return;
     }
     setLoading(true);
@@ -177,7 +178,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
         getAllDocumentTexts(),
       ]);
       if (!response?.success || !response?.data) {
-        toast.error(response?.message || 'No se encontraron datos');
+        addToast({ variant: "error", title: "Sin datos", message: response?.message || 'No se encontraron datos' });
         return;
       }
       const dbKey = documentType.replace(/-/g, '_');
@@ -185,7 +186,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
       setPdfData(response.data);
       setShowPdf(true);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || TOAST_ERROR.load(resourceName));
+      addToast(error?.response?.data?.message ? { variant: "error", title: "Error al cargar", message: error.response.data.message } : { ...TOAST.loadError(), message: `Error al cargar ${resourceName.toLowerCase()}. Intentá de nuevo.` });
     } finally {
       setLoading(false);
     }

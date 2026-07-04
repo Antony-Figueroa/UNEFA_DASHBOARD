@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import toast from "react-hot-toast";
+import { useToast } from "@/context/toast";
+import { TOAST } from "@/components/ui/dialog/DialogConfig";
 
 interface UseConfigSaveOptions {
   onSuccess?: () => void;
@@ -15,6 +16,7 @@ interface UseConfigSaveOptions {
  * @returns { saving, hasChanges, setHasChanges, save }
  */
 export function useConfigSave(options?: UseConfigSaveOptions) {
+  const { addToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -24,11 +26,11 @@ export function useConfigSave(options?: UseConfigSaveOptions) {
       try {
         await fn();
         setHasChanges(false);
-        toast.success(options?.successMessage || "Guardado exitosamente");
+        addToast({ variant: "success", title: "Guardado", message: options?.successMessage || "Guardado exitosamente" });
         options?.onSuccess?.();
       } catch (err: any) {
         const msg = err?.response?.data?.message || "Error al guardar";
-        toast.error(msg);
+        addToast({ variant: "error", title: "Error al guardar", message: msg });
         throw err;
       } finally {
         setSaving(false);

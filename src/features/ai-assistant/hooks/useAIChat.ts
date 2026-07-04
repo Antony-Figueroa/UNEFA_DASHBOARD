@@ -8,8 +8,8 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import toast from 'react-hot-toast';
-import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import { streamChatFromBackend } from '../services/BackendChatService';
 import * as chatSessionsService from '../services/chatSessionsService';
 import { notifyNewMessage, requestNotificationPermission } from '../services/notificationService';
@@ -44,6 +44,7 @@ export const useAIChat = (): UseAIChatReturn => {
   const [suggestions, setSuggestions] = useState<string[]>(DEFAULT_SUGGESTIONS);
   const [currentSession, setCurrentSession] = useState<any | null>(null);
   const [sessions, setSessions] = useState<any[]>([]);
+  const { addToast } = useToast();
 
   // ============================================
   // Effects - Cargar sesiones al inicio
@@ -90,7 +91,7 @@ export const useAIChat = (): UseAIChatReturn => {
       }
     } catch (error) {
       console.error('[useAIChat] Error loading session:', error);
-      toast.error(TOAST_ERROR.load('Sesión'));
+      addToast(TOAST.loadError());
     }
   }, []);
 
@@ -104,12 +105,12 @@ export const useAIChat = (): UseAIChatReturn => {
         setCurrentSession(newSession);
         setMessages([]);
         setSessions(prev => [newSession, ...prev]);
-        toast.success(TOAST_SUCCESS.created('Conversación'));
+        addToast(TOAST.created('Conversación'));
         return newSession;
       }
     } catch (error) {
       console.error('[useAIChat] Error creating session:', error);
-      toast.error(TOAST_ERROR.create('Sesión'));
+      addToast(TOAST.createError('Sesión'));
     }
     return null;
   }, []);
@@ -145,7 +146,7 @@ export const useAIChat = (): UseAIChatReturn => {
         }
       } catch (error) {
         console.error('[useAIChat] Error creating session:', error);
-        toast.error(TOAST_ERROR.create('Sesión'));
+        addToast(TOAST.createError('Sesión'));
       }
       return;
     }
@@ -190,11 +191,11 @@ export const useAIChat = (): UseAIChatReturn => {
           setCurrentSession(null);
           setMessages([]);
         }
-        toast.success(TOAST_SUCCESS.deleted('Sesión'));
+        addToast(TOAST.deleted('Sesión'));
       }
     } catch (error) {
       console.error('[useAIChat] Error deleting session:', error);
-      toast.error(TOAST_ERROR.delete('Sesión'));
+      addToast(TOAST.deleteError('Sesión'));
     }
   }, [currentSession]);
 
@@ -339,7 +340,7 @@ export const useAIChat = (): UseAIChatReturn => {
         )
       );
 
-      toast.error(errorMessage);
+      addToast({ variant: 'error', title: 'Error al comunicarse', message: errorMessage });
     } finally {
       setIsLoading(false);
       setIsStreaming(false);

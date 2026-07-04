@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import toast from "react-hot-toast";
+import { useToast } from "../../context/toast";
+import { TOAST } from "../../components/ui/dialog/DialogConfig";
 import { Modal } from "../../components/ui/modal";
 import { MODAL_CONFIG } from "../../components/ui/dialog/DialogConfig";
 import { FileIcon, ListIcon, DownloadIcon } from "../../icons";
@@ -23,6 +24,7 @@ interface ProyeccionModalProps {
 }
 
 export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
+  const { addToast } = useToast();
   const [periods, setPeriods] = useState<{ value: string; label: string; periodId: string }[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [allCareers, setAllCareers] = useState<Career[]>([]);
@@ -62,7 +64,7 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
         setAllCareers(careers);
       } catch (error) {
         console.error("Error loading data:", error);
-        toast.error("Error al cargar datos");
+        addToast(TOAST.loadError());
       } finally {
         setLoading(false);
       }
@@ -166,11 +168,11 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
   // Handle export
   const handleExport = useCallback(async () => {
     if (!selectedPeriodId) {
-      toast.error("Seleccione un período académico");
+      addToast({ variant: "error", title: "Dato requerido", message: "Seleccione un período académico" });
       return;
     }
     if (selectedCareerIds.length === 0) {
-      toast.error("Seleccione al menos una carrera");
+      addToast({ variant: "error", title: "Dato requerido", message: "Seleccione al menos una carrera" });
       return;
     }
 
@@ -178,16 +180,16 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
       setIsExporting(true);
       const data = prepareExcelData();
       if (!data) {
-        toast.error("Error al preparar los datos");
+        addToast({ variant: "error", title: "Error al exportar", message: "Error al preparar los datos" });
         return;
       }
       const periodLabel = periods.find(p => p.periodId === selectedPeriodId)?.label || "";
       const fileName = `proyeccion_pasantias_${periodLabel.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}`;
       await generateProyeccionExcel(data, periodLabel, fileName);
-      toast.success("Reporte exportado exitosamente");
+      addToast({ variant: "success", title: "Exportado", message: "Reporte exportado exitosamente" });
     } catch (error) {
       console.error("Error exporting proyeccion:", error);
-      toast.error("Error al exportar el reporte");
+      addToast({ variant: "error", title: "Error al exportar", message: "Error al exportar el reporte" });
     } finally {
       setIsExporting(false);
     }

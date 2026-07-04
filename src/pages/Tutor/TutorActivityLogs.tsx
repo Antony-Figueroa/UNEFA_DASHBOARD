@@ -11,9 +11,11 @@ import tutorService from '../../features/tutor/services/tutorService';
 import activityLogsService from '../../features/activity-logs/services/activityLogsService';
 import type { ActivityLog } from '../../features/activity-logs/types';
 import { matchSearch } from '../../utils/searchNormalizer';
-import toast from 'react-hot-toast';
+import { useToast } from '../../context/toast';
+import { TOAST } from '../../components/ui/dialog/DialogConfig';
 
 export default function TutorActivityLogs() {
+  const { addToast } = useToast();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,7 +33,7 @@ export default function TutorActivityLogs() {
       const res = await tutorService.getActivityLogs({ limit: 200 });
       setLogs(res.data);
     } catch {
-      toast.error('Error al cargar registros de actividad');
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -43,11 +45,11 @@ export default function TutorActivityLogs() {
     try {
       const res = await activityLogsService.approve(log.activityLogId);
       if (res.success) {
-        toast.success('Registro aprobado exitosamente');
+        addToast({ variant: "success", title: "Registro aprobado", message: "El registro de actividad se aprobó correctamente." });
         fetchLogs();
       }
     } catch {
-      toast.error('Error al aprobar el registro');
+      addToast(TOAST.updateError('registro'));
     }
   };
 

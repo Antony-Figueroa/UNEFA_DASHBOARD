@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
-import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import activityLogsService from '../services/activityLogsService';
 import {
   ActivityLog,
@@ -7,7 +8,6 @@ import {
   UpdateActivityLogPayload,
   ActivityLogStats
 } from '../types';
-import toast from 'react-hot-toast';
 
 const resourceName = 'Registro de actividad';
 
@@ -16,6 +16,7 @@ export const useActivityLogs = () => {
   const [stats, setStats] = useState<ActivityLogStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
+  const { addToast } = useToast();
 
   // Almacena los últimos filtros usados para refrescar después de mutaciones
   const lastParamsRef = useRef<{
@@ -43,7 +44,7 @@ export const useActivityLogs = () => {
       }
     } catch (error) {
       console.error('[useActivityLogs] Error fetching logs:', error);
-      toast.error(TOAST_ERROR.load(resourceName));
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -67,13 +68,13 @@ export const useActivityLogs = () => {
       if (response.success) {
         // Refrescar desde el servidor en vez de mutar localmente
         await fetchLogs({ practiceId: data.professionalPracticeId });
-        toast.success(TOAST_SUCCESS.created(resourceName));
+        addToast(TOAST.created(resourceName));
         return true;
       }
       return false;
     } catch (error) {
       console.error('[useActivityLogs] Error creating log:', error);
-      toast.error(TOAST_ERROR.create(resourceName));
+      addToast(TOAST.createError(resourceName));
       return false;
     } finally {
       setLoadingAction(false);
@@ -87,13 +88,13 @@ export const useActivityLogs = () => {
       if (response.success) {
         // Refrescar desde el servidor en vez de mutar localmente
         await fetchLogs();
-        toast.success(TOAST_SUCCESS.updated(resourceName));
+        addToast(TOAST.updated(resourceName));
         return true;
       }
       return false;
     } catch (error) {
       console.error('[useActivityLogs] Error updating log:', error);
-      toast.error(TOAST_ERROR.update(resourceName));
+      addToast(TOAST.updateError(resourceName));
       return false;
     } finally {
       setLoadingAction(false);
@@ -105,11 +106,11 @@ export const useActivityLogs = () => {
     try {
       await activityLogsService.delete(id);
       await fetchLogs();
-      toast.success(TOAST_SUCCESS.deleted(resourceName));
+      addToast(TOAST.deleted(resourceName));
       return true;
     } catch (error) {
       console.error('[useActivityLogs] Error deleting log:', error);
-      toast.error(TOAST_ERROR.delete(resourceName));
+      addToast(TOAST.deleteError(resourceName));
       return false;
     } finally {
       setLoadingAction(false);
@@ -122,13 +123,13 @@ export const useActivityLogs = () => {
       const response = await activityLogsService.approve(id, comments);
       if (response.success) {
         await fetchLogs();
-        toast.success(TOAST_SUCCESS.updated(resourceName));
+        addToast(TOAST.updated(resourceName));
         return true;
       }
       return false;
     } catch (error) {
       console.error('[useActivityLogs] Error approving log:', error);
-      toast.error(TOAST_ERROR.update(resourceName));
+      addToast(TOAST.updateError(resourceName));
       return false;
     } finally {
       setLoadingAction(false);

@@ -7,10 +7,12 @@ import Button from "../../../../components/ui/button/Button";
 import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
 import { BulkImportModal } from "../../../../features/bulk-import/components/BulkImportModal";
 import { configService, SystemHealth } from "../../../../features/config/services/configService";
-import toast from "react-hot-toast";
+import { useToast } from "../../../../context/toast";
+import { TOAST } from "../../../../components/ui/dialog/DialogConfig";
 import ConfigLayout from "../../ConfigLayout";
 
 export default function MaintenancePage() {
+  const { addToast } = useToast();
   const [executing, setExecuting] = useState<string | null>(null);
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
@@ -24,10 +26,10 @@ export default function MaintenancePage() {
         setExecuting('clear-logs');
         try {
           const result = await configService.clearOldLogs(90);
-          toast.success(result.message || 'Logs limpiados correctamente');
+          addToast({ variant: "success", title: "Logs limpiados", message: result.message || "Los logs se limpiaron correctamente." });
         } catch (error) {
           console.error('Error clearing logs:', error);
-          toast.error('Error al limpiar los logs');
+          addToast(TOAST.deleteError('logs'));
         } finally {
           setExecuting(null);
           hideConfirm();
@@ -46,13 +48,13 @@ export default function MaintenancePage() {
         try {
           const result = await configService.syncData();
           if (result.success) {
-            toast.success(result.message);
+            addToast({ variant: "success", title: "Sincronización completa", message: result.message });
           } else {
-            toast.error('Error en la sincronización');
+            addToast({ variant: "error", title: "Error de sincronización", message: "Ocurrió un error al sincronizar los datos." });
           }
         } catch (error) {
           console.error('Error syncing data:', error);
-          toast.error('Error al sincronizar datos');
+          addToast({ variant: "error", title: "Error de sincronización", message: "Ocurrió un error al sincronizar los datos." });
         } finally {
           setExecuting(null);
           hideConfirm();
@@ -68,12 +70,12 @@ export default function MaintenancePage() {
       const health = await configService.getSystemHealth();
       setSystemHealth(health);
       if (health.status === 'healthy') {
-        toast.success('Sistema funcionando correctamente');
+        addToast({ variant: "success", title: "Sistema saludable", message: "El sistema está funcionando correctamente." });
       } else {
-        toast.error('Se detectaron problemas en el sistema');
+        addToast({ variant: "error", title: "Problemas detectados", message: "Se encontraron problemas en el sistema. Revisá el estado para más detalles." });
       }
     } catch (error) {
-      toast.error('Error al verificar el sistema');
+      addToast(TOAST.loadError());
     } finally {
       setExecuting(null);
     }

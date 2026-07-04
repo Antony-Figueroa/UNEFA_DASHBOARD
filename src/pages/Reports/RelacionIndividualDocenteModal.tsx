@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import toast from "react-hot-toast";
+import { useToast } from "../../context/toast";
+import { TOAST } from "../../components/ui/dialog/DialogConfig";
 import { Modal } from "../../components/ui/modal";
 import { MODAL_CONFIG } from "../../components/ui/dialog/DialogConfig";
 import { FileIcon, ListIcon, DownloadIcon } from "../../icons";
@@ -15,6 +16,7 @@ interface RelacionIndividualDocenteModalProps {
 }
 
 export function RelacionIndividualDocenteModal({ isOpen, onClose }: RelacionIndividualDocenteModalProps) {
+  const { addToast } = useToast();
   const [periods, setPeriods] = useState<{ value: string; label: string; periodId: string }[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [tutors, setTutors] = useState<TutorSearchResult[]>([]);
@@ -44,7 +46,7 @@ export function RelacionIndividualDocenteModal({ isOpen, onClose }: RelacionIndi
           periodId: p.periodId,
         })));
       } catch {
-        toast.error("Error al cargar períodos");
+        addToast(TOAST.loadError());
       }
     })();
   }, [isOpen]);
@@ -84,7 +86,7 @@ export function RelacionIndividualDocenteModal({ isOpen, onClose }: RelacionIndi
       setData(res?.data || []);
       setTutorName(res?.tutorName || "");
     } catch {
-      toast.error("Error al cargar datos");
+      addToast(TOAST.loadError());
     } finally {
       setFetching(false);
     }
@@ -96,16 +98,16 @@ export function RelacionIndividualDocenteModal({ isOpen, onClose }: RelacionIndi
 
   const handleExport = async () => {
     if (data.length === 0) {
-      toast.error("No hay datos para exportar");
+      addToast({ variant: "error", title: "Sin datos", message: "No hay datos para exportar" });
       return;
     }
     setIsExporting(true);
     try {
       const periodLabel = periods.find(p => p.periodId === selectedPeriodId)?.label || "Todos";
       await generateRelacionIndividualDocenteExcel(data, periodLabel, tutorName, `relacion-individual-docente-${tutorName || selectedTutorId}`);
-      toast.success("Reporte exportado exitosamente");
+      addToast({ variant: "success", title: "Exportado", message: "Reporte exportado exitosamente" });
     } catch {
-      toast.error("Error al exportar");
+      addToast({ variant: "error", title: "Error al exportar", message: "Error al exportar" });
     } finally {
       setIsExporting(false);
     }

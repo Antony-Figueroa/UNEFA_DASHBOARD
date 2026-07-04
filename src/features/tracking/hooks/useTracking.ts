@@ -7,6 +7,7 @@
 import { Tracking, CreateTrackingPayload, UpdateTrackingPayload } from "../types";
 import * as trackingService from "../services/trackingService";
 import { useToast } from "../../../context/toast";
+import { TOAST } from "../../../components/ui/dialog/DialogConfig";
 import { useCrud } from "../../../hooks/useCrud";
 
 /**
@@ -43,19 +44,12 @@ export const useTracking = () => {
     const addTracking = async (trackingData: CreateTrackingPayload) => {
         try {
             await baseAddTracking(trackingData, { silent: true });
-            addToast({
-                variant: "success",
-                title: "Seguimiento Registrado",
-                message: "El seguimiento ha sido guardado exitosamente."
-            });
+            addToast(TOAST.created('Seguimiento'));
         } catch (e) {
             console.error("[useTracking] Error al añadir seguimiento:", e);
             const axiosError = e as any;
-            addToast({ 
-                variant: "error", 
-                title: "Error de Registro", 
-                message: axiosError.response?.data?.message || axiosError.message || "No se pudo registrar el seguimiento." 
-            });
+            const serverMsg = axiosError.response?.data?.message;
+            addToast(serverMsg ? { ...TOAST.createError('Seguimiento'), message: serverMsg } : TOAST.createError('Seguimiento'));
             throw e;
         }
     };
@@ -68,19 +62,12 @@ export const useTracking = () => {
     const editTracking = async (trackingData: UpdateTrackingPayload) => {
         try {
             await baseEditTracking(trackingData, { silent: true });
-            addToast({
-                variant: "success",
-                title: "Seguimiento Actualizado",
-                message: "Los cambios en el seguimiento han sido guardados exitosamente."
-            });
+            addToast(TOAST.updated('Seguimiento'));
         } catch (e) {
             console.error("[useTracking] Error al editar seguimiento:", e);
             const axiosError = e as any;
-            addToast({ 
-                variant: "error", 
-                title: "Error de Actualización", 
-                message: axiosError.response?.data?.message || axiosError.message || "No se pudo actualizar el seguimiento." 
-            });
+            const serverMsg = axiosError.response?.data?.message;
+            addToast(serverMsg ? { ...TOAST.updateError('Seguimiento'), message: serverMsg } : TOAST.updateError('Seguimiento'));
             throw e;
         }
     };
@@ -93,18 +80,10 @@ export const useTracking = () => {
     const removeTracking = async (id: string) => {
         try {
             await baseRemoveTracking(id, { silent: true });
-            addToast({
-                variant: "warning",
-                title: "Seguimiento Eliminado",
-                message: "El seguimiento ha sido eliminado exitosamente."
-            });
+            addToast(TOAST.deleted('Seguimiento'));
         } catch (e) {
             console.error("[useTracking] Error al eliminar seguimiento:", e);
-            addToast({ 
-                variant: "error", 
-                title: "Error de Eliminación", 
-                message: "No se pudo eliminar el seguimiento." 
-            });
+            addToast(TOAST.deleteError('Seguimiento'));
             throw e;
         }
     };
@@ -118,18 +97,10 @@ export const useTracking = () => {
         try {
             // baseRestoreTracking espera un array de IDs en useCrud
             await baseRestoreTracking([id], { silent: true });
-            addToast({
-                variant: "success",
-                title: "Seguimiento Restaurado",
-                message: "El seguimiento ha sido restaurado exitosamente."
-            });
+            addToast(TOAST.restored('Seguimiento'));
         } catch (e) {
             console.error("[useTracking] Error al restaurar seguimiento:", e);
-            addToast({ 
-                variant: "error", 
-                title: "Error de Restauración", 
-                message: "No se pudo restaurar el seguimiento." 
-            });
+            addToast(TOAST.restoreError('Seguimiento'));
             throw e;
         }
     };

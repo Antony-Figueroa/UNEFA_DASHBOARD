@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import toast from "react-hot-toast";
+import { useToast } from "@/context/toast";
+import { TOAST } from "@/components/ui/dialog/DialogConfig";
 import { prospectsService } from "../services/prospectsService";
 import {
   ProspectList,
@@ -9,7 +10,10 @@ import {
   UpdateProspectListPayload,
 } from "../types";
 
+const resourceName = 'Lista de prospectos';
+
 export const useProspectLists = () => {
+  const { addToast } = useToast();
   const [lists, setLists] = useState<ProspectList[]>([]);
   const [currentList, setCurrentList] = useState<ProspectList | null>(null);
   const [items, setItems] = useState<ProspectListItem[]>([]);
@@ -22,8 +26,8 @@ export const useProspectLists = () => {
       const data = await prospectsService.getLists();
       setLists(data);
     } catch (error: any) {
-      const message = error.response?.data?.message || "Error al cargar listas de prospectos";
-      toast.error(message);
+      const message = error.response?.data?.message || TOAST.loadError().message;
+      addToast({ ...TOAST.loadError(), message });
       console.error("[useProspectLists] Error fetching lists:", error);
     } finally {
       setLoading(false);
@@ -41,8 +45,8 @@ export const useProspectLists = () => {
       setItems(itemsData);
       setDirty(false);
     } catch (error: any) {
-      const message = error.response?.data?.message || "Error al cargar la lista";
-      toast.error(message);
+      const message = error.response?.data?.message || TOAST.loadError().message;
+      addToast({ ...TOAST.loadError(), message });
       console.error("[useProspectLists] Error selecting list:", error);
     } finally {
       setLoading(false);
@@ -57,11 +61,11 @@ export const useProspectLists = () => {
       setCurrentList(newList);
       setItems([]);
       setDirty(false);
-      toast.success("Lista creada exitosamente");
+      addToast(TOAST.created(resourceName));
       return newList;
     } catch (error: any) {
-      const message = error.response?.data?.message || "Error al crear la lista";
-      toast.error(message);
+      const message = error.response?.data?.message || TOAST.createError(resourceName).message;
+      addToast(message ? { ...TOAST.createError(resourceName), message } : TOAST.createError(resourceName));
       console.error("[useProspectLists] Error creating list:", error);
       return null;
     } finally {
@@ -75,10 +79,10 @@ export const useProspectLists = () => {
       setCurrentList(updated);
       setLists(prev => prev.map(l => l.listId === id ? updated : l));
       setDirty(false);
-      toast.success("Lista actualizada exitosamente");
+      addToast(TOAST.updated(resourceName));
     } catch (error: any) {
-      const message = error.response?.data?.message || "Error al actualizar la lista";
-      toast.error(message);
+      const message = error.response?.data?.message || TOAST.updateError(resourceName).message;
+      addToast(message ? { ...TOAST.updateError(resourceName), message } : TOAST.updateError(resourceName));
       console.error("[useProspectLists] Error updating list:", error);
       throw error;
     }
@@ -93,10 +97,10 @@ export const useProspectLists = () => {
         setItems([]);
       }
       setDirty(false);
-      toast.success("Lista eliminada exitosamente");
+      addToast(TOAST.deleted(resourceName));
     } catch (error: any) {
-      const message = error.response?.data?.message || "Error al eliminar la lista";
-      toast.error(message);
+      const message = error.response?.data?.message || TOAST.deleteError(resourceName).message;
+      addToast(message ? { ...TOAST.deleteError(resourceName), message } : TOAST.deleteError(resourceName));
       console.error("[useProspectLists] Error deleting list:", error);
       throw error;
     }
@@ -105,7 +109,7 @@ export const useProspectLists = () => {
   const addItem = useCallback(async (listId: number, studentsId: number) => {
     const exists = items.some(i => i.studentsId === studentsId);
     if (exists) {
-      toast.error("El estudiante ya está en la lista");
+      addToast({ variant: 'error', title: 'Estudiante duplicado', message: 'El estudiante ya está en la lista' });
       return;
     }
 
@@ -113,10 +117,10 @@ export const useProspectLists = () => {
       const newItem = await prospectsService.addListItem(listId, { studentsId });
       setItems(prev => [...prev, newItem]);
       setDirty(true);
-      toast.success("Estudiante agregado a la lista");
+      addToast({ variant: 'success', title: 'Estudiante agregado', message: 'Estudiante agregado a la lista' });
     } catch (error: any) {
-      const message = error.response?.data?.message || "Error al agregar estudiante";
-      toast.error(message);
+      const message = error.response?.data?.message || 'Error al agregar estudiante';
+      addToast({ variant: 'error', title: 'Error', message });
       console.error("[useProspectLists] Error adding item:", error);
     }
   }, [items]);
@@ -127,8 +131,8 @@ export const useProspectLists = () => {
       setItems(prev => prev.filter(i => i.itemId !== itemId));
       setDirty(true);
     } catch (error: any) {
-      const message = error.response?.data?.message || "Error al eliminar estudiante";
-      toast.error(message);
+      const message = error.response?.data?.message || 'Error al eliminar estudiante';
+      addToast({ variant: 'error', title: 'Error', message });
       console.error("[useProspectLists] Error removing item:", error);
     }
   }, []);
@@ -139,8 +143,8 @@ export const useProspectLists = () => {
       setItems(prev => prev.map(i => i.itemId === itemId ? updated : i));
       setDirty(true);
     } catch (error: any) {
-      const message = error.response?.data?.message || "Error al cambiar estado de inscripción";
-      toast.error(message);
+      const message = error.response?.data?.message || 'Error al cambiar estado de inscripción';
+      addToast({ variant: 'error', title: 'Error', message });
       console.error("[useProspectLists] Error toggling enrolled:", error);
     }
   }, []);
@@ -157,7 +161,7 @@ export const useProspectLists = () => {
 
   const markAsSaved = useCallback(() => {
     setDirty(false);
-    toast.success("Lista guardada exitosamente");
+    addToast({ variant: 'success', title: 'Lista guardada', message: 'Lista guardada exitosamente' });
   }, []);
 
   return {

@@ -4,7 +4,8 @@ import ComponentCard from '../../../components/common/ComponentCard';
 import Button from '../../../components/ui/button/Button';
 import { landingConfigService } from '../services/landingConfigService';
 import { LandingConfig, LandingCareer, LandingFAQ } from '../types';
-import toast from 'react-hot-toast';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type TabType = 'hero' | 'mission' | 'careers' | 'faqs';
@@ -17,6 +18,7 @@ const tabs: { id: TabType; label: string }[] = [
 ];
 
 const LandingConfigPage: React.FC = () => {
+  const { addToast } = useToast();
   const [config, setConfig] = useState<LandingConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,7 +73,7 @@ const LandingConfigPage: React.FC = () => {
       setFaqsForm(data.faqs || []);
     } catch (error) {
       console.error('[LandingConfigPage] Error loading config:', error);
-      toast.error('Error al cargar la configuración');
+      addToast(TOAST.loadError());
       const defaultConfig = landingConfigService.getDefaultConfig();
       setConfig(defaultConfig);
     } finally {
@@ -98,10 +100,10 @@ const LandingConfigPage: React.FC = () => {
         companiesCardValue: heroForm.companiesCardValue,
       });
       setConfig(updated);
-      toast.success('Hero actualizado exitosamente');
+      addToast({ variant: "success", title: "Hero actualizado", message: "Hero actualizado exitosamente" });
     } catch (error) {
       console.error('[LandingConfigPage] Error saving hero:', error);
-      toast.error('Error al guardar el hero');
+      addToast({ variant: "error", title: "Error al guardar", message: "Error al guardar el hero" });
     } finally {
       setSaving(false);
     }
@@ -112,10 +114,10 @@ const LandingConfigPage: React.FC = () => {
       setSaving(true);
       const updated = await landingConfigService.updateMissionVision(missionVisionForm);
       setConfig(updated);
-      toast.success('Misión/Visión actualizada exitosamente');
+      addToast({ variant: "success", title: "Misión/Visión actualizada", message: "Misión/Visión actualizada exitosamente" });
     } catch (error) {
       console.error('[LandingConfigPage] Error saving mission/vision:', error);
-      toast.error('Error al guardar misión/visión');
+      addToast({ variant: "error", title: "Error al guardar", message: "Error al guardar misión/visión" });
     } finally {
       setSaving(false);
     }
@@ -126,10 +128,10 @@ const LandingConfigPage: React.FC = () => {
       setSaving(true);
       const updated = await landingConfigService.updateCareers(careersForm);
       setConfig(updated);
-      toast.success('Carreras actualizadas exitosamente');
+      addToast({ variant: "success", title: "Carreras actualizadas", message: "Carreras actualizadas exitosamente" });
     } catch (error) {
       console.error('[LandingConfigPage] Error saving careers:', error);
-      toast.error('Error al guardar las carreras');
+      addToast({ variant: "error", title: "Error al guardar", message: "Error al guardar las carreras" });
     } finally {
       setSaving(false);
     }
@@ -140,10 +142,10 @@ const LandingConfigPage: React.FC = () => {
       setSaving(true);
       const updated = await landingConfigService.updateFAQs(faqsForm);
       setConfig(updated);
-      toast.success('FAQs actualizadas exitosamente');
+      addToast({ variant: "success", title: "FAQs actualizadas", message: "FAQs actualizadas exitosamente" });
     } catch (error) {
       console.error('[LandingConfigPage] Error saving FAQs:', error);
-      toast.error('Error al guardar las FAQs');
+      addToast({ variant: "error", title: "Error al guardar", message: "Error al guardar las FAQs" });
     } finally {
       setSaving(false);
     }

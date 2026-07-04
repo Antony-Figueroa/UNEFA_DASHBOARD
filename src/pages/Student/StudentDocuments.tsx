@@ -4,10 +4,12 @@ import Button from '../../components/ui/button/Button';
 import Badge from '../../components/ui/badge/Badge';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../components/ui/modal';
 import documentsService, { Document, DocumentType } from '../../features/documents/services/documentsService';
-import toast from 'react-hot-toast';
+import { useToast } from '../../context/toast';
+import { TOAST } from '../../components/ui/dialog/DialogConfig';
 import { Upload, FileText, Trash2, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
 export default function StudentDocuments() {
+  const { addToast } = useToast();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [types, setTypes] = useState<DocumentType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ export default function StudentDocuments() {
       setTypes(typesData);
     } catch (err) {
       console.error('[Documents] Error:', err);
-      toast.error('Error al cargar documentos');
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -47,7 +49,7 @@ export default function StudentDocuments() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        toast.error('El archivo no puede exceder 10MB');
+        addToast({ variant: "error", title: "Archivo grande", message: "El archivo no puede exceder 10MB" });
         return;
       }
       setSelectedFile(file);
@@ -59,7 +61,7 @@ export default function StudentDocuments() {
 
   const handleUpload = async () => {
     if (!selectedFile || !formData.documentType || !formData.title) {
-      toast.error('Complete todos los campos requeridos');
+      addToast({ variant: "error", title: "Campos requeridos", message: "Complete todos los campos requeridos" });
       return;
     }
 
@@ -71,14 +73,14 @@ export default function StudentDocuments() {
         description: formData.description,
         file: selectedFile
       });
-      toast.success('Documento subido exitosamente');
+      addToast({ variant: "success", title: "Subido", message: "Documento subido exitosamente" });
       setIsModalOpen(false);
       setSelectedFile(null);
       setFormData({ documentType: '', title: '', description: '' });
       fetchData();
     } catch (err) {
       console.error('[Documents] Error uploading:', err);
-      toast.error('Error al subir documento');
+      addToast({ variant: "error", title: "Error al subir", message: "Error al subir documento" });
     } finally {
       setUploading(false);
     }
@@ -89,11 +91,11 @@ export default function StudentDocuments() {
 
     try {
       await documentsService.delete(id);
-      toast.success('Documento eliminado');
+      addToast({ variant: "success", title: "Eliminado", message: "Documento eliminado" });
       fetchData();
     } catch (err) {
       console.error('[Documents] Error deleting:', err);
-      toast.error('Error al eliminar documento');
+      addToast({ variant: "error", title: "Error al eliminar", message: "Error al eliminar documento" });
     }
   };
 

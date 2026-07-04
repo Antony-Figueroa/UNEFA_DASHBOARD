@@ -11,6 +11,7 @@ import UnifiedDialog from "../ui/dialog/UnifiedDialog";
 import { deactivationSchema, type DeactivationFormData } from "../../features/auth/constants/profileValidation";
 import { deactivateAccount } from "../../features/auth/services/authService";
 import { useToast } from "../../context/toast";
+import { TOAST } from "../ui/dialog/DialogConfig";
 
 export default function AccountDangerZoneCard() {
   const { signOut } = useAuth();
@@ -36,20 +37,12 @@ export default function AccountDangerZoneCard() {
     try {
       const result = await deactivateAccount(data.currentPassword, data.reason || undefined);
       if (result.success) {
-        addToast({
-          variant: "success",
-          title: "Cuenta desactivada",
-          message: result.message || "Su cuenta ha sido desactivada.",
-        });
+        addToast(TOAST.deleted('Cuenta'));
         setShowConfirm(false);
         reset();
         setTimeout(() => signOut("account_deactivated"), 2000);
       } else {
-        addToast({
-          variant: "error",
-          title: "Error",
-          message: result.message || "No se pudo desactivar la cuenta.",
-        });
+        addToast(result.message ? { ...TOAST.deleteError('Cuenta'), message: result.message } : TOAST.deleteError('Cuenta'));
       }
     } catch {
       addToast({

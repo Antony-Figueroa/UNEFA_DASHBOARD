@@ -9,6 +9,7 @@ import { User, CreateUserPayload, UpdateUserPayload } from "../types";
 import { userService } from "../services/userService";
 import { useToast } from "../../../context/toast";
 import apiClient from "../../../api/apiClient";
+import { TOAST } from "../../../components/ui/dialog/DialogConfig";
 import { useCrud } from "../../../hooks/useCrud";
 import { RecordDetails, ChangeComparison } from "../../../components/ui/alert/AlertContextualContent";
 
@@ -75,11 +76,7 @@ export const useUsers = (filters: any = {}, activeTab: "Activos" | "Inactivos" =
         } catch (err: any) {
             console.error("[useUsers] Error al cargar usuarios:", err);
             setStatus("error");
-            addToast({
-                variant: "error",
-                title: "Error de Carga",
-                message: "No se pudieron cargar los usuarios del sistema."
-            });
+            addToast({ ...TOAST.loadError(), message: "No se pudieron cargar los usuarios del sistema." });
         }
     }, [filters.role, filters.name, filters.surname, filters.ci, activeTab, page, limit, addToast]);
 
@@ -114,11 +111,8 @@ export const useUsers = (filters: any = {}, activeTab: "Activos" | "Inactivos" =
         } catch (err) {
             console.error("[useUsers] Error al crear usuario:", err);
             const axiosError = err as any;
-            addToast({ 
-                variant: "error", 
-                title: "Error de Registro", 
-                message: axiosError.response?.data?.message || axiosError.message || "No se pudo registrar el usuario." 
-            });
+            const serverMsg = axiosError.response?.data?.message;
+            addToast(serverMsg ? { ...TOAST.createError('Usuario'), message: serverMsg } : TOAST.createError('Usuario'));
             throw err;
         }
     };
@@ -153,11 +147,8 @@ export const useUsers = (filters: any = {}, activeTab: "Activos" | "Inactivos" =
         } catch (err) {
             console.error("[useUsers] Error al actualizar usuario:", err);
             const axiosError = err as any;
-            addToast({ 
-                variant: "error", 
-                title: "Error de Actualización", 
-                message: axiosError.response?.data?.message || axiosError.message || "No se pudo actualizar el usuario." 
-            });
+            const serverMsg = axiosError.response?.data?.message;
+            addToast(serverMsg ? { ...TOAST.updateError('Usuario'), message: serverMsg } : TOAST.updateError('Usuario'));
             throw err;
         }
     };
@@ -179,11 +170,7 @@ export const useUsers = (filters: any = {}, activeTab: "Activos" | "Inactivos" =
             await fetchUsers();
         } catch (err) {
             console.error("[useUsers] Error al cambiar estado de usuario:", err);
-            addToast({
-                variant: "error",
-                title: "Error de Estado",
-                message: "No se pudo cambiar el estado del usuario."
-            });
+            addToast(TOAST.updateError('Usuario'));
             throw err;
         }
     };

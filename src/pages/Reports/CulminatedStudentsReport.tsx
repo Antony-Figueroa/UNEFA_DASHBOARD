@@ -10,9 +10,11 @@ import { getPeriods } from "../../features/periods/services/periodService";
 import { unwrapData } from "../../api/crudServiceFactory";
 import { getCareers } from "../../features/careers/services/careersService";
 import { getInstitutions } from "../../features/institutions/services/institutionsService";
-import toast from "react-hot-toast";
+import { useToast } from "../../context/toast";
+import { TOAST } from "../../components/ui/dialog/DialogConfig";
 
 export default function CulminatedStudentsReportPage() {
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CulminatedStudentReportRow[]>([]);
   const [filters, setFilters] = useState<{
@@ -66,7 +68,7 @@ export default function CulminatedStudentsReportPage() {
       setData(response.data || []);
     } catch (error) {
       console.error("[CulminatedReport] Error fetching data:", error);
-      toast.error("Error al cargar los datos");
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }

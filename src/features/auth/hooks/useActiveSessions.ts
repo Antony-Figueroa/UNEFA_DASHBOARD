@@ -4,9 +4,11 @@ import {
   terminateSession as terminateSessionApi,
 } from "../services/authService";
 import type { ActiveSession } from "../types";
-import toast from "react-hot-toast";
+import { useToast } from "@/context/toast";
+import { TOAST } from "@/components/ui/dialog/DialogConfig";
 
 export const useActiveSessions = () => {
+  const { addToast } = useToast();
   const [sessions, setSessions] = useState<ActiveSession[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,7 +18,7 @@ export const useActiveSessions = () => {
       const data = await getActiveSessions();
       setSessions(data);
     } catch {
-      toast.error("Error al cargar sesiones activas");
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -30,13 +32,13 @@ export const useActiveSessions = () => {
     try {
       const result = await terminateSessionApi(sessionId);
       if (result.success) {
-        toast.success("Sesión cerrada exitosamente");
+        addToast({ variant: "success", title: "Sesión cerrada", message: "Sesión cerrada exitosamente" });
         refresh();
       } else {
-        toast.error(result.message || "Error al cerrar sesión");
+        addToast({ variant: "error", title: "Error", message: result.message || "Error al cerrar sesión" });
       }
     } catch {
-      toast.error("Error al cerrar sesión");
+      addToast({ variant: "error", title: "Error", message: "Error al cerrar sesión" });
     }
   };
 

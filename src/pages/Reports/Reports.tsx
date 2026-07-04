@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, ReactElement } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, ReactElement } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -17,12 +17,15 @@ import { ProyeccionModal } from "./ProyeccionModal";
 import { useReports } from "../../features/reports/hooks/useReports";
 import { getReportConfig, DOCUMENT_SECTIONS, ReportType, setCurrentTutorId, currentTutorId } from "../../features/reports/config/reportConfig";
 
-import toast from "react-hot-toast";
+import { useToast } from "../../context/toast";
+import { TOAST } from "../../components/ui/dialog/DialogConfig";
 import { DocumentProps } from "@react-pdf/renderer";
 import { SearchableInput } from "../../features/reports/components/SearchableInput";
 import type { TutorSearchResult } from "../../features/reports/services/reportsService";
+import { SearchInput } from "../../components/common/SearchInput";
 
 export default function ReportsPage() {
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<{ label: string; value: number | string; change?: number; trend?: "up" | "down" | "stable" }[]>([]);
   const [careerData, setCareerData] = useState<CareerData[]>([]);
@@ -34,6 +37,7 @@ export default function ReportsPage() {
   const [careerOptions, setCareerOptions] = useState<MultiSelectOption[]>([]);
   const [availablePeriods, setAvailablePeriods] = useState<{ value: string; label: string }[]>([]);
   const [activeReportId, setActiveReportId] = useState<ReportType>("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
@@ -101,7 +105,7 @@ export default function ReportsPage() {
       setRecentReports(recentRes);
     } catch (error) {
       console.error('Error fetching reports:', error);
-      toast.error('Error al cargar los reportes');
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -118,13 +122,13 @@ export default function ReportsPage() {
       const periodNum = periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined;
       const result = await fetchReportData(type, periodNum, undefined, page, limit, careerIds);
       if (!result?.data) {
-        toast.error('No se encontraron datos');
+        addToast({ variant: "error", title: "Sin datos", message: "No se encontraron datos" });
         return null;
       }
       return { data: result.data, meta: result.meta, config };
     } catch (error) {
       console.error(`[Reports] Error loading ${type}:`, error);
-      toast.error('Error al cargar el reporte');
+      addToast(TOAST.loadError());
       return null;
     }
   }, [periodFilter, fetchReportData]);
@@ -148,7 +152,7 @@ export default function ReportsPage() {
     // Reportes del config (Excel o PDF)
     const config = getReportConfig(type);
     if (!config) {
-      toast.error('Reporte no disponible');
+      addToast({ variant: "error", title: "No disponible", message: "Reporte no disponible" });
       return;
     }
     const effectiveCareerIds = careerIdsFilter.length > 0 ? careerIdsFilter : undefined;
@@ -193,14 +197,14 @@ export default function ReportsPage() {
     try {
       const result = await fetchReportData(ref.type, periodNum, undefined, 0, 50, effectiveCareerIds);
       if (!result?.data) {
-        toast.error('No se encontraron datos');
+        addToast({ variant: "error", title: "Sin datos", message: "No se encontraron datos" });
         return;
       }
       setTableData(result.data);
       const totalPages = result.meta?.total ? Math.ceil(result.meta.total / (result.meta?.limit || 50)) : 1;
       setPaginationInfo({ page: 0, totalPages, totalRecords: result.meta?.total || result.data.length });
     } catch (error) {
-      toast.error('Error al cargar datos');
+      addToast(TOAST.loadError());
     }
   }, [fetchReportData]);
 
@@ -234,11 +238,11 @@ export default function ReportsPage() {
         : undefined;
       const blob = await reportsService.exportReportExcel(type, periodNum, undefined, effectiveCareerIds, tutorId);
       downloadBlob(blob, filename);
-      toast.success('Reporte exportado exitosamente');
+      addToast({ variant: "success", title: "Exportado", message: "Reporte exportado exitosamente" });
     } catch (error: any) {
       console.error(`[Reports] Error exporting ${type}:`, error);
       const message = error?.response?.data?.message || 'Error al exportar el reporte';
-      toast.error(message);
+      addToast({ variant: "error", title: "Error al exportar", message });
     } finally {
       setLoadingExcelId(null);
     }
@@ -270,15 +274,25 @@ export default function ReportsPage() {
       const effectiveCareerIds = careerIdsFilter.length > 0 ? careerIdsFilter : undefined;
       const blob = await reportsService.exportReportExcel(activeReportId, periodNum, undefined, effectiveCareerIds);
       downloadBlob(blob, `${fileName}.xlsx`);
-      toast.success('Reporte exportado exitosamente');
+      addToast({ variant: "success", title: "Exportado", message: "Reporte exportado exitosamente" });
     } catch (error: any) {
       console.error('[Reports] Error exporting Excel:', error);
-      toast.error(error?.response?.data?.message || 'Error al exportar el reporte');
+      addToast({ variant: "error", title: "Error al exportar", message: error?.response?.data?.message || 'Error al exportar el reporte' });
     }
   };
 
   const maxValue = periodData.length > 0 ? Math.max(...periodData.map((d) => d.value)) : 1;
   const currentConfig = getReportConfig(activeReportId);
+  const filteredSections = useMemo(() => {
+    if (!searchQuery.trim()) return DOCUMENT_SECTIONS;
+    const q = searchQuery.toLowerCase();
+    return DOCUMENT_SECTIONS.map(s => ({
+      ...s,
+      reports: s.reports.filter(r =>
+        r.title.toLowerCase().includes(q) || r.subtitle.toLowerCase().includes(q)
+      )
+    })).filter(s => s.reports.length > 0);
+  }, [searchQuery]);
 
   return (
     <>
@@ -296,6 +310,12 @@ export default function ReportsPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Buscar reporte..."
+              className="!w-56"
+            />
             <CustomSelect
               options={[
                 { value: "", label: "Todos los períodos" },
@@ -458,11 +478,16 @@ export default function ReportsPage() {
 
         <ComponentCard title="Reportes Disponibles" desc="Seleccione un reporte para visualizarlo o exportarlo">
           <ReportList
-            sections={DOCUMENT_SECTIONS}
+            sections={filteredSections}
             loadingId={loadingExcelId}
             onView={handleViewReport}
             onExportExcel={handleExportExcel}
           />
+          {filteredSections.length === 0 && searchQuery.trim() && (
+            <p className="text-center text-text-tertiary py-8 text-sm">
+              No se encontraron reportes para "{searchQuery}"
+            </p>
+          )}
         </ComponentCard>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

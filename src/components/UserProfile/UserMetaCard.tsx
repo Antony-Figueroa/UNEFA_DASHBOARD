@@ -12,6 +12,7 @@ import * as authService from "../../features/auth/services/authService";
 import { useToast } from "../../context/toast";
 import { profileSchema, type ProfileFormData } from "../../features/auth/constants/profileValidation";
 import UnifiedDialog from "../ui/dialog/UnifiedDialog";
+import { TOAST } from "../ui/dialog/DialogConfig";
 
 export default function UserMetaCard() {
   const { user, checkAuth } = useAuth();
@@ -100,10 +101,10 @@ export default function UserMetaCard() {
 
           if (result.success) {
             await checkAuth();
-            addToast({ variant: "success", title: "Perfil Actualizado", message: "Su información personal ha sido actualizada correctamente." });
+            addToast(TOAST.updated('Perfil'));
             closeModal();
           } else {
-            addToast({ variant: "error", title: "Error de Actualización", message: result.message || "No se pudo actualizar el perfil." });
+            addToast(result.message ? { ...TOAST.updateError('Perfil'), message: result.message } : TOAST.updateError('Perfil'));
           }
         } catch {
           addToast({ variant: "error", title: "Error de Conexión", message: "No se pudo establecer conexión con el servidor." });

@@ -7,7 +7,8 @@ import Badge from "../../components/ui/badge/Badge";
 import InputField from "../../components/form/input/InputField";
 import CustomSelect from "../../components/form/CustomSelect";
 import { manualsService, Manual } from "../../features/manuals/services/manualsService";
-import toast from "react-hot-toast";
+import { useToast } from "../../context/toast";
+import { TOAST } from "../../components/ui/dialog/DialogConfig";
 
 const getCategoryColor = (category: string) => {
   const colors: Record<string, "primary" | "success" | "warning" | "error"> = {
@@ -44,6 +45,7 @@ const getFileIcon = (fileType: string) => {
 };
 
 export default function ManualsPage() {
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [manuals, setManuals] = useState<Manual[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -69,7 +71,7 @@ export default function ManualsPage() {
       }
     } catch (error) {
       console.error('Error fetching manuals:', error);
-      toast.error('Error al cargar los manuales');
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }

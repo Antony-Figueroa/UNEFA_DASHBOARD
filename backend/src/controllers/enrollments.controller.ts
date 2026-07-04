@@ -6,6 +6,7 @@ import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-help
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 import { checkSequentialPrerequisite } from '../utils/sequential-validation.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 const TABLE_NAME = 't_professional_practices';
 const CACHE_PREFIX = 'enrollments:';
@@ -16,7 +17,7 @@ const ENROLLMENT_COLUMNS_TO_AUDIT = [
   'PRACTICES_STATUS', 'INTERNSHIP_STATUS', 'STATUS', 'OBSERVATION'
 ];
 
-const ENROLLMENT_COLUMNS = 'PROFESSIONAL_PRACTICE_ID, START_DATE, END_DATE, REPORT_TITLE, REGISTRATION_DATE, GRADE, PRACTICES_STATUS, TRANSFER, TOUR, PERIOD_ID, INSTITUTION_ID, STUDENTS_ID, STATUS, MANAGER_ID, OBSERVATION, ENROLLMENT, INTERNSHIP_STATUS, INTERNSHIP_TYPE_ID';
+const ENROLLMENT_COLUMNS = 'PROFESSIONAL_PRACTICE_ID, START_DATE, END_DATE, REPORT_TITLE, REGISTRATION_DATE, GRADE, PRACTICES_STATUS, TRANSFER, TOUR, PERIOD_ID, INSTITUTION_ID, STUDENTS_ID, STATUS, MANAGER_ID, OBSERVATION, ENROLLMENT, INTERNSHIP_STATUS, INTERNSHIP_TYPE_ID, WITHDRAWAL_TYPE';
 
 const handleDbError = (res: Response, error: unknown) => {
   console.error('Error:', error);
@@ -97,7 +98,8 @@ interface ProfessionalPractice {
 }
 
 export const getEnrollments = async (req: Request, res: Response) => {
-  const cacheKey = `${CACHE_PREFIX}list`;
+  const filterAll = req.query.filter === 'all';
+  const cacheKey = filterAll ? `${CACHE_PREFIX}list_all` : `${CACHE_PREFIX}list_active`;
   const cachedData = cacheManager.get(cacheKey);
   if (cachedData) {
     return res.json(cachedData);
@@ -105,7 +107,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
 
   try {
     const data = await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
+      let query = supabase
         .from(TABLE_NAME)
         .select(`
           ${ENROLLMENT_COLUMNS},
@@ -140,9 +142,20 @@ export const getEnrollments = async (req: Request, res: Response) => {
               t_persons!inner (first_name, last_name, phone)
             )
           )
-        `)
-        .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
-        .order('REGISTRATION_DATE', { ascending: false });
+        `);
+
+      if (filterAll) {
+        // Incluye: activos (STATUS=1, PRACTICES_STATUS=INSCRITO),
+        // inactivados (STATUS=0, PRACTICES_STATUS=INSCRITO),
+        // y retirados (PRACTICES_STATUS=RETIRADO)
+        query = query.or(
+          `and(STATUS.eq.1,PRACTICES_STATUS.in.(2,0)),STATUS.eq.0`
+        );
+      } else {
+        query = query.eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO);
+      }
+
+      const { data, error } = await query.order('REGISTRATION_DATE', { ascending: false });
 
       if (error) throw error;
       return (data as unknown) as ProfessionalPractice[];
@@ -186,6 +199,11 @@ export const getEnrollments = async (req: Request, res: Response) => {
         return nameMap[upperVal] || val;
       };
 
+      const practicesStatus = item.PRACTICES_STATUS;
+      const isWithdrawn = practicesStatus === PRACTICES_STATUS.RETIRADO;
+      const isInactivated = !isWithdrawn && item.STATUS === 0;
+      const recordType = isWithdrawn ? 'withdrawn' : isInactivated ? 'inactivated' : 'active';
+
       return {
         enrollmentId: item.PROFESSIONAL_PRACTICE_ID?.toString() || '',
         identificationPrefix: ciParts[0] || 'V',
@@ -214,7 +232,10 @@ export const getEnrollments = async (req: Request, res: Response) => {
         enrollmentCode: item.ENROLLMENT || '',
         observation: item.OBSERVATION || '',
         enrollmentDate: item.REGISTRATION_DATE || '',
-        status: item.STATUS === 1
+        status: item.STATUS === 1,
+        practicesStatus,
+        recordType,
+        withdrawalType: (item as any).WITHDRAWAL_TYPE || null,
       };
     });
 
@@ -832,7 +853,7 @@ export const withdrawPractice = async (req: AuthRequest, res: Response) => {
     const updateData: Record<string, any> = {
       PRACTICES_STATUS: PRACTICES_STATUS.RETIRADO,
       WITHDRAWAL_TYPE: withdrawalType,
-      OBSERVATION: observation,
+      OBSERVATION: sanitizeText(observation) ?? observation,
     };
     if (!observation) delete updateData.OBSERVATION;
 
@@ -996,7 +1017,7 @@ export const reclassifyWithdrawal = async (req: AuthRequest, res: Response) => {
       .from(TABLE_NAME)
       .update({
         WITHDRAWAL_TYPE: 'justified',
-        OBSERVATION: `RECLASIFICADO A JUSTIFICATIVO: ${justificationReason.trim()}`,
+        OBSERVATION: sanitizeText(`RECLASIFICADO A JUSTIFICATIVO: ${justificationReason}`) ?? '',
       })
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
 

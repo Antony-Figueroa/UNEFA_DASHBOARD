@@ -550,7 +550,7 @@ export default function EvaluationsPage() {
               {isReadOnly ? (
                 <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed">
                   <LockIcon className="w-4 h-4" />
-                  <span>{comite.score.toFixed(1)}</span>
+                  <span>{Math.round((comite.score / evalConfig.score.displayScale) * 100)}%</span>
                 </span>
               ) : (
                 <button
@@ -564,7 +564,7 @@ export default function EvaluationsPage() {
                   title="Editar miembros del comité"
                 >
                   <EditIcon className="w-4 h-4" />
-                  <span>{comite.score.toFixed(1)}</span>
+                  <span>{Math.round((comite.score / evalConfig.score.displayScale) * 100)}%</span>
                 </button>
               )}
             </div>
@@ -624,7 +624,7 @@ export default function EvaluationsPage() {
                     setModalOpen(true);
                   }}
                   className="w-5 h-5 flex items-center justify-center text-[10px] font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50"
-                  title={`Editar miembro #${m.memberIndex}: ${m.evaluatorName} — ${m.score.toFixed(1)}pts`}
+                  title={`Editar miembro #${m.memberIndex}: ${m.evaluatorName} — ${Math.round((m.score / evalConfig.score.displayScale) * 100)}%`}
                 >
                   {m.memberIndex}
                 </button>
@@ -700,23 +700,23 @@ export default function EvaluationsPage() {
           {isReadOnly ? (
             <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed" title="Solo lectura: no puedes editar evaluaciones">
               <LockIcon className="w-4 h-4" />
-              <span>{evaluation.score.toFixed(1)}</span>
-            </span>
-          ) : (
-            <button
-              onClick={() => {
-                setSelectedPractice(practice);
-                setSelectedEvaluatorType(type);
-                setEditEvaluationId((evaluation as any).evaluationId);
-                setModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-              title="Editar evaluación"
-            >
-              <EditIcon className="w-4 h-4" />
-              <span>{evaluation.score.toFixed(1)}</span>
-            </button>
-          )}
+            <span>{Math.round((evaluation.score / evalConfig.score.displayScale) * 100)}%</span>
+          </span>
+        ) : (
+          <button
+            onClick={() => {
+              setSelectedPractice(practice);
+              setSelectedEvaluatorType(type);
+              setEditEvaluationId((evaluation as any).evaluationId);
+              setModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+            title="Editar evaluación"
+          >
+            <EditIcon className="w-4 h-4" />
+            <span>{Math.round((evaluation.score / evalConfig.score.displayScale) * 100)}%</span>
+          </button>
+        )}
         </div>
       );
     }
@@ -1008,7 +1008,7 @@ export default function EvaluationsPage() {
                           </td>
                           <td className="px-4 py-3 text-center">
                             <span className="text-lg font-bold text-brand-500">
-                              {status?.finalGrade || '-'}
+                              {status?.finalGrade ? `${Math.round((parseFloat(status.finalGrade) / evalConfig.score.displayScale) * 100)}%` : '-'}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">

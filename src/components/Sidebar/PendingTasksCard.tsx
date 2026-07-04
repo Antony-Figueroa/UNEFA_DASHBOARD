@@ -33,8 +33,10 @@ const PendingTasksCard: React.FC = () => {
 
   const showContent = isExpanded || isMobileOpen;
 
-  // Cargar contadores de tareas pendientes
+  // ponytail: solo fetchear si el sidebar está expandido
   useEffect(() => {
+    if (!showContent) return;
+
     const fetchTaskCounts = async () => {
       try {
         // Llamar al endpoint de estadísticas del dashboard usando apiClient
@@ -56,7 +58,7 @@ const PendingTasksCard: React.FC = () => {
     };
 
     fetchTaskCounts();
-  }, []);
+  }, [showContent]);
 
   // No mostrar si no hay tareas
   const totalTasks = tasks.pendingRequests + tasks.pendingEvaluations + tasks.upcomingVisits;

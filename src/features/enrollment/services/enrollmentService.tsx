@@ -27,7 +27,7 @@ const mapToEnrollment = (data: any): Enrollment => ({
  * @returns A promise with an array of normalized enrollments.
  */
 export const getEnrollments = async (): Promise<Enrollment[]> => {
-  const response = await apiClient.get<any[]>(API_URL);
+  const response = await apiClient.get<any[]>(API_URL, { params: { filter: 'all' } });
   return response.data.map(mapToEnrollment);
 };
 

@@ -83,4 +83,40 @@ describe('sanitizeText', () => {
     const result = sanitizeText(longName);
     expect(result).toBe('A'.repeat(500));
   });
+
+  // ================================================================
+  // Real-world use cases (text-consistency-fixes)
+  // ================================================================
+
+  it('should sanitize notification title/message', () => {
+    expect(sanitizeText('  período  por  finalizar  ')).toBe('PERÍODO POR FINALIZAR');
+    expect(sanitizeText('Quedan 3 días para finalizar')).toBe('QUEDAN 3 DÍAS PARA FINALIZAR');
+  });
+
+  it('should sanitize address fields', () => {
+    expect(sanitizeText('  Av.  Principal  Los  Ilustres  ')).toBe('AV. PRINCIPAL LOS ILUSTRES');
+    expect(sanitizeText('Casa  Blanca,  detrás  del  mercado')).toBe('CASA BLANCA, DETRÁS DEL MERCADO');
+  });
+
+  it('should sanitize activity description', () => {
+    expect(sanitizeText('  revisión  de  expedientes  ')).toBe('REVISIÓN DE EXPEDIENTES');
+    expect(sanitizeText('Elaboración de informes mensuales')).toBe('ELABORACIÓN DE INFORMES MENSUALES');
+  });
+
+  it('should sanitize student request subject/description', () => {
+    expect(sanitizeText('  Solicitud  de  Cambio  de  Tutor  ')).toBe('SOLICITUD DE CAMBIO DE TUTOR');
+    expect(sanitizeText('Necesito cambiar de tutor porque...')).toBe('NECESITO CAMBIAR DE TUTOR PORQUE...');
+  });
+
+  it('should sanitize visit observations', () => {
+    expect(sanitizeText('  el  estudiante  presenta  avances  ')).toBe('EL ESTUDIANTE PRESENTA AVANCES');
+  });
+
+  it('should sanitize supervisor comments', () => {
+    expect(sanitizeText('  aprobado  con  observaciones  ')).toBe('APROBADO CON OBSERVACIONES');
+  });
+
+  it('should sanitize enrollment observation', () => {
+    expect(sanitizeText('  retiro  voluntario  -  motivos  personales  ')).toBe('RETIRO VOLUNTARIO - MOTIVOS PERSONALES');
+  });
 });

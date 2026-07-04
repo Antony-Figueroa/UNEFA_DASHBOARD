@@ -17,7 +17,7 @@ import { rolesService } from "../../../../features/roles/services/rolesService";
 import { resetUserPassword } from "../../../../features/users/services/userService";
 import UserDetailModal from "../../../../features/users/components/UserDetailModal";
 import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
-import { DialogVariant } from "../../../../components/ui/dialog/DialogConfig";
+import { CONFIRM_MESSAGES, DialogVariant } from "../../../../components/ui/dialog/DialogConfig";
 import { toTitleCase } from "../../../../utils/textFormat";
 import ConfigLayout from "../../ConfigLayout";
 
@@ -155,15 +155,14 @@ const UserManagementPage = () => {
       return;
     }
 
-    const actionVerb = isDeactivating ? "desactivar" : "restaurar";
-    const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Restauración";
-    const variant = isDeactivating ? "error" : "success";
-    const confirmText = isDeactivating ? "Desactivar" : "Restaurar";
+    const config = isDeactivating
+      ? CONFIRM_MESSAGES.deactivate('al usuario')
+      : CONFIRM_MESSAGES.activate('al usuario');
 
     setConfirmation({
       isOpen: true,
-      title: confirmTitle,
-      message: `¿Estás seguro de que deseas ${actionVerb} al usuario "${user.name} ${user.surname}"?`,
+      title: config.title,
+      message: `¿Estás seguro de que deseas ${isDeactivating ? 'desactivar' : 'restaurar'} al usuario "${user.name} ${user.surname}"?`,
       onConfirm: async () => {
         try {
           await toggleUserStatus(user);
@@ -173,8 +172,8 @@ const UserManagementPage = () => {
           setConfirmation(null);
         }
       },
-      confirmText: confirmText,
-      variant: variant as any,
+      confirmText: config.confirmLabel,
+      variant: config.variant as DialogVariant,
     });
   };
 
@@ -223,15 +222,14 @@ const UserManagementPage = () => {
   const handleBulkAction = () => {
     const newStatus = activeTab === "Activos" ? 0 : 1;
     const isDeactivating = activeTab === "Activos";
-    const actionVerb = isDeactivating ? "desactivar" : "restaurar";
-    const confirmTitle = isDeactivating ? "Confirmar Desactivación Masiva" : "Confirmar Restauración Masiva";
-    const variant = isDeactivating ? "error" : "success";
-    const confirmText = isDeactivating ? "Desactivar Todos" : "Restaurar Todos";
+    const config = isDeactivating
+      ? CONFIRM_MESSAGES.deactivate('los usuarios')
+      : CONFIRM_MESSAGES.activate('los usuarios');
     
     setConfirmation({
       isOpen: true,
-      title: confirmTitle,
-      message: `¿Estás seguro de que deseas ${actionVerb} los ${selectedIds.length} usuarios seleccionados?`,
+      title: isDeactivating ? 'Confirmar desactivación masiva' : 'Confirmar restauración masiva',
+      message: `¿Estás seguro de que deseas ${isDeactivating ? 'desactivar' : 'restaurar'} los ${selectedIds.length} usuarios seleccionados?`,
       onConfirm: async () => {
         try {
           await bulkToggleStatus(selectedIds, newStatus);
@@ -242,8 +240,8 @@ const UserManagementPage = () => {
           setConfirmation(null);
         }
       },
-      confirmText: confirmText,
-      variant: variant as any,
+      confirmText: isDeactivating ? 'Desactivar Todos' : 'Restaurar Todos',
+      variant: config.variant as DialogVariant,
     });
   };
 

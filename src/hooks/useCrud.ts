@@ -9,7 +9,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useToast } from "../context/toast";
-import { TOAST_SUCCESS, TOAST_ERROR, TOAST_TITLES } from "../components/ui/dialog/DialogConfig";
+import { TOAST, TOAST_SUCCESS, TOAST_ERROR } from "../components/ui/dialog/DialogConfig";
 import type { GetAllParams, PaginatedResponse } from "../api/crudServiceFactory";
 
 /** Estados posibles de la carga de datos */
@@ -131,11 +131,7 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       // Silenciar 403 — son errores de permisos, no de carga
       const axiosError = e as { response?: { status?: number } };
       if (axiosError.response?.status !== 403) {
-        addToast({
-          variant: "error",
-          title: `Error de Carga`,
-          message: `${TOAST_ERROR.load(resourceName)}. ${err.message}`
-        });
+        addToast({ ...TOAST.loadError(), message: err.message });
       }
     }
   }, [service, resourceName, addToast, enablePagination, pagination.limit, pagination.page]);
@@ -170,11 +166,7 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       }
       
       if (!options?.silent) {
-        addToast({
-          variant: "success",
-          title: TOAST_TITLES.created(resourceName),
-          message: TOAST_SUCCESS.created(resourceName),
-        });
+        addToast(TOAST.created(resourceName));
       }
       
       return newItem;
@@ -182,11 +174,8 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       const err = e instanceof Error ? e : new Error(TOAST_ERROR.create(resourceName));
       
       if (!options?.silent) {
-        addToast({ 
-          variant: "error", 
-          title: `Error al Crear`, 
-          message: err.message 
-        });
+        const serverMsg = (e as any)?.response?.data?.message;
+        addToast(serverMsg ? { ...TOAST.createError(resourceName), message: serverMsg } : TOAST.createError(resourceName));
       }
       
       throw err;
@@ -221,11 +210,7 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       }
       
       if (!options?.silent) {
-        addToast({
-          variant: "success",
-          title: TOAST_TITLES.updated(resourceName),
-          message: TOAST_SUCCESS.updated(resourceName),
-        });
+        addToast(TOAST.updated(resourceName));
       }
       
       return updatedItem;
@@ -233,11 +218,8 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       const err = e instanceof Error ? e : new Error(TOAST_ERROR.update(resourceName));
       
       if (!options?.silent) {
-        addToast({ 
-          variant: "error", 
-          title: `Error al Actualizar`, 
-          message: err.message 
-        });
+        const serverMsg = (e as any)?.response?.data?.message;
+        addToast(serverMsg ? { ...TOAST.updateError(resourceName), message: serverMsg } : TOAST.updateError(resourceName));
       }
       
       throw err;
@@ -271,11 +253,7 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       }
       
       if (!options?.silent) {
-        addToast({
-          variant: "success",
-          title: TOAST_TITLES.deleted(resourceName),
-          message: TOAST_SUCCESS.deleted(resourceName),
-        });
+        addToast(TOAST.deleted(resourceName));
       }
       
       return true;
@@ -288,11 +266,8 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       const err = e instanceof Error ? e : new Error(TOAST_ERROR.delete(resourceName));
       
       if (!options?.silent) {
-        addToast({ 
-          variant: "error", 
-          title: `Error al Eliminar`, 
-          message: err.message 
-        });
+        const serverMsg = (e as any)?.response?.data?.message;
+        addToast(serverMsg ? { ...TOAST.deleteError(resourceName), message: serverMsg } : TOAST.deleteError(resourceName));
       }
       
       throw err;
@@ -349,11 +324,8 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       const err = e instanceof Error ? e : new Error(TOAST_ERROR.update(resourceName));
       
       if (!options?.silent) {
-        addToast({ 
-          variant: "error", 
-          title: "Error de Estado", 
-          message: err.message 
-        });
+        const serverMsg = (e as any)?.response?.data?.message;
+        addToast(serverMsg ? { ...TOAST.updateError(resourceName), message: serverMsg } : TOAST.updateError(resourceName));
       }
       
       throw err;

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import toast from 'react-hot-toast';
-import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import visitsService from '../services/visitsService';
 import {
   Visit,
@@ -34,6 +34,7 @@ interface UseVisitsReturn {
 }
 
 export const useVisits = (): UseVisitsReturn => {
+  const { addToast } = useToast();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,9 +49,9 @@ export const useVisits = (): UseVisitsReturn => {
         setVisits(response.data);
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || TOAST_ERROR.load(resourceName);
+      const errorMessage = err.response?.data?.message || TOAST.loadError().message;
       setError(errorMessage);
-      toast.error(errorMessage);
+      addToast({ ...TOAST.loadError(), message: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -71,9 +72,9 @@ export const useVisits = (): UseVisitsReturn => {
         setVisits(response.data);
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || TOAST_ERROR.load(resourceName);
+      const errorMessage = err.response?.data?.message || TOAST.loadError().message;
       setError(errorMessage);
-      toast.error(errorMessage);
+      addToast({ ...TOAST.loadError(), message: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -89,9 +90,9 @@ export const useVisits = (): UseVisitsReturn => {
       }
       return null;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || TOAST_ERROR.load(resourceName);
+      const errorMessage = err.response?.data?.message || TOAST.loadError().message;
       setError(errorMessage);
-      toast.error(errorMessage);
+      addToast({ ...TOAST.loadError(), message: errorMessage });
       return null;
     } finally {
       setLoading(false);
@@ -104,15 +105,16 @@ export const useVisits = (): UseVisitsReturn => {
     try {
       const response = await visitsService.createVisit(payload);
       if (response.success) {
-        toast.success(TOAST_SUCCESS.created(resourceName));
+        addToast(TOAST.created(resourceName));
         setVisits(prev => [response.data, ...prev]);
         return response.data;
       }
       return null;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || TOAST_ERROR.create(resourceName);
+      const serverMsg = err.response?.data?.message;
+      const errorMessage = serverMsg || TOAST.createError(resourceName).message;
       setError(errorMessage);
-      toast.error(errorMessage);
+      addToast(serverMsg ? { ...TOAST.createError(resourceName), message: serverMsg } : TOAST.createError(resourceName));
       return null;
     } finally {
       setLoading(false);
@@ -125,15 +127,16 @@ export const useVisits = (): UseVisitsReturn => {
     try {
       const response = await visitsService.updateVisit(id, payload);
       if (response.success) {
-        toast.success(TOAST_SUCCESS.updated(resourceName));
+        addToast(TOAST.updated(resourceName));
         setVisits(prev => prev.map(v => v.visitId === id ? response.data : v));
         return response.data;
       }
       return null;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || TOAST_ERROR.update(resourceName);
+      const serverMsg = err.response?.data?.message;
+      const errorMessage = serverMsg || TOAST.updateError(resourceName).message;
       setError(errorMessage);
-      toast.error(errorMessage);
+      addToast(serverMsg ? { ...TOAST.updateError(resourceName), message: serverMsg } : TOAST.updateError(resourceName));
       return null;
     } finally {
       setLoading(false);
@@ -146,16 +149,16 @@ export const useVisits = (): UseVisitsReturn => {
     try {
       const response = await visitsService.deleteVisit(id);
       if (response.success) {
-        toast.success(TOAST_SUCCESS.deleted(resourceName));
-        // Soft delete: cambiar status a false para que aparezca en inactivas
+        addToast(TOAST.deleted(resourceName));
         setVisits(prev => prev.map(v => v.visitId === id ? { ...v, status: false } : v));
         return true;
       }
       return false;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || TOAST_ERROR.delete(resourceName);
+      const serverMsg = err.response?.data?.message;
+      const errorMessage = serverMsg || TOAST.deleteError(resourceName).message;
       setError(errorMessage);
-      toast.error(errorMessage);
+      addToast(serverMsg ? { ...TOAST.deleteError(resourceName), message: serverMsg } : TOAST.deleteError(resourceName));
       return false;
     } finally {
       setLoading(false);
@@ -168,15 +171,16 @@ export const useVisits = (): UseVisitsReturn => {
     try {
       const response = await visitsService.restoreVisit(id);
       if (response.success) {
-        toast.success(TOAST_SUCCESS.restored(resourceName));
+        addToast(TOAST.restored(resourceName));
         setVisits(prev => prev.map(v => v.visitId === id ? { ...v, status: true } : v));
         return true;
       }
       return false;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || TOAST_ERROR.restore(resourceName);
+      const serverMsg = err.response?.data?.message;
+      const errorMessage = serverMsg || TOAST.restoreError(resourceName).message;
       setError(errorMessage);
-      toast.error(errorMessage);
+      addToast(serverMsg ? { ...TOAST.restoreError(resourceName), message: serverMsg } : TOAST.restoreError(resourceName));
       return false;
     } finally {
       setLoading(false);

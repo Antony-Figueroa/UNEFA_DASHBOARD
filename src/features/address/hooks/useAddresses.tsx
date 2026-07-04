@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import { addressService } from '../services/addressService';
 import type {
   InstitutionAddress,
@@ -59,6 +60,7 @@ interface UseAddressesOptions {
 }
 
 export const useAddresses = ({ entityType, entityId }: UseAddressesOptions) => {
+  const { addToast } = useToast();
   const [addresses, setAddresses] = useState<AddressRow[]>([]);
   const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -81,7 +83,7 @@ export const useAddresses = ({ entityType, entityId }: UseAddressesOptions) => {
       const flattened = camelized.map(flattenAddress);
       setAddresses(flattened);
     } catch (error: any) {
-      toast.error('Error al cargar direcciones');
+      addToast(TOAST.loadError());
       console.error('[useAddresses] fetch error:', error);
     } finally {
       setLoading(false);
@@ -94,7 +96,7 @@ export const useAddresses = ({ entityType, entityId }: UseAddressesOptions) => {
       const response = await addressService.getGeoOptions();
       setGeoOptions(response.data);
     } catch (error: any) {
-      toast.error('Error al cargar datos geográficos');
+      addToast(TOAST.loadError());
       console.error('[useAddresses] geo error:', error);
     } finally {
       setGeoLoading(false);
@@ -104,11 +106,11 @@ export const useAddresses = ({ entityType, entityId }: UseAddressesOptions) => {
   const addAddress = async (payload: CreateAddressPayload) => {
     try {
       await addressService.createAddress(payload);
-      toast.success('Dirección agregada exitosamente');
+      addToast({ variant: "success", title: "Dirección agregada", message: "Dirección agregada exitosamente" });
       await fetchAddresses();
     } catch (error: any) {
       const message = error.response?.data?.message || 'Error al agregar dirección';
-      toast.error(message);
+      addToast({ variant: "error", title: "Error", message });
       console.error('[useAddresses] add error:', error);
       throw error;
     }
@@ -117,11 +119,11 @@ export const useAddresses = ({ entityType, entityId }: UseAddressesOptions) => {
   const updateAddress = async (id: number, payload: UpdateAddressPayload) => {
     try {
       await addressService.updateAddress(id, payload);
-      toast.success('Dirección actualizada exitosamente');
+      addToast({ variant: "success", title: "Dirección actualizada", message: "Dirección actualizada exitosamente" });
       await fetchAddresses();
     } catch (error: any) {
       const message = error.response?.data?.message || 'Error al actualizar dirección';
-      toast.error(message);
+      addToast({ variant: "error", title: "Error al actualizar", message });
       console.error('[useAddresses] update error:', error);
       throw error;
     }
@@ -131,11 +133,11 @@ export const useAddresses = ({ entityType, entityId }: UseAddressesOptions) => {
     if (!entityId) return;
     try {
       await addressService.deleteAddress(id, entityType, entityId);
-      toast.success('Dirección eliminada');
+      addToast({ variant: "success", title: "Dirección eliminada", message: "Dirección eliminada" });
       await fetchAddresses();
     } catch (error: any) {
       const message = error.response?.data?.message || 'Error al eliminar dirección';
-      toast.error(message);
+      addToast({ variant: "error", title: "Error al eliminar", message });
       console.error('[useAddresses] delete error:', error);
       throw error;
     }
@@ -145,11 +147,11 @@ export const useAddresses = ({ entityType, entityId }: UseAddressesOptions) => {
     if (!entityId || !addressTypeId) return;
     try {
       await addressService.setPrimaryAddress(id, { entityType, entityId, addressTypeId });
-      toast.success('Dirección principal actualizada');
+      addToast({ variant: "success", title: "Dirección principal", message: "Dirección principal actualizada" });
       await fetchAddresses();
     } catch (error: any) {
       const message = error.response?.data?.message || 'Error al establecer dirección principal';
-      toast.error(message);
+      addToast({ variant: "error", title: "Error", message });
       console.error('[useAddresses] setPrimary error:', error);
       throw error;
     }

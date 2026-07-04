@@ -18,7 +18,8 @@ import {
   type Permission,
   type GroupedPermissions,
 } from "../../../../../features/permissions/services/permissionService";
-import toast from "react-hot-toast";
+import { useToast } from "../../../../../context/toast";
+import { TOAST } from "../../../../../components/ui/dialog/DialogConfig";
 
 interface RoleWithPermissions extends Role {
   permissionIds: number[];
@@ -43,6 +44,7 @@ export default function PermissionMatrixModal({
   modules,
   onRoleUpdated,
 }: PermissionMatrixModalProps) {
+  const { addToast } = useToast();
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
@@ -133,12 +135,12 @@ export default function PermissionMatrixModal({
               : Promise.resolve(),
           ]);
 
-          toast.success("Rol actualizado correctamente");
+          addToast(TOAST.updated("Rol"));
           onClose();
           onRoleUpdated();
         } catch (error) {
           console.error("Error updating role:", error);
-          toast.error("Error al actualizar el rol");
+          addToast(TOAST.updateError("rol"));
         } finally {
           setSaving(false);
           setConfirmDialog(null);

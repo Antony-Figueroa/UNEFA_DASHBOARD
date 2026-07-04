@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import toast from 'react-hot-toast';
-import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import { adminRequestsService } from '../services/adminRequestsService';
 import type { AdminRequest, RequestStats, PaginationMeta, RequestFilters, UpdateStatusPayload } from '../types';
 
@@ -14,6 +14,7 @@ export const useAdminRequests = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: DEFAULT_LIMIT, total: 0, totalPages: 0 });
+  const { addToast } = useToast();
 
   const fetchRequests = useCallback(async (filters?: RequestFilters) => {
     setLoading(true);
@@ -27,7 +28,7 @@ export const useAdminRequests = () => {
     } catch (err) {
       console.error('[useAdminRequests] Error fetching requests:', err);
       setError('Error al cargar las solicitudes');
-      toast.error(TOAST_ERROR.load(resourceName));
+      addToast(TOAST.loadError());
       return { data: [], stats: { total: 0, pending: 0, in_review: 0, approved: 0, rejected: 0 }, pagination: { page: 1, limit: DEFAULT_LIMIT, total: 0, totalPages: 0 } };
     } finally {
       setLoading(false);
@@ -43,10 +44,10 @@ export const useAdminRequests = () => {
     setError(null);
     try {
       await adminRequestsService.updateStatus(id, data);
-      toast.success(TOAST_SUCCESS.updated(resourceName));
+      addToast(TOAST.updated(resourceName));
       return true;
     } catch (err) {
-      const serverMsg = (err as any)?.response?.data?.message || (err as any)?.message || TOAST_ERROR.update(resourceName);
+      const serverMsg = (err as any)?.response?.data?.message || (err as any)?.message || TOAST.updateError(resourceName).message;
       console.error('[useAdminRequests] Error updating request:', {
         id,
         data,
@@ -54,7 +55,7 @@ export const useAdminRequests = () => {
         status: (err as any)?.response?.status
       });
       setError(serverMsg);
-      toast.error(serverMsg);
+      addToast({ ...TOAST.updateError(resourceName), message: serverMsg });
       return false;
     } finally {
       setSaving(false);

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import { getReportConfig } from '../config/reportConfig';
 import {
   generateRelacionGeneralTutoresExcel,
@@ -15,6 +16,7 @@ import {
 } from '../../../utils/unefaExcelReports';
 
 export function useReports() {
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const exportExcel = useCallback(async (
@@ -57,13 +59,13 @@ export function useReports() {
           await generateEvaluacionesConsolidadasExcel(data, period, fileName);
           break;
         default:
-          toast.error('Tipo de reporte no soportado');
+          addToast({ variant: "error", title: "No soportado", message: "Tipo de reporte no soportado" });
           return;
       }
-      toast.success('Reporte exportado exitosamente');
+      addToast({ variant: "success", title: "Exportado", message: "Reporte exportado exitosamente" });
     } catch (error) {
       console.error(`[useReports] Error exporting ${type}:`, error);
-      toast.error('Error al exportar el reporte');
+      addToast({ variant: "error", title: "Error al exportar", message: "Error al exportar el reporte" });
     }
   }, []);
 
@@ -82,7 +84,7 @@ export function useReports() {
       if (!config) throw new Error(`Tipo de reporte desconocido: ${type}`);
       return await config.loadData(periodId, careerId, page, limit, careerIds);
     } catch (error: any) {
-      toast.error(error?.message || 'Error al cargar datos');
+      addToast({ variant: "error", title: "Error al cargar", message: error?.message || 'Error al cargar datos' });
       throw error;
     } finally {
       setLoading(false);

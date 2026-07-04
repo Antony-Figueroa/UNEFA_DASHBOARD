@@ -16,7 +16,7 @@ import { Visit, CreateVisitPayload, UpdateVisitPayload, LEGACY_VISIT_TYPES, LEGA
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import { useToast } from '../../../context/toast';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
-import { CONFIRM_MESSAGES, MODAL_CONFIG, SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
+import { CONFIRM_MESSAGES, MODAL_CONFIG, SYSTEM_DIALOGS, TOAST } from '../../../components/ui/dialog/DialogConfig';
 import Input from '../../../components/form/input/InputField';
 import { SAFE_LONG_TEXT_PATTERN, isSafeInput } from '../../../utils/inputValidation';
 import Button from '../../../components/ui/button/Button';
@@ -386,11 +386,9 @@ export default function VisitModal({
         });
       }
     } catch (error: any) {
-      addToast({
-        variant: 'error',
-        title: 'Error al crear tutor',
-        message: error.response?.data?.message || 'No se pudo crear el tutor'
-      });
+      addToast(error.response?.data?.message
+        ? { ...TOAST.createError('Tutor'), message: error.response.data.message }
+        : TOAST.createError('Tutor'));
     }
   };
 
@@ -628,13 +626,7 @@ export default function VisitModal({
     
     const success = await onSubmit(payload);
     if (success) {
-      addToast({
-        variant: 'success',
-        title: isEditing ? 'Visita actualizada' : 'Visita registrada',
-        message: isEditing 
-          ? 'Los cambios se han guardado exitosamente' 
-          : 'La visita de seguimiento ha sido registrada'
-      });
+      addToast(isEditing ? TOAST.updated('Visita') : TOAST.created('Visita'));
       onClose();
     }
     // NOTA: el mensaje de error real lo muestra useVisits (toast.error) desde el hook

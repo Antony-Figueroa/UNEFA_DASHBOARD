@@ -5,9 +5,11 @@ import tutorService, { TutorStudent } from "../../features/tutor/services/tutorS
 import Badge from "../../components/ui/badge/Badge";
 import Button from "../../components/ui/button/Button";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
-import toast from "react-hot-toast";
+import { useToast } from "../../context/toast";
+import { TOAST } from "../../components/ui/dialog/DialogConfig";
 
 export default function TutorGrades() {
+  const { addToast } = useToast();
   const [students, setStudents] = useState<TutorStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function TutorGrades() {
 
     const numGrade = parseFloat(grade);
     if (isNaN(numGrade) || numGrade < 0 || numGrade > 20) {
-      toast.error("La nota debe ser un número entre 0 y 20");
+      addToast({ variant: "error", title: "Dato inválido", message: "La nota debe ser un número entre 0 y 20." });
       return;
     }
 
@@ -59,10 +61,10 @@ export default function TutorGrades() {
       ));
       
       setSelectedStudent(null);
-      toast.success("Nota guardada exitosamente");
+      addToast({ variant: "success", title: "Nota guardada", message: "La nota se guardó correctamente." });
     } catch (err) {
       console.error("[TutorGrades] Error saving grade:", err);
-      toast.error("Error al guardar la nota");
+      addToast(TOAST.updateError('nota'));
     } finally {
       setSaving(false);
     }

@@ -5,6 +5,8 @@ import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
 import Button from '../../components/ui/button/Button';
 import Badge from '../../components/ui/badge/Badge';
+import { useToast } from '../../context/toast';
+import { TOAST } from '../../components/ui/dialog/DialogConfig';
 import toast from 'react-hot-toast';
 import { useDragAndDrop } from '@formkit/drag-and-drop/react';
 import {
@@ -95,6 +97,7 @@ const SIZE_LABELS: Record<WidgetSize, { label: string; cols: string }> = {
 // ─── Componente Principal ────────────────────────────────────────────────────
 
 export default function DashboardConfigurator() {
+  const { addToast } = useToast();
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<number>(1);
   const [loading, setLoading] = useState(true);
@@ -133,7 +136,7 @@ export default function DashboardConfigurator() {
         }
       } catch (err) {
         console.error('[DashboardConfig] Error loading roles:', err);
-        toast.error('Error al cargar los roles');
+        addToast(TOAST.loadError());
       } finally {
         setRolesLoading(false);
       }
@@ -201,9 +204,10 @@ export default function DashboardConfigurator() {
     try {
       const normalized = dndWidgets.map((w, i) => ({ ...w, order: i }));
       await dashboardLayoutService.save(selectedRoleId, normalized);
-      toast.success('Layout del dashboard guardado exitosamente');
+      addToast(TOAST.updated('Layout del dashboard'));
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Error al guardar el layout');
+      const serverMsg = err?.response?.data?.message;
+      addToast(serverMsg ? { ...TOAST.updateError('layout'), message: serverMsg } : TOAST.updateError('layout'));
     } finally {
       setSaving(false);
     }
@@ -215,10 +219,10 @@ export default function DashboardConfigurator() {
       const layout = await dashboardLayoutService.reset(selectedRoleId);
       setDndWidgets(layout.widgets ?? []);
       toast.dismiss();
-      toast.success('Layout restablecido a valores por defecto');
+      addToast(TOAST.restored('Layout del dashboard'));
     } catch {
       toast.dismiss();
-      toast.error('Error al restablecer el layout');
+      addToast(TOAST.restoreError('layout'));
     }
   };
 

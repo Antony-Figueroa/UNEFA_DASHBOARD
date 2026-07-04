@@ -11,7 +11,8 @@ import CustomInput from '../../components/ui/form/input/CustomInput';
 import { Tabs } from '../../components/ui/tabs/Tabs';
 import { useTabs } from '../../hooks/useTabs';
 import { User, Mail, Phone, Calendar, Edit2, Check, X } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '../../context/toast';
+import { TOAST } from '../../components/ui/dialog/DialogConfig';
 
 const vePhoneRegex = /^(0[0-9]{3})-?[0-9]{7}$/;
 
@@ -40,6 +41,7 @@ const studentTypeLabels: Record<string, string> = {
 };
 
 export default function StudentProfilePage() {
+  const { addToast } = useToast();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,10 +96,10 @@ export default function StudentProfilePage() {
       const updated = await studentService.updateProfile(data);
       setProfile(updated);
       setEditMode(false);
-      toast.success('Perfil actualizado exitosamente');
+      addToast(TOAST.updated('Perfil'));
     } catch (err) {
       console.error('[StudentProfile] Error saving:', err);
-      toast.error('Error al guardar los cambios');
+      addToast(TOAST.updateError('perfil'));
     } finally {
       setSaving(false);
     }

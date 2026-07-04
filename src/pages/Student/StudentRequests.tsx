@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Button from "../../components/ui/button/Button";
-import toast from "react-hot-toast";
+import { useToast } from "../../context/toast";
+import { TOAST } from "../../components/ui/dialog/DialogConfig";
 import { getTutors } from "../../features/tutors/services/tutorsService";
 import { getInstitutions } from "../../features/institutions/services/institutionsService";
 import { getCareers } from "../../features/careers/services/careersService";
@@ -27,6 +28,7 @@ import { ChevronDown, ChevronUp, X } from "lucide-react";
 const ITEMS_PER_PAGE = 15;
 
 export default function StudentRequests() {
+  const { addToast } = useToast();
   const {
     requests,
     requestTypes,
@@ -140,13 +142,13 @@ export default function StudentRequests() {
       })));
     } catch (err) {
       console.error("[StudentRequests] Error loading options:", err);
-      toast.error("Error al cargar opciones");
+      addToast(TOAST.loadError());
     }
   };
 
   const handleSubmit = async (form: NewRequestFormData, reassignment: ReassignmentFormData) => {
     if (!form.typeId || !form.subject || !form.description) {
-      toast.error("Todos los campos son requeridos");
+      addToast({ variant: "error", title: "Campos requeridos", message: "Todos los campos son obligatorios." });
       return;
     }
 
@@ -177,7 +179,7 @@ export default function StudentRequests() {
       }
     } catch (err) {
       console.error("[StudentRequests] Error creating:", err);
-      toast.error("Error al enviar solicitud");
+      addToast(TOAST.createError('solicitud'));
     } finally {
       setSubmitting(false);
     }

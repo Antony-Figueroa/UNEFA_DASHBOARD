@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import { Pagination } from "../../components/ui/table/Pagination";
-import toast from "react-hot-toast";
+import { useToast } from "../../context/toast";
+import { TOAST } from "../../components/ui/dialog/DialogConfig";
 import { getTutors } from "../../features/tutors/services/tutorsService";
 import { getInstitutions } from "../../features/institutions/services/institutionsService";
 import { getCareers } from "../../features/careers/services/careersService";
@@ -25,6 +26,7 @@ import type { AttentionFormData } from "../../features/student-requests/componen
 const ITEMS_PER_PAGE = 20;
 
 export default function AdminRequests() {
+  const { addToast } = useToast();
   const {
     requests,
     stats,
@@ -156,7 +158,7 @@ export default function AdminRequests() {
       }
     } catch (err) {
       console.error("[AdminRequests] Error updating:", err);
-      toast.error("Error al actualizar la solicitud");
+      addToast(TOAST.updateError('solicitud'));
     }
   };
 

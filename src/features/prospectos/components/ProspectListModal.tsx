@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import toast from "react-hot-toast";
+import { useToast } from "@/context/toast";
+import { TOAST } from "@/components/ui/dialog/DialogConfig";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 
@@ -35,6 +36,7 @@ interface ProspectListModalProps {
 }
 
 export function ProspectListModal({ isOpen, onClose }: ProspectListModalProps) {
+  const { addToast } = useToast();
   const {
     lists,
     currentList,
@@ -142,7 +144,7 @@ export function ProspectListModal({ isOpen, onClose }: ProspectListModalProps) {
 
   const handleExportExcel = async () => {
     if (!currentList || items.length === 0) {
-      toast.error("No hay datos para exportar");
+      addToast({ variant: "error", title: "Sin datos", message: "No hay datos para exportar" });
       return;
     }
     try {
@@ -157,16 +159,16 @@ export function ProspectListModal({ isOpen, onClose }: ProspectListModalProps) {
         `prospectos_${currentList.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}`,
         `Reporte de Prospectos - ${currentList.name}`
       );
-      toast.success("Excel exportado exitosamente");
+      addToast({ variant: "success", title: "Exportado", message: "Excel exportado exitosamente" });
     } catch (error) {
-      toast.error("Error al exportar Excel");
+      addToast({ variant: "error", title: "Error al exportar", message: "Error al exportar Excel" });
       console.error("[ProspectListModal] Error exporting Excel:", error);
     }
   };
 
   const handleExportPDF = async () => {
     if (!currentList || items.length === 0) {
-      toast.error("No hay datos para exportar");
+      addToast({ variant: "error", title: "Sin datos", message: "No hay datos para exportar" });
       return;
     }
     try {
@@ -201,9 +203,9 @@ export function ProspectListModal({ isOpen, onClose }: ProspectListModalProps) {
 
       const { saveAs } = await import("file-saver");
       saveAs(blob, `prospectos_${currentList.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`);
-      toast.success("PDF exportado exitosamente");
+      addToast({ variant: "success", title: "Exportado", message: "PDF exportado exitosamente" });
     } catch (error) {
-      toast.error("Error al exportar PDF");
+      addToast({ variant: "error", title: "Error al exportar", message: "Error al exportar PDF" });
       console.error("[ProspectListModal] Error exporting PDF:", error);
     }
   };

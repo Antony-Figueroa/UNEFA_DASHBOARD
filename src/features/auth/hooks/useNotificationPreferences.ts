@@ -4,9 +4,11 @@ import {
   saveNotificationPrefs as savePrefsApi,
 } from "../services/authService";
 import type { NotificationPreference } from "../types";
-import toast from "react-hot-toast";
+import { useToast } from "@/context/toast";
+import { TOAST } from "@/components/ui/dialog/DialogConfig";
 
 export const useNotificationPreferences = () => {
+  const { addToast } = useToast();
   const [prefs, setPrefs] = useState<NotificationPreference[]>([]);
   const [originalPrefs, setOriginalPrefs] = useState<NotificationPreference[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ export const useNotificationPreferences = () => {
       setPrefs(data);
       setOriginalPrefs(JSON.parse(JSON.stringify(data)));
     } catch {
-      toast.error("Error al cargar preferencias");
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -40,13 +42,13 @@ export const useNotificationPreferences = () => {
     try {
       const result = await savePrefsApi(prefs);
       if (result.success) {
-        toast.success("Preferencias guardadas");
+        addToast({ variant: "success", title: "Preferencias guardadas", message: "Preferencias guardadas" });
         setOriginalPrefs(JSON.parse(JSON.stringify(prefs)));
       } else {
-        toast.error(result.message || "Error al guardar preferencias");
+        addToast({ variant: "error", title: "Error al guardar", message: result.message || "Error al guardar preferencias" });
       }
     } catch {
-      toast.error("Error al guardar preferencias");
+      addToast({ variant: "error", title: "Error al guardar", message: "Error al guardar preferencias" });
     }
   };
 

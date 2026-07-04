@@ -19,7 +19,7 @@ import TextArea from '../../../components/form/input/TextArea';
 import CustomSelect from '../../../components/form/CustomSelect';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
-import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
+import { TOAST, CONFIRM_MESSAGES, SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
 import { useToast } from '../../../context/toast';
 import { isSafeInput } from '../../../utils/inputValidation';
 
@@ -93,7 +93,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                     setDetailData(data);
                 } catch (error) {
                     console.error("[TrackingModal] Error al cargar detalles:", error);
-                    addToast({ variant: "error", title: "Error", message: "No se pudieron cargar los detalles del seguimiento." });
+                    addToast({ ...TOAST.loadError(), message: "No se pudieron cargar los detalles del seguimiento." });
                 }
             };
             loadDetail();
@@ -168,7 +168,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
             setPendingData(null);
         } catch (error) {
             console.error("[TrackingModal] Error al procesar el envío del formulario:", error);
-            addToast({ variant: "error", title: "Error", message: "No se pudo guardar el seguimiento." });
+            addToast(TOAST.updateError('Seguimiento'));
         }
     };
 

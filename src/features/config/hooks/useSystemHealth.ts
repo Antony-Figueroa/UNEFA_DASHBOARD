@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import { configService, SystemHealth } from '../services/configService';
-import toast from 'react-hot-toast';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 
 export function useSystemHealth() {
+  const { addToast } = useToast();
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [checking, setChecking] = useState(false);
 
@@ -12,13 +14,13 @@ export function useSystemHealth() {
       const result = await configService.getSystemHealth();
       setHealth(result);
       if (result.status === 'healthy') {
-        toast.success('Sistema funcionando correctamente');
+        addToast({ variant: "success", title: "Sistema saludable", message: "Sistema funcionando correctamente" });
       } else {
-        toast.error('Se detectaron problemas en el sistema');
+        addToast({ variant: "error", title: "Problema detectado", message: "Se detectaron problemas en el sistema" });
       }
       return result;
     } catch (err) {
-      toast.error('Error al verificar el sistema');
+      addToast({ variant: "error", title: "Error", message: "Error al verificar el sistema" });
       console.error('[useSystemHealth]', err);
       return null;
     } finally {
@@ -29,10 +31,10 @@ export function useSystemHealth() {
   const clearOldLogs = useCallback(async (days: number = 90) => {
     try {
       const result = await configService.clearOldLogs(days);
-      toast.success(result.message || 'Logs limpiados correctamente');
+      addToast({ variant: "success", title: "Logs limpiados", message: result.message || 'Logs limpiados correctamente' });
       return true;
     } catch (err) {
-      toast.error('Error al limpiar los logs');
+      addToast({ variant: "error", title: "Error", message: "Error al limpiar los logs" });
       console.error('[useSystemHealth] Error clearing logs:', err);
       return false;
     }
@@ -42,13 +44,13 @@ export function useSystemHealth() {
     try {
       const result = await configService.syncData();
       if (result.success) {
-        toast.success(result.message);
+        addToast({ variant: "success", title: "Sincronizado", message: result.message });
       } else {
-        toast.error('Error en la sincronización');
+        addToast({ variant: "error", title: "Error", message: "Error en la sincronización" });
       }
       return result.success;
     } catch (err) {
-      toast.error('Error al sincronizar datos');
+      addToast({ variant: "error", title: "Error", message: "Error al sincronizar datos" });
       console.error('[useSystemHealth] Error syncing data:', err);
       return false;
     }

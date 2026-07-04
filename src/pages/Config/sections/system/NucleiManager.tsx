@@ -10,7 +10,8 @@ import { CONFIRM_MESSAGES, MODAL_CONFIG } from "../../../../components/ui/dialog
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../../components/ui/modal";
 import MultiSelect from "../../../../components/form/MultiSelect";
 import apiClient from "../../../../api/apiClient";
-import toast from "react-hot-toast";
+import { useToast } from "../../../../context/toast";
+import { TOAST } from "../../../../components/ui/dialog/DialogConfig";
 import { EditIcon, TrashIcon, PlusCircleIcon, EyeIcon } from "../../../../icons/actions";
 import AsyncActionButton from "../../../../components/common/AsyncActionButton";
 import CustomSelect from "../../../../components/form/CustomSelect";
@@ -62,6 +63,7 @@ interface CareerOption {
 /* ─── Component ─── */
 
 export default function NucleiManager() {
+  const { addToast } = useToast();
   const [nuclei, setNuclei] = useState<Nucleus[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -96,7 +98,7 @@ export default function NucleiManager() {
       const res = await apiClient.get("/system-nucleus");
       setNuclei(res.data || []);
     } catch {
-      toast.error("Error al cargar núcleos");
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -195,7 +197,7 @@ export default function NucleiManager() {
       setAddValueOpen(false);
       setAddValueInput("");
     } catch {
-      toast.error("Error al crear la región");
+      addToast({ variant: "error", title: "Error", message: "Error al crear la región" });
     } finally {
       setSavingNewValue(false);
     }
@@ -206,7 +208,7 @@ export default function NucleiManager() {
   const handleSave = async () => {
     // Validate required
     if (!form.code.trim() || !form.name.trim() || !form.region.trim()) {
-      toast.error("Los campos Código, Nombre y Región son requeridos");
+      addToast({ variant: "error", title: "Campos requeridos", message: "Los campos Código, Nombre y Región son requeridos" });
       return;
     }
 
@@ -228,12 +230,12 @@ export default function NucleiManager() {
         // Update
         await apiClient.put(`/system-nucleus/${editingNucleus.nucleus_id}`, payload);
         nucleusId = editingNucleus.nucleus_id;
-        toast.success("Núcleo actualizado exitosamente");
+        addToast(TOAST.updated("Núcleo"));
       } else {
         // Create
         const res = await apiClient.post("/system-nucleus", payload);
         nucleusId = res.data?.nucleus_id || res.data?.data?.nucleus_id;
-        toast.success("Núcleo creado exitosamente");
+        addToast(TOAST.created("Núcleo"));
       }
 
       // Save careers
@@ -247,7 +249,7 @@ export default function NucleiManager() {
       await fetchNuclei();
     } catch (error: any) {
       const msg = error?.response?.data?.message || "Error al guardar el núcleo";
-      toast.error(msg);
+      addToast({ variant: "error", title: "Error al guardar", message: msg });
     } finally {
       setActionLoading(false);
     }
@@ -267,11 +269,11 @@ export default function NucleiManager() {
         setActionLoading(true);
         try {
           await apiClient.patch(`/system-nucleus/${nucleus.nucleus_id}/toggle-status`);
-          toast.success(`Núcleo ${goingInactive ? "desactivado" : "activado"} exitosamente`);
+          addToast({ variant: "success", title: goingInactive ? "Desactivado" : "Activado", message: `Núcleo ${goingInactive ? "desactivado" : "activado"} exitosamente` });
           await fetchNuclei();
         } catch (error: any) {
           const msg = error?.response?.data?.message || "Error al cambiar estado";
-          toast.error(msg);
+          addToast({ variant: "error", title: "Error", message: msg });
         } finally {
           setActionLoading(false);
           setConfirmDialog(null);
@@ -290,11 +292,11 @@ export default function NucleiManager() {
         setActionLoading(true);
         try {
           await apiClient.delete(`/system-nucleus/${nucleus.nucleus_id}`);
-          toast.success("Núcleo eliminado exitosamente");
+          addToast(TOAST.deleted("Núcleo"));
           await fetchNuclei();
         } catch (error: any) {
           const msg = error?.response?.data?.message || "Error al eliminar el núcleo";
-          toast.error(msg);
+          addToast({ variant: "error", title: "Error al eliminar", message: msg });
         } finally {
           setActionLoading(false);
           setConfirmDialog(null);

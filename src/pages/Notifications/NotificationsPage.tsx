@@ -12,7 +12,8 @@ import { Pagination } from "../../components/ui/table";
 import { useNotifications } from "../../features/notifications/hooks/useNotifications";
 import { notificationTypeIcons } from "../../features/notifications/types";
 import { formatDateTime } from "../../utils/date";
-import toast from "react-hot-toast";
+import { useToast } from "../../context/toast";
+import { TOAST } from "../../components/ui/dialog/DialogConfig";
 
 // Mapa de colores para tipos de notificación - semántica académica
 const notificationTypeStyles: Record<string, { bg: string; text: string; label: string }> = {
@@ -70,6 +71,7 @@ const CardBody = ({ children }: { children: React.ReactNode }) => (
 );
 
 export default function NotificationsPage() {
+  const { addToast } = useToast();
   const { setPageTitle } = usePageTitle();
   
   const [typeFilter, setTypeFilter] = useState('all');
@@ -117,7 +119,7 @@ export default function NotificationsPage() {
   
   const handleMarkAllAsRead = useCallback(() => {
     markAllAsRead();
-    toast.success('Todas las notificaciones marcadas como leídas');
+    addToast({ variant: "success", title: "Notificaciones leídas", message: "Todas las notificaciones se marcaron como leídas." });
   }, [markAllAsRead]);
 
   return (
@@ -294,7 +296,7 @@ export default function NotificationsPage() {
                         <p 
                           className="text-sm text-text-secondary dark:text-text-tertiary mb-2 line-clamp-2 cursor-pointer hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
                           onMouseEnter={() => {
-                            toast.success(notification.MESSAGE);
+                            addToast({ variant: "info", title: notification.TITLE, message: notification.MESSAGE });
                           }}
                         >
                           {notification.MESSAGE}

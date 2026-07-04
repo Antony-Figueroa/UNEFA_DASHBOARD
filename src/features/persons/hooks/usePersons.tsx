@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import toast from 'react-hot-toast';
-import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import { Persona } from '../../types/person';
 import { personService } from '../services/personService';
 import { CreatePersonPayload, UpdatePersonPayload } from '../types';
@@ -14,6 +14,7 @@ export const usePersons = (page = 1, limit = 20, filters?: { status?: number; se
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState(false);
+  const { addToast } = useToast();
 
   const fetchPersons = useCallback(async () => {
     setStatus('loading');
@@ -38,10 +39,11 @@ export const usePersons = (page = 1, limit = 20, filters?: { status?: number; se
     try {
       const newPerson = await personService.create(data);
       setPersons(prev => [newPerson, ...prev]);
-      toast.success(TOAST_SUCCESS.created(resourceName));
+      addToast(TOAST.created(resourceName));
       return newPerson;
     } catch (err: any) {
-      toast.error(err.response?.data?.message || TOAST_ERROR.create(resourceName));
+      const serverMsg = err.response?.data?.message;
+      addToast(serverMsg ? { ...TOAST.createError(resourceName), message: serverMsg } : TOAST.createError(resourceName));
       throw err;
     } finally {
       setLoadingAction(false);
@@ -53,10 +55,11 @@ export const usePersons = (page = 1, limit = 20, filters?: { status?: number; se
     try {
       const updated = await personService.update(data.personId, data);
       setPersons(prev => prev.map(p => (Number(p.personId) === data.personId ? updated : p)));
-      toast.success(TOAST_SUCCESS.updated(resourceName));
+      addToast(TOAST.updated(resourceName));
       return updated;
     } catch (err: any) {
-      toast.error(err.response?.data?.message || TOAST_ERROR.update(resourceName));
+      const serverMsg = err.response?.data?.message;
+      addToast(serverMsg ? { ...TOAST.updateError(resourceName), message: serverMsg } : TOAST.updateError(resourceName));
       throw err;
     } finally {
       setLoadingAction(false);
@@ -72,9 +75,10 @@ export const usePersons = (page = 1, limit = 20, filters?: { status?: number; se
           Number(p.personId) === personId ? { ...p, status: !p.status } : p
         )
       );
-      toast.success(TOAST_SUCCESS.updated(resourceName));
+      addToast(TOAST.updated(resourceName));
     } catch (err: any) {
-      toast.error(err.response?.data?.message || TOAST_ERROR.update(resourceName));
+      const serverMsg = err.response?.data?.message;
+      addToast(serverMsg ? { ...TOAST.updateError(resourceName), message: serverMsg } : TOAST.updateError(resourceName));
       throw err;
     } finally {
       setLoadingAction(false);

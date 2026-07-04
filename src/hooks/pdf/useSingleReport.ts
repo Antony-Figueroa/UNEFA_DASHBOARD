@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { pdf, DocumentProps } from '@react-pdf/renderer';
-import toast from 'react-hot-toast';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 
 interface UseSingleReportOptions {
   fileName: string;
@@ -13,6 +14,7 @@ interface UseSingleReportReturn {
 }
 
 export const useSingleReport = ({ fileName }: UseSingleReportOptions): UseSingleReportReturn => {
+  const { addToast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generatePDF = useCallback(async (template: React.ReactElement<DocumentProps>) => {
@@ -27,10 +29,10 @@ export const useSingleReport = ({ fileName }: UseSingleReportOptions): UseSingle
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      toast.success('Reporte generado exitosamente');
+      addToast({ variant: "success", title: "Reporte generado", message: "Reporte generado exitosamente" });
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('Error al generar el reporte');
+      addToast({ variant: "error", title: "Error al generar", message: "Error al generar el reporte" });
     } finally {
       setIsGenerating(false);
     }
@@ -42,10 +44,10 @@ export const useSingleReport = ({ fileName }: UseSingleReportOptions): UseSingle
       const blob = await pdf(template).toBlob();
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
-      toast.success('Abriendo reporte en nueva pestaña');
+      addToast({ variant: "success", title: "Abriendo reporte", message: "Abriendo reporte en nueva pestaña" });
     } catch (error) {
       console.error('Error previewing PDF:', error);
-      toast.error('Error al previsualizar el reporte');
+      addToast({ variant: "error", title: "Error al previsualizar", message: "Error al previsualizar el reporte" });
     } finally {
       setIsGenerating(false);
     }

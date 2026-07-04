@@ -22,7 +22,8 @@ import { DownloadIcon, CheckCircleIcon, EyeIcon, UserIcon, TimeIcon } from "../.
 import { culminationService, CulminationGroup, CulminationPractice, CulminationMeta } from "../../features/culmination/services/culminationService";
 import Label from "../../components/form/Label";
 import { generateCertificatePDF } from "../../components/ui/pdf/templates/CertificatePDF";
-import toast from "react-hot-toast";
+import { useToast } from "../../context/toast";
+import { TOAST } from "../../components/ui/dialog/DialogConfig";
 import { matchSearch } from "../../utils/searchNormalizer";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -38,6 +39,7 @@ const BADGE_COLORS: Record<string, "warning" | "primary" | "success"> = {
 };
 
 export default function CulminationPage() {
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CulminationGroup[]>([]);
   const [meta, setMeta] = useState<CulminationMeta>({ total: 0, completed: 0, inProgress: 0 });
@@ -73,7 +75,7 @@ export default function CulminationPage() {
       }
     } catch (error) {
       console.error("Error fetching culmination data:", error);
-      toast.error("Error al cargar los datos");
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -123,11 +125,11 @@ export default function CulminationPage() {
       onConfirm: async () => {
         try {
           await culminationService.approve(practice.id);
-          toast.success("Culminación aprobada exitosamente");
+          addToast(TOAST.created('Culminación'));
           fetchData();
         } catch (error: any) {
-          const msg = error.response?.data?.message || "Error al aprobar culminación";
-          toast.error(msg);
+          const serverMsg = error?.response?.data?.message;
+          addToast(serverMsg ? { ...TOAST.updateError('culminación'), message: serverMsg } : TOAST.updateError('culminación'));
         } finally {
           setConfirmDialog(null);
         }
@@ -144,11 +146,11 @@ export default function CulminationPage() {
         try {
           const response = await culminationService.generateCertificate(practice.id);
           if (response.success) {
-            toast.success(`Certificado generado: ${response.certificate.number}`);
+            addToast({ variant: "success", title: "Certificado generado", message: `Certificado generado: ${response.certificate.number}.` });
             fetchData();
           }
         } catch (error) {
-          toast.error("Error al generar certificado");
+          addToast(TOAST.createError('certificado'));
         } finally {
           setConfirmDialog(null);
         }
@@ -189,10 +191,10 @@ export default function CulminationPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success("PDF descargado exitosamente", { id: "pdf-download" });
+      addToast({ variant: "success", title: "PDF descargado", message: "El certificado se descargó correctamente." });
     } catch (error) {
       console.error("Error downloading PDF:", error);
-      toast.error("Error al descargar el PDF", { id: "pdf-download" });
+      addToast(TOAST.loadError());
     }
   };
 
@@ -220,12 +222,12 @@ export default function CulminationPage() {
         reason: reversalReason,
         resolutionNumber: reversalResolution,
       });
-      toast.success("Reversión registrada exitosamente");
+      addToast(TOAST.created('Reversión'));
       setReversalDialog({ isOpen: false });
       fetchData();
     } catch (error: any) {
-      const msg = error.response?.data?.message || "Error al revertir culminación";
-      toast.error(msg);
+      const serverMsg = error?.response?.data?.message;
+      addToast(serverMsg ? { ...TOAST.updateError('reversión'), message: serverMsg } : TOAST.updateError('reversión'));
     }
   };
 

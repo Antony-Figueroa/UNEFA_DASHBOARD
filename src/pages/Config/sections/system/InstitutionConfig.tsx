@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import ComponentCard from "../../../../components/common/ComponentCard";
 import Button from "../../../../components/ui/button/Button";
 import apiClient from "../../../../api/apiClient";
-import toast from "react-hot-toast";
+import { useToast } from "../../../../context/toast";
+import { TOAST } from "../../../../components/ui/dialog/DialogConfig";
 import { EditIcon } from "../../../../icons/actions";
 import * as listsService from "../../../../features/lists/services/listsService";
 import type { ListValue } from "../../../../features/lists/types";
@@ -39,6 +40,7 @@ const DEFAULT_FORM: InstitutionData = {
 const LIST_NAMES = { region: "REGION", nucleus: "NUCLEO", extension: "EXTENSIÓN" } as const;
 
 export default function InstitutionConfig() {
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<InstitutionData>(DEFAULT_FORM);
@@ -90,7 +92,7 @@ export default function InstitutionConfig() {
       setAddValueOpen(false);
       setAddValueInput("");
     } catch {
-      toast.error("Error al crear el valor");
+      addToast({ variant: "error", title: "Error", message: "Error al crear el valor" });
     } finally {
       setSavingNewValue(false);
     }
@@ -137,7 +139,7 @@ export default function InstitutionConfig() {
       }
     } catch (error: any) {
       if (error?.response?.status !== 404) {
-        toast.error("Error al cargar los datos de la institución");
+        addToast(TOAST.loadError());
       }
     } finally {
       setLoading(false);
@@ -163,18 +165,17 @@ export default function InstitutionConfig() {
 
   const handleSave = async () => {
     if (!form.legal_name.trim() || !form.commercial_name.trim() || !form.acronym.trim()) {
-      toast.error("Los campos Razón Social, Nombre Comercial y Siglas son requeridos");
+      addToast({ variant: "error", title: "Campos requeridos", message: "Los campos Razón Social, Nombre Comercial y Siglas son requeridos" });
       return;
     }
     setSaving(true);
     try {
       await apiClient.put("/system-institution", form);
       setHasChanges(false);
-      toast.success("Institución actualizada exitosamente");
+      addToast(TOAST.updated("Institución"));
       await fetchInstitution();
     } catch (error: any) {
-      const msg = error?.response?.data?.message || "Error al guardar los datos";
-      toast.error(msg);
+      addToast(error?.response?.data?.message ? { variant: "error", title: "Error al guardar", message: error.response.data.message } : { variant: "error", title: "Error al guardar", message: "Error al guardar los datos" });
     } finally {
       setSaving(false);
     }

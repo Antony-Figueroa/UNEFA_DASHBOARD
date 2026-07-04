@@ -14,6 +14,7 @@ import { type ChangePasswordFormData, buildPasswordField } from "../../features/
 import { usePasswordPolicy } from "../../features/auth/hooks/usePasswordPolicy";
 import { z } from "zod";
 import UnifiedDialog from "../ui/dialog/UnifiedDialog";
+import { TOAST } from "../ui/dialog/DialogConfig";
 import { EyeClosedIcon, EyeIcon } from "lucide-react";
 
 interface QuestionForm {
@@ -171,7 +172,7 @@ export default function UserPasswordCard() {
       }
     } catch (error) {
       console.error('Error loading questions:', error);
-      addToast({ variant: "error", title: "Error", message: "No se pudieron cargar las preguntas" });
+      addToast(TOAST.loadError());
     } finally {
       setQuestionsLoading(false);
     }

@@ -9,7 +9,8 @@ import InputField from "../../../../components/form/input/InputField";
 import { rolesService, Role } from "../../../../features/roles/services/rolesService";
 import { permissionService, Permission, GroupedPermissions } from "../../../../features/permissions/services/permissionService";
 import { usePermissions } from "../../../../features/permissions/hooks/usePermissions";
-import toast from "react-hot-toast";
+import { useToast } from "../../../../context/toast";
+import { TOAST } from "../../../../components/ui/dialog/DialogConfig";
 import ConfigLayout from "../../ConfigLayout";
 import RoleListTable from "./components/RoleListTable";
 import PermissionMatrixModal from "./components/PermissionMatrixModal";
@@ -19,6 +20,7 @@ interface RoleWithPermissions extends Role {
 }
 
 export default function RolesPermissionsPage() {
+  const { addToast } = useToast();
   const { refresh: refreshPermissions } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -67,7 +69,7 @@ export default function RolesPermissionsPage() {
       }
     } catch (error) {
       console.error('Error fetching roles data:', error);
-      toast.error('Error al cargar los datos');
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -92,11 +94,11 @@ export default function RolesPermissionsPage() {
 
   const handleCreateRole = async () => {
     if (!createForm.name.trim()) {
-      toast.error("El nombre del rol es requerido");
+      addToast({ variant: "error", title: "Dato inválido", message: "El nombre del rol es obligatorio." });
       return;
     }
     if (createForm.permissionIds.length === 0) {
-      toast.error("Debes seleccionar al menos un permiso");
+      addToast({ variant: "error", title: "Selección requerida", message: "Seleccioná al menos un permiso para continuar." });
       return;
     }
 
@@ -109,16 +111,16 @@ export default function RolesPermissionsPage() {
       });
 
       if (response.success) {
-        toast.success("Rol creado exitosamente");
+        addToast(TOAST.created('Rol'));
         setIsCreateModalOpen(false);
         fetchData();
         refreshPermissions();
       } else {
-        toast.error(response.message || "Error al crear rol");
+        addToast({ ...TOAST.createError('rol'), message: response.message || "No se pudo crear el rol. Intentá de nuevo." });
       }
     } catch (error) {
       console.error("Error creating role:", error);
-      toast.error("Error al crear rol");
+      addToast(TOAST.createError('rol'));
     } finally {
       setCreating(false);
     }

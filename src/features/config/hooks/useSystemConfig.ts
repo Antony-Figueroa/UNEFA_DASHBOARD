@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { configService, CategorizedConfig } from '../services/configService';
-import toast from 'react-hot-toast';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 
 export function useSystemConfig() {
+  const { addToast } = useToast();
   const [config, setConfig] = useState<CategorizedConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,11 +31,11 @@ export function useSystemConfig() {
   const updateConfig = async (updates: Record<string, string | number | boolean>) => {
     try {
       await configService.updateConfig(updates);
-      toast.success('Configuración guardada correctamente');
+      addToast(TOAST.updated('Configuración'));
       await fetchConfig();
       return true;
     } catch (err) {
-      toast.error('Error al guardar la configuración');
+      addToast(TOAST.updateError('configuración'));
       console.error('[useSystemConfig] Error updating config:', err);
       return false;
     }

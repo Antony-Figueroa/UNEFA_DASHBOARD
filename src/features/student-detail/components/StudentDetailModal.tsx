@@ -20,7 +20,8 @@ import {
   DocsIcon
 } from '../../../icons';
 import toast from 'react-hot-toast';
-import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import {
   StudentDetail,
   ReportOptions,
@@ -77,7 +78,8 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   onClose,
   practiceId,
   studentName
-}) => {
+  }) => {
+  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState<DetailTab>('general');
   const [loading, setLoading] = useState(false);
   const [detail, setDetail] = useState<StudentDetail | null>(null);
@@ -103,7 +105,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       }
     } catch (error) {
       console.error('[StudentDetail] Error loading:', error);
-      toast.error(TOAST_ERROR.load(resourceName));
+      addToast({ ...TOAST.loadError(), message: `Error al cargar ${resourceName.toLowerCase()}. Intentá de nuevo.` });
     } finally {
       setLoading(false);
     }
@@ -115,11 +117,11 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     try {
       toast.loading('Generando reporte...', { id: 'report' });
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(TOAST_SUCCESS.created(resourceName), { id: 'report' });
+      addToast({ ...TOAST.created(resourceName), message: `${resourceName} creado correctamente.` });
       setShowReportOptions(false);
     } catch (error) {
       console.error('[StudentDetail] Error generating report:', error);
-      toast.error(TOAST_ERROR.create(resourceName), { id: 'report' });
+      addToast(TOAST.createError(resourceName));
     } finally {
       setGeneratingReport(false);
     }

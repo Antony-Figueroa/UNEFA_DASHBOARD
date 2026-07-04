@@ -10,6 +10,7 @@
 import { studentService } from "../services/studentsService";
 import { useToast } from "../../../context/toast";
 import { RecordDetails, ChangeComparison } from "../../../components/ui/alert/AlertContextualContent";
+import { TOAST } from "../../../components/ui/dialog/DialogConfig";
 import { useCrud } from "../../../hooks/useCrud";
 import { Student, CreateStudentPayload, UpdateStudentPayload } from "../types";
 import { AxiosError } from "axios";
@@ -84,11 +85,8 @@ export const useStudents = () => {
       }
       // useCrud ya manejó el error si no pasamos silent: true en el catch, 
       // pero aquí queremos un mensaje personalizado.
-      addToast({
-        variant: "error",
-        title: "Error de Registro",
-        message: axiosError.response?.data?.message || axiosError.message || "Error al registrar el estudiante",
-      });
+      const serverMsg = axiosError.response?.data?.message;
+      addToast(serverMsg ? { ...TOAST.createError('Estudiante'), message: serverMsg } : TOAST.createError('Estudiante'));
       throw e;
     }
   };
@@ -122,11 +120,8 @@ export const useStudents = () => {
       if (!axiosError.response || axiosError.response.status >= 500) {
         console.error("[useStudents] Error crítico al actualizar estudiante:", e);
       }
-      addToast({
-        variant: "error",
-        title: "Error de Actualización",
-        message: axiosError.response?.data?.message || axiosError.message || "Error al actualizar el estudiante",
-      });
+      const serverMsg = axiosError.response?.data?.message;
+      addToast(serverMsg ? { ...TOAST.updateError('Estudiante'), message: serverMsg } : TOAST.updateError('Estudiante'));
       throw e;
     }
   };
@@ -146,11 +141,7 @@ export const useStudents = () => {
       });
     } catch (e) {
       console.error("[useStudents] Error al cambiar estado:", e);
-      addToast({
-        variant: "error",
-        title: "Error de Estado",
-        message: "No se pudo cambiar el estado del estudiante.",
-      });
+      addToast(TOAST.updateError('Estudiante'));
     }
   };
 

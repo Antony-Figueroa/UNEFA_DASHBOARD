@@ -447,9 +447,9 @@ export const createVisit = async (req: Request, res: Response) => {
         VISIT_TYPE: sanitizeText(visitType) ?? 'PRESENCIAL',
         VISIT_CASE: sanitizeText(visitCase) ?? 'SEGUIMIENTO_REGULAR',
         HOURS_WORKED: hoursWorked || 0,
-        ACTIVITIES_PERFORMED: activitiesPerformed || '',
-        OBSERVATIONS: observations || '',
-        RECOMMENDATIONS: recommendations || '',
+        ACTIVITIES_PERFORMED: sanitizeText(activitiesPerformed) ?? '',
+        OBSERVATIONS: sanitizeText(observations) ?? '',
+        RECOMMENDATIONS: sanitizeText(recommendations) ?? '',
         STATUS: 1,
         CREATED_BY: userId
       }])
@@ -546,9 +546,9 @@ export const updateVisit = async (req: Request, res: Response) => {
     if (visitType) updateData.VISIT_TYPE = sanitizeText(visitType);
     if (visitCase) updateData.VISIT_CASE = sanitizeText(visitCase);
     if (hoursWorked !== undefined) updateData.HOURS_WORKED = hoursWorked;
-    if (activitiesPerformed !== undefined) updateData.ACTIVITIES_PERFORMED = activitiesPerformed;
-    if (observations !== undefined) updateData.OBSERVATIONS = observations;
-    if (recommendations !== undefined) updateData.RECOMMENDATIONS = recommendations;
+    if (activitiesPerformed !== undefined) updateData.ACTIVITIES_PERFORMED = sanitizeText(activitiesPerformed) ?? '';
+    if (observations !== undefined) updateData.OBSERVATIONS = sanitizeText(observations) ?? '';
+    if (recommendations !== undefined) updateData.RECOMMENDATIONS = sanitizeText(recommendations) ?? '';
 
     const { data, error } = await supabase
       .from('t_practice_visits')

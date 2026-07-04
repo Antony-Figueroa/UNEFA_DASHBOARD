@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 const CACHE_TTL = 86400000; // 24h — datos geográficos estáticos
 
@@ -110,7 +111,11 @@ export const createAddress = async (req: Request, res: Response) => {
 
     const { data: addressData, error: addressError } = await supabase
       .from('t_address')
-      .insert({ parroquia_id, street_address, reference })
+      .insert({
+        parroquia_id,
+        street_address: sanitizeText(street_address) ?? street_address,
+        reference: reference ? (sanitizeText(reference) ?? reference) : null,
+      })
       .select('address_id')
       .single();
 
@@ -178,7 +183,11 @@ export const updateAddress = async (req: Request, res: Response) => {
 
     const { error } = await supabase
       .from('t_address')
-      .update({ parroquia_id, street_address, reference })
+      .update({
+        parroquia_id,
+        street_address: sanitizeText(street_address) ?? street_address,
+        reference: reference ? (sanitizeText(reference) ?? reference) : null,
+      })
       .eq('address_id', bridgeRow.address_id);
 
     if (error) throw error;

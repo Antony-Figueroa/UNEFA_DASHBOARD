@@ -167,10 +167,10 @@ export const createActivityLog = async (req: AuthRequest, res: Response) => {
         WEEK_NUMBER: weekNumber,
         HOURS_WORKED: hoursWorked,
         ACTIVITY_TYPE: sanitizeText(activityType) ?? '',
-        ACTIVITY_DESCRIPTION: activityDescription,
-        TASKS_COMPLETED: tasksCompleted,
-        CHALLENGES: challenges,
-        LEARNINGS: learnings,
+        ACTIVITY_DESCRIPTION: sanitizeText(activityDescription) ?? '',
+        TASKS_COMPLETED: sanitizeText(tasksCompleted) ?? '',
+        CHALLENGES: sanitizeText(challenges) ?? '',
+        LEARNINGS: sanitizeText(learnings) ?? '',
         CREATED_BY: userId
       })
       .select()
@@ -211,10 +211,10 @@ export const updateActivityLog = async (req: Request, res: Response) => {
         WEEK_NUMBER: weekNumber,
         HOURS_WORKED: hoursWorked,
         ACTIVITY_TYPE: sanitizeText(activityType) ?? '',
-        ACTIVITY_DESCRIPTION: activityDescription,
-        TASKS_COMPLETED: tasksCompleted,
-        CHALLENGES: challenges,
-        LEARNINGS: learnings,
+        ACTIVITY_DESCRIPTION: sanitizeText(activityDescription) ?? '',
+        TASKS_COMPLETED: sanitizeText(tasksCompleted) ?? '',
+        CHALLENGES: sanitizeText(challenges) ?? '',
+        LEARNINGS: sanitizeText(learnings) ?? '',
         UPDATED_AT: new Date().toISOString()
       })
       .eq('ACTIVITY_LOG_ID', Number(id))
@@ -266,7 +266,7 @@ export const approveActivityLog = async (req: AuthRequest, res: Response) => {
       .from(TABLE_NAME)
       .update({
         SUPERVISOR_APPROVED: true,
-        SUPERVISOR_COMMENTS: comments,
+        SUPERVISOR_COMMENTS: sanitizeText(comments) ?? '',
         SUPERVISOR_ID: userId,
         APPROVED_AT: new Date().toISOString(),
         UPDATED_AT: new Date().toISOString()

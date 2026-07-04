@@ -7,6 +7,7 @@
 
 import { supabase } from '../lib/supabase.js';
 import { clients } from './sse.service.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,8 +41,8 @@ class NotificationsUnifiedService {
         .insert({
           USER_ID: params.userId,
           TYPE: params.type,
-          TITLE: params.title,
-          MESSAGE: params.message,
+          TITLE: sanitizeText(params.title) ?? params.title,
+          MESSAGE: sanitizeText(params.message) ?? params.message,
           DATA: params.data || null,
           READ: false,
         })
@@ -91,8 +92,8 @@ class NotificationsUnifiedService {
       const notifications = params.userIds.map((userId) => ({
         USER_ID: userId,
         TYPE: params.type,
-        TITLE: params.title,
-        MESSAGE: params.message,
+        TITLE: sanitizeText(params.title) ?? params.title,
+        MESSAGE: sanitizeText(params.message) ?? params.message,
         DATA: params.data || null,
         READ: false,
       }));

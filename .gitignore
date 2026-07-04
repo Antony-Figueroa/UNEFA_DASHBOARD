@@ -80,3 +80,13 @@ backups/
 
 # Windows reserved device name
 /NUL
+
+# Session cookies / tokens (accidental captures)
+cookies*.txt
+token.json
+
+# Backend runtime output (stdio captures)
+backend-out.txt
+backend-err.txt
+backend-stdout.txt
+backend-stderr.txt

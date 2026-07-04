@@ -15,6 +15,8 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../components/ui/
 import { CheckCircleIcon, TimeIcon, AlertIcon, EyeIcon, LockIcon, CloseLineIcon, CheckIcon, DownloadIcon, EditIcon } from '../../icons';
 import apiClient from '../../api/apiClient';
 import toast from 'react-hot-toast';
+import { useToast } from '../../context/toast';
+import { TOAST } from '../../components/ui/dialog/DialogConfig';
 import { matchSearch } from '../../utils/searchNormalizer';
 import { useAuth } from '../../context/auth';
 import evaluationService from '../../features/evaluations/services/evaluationService';
@@ -44,6 +46,7 @@ interface ApiPracticeResponse {
 }
 
 export default function EvaluationsPage() {
+  const { addToast } = useToast();
   const { config: evalConfig } = useSystemEvaluationConfig();
   const { user } = useAuth();
   const isReadOnly = user?.role === 2; // ASISTENTE = solo lectura
@@ -164,7 +167,7 @@ export default function EvaluationsPage() {
       }
     } catch (error) {
       console.error('[EvaluationsPage] Error fetching practices:', error);
-      toast.error('Error al cargar prácticas');
+      addToast(TOAST.loadError());
     } finally {
       setPracticesLoading(false);
     }
@@ -239,10 +242,10 @@ export default function EvaluationsPage() {
         try {
           await apiClient.post(`/evaluations/${practiceId}/mark-failed`);
           setPractices(prev => prev.filter(p => p.professionalPracticeId !== practiceId));
-          toast.success('Práctica marcada como Reprobada');
+          addToast({ variant: "success", title: "Reprobado", message: "Práctica marcada como Reprobada" });
         } catch (error: any) {
           const message = error.response?.data?.message || 'Error al marcar como reprobado';
-          toast.error(message);
+          addToast({ variant: "error", title: "Error", message });
         } finally {
           setConfirmDialog(null);
         }
@@ -261,7 +264,7 @@ export default function EvaluationsPage() {
     const { practiceId, studentName } = withdrawDialog;
 
     if (withdrawType === 'justified' && withdrawReason.trim().length < 10) {
-      toast.error('El motivo debe tener al menos 10 caracteres');
+      addToast({ variant: "error", title: "Dato inválido", message: "El motivo debe tener al menos 10 caracteres" });
       return;
     }
 
@@ -277,15 +280,15 @@ export default function EvaluationsPage() {
         delete next[practiceId];
         return next;
       });
-      toast.success(
+      addToast(
         withdrawType === 'justified'
-          ? `Práctica de ${studentName} retirada con justificativo`
-          : `Práctica de ${studentName} retirada sin justificativo`
+          ? { variant: "success", title: "Retirado", message: `Práctica de ${studentName} retirada con justificativo` }
+          : { variant: "success", title: "Retirado", message: `Práctica de ${studentName} retirada sin justificativo` }
       );
       setWithdrawDialog(null);
     } catch (error: any) {
       const msg = error.response?.data?.message || 'Error al retirar práctica';
-      toast.error(msg);
+      addToast({ variant: "error", title: "Error al retirar", message: msg });
     } finally {
       setWithdrawLoading(false);
     }
@@ -299,7 +302,7 @@ export default function EvaluationsPage() {
   const handleReclassifyConfirm = async () => {
     if (!reclassifyDialog) return;
     if (reclassifyReason.trim().length < 10) {
-      toast.error('El motivo debe tener al menos 10 caracteres');
+      addToast({ variant: "error", title: "Dato inválido", message: "El motivo debe tener al menos 10 caracteres" });
       return;
     }
     setReclassifyLoading(true);
@@ -307,12 +310,12 @@ export default function EvaluationsPage() {
       await apiClient.patch(`/enrollments/${reclassifyDialog.practiceId}/reclassify-withdrawal`, {
         justificationReason: reclassifyReason.trim(),
       });
-      toast.success(`Retiro de ${reclassifyDialog.studentName} reclasificado a con justificativo`);
+      addToast({ variant: "success", title: "Reclasificado", message: `Retiro de ${reclassifyDialog.studentName} reclasificado a con justificativo` });
       setReclassifyDialog(null);
       // Refresh: la práctica ya no debería mostrar el badge de pendiente
       fetchPractices();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error al reclasificar retiro');
+      addToast({ variant: "error", title: "Error al reclasificar", message: error.response?.data?.message || 'Error al reclasificar retiro' });
     } finally {
       setReclassifyLoading(false);
     }
@@ -327,7 +330,7 @@ export default function EvaluationsPage() {
       onConfirm: async () => {
         try {
           await culminationService.approve(String(practiceId));
-          toast.success(`Práctica de ${studentName} culminada exitosamente`);
+          addToast({ variant: "success", title: "Culminado", message: `Práctica de ${studentName} culminada exitosamente` });
           // Refresh status
           getPracticeStatus(practiceId).then(status => {
             if (status) {
@@ -336,7 +339,7 @@ export default function EvaluationsPage() {
           });
         } catch (error: any) {
           const msg = error.response?.data?.message || 'Error al culminar práctica';
-          toast.error(msg);
+          addToast({ variant: "error", title: "Error al culminar", message: msg });
         } finally {
           setConfirmDialog(null);
         }
@@ -352,19 +355,19 @@ export default function EvaluationsPage() {
   const handleUnfreezeConfirm = async () => {
     if (!unfreezeDialog) return;
     if (unfreezeReason.trim().length < 10) {
-      toast.error('El motivo debe tener al menos 10 caracteres');
+      addToast({ variant: "error", title: "Dato inválido", message: "El motivo debe tener al menos 10 caracteres" });
       return;
     }
     setUnfreezeLoading(true);
     try {
       await evaluationService.unfreezePractice(unfreezeDialog.practiceId, unfreezeReason.trim());
-      toast.success('Evaluaciones descongeladas para corrección');
+      addToast({ variant: "success", title: "Descongelado", message: "Evaluaciones descongeladas para corrección" });
       setUnfreezeDialog(null);
       setUnfreezeReason('');
       const statuses = await evaluationService.getBatchPracticeStatus(practices.map(p => p.professionalPracticeId));
       setPracticeStatuses(statuses);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error al descongelar evaluaciones');
+      addToast({ variant: "error", title: "Error al descongelar", message: error.response?.data?.message || 'Error al descongelar evaluaciones' });
     } finally {
       setUnfreezeLoading(false);
     }
@@ -373,19 +376,19 @@ export default function EvaluationsPage() {
   const handleGrantExtension = async () => {
     if (!extensionDialog) return;
     if (extensionReason.trim().length < 10) {
-      toast.error('El motivo debe tener al menos 10 caracteres');
+      addToast({ variant: "error", title: "Dato inválido", message: "El motivo debe tener al menos 10 caracteres" });
       return;
     }
     setExtensionLoading(true);
     try {
       await evaluationService.grantExtension(extensionDialog.practiceId, extensionReason.trim());
-      toast.success('Carga extemporánea habilitada. Ya podés registrar evaluaciones.');
+      addToast({ variant: "success", title: "Extensión habilitada", message: "Carga extemporánea habilitada. Ya podés registrar evaluaciones." });
       setExtensionDialog(null);
       setExtensionReason('');
       const statuses = await evaluationService.getBatchPracticeStatus(practices.map(p => p.professionalPracticeId));
       setPracticeStatuses(statuses);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error al habilitar carga extemporánea');
+      addToast({ variant: "error", title: "Error al habilitar extensión", message: error.response?.data?.message || 'Error al habilitar carga extemporánea' });
     } finally {
       setExtensionLoading(false);
     }
@@ -401,11 +404,11 @@ export default function EvaluationsPage() {
       onConfirm: async () => {
         try {
           await evaluationService.revokeExtension(practiceId, 'Revocado por el administrador');
-          toast.success('Carga extemporánea revocada');
+          addToast({ variant: "success", title: "Extensión revocada", message: "Carga extemporánea revocada" });
           const statuses = await evaluationService.getBatchPracticeStatus(practices.map(p => p.professionalPracticeId));
           setPracticeStatuses(statuses);
         } catch (error: any) {
-          toast.error(error.response?.data?.message || 'Error al revocar extensión');
+          addToast({ variant: "error", title: "Error al revocar", message: error.response?.data?.message || 'Error al revocar extensión' });
         }
       },
     });
@@ -432,14 +435,14 @@ export default function EvaluationsPage() {
   const handleCommitteeSave = async () => {
     if (!committeeDialog) return;
     const filled = committeeMembers.filter(m => m.evaluatorName.trim().length > 0);
-    if (filled.length === 0) { toast.error('Asigná al menos un miembro'); return; }
+    if (filled.length === 0) { addToast({ variant: "error", title: "Dato requerido", message: "Asigná al menos un miembro" }); return; }
     setCommitteeSaving(true);
     try {
       await evaluationService.upsertCommitteeAssignments(committeeDialog.practiceId, filled);
-      toast.success('Comité asignado exitosamente');
+      addToast({ variant: "success", title: "Comité asignado", message: "Comité asignado exitosamente" });
       setCommitteeDialog(null);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Error al asignar comité');
+      addToast({ variant: "error", title: "Error al asignar comité", message: error.response?.data?.message || 'Error al asignar comité' });
     } finally {
       setCommitteeSaving(false);
     }
@@ -451,7 +454,7 @@ export default function EvaluationsPage() {
       .map(p => p.professionalPracticeId);
 
     if (completedIds.length === 0) {
-      toast.error('No hay prácticas con evaluaciones completas para congelar');
+      addToast({ variant: "error", title: "Sin datos", message: "No hay prácticas con evaluaciones completas para congelar" });
       return;
     }
 
@@ -463,12 +466,12 @@ export default function EvaluationsPage() {
       onConfirm: async () => {
         try {
           await evaluationService.freezeBatch(completedIds);
-          toast.success(`${completedIds.length} prácticas congeladas exitosamente`);
+          addToast({ variant: "success", title: "Actas cerradas", message: `${completedIds.length} prácticas congeladas exitosamente` });
           // Refrescar statuses para actualizar la UI
           const statuses = await evaluationService.getBatchPracticeStatus(practices.map(p => p.professionalPracticeId));
           setPracticeStatuses(statuses);
         } catch (error: any) {
-          toast.error(error.response?.data?.message || 'Error al congelar evaluaciones');
+          addToast({ variant: "error", title: "Error al congelar", message: error.response?.data?.message || 'Error al congelar evaluaciones' });
         } finally {
           setConfirmDialog(null);
         }

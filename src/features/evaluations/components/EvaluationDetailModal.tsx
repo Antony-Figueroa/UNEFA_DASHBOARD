@@ -46,10 +46,9 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
     return found?.description || `Criterio ${criteriaId}`;
   };
 
-  const getScoreColor = (score: number): string => {
-    const displayScale = config.score.displayScale;
-    if (score < displayScale * 0.5) return "text-red-500";
-    if (score >= displayScale * 0.8) return "text-green-500";
+  const getPctColor = (pct: number): string => {
+    if (pct < 50) return "text-red-500";
+    if (pct >= 80) return "text-green-500";
     return "text-yellow-500";
   };
 
@@ -85,8 +84,8 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p className="text-xs font-bold uppercase text-text-tertiary mb-1">Puntaje Total</p>
-                <p className={`text-2xl font-bold ${getScoreColor(evaluation.totalScore)}`}>
-                  {evaluation.totalScore.toFixed(1)} / {config.score.displayScale}
+                <p className={`text-2xl font-bold ${getPctColor(Math.round((evaluation.totalScore / config.score.displayScale) * 100))}`}>
+                  {Math.round((evaluation.totalScore / config.score.displayScale) * 100)}%
                 </p>
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -131,10 +130,9 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`text-lg font-bold ${getScoreColor(item.score)}`}>
-                            {item.score}
+                          <span className={`text-lg font-bold ${getPctColor(Math.round((item.score / config.score.max) * 100))}`}>
+                            {Math.round((item.score / config.score.max) * 100)}%
                           </span>
-                          <span className="text-xs text-text-tertiary">/{config.score.displayScale}</span>
                         </div>
                       </div>
                     ))

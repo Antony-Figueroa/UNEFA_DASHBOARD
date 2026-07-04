@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { CONFIRM_MESSAGES } from "../../../components/ui/dialog/DialogConfig";
 import type { DialogVariant } from "../../../components/ui/dialog/DialogConfig";
 import type { Student, StudentRowData, CreateStudentPayload, UpdateStudentPayload } from "../types";
 
@@ -127,24 +128,28 @@ export function useStudentModals({
     if (!original) return;
 
     const isDeactivating = original.status;
+    const config = isDeactivating
+      ? CONFIRM_MESSAGES.deactivate('al estudiante')
+      : CONFIRM_MESSAGES.activate('al estudiante');
     setConfirmation({
       isOpen: true,
-      title: isDeactivating ? "Confirmar Desactivación" : "Confirmar Restauración",
+      title: config.title,
       message: `¿Estás seguro de que deseas ${isDeactivating ? "desactivar" : "restaurar"} al estudiante "${row.fullNames}"?`,
       onConfirm: async () => {
         try { await toggleStatus(original); }
         catch (e) { console.error("[useStudentModals] Error toggling status:", e); }
         finally { setConfirmation(null); }
       },
-      confirmText: isDeactivating ? "Desactivar" : "Restaurar",
-      variant: (isDeactivating ? "error" : "success") as DialogVariant,
+      confirmText: config.confirmLabel,
+      variant: config.variant as DialogVariant,
     });
   }, [students, toggleStatus]);
 
   const handleBulkDelete = useCallback((ids: string[]) => {
+    const config = CONFIRM_MESSAGES.deactivate('los estudiantes');
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Desactivación Masiva",
+      title: 'Confirmar desactivación masiva',
       message: `¿Estás seguro de que deseas desactivar ${ids.length} estudiantes seleccionados?`,
       onConfirm: async () => {
         try { await bulkRemoveStudents(ids); setSelectedIds([]); }
@@ -152,14 +157,15 @@ export function useStudentModals({
         finally { setConfirmation(null); }
       },
       confirmText: "Desactivar Todos",
-      variant: "error",
+      variant: config.variant as DialogVariant,
     });
   }, [bulkRemoveStudents]);
 
   const handleBulkRestore = useCallback((ids: string[]) => {
+    const config = CONFIRM_MESSAGES.activate('los estudiantes');
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Restauración Masiva",
+      title: 'Confirmar restauración masiva',
       message: `¿Estás seguro de que deseas restaurar ${ids.length} estudiantes seleccionados?`,
       onConfirm: async () => {
         try { await bulkRestoreStudents(ids); setSelectedIds([]); }
@@ -167,7 +173,7 @@ export function useStudentModals({
         finally { setConfirmation(null); }
       },
       confirmText: "Restaurar Todos",
-      variant: "info",
+      variant: config.variant as DialogVariant,
     });
   }, [bulkRestoreStudents]);
 

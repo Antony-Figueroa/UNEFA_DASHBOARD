@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "
 import { EmptyState } from "../../components/ui/table/EmptyState";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES } from "../../components/ui/dialog/DialogConfig";
 import { useVisits } from "../../features/visits/hooks/useVisits";
 import { Visit, CreateVisitPayload, UpdateVisitPayload, VISIT_TYPES, LEGACY_VISIT_CASES } from "../../features/visits/types";
 import VisitModal from "../../features/visits/components/VisitModal";
@@ -595,20 +596,14 @@ export default function VisitRegistration() {
       <UnifiedDialog
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, visitId: null })}
-        title="Confirmar Desactivación"
-        message="¿Estás seguro de que deseas desactivar esta visita? Podrás restaurarla desde la pestaña de inactivas."
-        confirmLabel="Desactivar"
-        variant="error"
+        {...CONFIRM_MESSAGES.deactivate('esta visita')}
         onConfirm={handleDelete}
       />
 
       <UnifiedDialog
         isOpen={restoreDialog.isOpen}
         onClose={() => setRestoreDialog({ isOpen: false, visitId: null })}
-        title="Confirmar Restauración"
-        message="¿Estás seguro de que deseas restaurar esta visita? Volverá a aparecer en la pestaña de activos."
-        confirmLabel="Restaurar"
-        variant="success"
+        {...CONFIRM_MESSAGES.activate('esta visita')}
         onConfirm={handleRestoreConfirm}
       />
     </>

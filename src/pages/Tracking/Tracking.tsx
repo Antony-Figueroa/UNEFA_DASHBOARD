@@ -13,6 +13,7 @@ import TrackingTable from "../../features/tracking/components/TrackingTable";
 import TrackingModal from "../../features/tracking/components/TrackingModal";
 import TrackingDetailModal from "../../features/tracking/components/TrackingDetailModal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { useTracking } from "../../features/tracking/hooks/useTracking";
 import { useLists } from "../../features/lists/hooks/useLists";
@@ -151,12 +152,13 @@ export default function TrackingPage() {
      */
     const handleDelete = (item: TrackingRowData) => {
         if (!item.trackingId) return;
+        const config = CONFIRM_MESSAGES.deactivate('el seguimiento');
         
         setConfirmation({
             isOpen: true,
-            title: 'Confirmar Inactivación',
-            message: `¿Estás seguro de que deseas inactivar el seguimiento de "${item.studentName}"?`,
-            variant: 'error',
+            title: config.title,
+            message: `¿Estás seguro de que deseas desactivar el seguimiento de "${item.studentName}"?`,
+            variant: config.variant as DialogVariant,
             onConfirm: async () => {
                 try {
                     await removeTracking(item.trackingId);
@@ -177,12 +179,13 @@ export default function TrackingPage() {
      */
     const handleRestore = (trackingRow: TrackingRowData) => {
         if (!trackingRow.trackingId) return;
+        const config = CONFIRM_MESSAGES.activate('el seguimiento');
 
         setConfirmation({
             isOpen: true,
-            title: 'Confirmar Restauración',
+            title: config.title,
             message: `¿Estás seguro de que deseas restaurar el seguimiento de "${trackingRow.studentName}"?`,
-            variant: 'success',
+            variant: config.variant as DialogVariant,
             onConfirm: async () => {
                 try {
                     await restoreTracking(trackingRow.trackingId);
@@ -281,7 +284,7 @@ export default function TrackingPage() {
                     title={confirmation?.title || ""}
                     message={confirmation?.message || ""}
                     variant={confirmation?.variant || "info"}
-                    confirmLabel="Confirmar"
+                    confirmLabel={confirmation?.confirmText || "Confirmar"}
                     cancelLabel="Cancelar"
                     onConfirm={confirmation?.onConfirm}
                     isLoading={loadingAction}

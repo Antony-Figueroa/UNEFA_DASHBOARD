@@ -19,6 +19,7 @@ import { StudentDetailModal } from '../../features/student-detail/components/Stu
 import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
 import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
 import { EvaluationCell } from '../../features/evaluations-culmination/components/EvaluationCell';
+import { useSystemEvaluationConfig } from '../../features/evaluations/hooks/useSystemEvaluationConfig';
 import { StatsCardsGrid } from '../../features/evaluations-culmination/components/StatsCards';
 import { EvaluationFilters } from '../../features/evaluations-culmination/components/EvaluationFilters';
 import { useEvaluationsCulmination } from '../../features/evaluations-culmination/hooks/useEvaluationsCulmination';
@@ -86,6 +87,7 @@ const getCulminationBadge = (status: string) => {
 export default function EvaluationsAndCulminationPage() {
   const hook = useEvaluationsCulmination();
   const tabsState = useTabs({ defaultTab: 'evaluations' });
+  const { config: evalConfig } = useSystemEvaluationConfig();
 
   // Opciones para filtros (derivadas del meta del hook)
   const periodOptions = useMemo(() => [
@@ -155,6 +157,7 @@ export default function EvaluationsAndCulminationPage() {
                     evaluatorType="INSTITUCIONAL"
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
+                    displayScale={evalConfig.score.displayScale}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -163,6 +166,7 @@ export default function EvaluationsAndCulminationPage() {
                     evaluatorType="ACADEMICO"
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
+                    displayScale={evalConfig.score.displayScale}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -171,11 +175,12 @@ export default function EvaluationsAndCulminationPage() {
                     evaluatorType="COMITE"
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
+                    displayScale={evalConfig.score.displayScale}
                   />
                 </TableCell>
                 <TableCell className="text-center">
                   <span className="text-lg font-bold text-brand-500">
-                    {practice.finalGrade?.toFixed(1) ?? '-'}
+                    {practice.finalGrade != null ? `${Math.round((practice.finalGrade / evalConfig.score.displayScale) * 100)}%` : '-'}
                   </span>
                 </TableCell>
                 <TableCell className="text-center">

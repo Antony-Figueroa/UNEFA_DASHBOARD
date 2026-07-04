@@ -462,7 +462,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                           <span className="font-mono text-xs text-gray-400 mr-1">#{m.memberIndex}</span>
                           {m.evaluatorName}
                         </span>
-                        <span className="font-semibold text-green-600 dark:text-green-400">{m.score.toFixed(1)}</span>
+                        <span className="font-semibold text-green-600 dark:text-green-400">{Math.round((m.score / config.score.displayScale) * 100)}%</span>
                       </div>
                     ))}
                     <div className="border-t border-gray-200 dark:border-gray-700 pt-1 mt-1">

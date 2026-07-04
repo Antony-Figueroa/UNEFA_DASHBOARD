@@ -19,6 +19,7 @@ interface EvaluationCellProps {
   evaluatorType: EvaluatorType;
   onEvaluate: (type: EvaluatorType, existingEvalId?: number) => void;
   onViewDetails: (evaluationId: number) => void;
+  displayScale: number;
 }
 
 export const EvaluationCell: React.FC<EvaluationCellProps> = ({
@@ -26,6 +27,7 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
   evaluatorType,
   onEvaluate,
   onViewDetails,
+  displayScale,
 }) => {
   if (evaluation.completed) {
     return (
@@ -49,7 +51,7 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
           title={`Editar - Evaluador: ${evaluation.evaluatorName}`}
         >
           <CheckCircleIcon className="w-4 h-4" />
-          <span>{evaluation.score.toFixed(1)}</span>
+          <span>{Math.round((evaluation.score / displayScale) * 100)}%</span>
         </button>
       </div>
     );

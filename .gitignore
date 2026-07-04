@@ -90,3 +90,4 @@ backend-out.txt
 backend-err.txt
 backend-stdout.txt
 backend-stderr.txt
+backend/backend-log.txt

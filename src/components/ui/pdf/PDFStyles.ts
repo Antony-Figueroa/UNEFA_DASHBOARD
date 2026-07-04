@@ -117,7 +117,7 @@ export const pdfStyles = StyleSheet.create({
   },
   table: {
     width: "auto",
-    marginBottom: 20,
+    marginBottom: 30,
     borderStyle: "solid",
     borderWidth: 1,
     borderColor: "#E2E8F0",

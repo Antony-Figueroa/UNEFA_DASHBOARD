@@ -6,7 +6,8 @@ import ComponentCard from "../../../../components/common/ComponentCard";
 import Button from "../../../../components/ui/button/Button";
 import Badge from "../../../../components/ui/badge/Badge";
 import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
-import toast from "react-hot-toast";
+import { useToast } from "../../../../context/toast";
+import { TOAST } from "../../../../components/ui/dialog/DialogConfig";
 import apiClient from "../../../../api/apiClient";
 import evaluationService from "../../../../features/evaluations/services/evaluationService";
 import ConfigLayout from "../../ConfigLayout";
@@ -19,6 +20,7 @@ const WEIGHT_FIELDS = [
 ];
 
 export default function EvaluationConfigPage() {
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<SystemEvaluationConfig | null>(null);
@@ -53,7 +55,7 @@ export default function EvaluationConfigPage() {
       setCriteriaList(data);
       setCriteriaOriginal(JSON.parse(JSON.stringify(data)));
     } catch {
-      toast.error('Error al cargar criterios');
+      addToast(TOAST.loadError());
     } finally {
       setCriteriaLoading(false);
     }
@@ -69,9 +71,9 @@ export default function EvaluationConfigPage() {
     try {
       await evaluationService.updateCriteria(changed);
       setCriteriaOriginal(JSON.parse(JSON.stringify(criteriaList)));
-      toast.success(`${changed.length} criterio${changed.length > 1 ? 's' : ''} actualizado${changed.length > 1 ? 's' : ''}`);
+      addToast({ variant: "success", title: "Criterios actualizados", message: `${changed.length} criterio${changed.length > 1 ? 's' : ''} actualizado${changed.length > 1 ? 's' : ''}.` });
     } catch {
-      toast.error('Error al guardar criterios');
+      addToast(TOAST.updateError('criterios'));
     } finally {
       setCriteriaSaving(false);
     }
@@ -85,7 +87,7 @@ export default function EvaluationConfigPage() {
       setConfig(data);
       setLocal({ ...data });
     } catch {
-      toast.error('Error al cargar configuración de evaluación');
+      addToast(TOAST.loadError());
     } finally {
       setLoading(false);
     }
@@ -153,10 +155,10 @@ export default function EvaluationConfigPage() {
           const updated = res.data?.data ?? res.data as SystemEvaluationConfig;
           setConfig(updated);
           setLocal({ ...updated });
-          toast.success('Configuración guardada correctamente');
+          addToast({ variant: "success", title: "Configuración guardada", message: "La configuración se guardó correctamente." });
         } catch (err: any) {
-          const msg = err.response?.data?.message || 'Error al guardar configuración';
-          toast.error(msg, { duration: 6000 });
+          const serverMsg = err?.response?.data?.message;
+          addToast(serverMsg ? { ...TOAST.updateError('configuración'), message: serverMsg, duration: 6000 } : { ...TOAST.updateError('configuración'), duration: 6000 });
         } finally {
           setSaving(false);
           hideConfirm();

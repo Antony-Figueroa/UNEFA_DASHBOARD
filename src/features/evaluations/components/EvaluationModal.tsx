@@ -384,7 +384,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const rawAverage = criteriaLoaded.length > 0
     ? (criteriaLoaded.reduce((sum, c) => sum + (itemScores[c.criteriaId] ?? midpoint), 0) / criteriaLoaded.length)
     : 0;
-  const calculatedAverage = ((rawAverage / scoreRange.max) * config.score.displayScale).toFixed(1);
+  const calculatedAverage = ((rawAverage / scoreRange.max) * 100).toFixed(0);
 
   const getScoreInputClass = (criteriaId: number) => {
     const score = itemScores[criteriaId] ?? midpoint;
@@ -568,8 +568,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 </h4>
                 <div className="text-right">
                   <span className="text-sm text-gray-500 dark:text-gray-400">Promedio: </span>
-                  <span className="text-lg font-bold text-brand-500">{calculatedAverage}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400"> / {config.score.displayScale}</span>
+                  <span className="text-lg font-bold text-brand-500">{calculatedAverage}%</span>
                 </div>
               </div>
 

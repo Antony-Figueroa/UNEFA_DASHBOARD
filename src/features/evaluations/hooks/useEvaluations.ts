@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import { evaluationService } from '../services/evaluationService';
 import {
   Evaluation,
@@ -10,7 +11,6 @@ import {
   UpdateEvaluationPayload,
   EvaluatorType
 } from '../types';
-import toast from 'react-hot-toast';
 
 const resourceName = 'Evaluación';
 
@@ -34,6 +34,7 @@ export const useEvaluations = (): UseEvaluationsReturn => {
   const [criteria, setCriteria] = useState<EvaluationCriteria[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const fetchEvaluations = useCallback(async (practiceId?: number) => {
     try {
@@ -42,9 +43,9 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       const data = await evaluationService.getEvaluations(practiceId);
       setEvaluations(data);
     } catch (err: any) {
-      const message = err.response?.data?.message || TOAST_ERROR.load(resourceName);
+      const message = err.response?.data?.message || TOAST.loadError().message;
       setError(message);
-      toast.error(message);
+      addToast({ ...TOAST.loadError(), message });
     } finally {
       setLoading(false);
     }
@@ -57,9 +58,9 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       const data = await evaluationService.getCriteria(type);
       setCriteria(data);
     } catch (err: any) {
-      const message = err.response?.data?.message || TOAST_ERROR.load(resourceName);
+      const message = err.response?.data?.message || TOAST.loadError().message;
       setError(message);
-      toast.error(message);
+      addToast({ ...TOAST.loadError(), message });
     } finally {
       setLoading(false);
     }
@@ -70,13 +71,13 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       setLoading(true);
       setError(null);
       const result = await evaluationService.createEvaluation(payload);
-      toast.success(TOAST_SUCCESS.created(resourceName));
+      addToast(TOAST.created(resourceName));
       await fetchEvaluations(payload.professionalPracticeId);
       return result;
     } catch (err: any) {
-      const message = err.response?.data?.message || TOAST_ERROR.create(resourceName);
+      const message = err.response?.data?.message || TOAST.createError(resourceName).message;
       setError(message);
-      toast.error(message);
+      addToast({ ...TOAST.createError(resourceName), message });
       return null;
     } finally {
       setLoading(false);
@@ -88,12 +89,12 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       setLoading(true);
       setError(null);
       await evaluationService.updateEvaluation(id, data);
-      toast.success(TOAST_SUCCESS.updated(resourceName));
+      addToast(TOAST.updated(resourceName));
       return true;
     } catch (err: any) {
-      const message = err.response?.data?.message || TOAST_ERROR.update(resourceName);
+      const message = err.response?.data?.message || TOAST.updateError(resourceName).message;
       setError(message);
-      toast.error(message);
+      addToast({ ...TOAST.updateError(resourceName), message });
       return false;
     } finally {
       setLoading(false);
@@ -105,13 +106,13 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       setLoading(true);
       setError(null);
       await evaluationService.deleteEvaluation(id);
-      toast.success(TOAST_SUCCESS.deleted(resourceName));
+      addToast(TOAST.deleted(resourceName));
       setEvaluations(prev => prev.filter(e => e.evaluationId !== id));
       return true;
     } catch (err: any) {
-      const message = err.response?.data?.message || TOAST_ERROR.delete(resourceName);
+      const message = err.response?.data?.message || TOAST.deleteError(resourceName).message;
       setError(message);
-      toast.error(message);
+      addToast({ ...TOAST.deleteError(resourceName), message });
       return false;
     } finally {
       setLoading(false);
@@ -124,9 +125,9 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       setError(null);
       return await evaluationService.getPracticeEvaluationStatus(practiceId);
     } catch (err: any) {
-      const message = err.response?.data?.message || TOAST_ERROR.load(resourceName);
+      const message = err.response?.data?.message || TOAST.loadError().message;
       setError(message);
-      toast.error(message);
+      addToast({ ...TOAST.loadError(), message });
       return null;
     } finally {
       setLoading(false);
@@ -147,9 +148,9 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       setError(null);
       return await evaluationService.getEvaluationById(id);
     } catch (err: any) {
-      const message = err.response?.data?.message || TOAST_ERROR.load(resourceName);
+      const message = err.response?.data?.message || TOAST.loadError().message;
       setError(message);
-      toast.error(message);
+      addToast({ ...TOAST.loadError(), message });
       return null;
     } finally {
       setLoading(false);

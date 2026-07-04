@@ -6,7 +6,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import {
   PracticeWithEvaluations,
   PracticeFilters,
@@ -92,6 +93,7 @@ export interface UseEvaluationsCulminationReturn {
 }
 
 export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => {
+  const { addToast } = useToast();
   // ─── Data ───────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [practices, setPractices] = useState<PracticeWithEvaluations[]>([]);
@@ -145,7 +147,7 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
       }
     } catch (error) {
       console.error('[useEvaluationsCulmination] Error fetching practices:', error);
-      toast.error(TOAST_ERROR.load(resourceName));
+      addToast({ ...TOAST.loadError(), message: `Error al cargar ${resourceName.toLowerCase()}. Intentá de nuevo.` });
     } finally {
       setLoading(false);
     }
@@ -233,10 +235,10 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
       onConfirm: async () => {
         try {
           await evaluationsCulminationService.approveCulmination(practice.practiceId);
-          toast.success(TOAST_SUCCESS.updated(resourceName));
+          addToast(TOAST.updated(resourceName));
           fetchPractices();
         } catch (error) {
-          toast.error(TOAST_ERROR.update(resourceName));
+          addToast(TOAST.updateError(resourceName));
         } finally {
           setConfirmDialog(null);
         }
@@ -253,11 +255,11 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
         try {
           const response = await evaluationsCulminationService.generateCertificate(practice.practiceId);
           if (response.success) {
-            toast.success(`${TOAST_SUCCESS.created('Certificado')}: ${response.certificate.number}`);
+            addToast({ ...TOAST.created('Certificado'), message: `Certificado creado exitosamente: ${response.certificate.number}` });
             fetchPractices();
           }
         } catch (error) {
-          toast.error(TOAST_ERROR.create('Certificado'));
+          addToast(TOAST.createError('Certificado'));
         } finally {
           setConfirmDialog(null);
         }
@@ -299,10 +301,10 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success('PDF descargado exitosamente', { id: 'pdf-download' });
+      addToast({ variant: "success", title: "PDF descargado", message: "PDF descargado exitosamente" });
     } catch (error) {
       console.error('[useEvaluationsCulmination] Error downloading PDF:', error);
-      toast.error('Error al descargar el PDF', { id: 'pdf-download' });
+      addToast({ variant: "error", title: "Error al descargar", message: "Error al descargar el PDF" });
     }
   }, []);
 

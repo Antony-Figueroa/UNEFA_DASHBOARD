@@ -5,7 +5,8 @@ import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import ComponentCard from "../../../components/common/ComponentCard";
 import Button from "../../../components/ui/button/Button";
 import { AngleLeftIcon } from "../../../icons";
-import toast from "react-hot-toast";
+import { useToast } from "../../../context/toast";
+import { TOAST } from "../../../components/ui/dialog/DialogConfig";
 import apiClient from "../../../api/apiClient";
 import { useEvaluations } from "../../../features/evaluations/hooks/useEvaluations";
 import { useSystemEvaluationConfig } from "../../../features/evaluations/hooks/useSystemEvaluationConfig";
@@ -31,6 +32,7 @@ interface ExistingEvaluation {
 }
 
 export default function TutorEvaluation() {
+  const { addToast } = useToast();
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
   const navigate = useNavigate();
   const { criteria, fetchCriteria, createEvaluation, updateEvaluation, loading: evalLoading } = useEvaluations();
@@ -102,7 +104,7 @@ export default function TutorEvaluation() {
       }
     } catch (error) {
       console.error("[TutorEvaluation] Error fetching data:", error);
-      toast.error("Error al cargar datos");
+      addToast(TOAST.loadError());
     } finally {
       setPageLoading(false);
     }
@@ -122,14 +124,14 @@ export default function TutorEvaluation() {
     const scores = criteria.map(c => itemScores[c.criteriaId] ?? midpoint);
     const sum = scores.reduce((a, b) => a + b, 0);
     const rawAvg = sum / scores.length;
-    const scaled = (rawAvg / scoreRange.max) * config.score.displayScale;
-    return scaled.toFixed(1);
+    const pct = (rawAvg / scoreRange.max) * 100;
+    return pct.toFixed(0);
   };
 
   const handleSubmit = async () => {
     if (!enrollmentId) return;
     if (!evaluatorName.trim()) {
-      toast.error("El nombre del evaluador es requerido");
+      addToast({ variant: "error", title: "Dato requerido", message: "El nombre del evaluador es requerido" });
       return;
     }
 
@@ -148,7 +150,7 @@ export default function TutorEvaluation() {
           observations,
           items
         });
-        toast.success("Evaluación actualizada exitosamente");
+        addToast({ variant: "success", title: "Actualizada", message: "Evaluación actualizada exitosamente" });
       } else {
         await createEvaluation({
           professionalPracticeId: parseInt(enrollmentId),
@@ -157,13 +159,13 @@ export default function TutorEvaluation() {
           observations,
           items
         });
-        toast.success("Evaluación guardada exitosamente");
+        addToast({ variant: "success", title: "Guardada", message: "Evaluación guardada exitosamente" });
       }
       
       navigate("/tutor/students");
     } catch (error) {
       console.error("[TutorEvaluation] Error saving:", error);
-      toast.error("Error al guardar evaluación");
+      addToast({ variant: "error", title: "Error al guardar", message: "Error al guardar evaluación" });
     } finally {
       setSaving(false);
     }
@@ -268,8 +270,7 @@ export default function TutorEvaluation() {
         headerAction={
           <div className="flex items-center gap-2">
             <span className="text-sm text-text-secondary dark:text-text-tertiary">Promedio:</span>
-            <span className="text-2xl font-bold text-brand-500">{calculateAverage()}</span>
-            <span className="text-sm text-text-secondary dark:text-text-tertiary">/ {config.score.displayScale}</span>
+            <span className="text-2xl font-bold text-brand-500">{calculateAverage()}%</span>
           </div>
         }
       >
@@ -278,7 +279,7 @@ export default function TutorEvaluation() {
           <span className="ml-2 text-red-500">Rojo (bajo)</span>,
           <span className="ml-1 text-yellow-500">Amarillo (medio)</span>,
           <span className="ml-1 text-green-500">Verde (alto)</span>.
-          Nota final escalada a 0–{config.score.displayScale}.
+          Nota final expresada en porcentaje (0–100%).
         </p>
 
         {criteria.length === 0 ? (

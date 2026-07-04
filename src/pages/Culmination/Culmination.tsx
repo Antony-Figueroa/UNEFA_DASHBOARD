@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import toast from 'react-hot-toast';
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";

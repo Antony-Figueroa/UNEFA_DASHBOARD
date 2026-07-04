@@ -384,10 +384,10 @@ export default function CareerModal({
         <ModalHeader>
           <div className="max-w-4xl mx-auto w-full">
             <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-              {MODAL_CONFIG.titleByMode(editingCareer, 'Carrera')}
+              {MODAL_CONFIG.titleByMode(!!editingCareer, 'Carrera')}
             </span>
             <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-              {MODAL_CONFIG.descriptionByMode(editingCareer, 'carrera académica')}
+              {MODAL_CONFIG.descriptionByMode(!!editingCareer, 'carrera académica')}
             </p>
           </div>
         </ModalHeader>

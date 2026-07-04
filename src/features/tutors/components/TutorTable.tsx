@@ -161,7 +161,7 @@ export default function TutorTable({
     onView,
     onBulkDelete,
     onBulkRestore,
-    // inactiveMode = false,
+    inactiveMode = false,
     activeTab = "Activas",
     careerOptions = [],
     careers = [],

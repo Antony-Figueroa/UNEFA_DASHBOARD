@@ -163,20 +163,37 @@ const toApi = (periodo: Partial<Periodo>): Partial<PeriodoApiDTO> => {
   return dto;
 };
 
+// ponytail: cache simple para evitar N fetches cuando usePeriods se usa en header + sidebar
+let _periodsCache: Periodo[] | null = null;
+let _periodsPromise: Promise<Periodo[]> | null = null;
+
 /**
- * Obtiene todos los periodos académicos.
+ * Obtiene todos los periodos académicos con cache de 30s.
  * 
  * @returns Promesa con la lista de periodos.
  */
 export const getPeriods = async (): Promise<Periodo[]> => {
-  try {
-    const response = await apiClient.get<PeriodoApiDTO[]>(API_URL);
-    return response.data.map(fromApi);
-  } catch (error) {
-    console.error(`[periodService] Error al obtener periodos:`, error);
-    throw error;
-  }
+  if (_periodsCache) return _periodsCache;
+  if (_periodsPromise) return _periodsPromise;
+
+  _periodsPromise = (async () => {
+    try {
+      const response = await apiClient.get<PeriodoApiDTO[]>(API_URL);
+      _periodsCache = response.data.map(fromApi);
+      setTimeout(() => { _periodsCache = null; _periodsPromise = null; }, 30000);
+      return _periodsCache;
+    } catch (error) {
+      _periodsPromise = null; // reset para reintentar en next fetch
+      console.error(`[periodService] Error al obtener periodos:`, error);
+      throw error;
+    }
+  })();
+
+  return _periodsPromise;
 };
+
+// ponytail: invalidar cache tras mutaciones para que refresh() traiga datos frescos
+const invalidateCache = () => { _periodsCache = null; _periodsPromise = null; };
 
 /**
  * Crea un nuevo periodo académico.
@@ -185,6 +202,7 @@ export const getPeriods = async (): Promise<Periodo[]> => {
  * @returns Promesa con el periodo creado.
  */
 export const createPeriod = async (payload: CreatePeriodPayload): Promise<Periodo> => {
+  invalidateCache();
   try {
     const response = await apiClient.post<PeriodoApiDTO>(API_URL, toApi(payload));
     return fromApi(response.data);
@@ -201,6 +219,7 @@ export const createPeriod = async (payload: CreatePeriodPayload): Promise<Period
  * @returns Promesa con el periodo actualizado.
  */
 export const updatePeriod = async (payload: UpdatePeriodPayload): Promise<Periodo> => {
+  invalidateCache();
   if (!payload.periodId) throw new Error("ID de periodo requerido para actualizar");
   try {
     const response = await apiClient.put<PeriodoApiDTO>(`${API_URL}/${payload.periodId}`, toApi(payload));
@@ -217,6 +236,7 @@ export const updatePeriod = async (payload: UpdatePeriodPayload): Promise<Period
  * @param id - Identificador del periodo a eliminar.
  */
 export const deletePeriod = async (id: string): Promise<void> => {
+  invalidateCache();
   try {
     await apiClient.delete(`${API_URL}/${id}`);
   } catch (error) {
@@ -232,6 +252,7 @@ export const deletePeriod = async (id: string): Promise<void> => {
  * @param status - Nuevo estado.
  */
 export const toggleStatus = async (id: string | number, status: boolean): Promise<void> => {
+  invalidateCache();
   try {
     await apiClient.patch(`${API_URL}/${id}/toggle-status`, { status });
   } catch (error) {
@@ -246,6 +267,7 @@ export const toggleStatus = async (id: string | number, status: boolean): Promis
  * @param ids - Arreglo de identificadores.
  */
 export const bulkDelete = async (ids: (string | number)[]): Promise<void> => {
+  invalidateCache();
   try {
     await apiClient.post(`${API_URL}/bulk-delete`, { ids });
   } catch (error) {
@@ -260,6 +282,7 @@ export const bulkDelete = async (ids: (string | number)[]): Promise<void> => {
  * @param ids - Arreglo de identificadores.
  */
 export const bulkRestore = async (ids: (string | number)[]): Promise<void> => {
+  invalidateCache();
   try {
     await apiClient.post(`${API_URL}/bulk-restore`, { ids });
   } catch (error) {

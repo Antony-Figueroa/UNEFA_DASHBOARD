@@ -35,7 +35,7 @@ export default function NotificationDropdown() {
     markAllAsRead, 
     fetchMore,
     refreshNotifications
-  } = useNotifications({ autoConnect: true });
+  } = useNotifications({ autoConnect: false });
 
   function toggleDropdown() {
     setIsOpen(!isOpen);

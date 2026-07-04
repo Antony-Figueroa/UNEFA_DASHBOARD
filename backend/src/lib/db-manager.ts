@@ -190,7 +190,7 @@ export class DatabaseManager {
       if (!this.config.url || !this.config.key || this.config.url.includes('your-project') || this.config.key.includes('your-')) {
         return { 
           status: 'unhealthy', 
-          details: { error: '⚠️ Credenciales de Supabase no configuradas. Por favor edita el archivo backend/.env con tus credenciales reales.' } 
+          details: { error: 'Credenciales de Supabase no configuradas. Por favor edita el archivo backend/.env con tus credenciales reales.' } 
         };
       }
       return { status: 'disconnected', details: { error: 'Cliente no inicializado' } };

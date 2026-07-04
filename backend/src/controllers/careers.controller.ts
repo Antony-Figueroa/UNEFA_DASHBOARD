@@ -144,7 +144,7 @@ export const updateCareer = async (req: AuthRequest, res: Response) => {
         await sendNotificationByRole(
           'all',
           'system',
-          '✏️ Carrera Modificada',
+          'Carrera Modificada',
           `La carrera "${oldName}" ha sido actualizada.`
         );
       } catch (notifError) {
@@ -186,7 +186,7 @@ export const deleteCareer = async (req: AuthRequest, res: Response) => {
           await sendNotificationByRole(
             'all',
             'system',
-            '🗑️ Carrera Eliminada',
+            'Carrera Eliminada',
             `La carrera "${deletedName}" ha sido eliminada.`
           );
         } catch (notifError) {

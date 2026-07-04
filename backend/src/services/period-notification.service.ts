@@ -33,7 +33,7 @@ export const periodNotificationService = {
     const result = await sendNotificationByRole(
       'all',
       'system',
-      '📅 Nuevo Período Académico Creado',
+      'Nuevo Período Académico Creado',
       `Se ha creado el período "${period.description}" (${formatDate(period.startDate)} - ${formatDate(period.endDate)}).`
     );
 
@@ -41,7 +41,7 @@ export const periodNotificationService = {
     const users = await getAllActiveUsers();
     sendPeriodNotification(
       users,
-      '📅 Nuevo Período Académico',
+      'Nuevo Período Académico',
       `Se ha creado el período "${period.description}" (${formatDate(period.startDate)} - ${formatDate(period.endDate)}).`,
       period.description
     ).catch(err => console.error('[PeriodNotification] Email error:', err));
@@ -53,7 +53,7 @@ export const periodNotificationService = {
     const result = await sendNotificationByRole(
       'all',
       'system',
-      '✏️ Período Académico Modificado',
+      'Período Académico Modificado',
       `El período "${period.oldDescription || period.description}" ha sido actualizado.`
     );
     return !!result;
@@ -63,7 +63,7 @@ export const periodNotificationService = {
     const result = await sendNotificationByRole(
       'all',
       'system',
-      '🗑️ Período Académico Eliminado',
+      'Período Académico Eliminado',
       `El período "${period.description}" ha sido eliminado.`
     );
     return !!result;
@@ -74,7 +74,7 @@ export const periodNotificationService = {
     const result = await sendNotificationByRole(
       'all',
       'system',
-      '🚀 Período Académico Iniciado',
+      'Período Académico Iniciado',
       `El período "${period.description}" ha iniciado formalmente.`
     );
 
@@ -82,7 +82,7 @@ export const periodNotificationService = {
     const users = await getAllActiveUsers();
     sendPeriodNotification(
       users,
-      '🚀 Período Académico Iniciado',
+      'Período Académico Iniciado',
       `El período "${period.description}" ha iniciado formalmente. Ingresá al sistema para más detalles.`,
       period.description
     ).catch(err => console.error('[PeriodNotification] Email error:', err));
@@ -95,7 +95,7 @@ export const periodNotificationService = {
     const result = await sendNotificationByRole(
       'all',
       'system',
-      '🏁 Período Académico Finalizado',
+      'Período Académico Finalizado',
       `El período "${period.description}" ha finalizado.`
     );
 
@@ -104,7 +104,7 @@ export const periodNotificationService = {
     const endedBy = period.manuallyEnded ? ' manualmente' : '';
     sendPeriodNotification(
       users,
-      '🏁 Período Académico Finalizado',
+      'Período Académico Finalizado',
       `El período "${period.description}" ha finalizado${endedBy}. Revisá tus actividades pendientes.`,
       period.description
     ).catch(err => console.error('[PeriodNotification] Email error:', err));
@@ -117,16 +117,16 @@ export const periodNotificationService = {
     let message = '';
 
     if (daysRemaining === 7) {
-      title = '⏰ 7 días para fin de período';
+      title = '7 días para fin de período';
       message = `Queda 1 semana para que finalice el período "${period.description}".`;
     } else if (daysRemaining <= 3 && daysRemaining > 1) {
-      title = '⚠️ Período por finalizar';
+      title = 'Período por finalizar';
       message = `Quedan solo ${daysRemaining} días para el fin del período "${period.description}".`;
     } else if (daysRemaining === 1) {
-      title = '🔴 ¡Último día!';
+      title = '¡Último día!';
       message = `El período "${period.description}" finaliza HOY.`;
     } else {
-      title = '⏰ Recordatorio de período';
+      title = 'Recordatorio de período';
       message = `Quedan ${daysRemaining} días para que finalice el período "${period.description}".`;
     }
 
@@ -182,13 +182,13 @@ export const periodNotificationService = {
       let message = '';
 
       if (daysRemaining === 7) {
-        title = '⏰ Holgura de inscripción: 1 semana restante';
+        title = 'Holgura de inscripción: 1 semana restante';
         message = `Queda 1 semana para que cierre la holgura de inscripción del período. Completá tu inscripción a la brevedad.`;
       } else if (daysRemaining === 3) {
-        title = '⚠️ Holgura de inscripción por cerrar';
+        title = 'Holgura de inscripción por cerrar';
         message = `Quedan solo 3 días para que cierre la holgura de inscripción del período. No esperes más.`;
       } else {
-        title = '⏰ Recordatorio de holgura de inscripción';
+        title = 'Recordatorio de holgura de inscripción';
         message = `Quedan ${daysRemaining} días para que cierre la holgura de inscripción del período.`;
       }
 
@@ -205,7 +205,7 @@ export const periodNotificationService = {
    */
   notifyEvaluationOpened: async (periodId: number): Promise<boolean> => {
     try {
-      const title = '📝 Período de evaluación iniciado';
+      const title = 'Período de evaluación iniciado';
       const message = 'El período de evaluación de pasantías ha comenzado. Ingresá al sistema para más detalles.';
 
       // Notificar a tutores
@@ -284,10 +284,10 @@ export const periodNotificationService = {
       let message = '';
 
       if (daysRemaining === 3) {
-        title = '⚠️ Holgura de evaluación por cerrar';
+        title = 'Holgura de evaluación por cerrar';
         message = `Quedan solo 3 días para que cierre la holgura de evaluación del período. Completá las evaluaciones pendientes.`;
       } else {
-        title = '⏰ Recordatorio de holgura de evaluación';
+        title = 'Recordatorio de holgura de evaluación';
         message = `Quedan ${daysRemaining} días para que cierre la holgura de evaluación del período.`;
       }
 

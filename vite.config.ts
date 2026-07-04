@@ -65,37 +65,24 @@ export default defineConfig(() => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            // Only create custom chunks for large, stable libraries
-            // Let React and other core libs be bundled together
             if (id.includes("node_modules")) {
-              if (id.includes("@supabase")) {
-                return "vendor-supabase";
-              }
-              if (id.includes("apexcharts") || id.includes("react-apexcharts")) {
-                return "vendor-charts";
-              }
-              if (id.includes("lucide-react")) {
-                return "vendor-icons";
-              }
-              if (id.includes("motion") || id.includes("framer-motion")) {
-                return "vendor-motion";
-              }
-              if (id.includes("@fullcalendar")) {
-                return "vendor-calendar";
-              }
-              if (id.includes("axios")) {
-                return "vendor-http";
-              }
-              if (id.includes("zod")) {
-                return "vendor-validation";
-              }
-              if (id.includes("react-hook-form") || id.includes("@hookform")) {
-                return "vendor-forms";
-              }
-              if (id.includes("flatpickr") || id.includes("react-flatpickr")) {
-                return "vendor-datepicker";
-              }
-              // Keep React bundled together by default - fixes "Cannot set properties of undefined" error
+              // Specific vendor chunks FIRST (before generic react check)
+              if (id.includes("react-hook-form") || id.includes("@hookform")) return "vendor-forms";
+              if (id.includes("@supabase")) return "vendor-supabase";
+              if (id.includes("apexcharts") || id.includes("react-apexcharts")) return "vendor-charts";
+              if (id.includes("lucide-react")) return "vendor-icons";
+              if (id.includes("motion") || id.includes("framer-motion")) return "vendor-motion";
+              if (id.includes("@fullcalendar")) return "vendor-calendar";
+              if (id.includes("axios")) return "vendor-http";
+              if (id.includes("zod")) return "vendor-validation";
+              if (id.includes("flatpickr") || id.includes("react-flatpickr")) return "vendor-datepicker";
+
+              // React + core MUST stay in ONE chunk (React 19 compat)
+              // Use node_modules/pkg/ prefix to avoid catching sub-packages (react-hook-form, lucide-react, etc.)
+              const reactCore = ["/react/", "/react-dom/", "/scheduler/", "/react-router",
+                "/react-is/", "/use-sync-external-store/", "/@remix-run/", "/history/"];
+              if (reactCore.some(pkg => id.includes(pkg))) return "vendor-core";
+
               return;
             }
           },

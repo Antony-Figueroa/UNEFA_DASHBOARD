@@ -22,23 +22,23 @@ const PeriodoPDF: React.FC<PeriodoPDFProps> = ({ data }) => {
       subtitle="Historial y estado de los períodos de Prácticas Profesionales"
     >
       <View style={pdfStyles.table}>
-        <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>DESCRIPCIÓN</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>FECHA INICIO</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>FECHA FIN</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>ESTADO</Text>
+        <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]} wrap={false}>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8 }]}>DESCRIPCIÓN</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>FECHA INICIO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>FECHA FIN</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.2, fontSize: 8 }]}>ESTADO</Text>
         </View>
 
         {data.map((period, index) => (
           <View key={period.periodId || index} style={pdfStyles.tableRow} wrap={false}>
-            <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>{period.description}</Text>
-            <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8 }]}>{period.description}</Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>
               {PDFService.formatDate(period.startDate)}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>
               {PDFService.formatDate(period.endDate)}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 1.2, fontSize: 8 }]}>
               {STATUS_LABELS[period.periodStatus as keyof typeof STATUS_LABELS] || "Desconocido"}
             </Text>
           </View>

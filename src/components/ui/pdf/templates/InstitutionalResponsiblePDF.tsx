@@ -26,36 +26,35 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
       subtitle="Personal de contacto en las empresas e instituciones aliadas"
     >
       <View style={pdfStyles.table}>
-        <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>CÉDULA</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>NOMBRES Y APELLIDOS</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>TÍTULO</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>EMPRESA O INSTITUCIÓN</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>CONTACTO</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.3 }]}>FECHA DE REGISTRO</Text>
+        <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]} wrap={false}>
+          <Text style={[pdfStyles.tableCell, { flex: 1.2, fontSize: 8 }]}>CÉDULA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8 }]}>NOMBRES Y APELLIDOS</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>TÍTULO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>EMPRESA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8 }]}>CONTACTO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 8 }]}>FECHA REG.</Text>
         </View>
 
         {data.map((responsible, index) => (
           <View key={responsible.responsibleId || index} style={pdfStyles.tableRow} wrap={false}>
-            <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 1.2, fontSize: 8 }]}>
               {formatCI(responsible.identificationPrefix, responsible.identificationNumber)}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 2.5, fontWeight: "bold" }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8, fontWeight: "bold" }]}>
               {formatName(responsible)}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>
               {responsible.title || "-"}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 2 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>
               {responsible.institutions?.[0]?.institutionName || "No asignada"}
             </Text>
-            <View style={[pdfStyles.tableCell, { flex: 2.5 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8 }]}>
               <Text>{responsible.email}</Text>
-              <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
-                {responsible.phone}
-              </Text>
-            </View>
-            <Text style={[pdfStyles.tableCell, { flex: 1.3 }]}>
+              {'\n'}
+              <Text style={{ fontSize: 7, color: "#64748B" }}>{responsible.phone}</Text>
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 8 }]}>
               {formatDate(responsible.registrationDate)}
             </Text>
           </View>

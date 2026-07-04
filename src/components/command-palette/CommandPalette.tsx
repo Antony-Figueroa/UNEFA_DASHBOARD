@@ -11,7 +11,7 @@ import { useCommandPalette } from "./CommandPaletteContext";
 import { useAuth } from "../../context/auth";
 import { globalSearch, type GlobalSearchResponse } from "../../api/searchService";
 import { matchSearch } from "../../utils/searchNormalizer";
-import { SearchIcon, PlusIcon, UserIcon, FileIcon, UsersIcon, GridIcon, TableIcon, PageIcon, PieChartIcon, DocsIcon, SparklesIcon, LockIcon, BoxCubeIcon } from "../../icons";
+import { SearchIcon, PlusIcon, UserIcon, UsersIcon, FileIcon, GridIcon, TableIcon, PageIcon, PieChartIcon, DocsIcon, PencilIcon, CheckCircleIcon, SparklesIcon, LockIcon, BoxCubeIcon } from "../../icons";
 
 // Iconos inline para instituciones y carreras
 const BuildingOfficeIcon = ({ className }: { className?: string }) => (
@@ -43,7 +43,6 @@ interface SearchResult {
   type: ResultType;
   icon: React.ReactNode;
   action: () => void;
-  shortcut?: string;
 }
 
 // Navigation item without id and action
@@ -52,31 +51,30 @@ interface NavItem {
   description: string;
   type: ResultType;
   icon: React.ReactNode;
-  shortcut: string;
 }
 
 // Opciones de navegación
 const navigationItems: NavItem[] = [
-  { name: "Dashboard", description: "Panel principal", type: "navigation", icon: <PieChartIcon className="w-4 h-4" />, shortcut: "G D" },
-  { name: "Estudiantes", description: "Gestión de estudiantes", type: "navigation", icon: <UsersIcon className="w-4 h-4" />, shortcut: "G E" },
-  { name: "Carreras", description: "Gestión de carreras", type: "navigation", icon: <GridIcon className="w-4 h-4" />, shortcut: "G C" },
-  { name: "Tutores", description: "Gestión de tutores", type: "navigation", icon: <UserIcon className="w-4 h-4" />, shortcut: "G T" },
-  { name: "Empresas o Instituciones", description: "Gestión de empresas o instituciones", type: "navigation", icon: <DocsIcon className="w-4 h-4" />, shortcut: "G I" },
-  { name: "Pre-inscripciones", description: "Gestión de pre-inscripciones", type: "navigation", icon: <TableIcon className="w-4 h-4" />, shortcut: "G P" },
-  { name: "Inscripciones", description: "Gestión de inscripciones", type: "navigation", icon: <FileIcon className="w-4 h-4" />, shortcut: "G N" },
-  { name: "Informes", description: "Reportes y estadísticas", type: "navigation", icon: <PageIcon className="w-4 h-4" />, shortcut: "G R" },
-  { name: "Configuración", description: "Configuración del sistema", type: "navigation", icon: <SparklesIcon className="w-4 h-4" />, shortcut: "G S" },
+  { name: "Dashboard", description: "Panel principal", type: "navigation", icon: <PieChartIcon className="w-4 h-4" /> },
+  { name: "Estudiantes", description: "Gestión de estudiantes", type: "navigation", icon: <UsersIcon className="w-4 h-4" /> },
+  { name: "Carreras", description: "Gestión de carreras", type: "navigation", icon: <GridIcon className="w-4 h-4" /> },
+  { name: "Tutores", description: "Gestión de tutores", type: "navigation", icon: <UserIcon className="w-4 h-4" /> },
+  { name: "Empresas o Instituciones", description: "Gestión de empresas o instituciones", type: "navigation", icon: <DocsIcon className="w-4 h-4" /> },
+  { name: "Pre-inscripciones", description: "Gestión de pre-inscripciones", type: "navigation", icon: <TableIcon className="w-4 h-4" /> },
+  { name: "Inscripciones", description: "Gestión de inscripciones", type: "navigation", icon: <FileIcon className="w-4 h-4" /> },
+  { name: "Informes", description: "Reportes y estadísticas", type: "navigation", icon: <PageIcon className="w-4 h-4" /> },
+  { name: "Configuración", description: "Configuración del sistema", type: "navigation", icon: <SparklesIcon className="w-4 h-4" /> },
 ];
 
 // Acciones rápidas
 const actionItems: NavItem[] = [
-  { name: "Nuevo Estudiante", description: "Registrar un nuevo estudiante", type: "action", icon: <PlusIcon className="w-4 h-4" />, shortcut: "N E" },
-  { name: "Nueva Pre-inscripción", description: "Crear una nueva pre-inscripción", type: "action", icon: <PlusIcon className="w-4 h-4" />, shortcut: "N P" },
-  { name: "Nueva Inscripción", description: "Registrar una nueva inscripción", type: "action", icon: <PlusIcon className="w-4 h-4" />, shortcut: "N I" },
-  { name: "Nueva Empresa o Institución", description: "Agregar una nueva empresa o institución", type: "action", icon: <PlusIcon className="w-4 h-4" />, shortcut: "N N" },
-  { name: "Nuevo Tutor", description: "Registrar un nuevo tutor", type: "action", icon: <PlusIcon className="w-4 h-4" />, shortcut: "N T" },
-  { name: "Nueva Carrera", description: "Agregar una nueva carrera", type: "action", icon: <PlusIcon className="w-4 h-4" />, shortcut: "N C" },
-  { name: "Cerrar Sesión", description: "Salir de la cuenta", type: "action", icon: <LockIcon className="w-4 h-4" />, shortcut: "Q" },
+  { name: "Nuevo Estudiante", description: "Registrar un nuevo estudiante", type: "action", icon: <UserIcon className="w-4 h-4" /> },
+  { name: "Nueva Pre-inscripción", description: "Crear una nueva pre-inscripción", type: "action", icon: <PencilIcon className="w-4 h-4" /> },
+  { name: "Nueva Inscripción", description: "Registrar una nueva inscripción", type: "action", icon: <CheckCircleIcon className="w-4 h-4" /> },
+  { name: "Nueva Empresa o Institución", description: "Agregar una nueva empresa o institución", type: "action", icon: <BuildingOfficeIcon className="w-4 h-4" /> },
+  { name: "Nuevo Tutor", description: "Registrar un nuevo tutor", type: "action", icon: <UsersIcon className="w-4 h-4" /> },
+  { name: "Nueva Carrera", description: "Agregar una nueva carrera", type: "action", icon: <GraduationCapIcon className="w-4 h-4" /> },
+  { name: "Cerrar Sesión", description: "Salir de la cuenta", type: "action", icon: <LockIcon className="w-4 h-4" /> },
 ];
 
 // Mapeo de navegación a rutas
@@ -114,6 +112,7 @@ export default function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isKeyboardNav = useRef(false);
 
   // Debounced search - ejecuta la búsqueda después de 300ms de inactividad
   useEffect(() => {
@@ -268,10 +267,12 @@ export default function CommandPalette() {
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
+          isKeyboardNav.current = true;
           setSelectedIndex(prev => Math.min(prev + 1, allResults.length - 1));
           break;
         case "ArrowUp":
           e.preventDefault();
+          isKeyboardNav.current = true;
           setSelectedIndex(prev => Math.max(prev - 1, 0));
           break;
         case "Enter":
@@ -291,14 +292,12 @@ export default function CommandPalette() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, allResults, selectedIndex, close]);
 
-  // Scroll al elemento seleccionado
+  // Scroll al elemento seleccionado (solo cuando navega con teclado)
   useEffect(() => {
-    if (listRef.current) {
-      const selectedElement = listRef.current.children[selectedIndex] as HTMLElement;
-      if (selectedElement) {
-        selectedElement.scrollIntoView({ block: "nearest" });
-      }
-    }
+    if (!isKeyboardNav.current || !listRef.current) return;
+    isKeyboardNav.current = false;
+    const selectedElement = listRef.current.children[selectedIndex] as HTMLElement;
+    selectedElement?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
   // Focus en input cuando se abre
@@ -368,7 +367,7 @@ export default function CommandPalette() {
                         if (route) navigate(route);
                         close();
                       }}
-                      onMouseEnter={() => setSelectedIndex(resultIndex)}
+                      onMouseEnter={() => { isKeyboardNav.current = false; setSelectedIndex(resultIndex); }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
                         isSelected
                           ? "bg-brand-50 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300"
@@ -380,11 +379,6 @@ export default function CommandPalette() {
                       </span>
                       <span className="flex-1 font-medium">{item.name}</span>
                       <span className="text-xs text-text-tertiary">{item.description}</span>
-                      {item.shortcut && (
-                        <kbd className="px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 dark:bg-white/10 rounded">
-                          {item.shortcut}
-                        </kbd>
-                      )}
                     </button>
                   );
                 })}
@@ -409,7 +403,7 @@ export default function CommandPalette() {
                         if (item.name === "Cerrar Sesión") signOut();
                         close();
                       }}
-                      onMouseEnter={() => setSelectedIndex(resultIndex)}
+                      onMouseEnter={() => { isKeyboardNav.current = false; setSelectedIndex(resultIndex); }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
                         isSelected
                           ? "bg-brand-50 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300"
@@ -421,11 +415,6 @@ export default function CommandPalette() {
                       </span>
                       <span className="flex-1 font-medium">{item.name}</span>
                       <span className="text-xs text-text-tertiary">{item.description}</span>
-                      {item.shortcut && (
-                        <kbd className="px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 dark:bg-white/10 rounded">
-                          {item.shortcut}
-                        </kbd>
-                      )}
                     </button>
                   );
                 })}
@@ -445,7 +434,7 @@ export default function CommandPalette() {
                     <button
                       key={item.id}
                       onClick={item.action}
-                      onMouseEnter={() => setSelectedIndex(resultIndex)}
+                      onMouseEnter={() => { isKeyboardNav.current = false; setSelectedIndex(resultIndex); }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
                         isSelected
                           ? "bg-brand-50 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300"

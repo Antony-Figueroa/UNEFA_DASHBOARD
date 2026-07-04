@@ -5,8 +5,8 @@
  */
 
 import { useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router';
 import { FiClipboard, FiCheckSquare, FiCalendar, FiClock, FiChevronRight, FiInbox } from 'react-icons/fi';
+import { useTabs } from '../../../context/tab';
 import type { DashboardStats } from '../types';
 
 interface PendingTasksPanelProps {
@@ -54,12 +54,12 @@ interface TaskSectionProps {
 }
 
 const TaskSection = ({ icon, title, count, href, description, color, onNavigate }: TaskSectionProps) => {
-  const navigate = useNavigate();
+  const { openTab } = useTabs();
 
   const handleClick = useCallback(() => {
-    navigate(href);
+    openTab(href, title);
     onNavigate?.();
-  }, [navigate, href, onNavigate]);
+  }, [openTab, href, title, onNavigate]);
 
   if (count === 0) return null;
 
@@ -93,14 +93,14 @@ interface PeriodSectionProps {
 }
 
 const PeriodSection = ({ period, onNavigate }: PeriodSectionProps) => {
-  const navigate = useNavigate();
+  const { openTab } = useTabs();
   const remaining = useMemo(() => daysRemaining(period.endDate), [period.endDate]);
   const progress = useMemo(() => periodProgress(period.startDate, period.endDate), [period.startDate, period.endDate]);
 
   const handleClick = useCallback(() => {
-    navigate('/period');
+    openTab('/period', 'Período');
     onNavigate?.();
-  }, [navigate, onNavigate]);
+  }, [openTab, onNavigate]);
 
   return (
     <button
@@ -148,12 +148,12 @@ interface NoPeriodBannerProps {
 }
 
 const NoPeriodBanner = ({ onNavigate }: NoPeriodBannerProps) => {
-  const navigate = useNavigate();
+  const { openTab } = useTabs();
 
   const handleClick = useCallback(() => {
-    navigate('/period');
+    openTab('/period', 'Período');
     onNavigate?.();
-  }, [navigate, onNavigate]);
+  }, [openTab, onNavigate]);
 
   return (
     <button

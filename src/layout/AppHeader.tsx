@@ -114,7 +114,9 @@ const AppHeader: React.FC = () => {
                   ref={inputRef}
                   type="text"
                   placeholder="Buscar..."
-                  className="h-10 w-full rounded-xl border border-border-light/50 bg-gray-50/50 py-2 pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-brand-300 focus:bg-white focus:ring-2 focus:ring-brand-500/10 transition-all duration-200 dark:border-white/10 dark:bg-white/3 dark:text-white dark:placeholder:text-white/30 dark:focus:border-brand-500 dark:focus:bg-white/5"
+                  readOnly
+                  onFocus={openCommandPalette}
+                  className="h-10 w-full rounded-xl border border-border-light/50 bg-gray-50/50 py-2 pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-brand-300 focus:bg-white focus:ring-2 focus:ring-brand-500/10 transition-all duration-200 dark:border-white/10 dark:bg-white/3 dark:text-white dark:placeholder:text-white/30 dark:focus:border-brand-500 dark:focus:bg-white/5 cursor-pointer"
                 />
                 <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden xl:inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium text-text-tertiary bg-white border border-border-light rounded dark:bg-white/5 dark:border-white/10">
                   <span className="text-xs">⌘</span>K
@@ -154,7 +156,9 @@ const AppHeader: React.FC = () => {
               <input
                 type="text"
                 placeholder="Buscar..."
-                className="h-10 w-full rounded-xl border border-border-light/50 bg-gray-50/50 py-2 pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-brand-300 focus:bg-white focus:ring-2 focus:ring-brand-500/10 transition-all duration-200 dark:border-white/10 dark:bg-white/3 dark:text-white dark:placeholder:text-white/30 dark:focus:border-brand-500 dark:focus:bg-white/5"
+                readOnly
+                onFocus={openCommandPalette}
+                className="h-10 w-full rounded-xl border border-border-light/50 bg-gray-50/50 py-2 pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-brand-300 focus:bg-white focus:ring-2 focus:ring-brand-500/10 transition-all duration-200 dark:border-white/10 dark:bg-white/3 dark:text-white dark:placeholder:text-white/30 dark:focus:border-brand-500 dark:focus:bg-white/5 cursor-pointer"
               />
             </div>
 

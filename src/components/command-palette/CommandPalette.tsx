@@ -9,9 +9,7 @@ import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCommandPalette } from "./CommandPaletteContext";
 import { useAuth } from "../../context/auth";
-import { notificationService } from "../../features/notifications/services/notificationService";
 import { globalSearch, type GlobalSearchResponse } from "../../api/searchService";
-import toast from "react-hot-toast";
 import { matchSearch } from "../../utils/searchNormalizer";
 import { SearchIcon, PlusIcon, UserIcon, FileIcon, UsersIcon, GridIcon, TableIcon, PageIcon, PieChartIcon, DocsIcon, SparklesIcon, LockIcon, BoxCubeIcon } from "../../icons";
 
@@ -32,13 +30,6 @@ const GraduationCapIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
     <path d="M6 12v5c0 1.657 3.134 3 7 3s7-1.343 7-3v-5" />
-  </svg>
-);
-
-// Icono de prueba (tubo de ensayo)
-const TestTubeIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 3h6v6l4 8a2 2 0 01-2 4H7a2 2 0 01-2-4l4-8V3z" />
   </svg>
 );
 
@@ -86,11 +77,6 @@ const actionItems: NavItem[] = [
   { name: "Nuevo Tutor", description: "Registrar un nuevo tutor", type: "action", icon: <PlusIcon className="w-4 h-4" />, shortcut: "N T" },
   { name: "Nueva Carrera", description: "Agregar una nueva carrera", type: "action", icon: <PlusIcon className="w-4 h-4" />, shortcut: "N C" },
   { name: "Cerrar Sesión", description: "Salir de la cuenta", type: "action", icon: <LockIcon className="w-4 h-4" />, shortcut: "Q" },
-  // Notificaciones de prueba (solo desarrollo)
-  { name: "🔔 Notif: Éxito", description: "Crear notificación de prueba (éxito)", type: "action", icon: <TestTubeIcon className="w-4 h-4" />, shortcut: "" },
-  { name: "🔔 Notif: Advertencia", description: "Crear notificación de prueba (advertencia)", type: "action", icon: <TestTubeIcon className="w-4 h-4" />, shortcut: "" },
-  { name: "🔔 Notif: Error", description: "Crear notificación de prueba (error)", type: "action", icon: <TestTubeIcon className="w-4 h-4" />, shortcut: "" },
-  { name: "🔔 Notif: Info", description: "Crear notificación de prueba (información)", type: "action", icon: <TestTubeIcon className="w-4 h-4" />, shortcut: "" },
 ];
 
 // Mapeo de navegación a rutas
@@ -102,7 +88,7 @@ const navigationRoutes: Record<string, string> = {
   "Instituciones": "/institutions",
   "Pre-inscripciones": "/pre-enrollment",
   "Inscripciones": "/enrollment",
-  "Informes": "/dashboard",
+  "Informes": "/reports",
   "Configuración": "/settings",
 };
 
@@ -115,23 +101,6 @@ const actionHandlers: Record<string, () => void> = {
   "Nuevo Tutor": () => window.dispatchEvent(new CustomEvent("app:openTutorModal")),
   "Nueva Carrera": () => window.dispatchEvent(new CustomEvent("app:openCareerModal")),
   "Cerrar Sesión": () => window.dispatchEvent(new CustomEvent("app:logout")),
-  // Notificaciones de prueba
-  "🔔 Notif: Éxito": async () => {
-    await notificationService.createTest('success');
-    toast.success('Notificación de prueba creada');
-  },
-  "🔔 Notif: Advertencia": async () => {
-    await notificationService.createTest('warning');
-    toast('Notificación de prueba creada', { icon: '⚠️' });
-  },
-  "🔔 Notif: Error": async () => {
-    await notificationService.createTest('error');
-    toast.error('Notificación de prueba creada');
-  },
-  "🔔 Notif: Info": async () => {
-    await notificationService.createTest('info');
-    toast('Notificación de prueba creada', { icon: 'ℹ️' });
-  },
 };
 
 export default function CommandPalette() {
@@ -245,25 +214,24 @@ export default function CommandPalette() {
     };
   }, [searchTerm, navigate, close]);
 
-  // Construir resultados de navegación
-  const navigationResults = useMemo(() => {
+  // Resultados filtrados de navegación y acciones
+  const filteredNavigation = useMemo(() => {
     if (!searchTerm) return navigationItems;
     return navigationItems.filter(
       item => matchSearch(item.name, searchTerm) || matchSearch(item.description, searchTerm)
     );
   }, [searchTerm]);
 
-  // Construir resultados de acciones
-  const actionResults = useMemo(() => {
+  const filteredActions = useMemo(() => {
     if (!searchTerm) return actionItems;
     return actionItems.filter(
       item => matchSearch(item.name, searchTerm) || matchSearch(item.description, searchTerm)
     );
   }, [searchTerm]);
 
-  // Todos los resultados planos
+  // Todos los resultados planos (para navegación por teclado)
   const allResults = useMemo(() => {
-    const navResults = navigationItems.map((item, idx) => ({
+    const navResults = filteredNavigation.map((item, idx) => ({
       ...item,
       id: `nav-${idx}`,
       action: () => {
@@ -273,7 +241,7 @@ export default function CommandPalette() {
       },
     }));
     
-    const actResults = actionItems.map((item, idx) => ({
+    const actResults = filteredActions.map((item, idx) => ({
       ...item,
       id: `act-${idx}`,
       action: () => {
@@ -284,25 +252,8 @@ export default function CommandPalette() {
       },
     }));
 
-    const entResults = entityResults;
-
-    return [...navResults, ...actResults, ...entResults];
-  }, [navigationItems, actionItems, entityResults, navigate, close, signOut]);
-
-  // Filtrar resultados basados en búsqueda
-  const filteredNavigation = useMemo(() => {
-    if (!searchTerm) return navigationResults;
-    return navigationResults.filter(
-      item => matchSearch(item.name, searchTerm) || matchSearch(item.description, searchTerm)
-    );
-  }, [searchTerm, navigationResults]);
-
-  const filteredActions = useMemo(() => {
-    if (!searchTerm) return actionResults;
-    return actionResults.filter(
-      item => matchSearch(item.name, searchTerm) || matchSearch(item.description, searchTerm)
-    );
-  }, [searchTerm, actionResults]);
+    return [...navResults, ...actResults, ...entityResults];
+  }, [filteredNavigation, filteredActions, entityResults, navigate, close, signOut]);
 
   // Reset selección cuando cambian los resultados
   useEffect(() => {

@@ -158,7 +158,7 @@ export default function TrackingPage() {
             isOpen: true,
             title: config.title,
             message: `¿Estás seguro de que deseas desactivar el seguimiento de "${item.studentName}"?`,
-            variant: config.variant as DialogVariant,
+            variant: config.variant as 'warning',
             onConfirm: async () => {
                 try {
                     await removeTracking(item.trackingId);
@@ -184,8 +184,8 @@ export default function TrackingPage() {
         setConfirmation({
             isOpen: true,
             title: config.title,
-            message: `¿Estás seguro de que deseas restaurar el seguimiento de "${trackingRow.studentName}"?`,
-            variant: config.variant as DialogVariant,
+            message: config.message,
+            variant: config.variant as 'success',
             onConfirm: async () => {
                 try {
                     await restoreTracking(trackingRow.trackingId);
@@ -284,7 +284,7 @@ export default function TrackingPage() {
                     title={confirmation?.title || ""}
                     message={confirmation?.message || ""}
                     variant={confirmation?.variant || "info"}
-                    confirmLabel={confirmation?.confirmText || "Confirmar"}
+                    confirmLabel="Confirmar"
                     cancelLabel="Cancelar"
                     onConfirm={confirmation?.onConfirm}
                     isLoading={loadingAction}

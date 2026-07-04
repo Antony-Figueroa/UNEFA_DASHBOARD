@@ -941,10 +941,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         <ModalHeader>
           <div className="w-full">
             <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-              {MODAL_CONFIG.titleByMode(editingStudent, 'Estudiante')}
+              {MODAL_CONFIG.titleByMode(!!editingStudent, 'Estudiante')}
             </span>
             <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-              {MODAL_CONFIG.descriptionByMode(editingStudent, 'estudiante')}
+              {MODAL_CONFIG.descriptionByMode(!!editingStudent, 'estudiante')}
             </p>
           </div>
         </ModalHeader>
@@ -1672,7 +1672,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         variant="confirm"
         title={editingStudent ? "Confirmar actualización" : "Confirmar registro"}
         message={editingStudent ? "¿Desea actualizar los datos del estudiante?" : "¿Desea registrar el nuevo estudiante?"}
-        confirmLabel={MODAL_CONFIG.confirmLabel(editingStudent)}
+        confirmLabel={MODAL_CONFIG.confirmLabel(!!editingStudent)}
       />
     )}
 

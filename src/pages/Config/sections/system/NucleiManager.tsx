@@ -264,7 +264,7 @@ export default function NucleiManager() {
       isOpen: true,
       title: config.title,
       message: `¿Estás seguro de que deseas ${goingInactive ? "desactivar" : "activar"} el núcleo "${nucleus.name}"?`,
-      variant: config.variant!,
+      variant: (config.variant ?? 'warning') as 'info' | 'error' | 'warning' | 'success',
       onConfirm: async () => {
         setActionLoading(true);
         try {

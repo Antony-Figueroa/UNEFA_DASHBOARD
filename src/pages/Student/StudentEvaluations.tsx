@@ -96,8 +96,8 @@ export default function StudentEvaluations() {
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <p className="text-xs text-text-tertiary mb-1">Calificación</p>
               {evaluation?.completed ? (
-                <p className={`text-xl font-bold ${evaluation.score >= 10 ? "text-green-500" : "text-red-500"}`}>
-                  {evaluation.score.toFixed(1)}
+                <p className={`text-xl font-bold ${(evaluation.score / evalConfig.score.displayScale) >= 0.5 ? "text-green-500" : "text-red-500"}`}>
+                  {Math.round((evaluation.score / evalConfig.score.displayScale) * 100)}%
                 </p>
               ) : (
                 <p className="text-xl font-bold text-text-tertiary">-</p>

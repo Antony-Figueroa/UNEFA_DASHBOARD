@@ -33,7 +33,7 @@ const SEED_TEMPLATES: CreateEmailTemplate[] = [
     name: 'Inicio de Lapso Académico',
     description: 'Notificar a estudiantes sobre el inicio de un nuevo período académico',
     category: 'periodo',
-    subject: '📢 Inicio de lapso {{periodo}}',
+    subject: 'Inicio de lapso {{periodo}}',
     body_html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
     <div style="background: #1e40af; padding: 20px; text-align: center; color: white;">
       <h1 style="margin: 0;">SIGP UNEFA</h1>
@@ -51,7 +51,7 @@ const SEED_TEMPLATES: CreateEmailTemplate[] = [
     name: 'Fin de Lapso Académico',
     description: 'Notificar a estudiantes sobre el cierre del período académico',
     category: 'periodo',
-    subject: '⏰ Cierre de lapso {{periodo}}',
+    subject: 'Cierre de lapso {{periodo}}',
     body_html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
     <div style="background: #1e40af; padding: 20px; text-align: center; color: white;">
       <h1 style="margin: 0;">SIGP UNEFA</h1>
@@ -70,7 +70,7 @@ const SEED_TEMPLATES: CreateEmailTemplate[] = [
     name: 'Reporte de Evaluación',
     description: 'Notificar a tutores sobre reportes de evaluación disponibles',
     category: 'evaluacion',
-    subject: '📋 Reporte de evaluación disponible',
+    subject: 'Reporte de evaluación disponible',
     body_html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
     <div style="background: #1e40af; padding: 20px; text-align: center; color: white;">
       <h1 style="margin: 0;">SIGP UNEFA</h1>

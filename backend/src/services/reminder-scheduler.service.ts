@@ -105,7 +105,7 @@ const sendReminderEmail = async (
 
     const result = await sendEmail({
       to: user.EMAIL,
-      subject: `🔔 ${title} - SIGP UNEFA`,
+      subject: `${title} - SIGP UNEFA`,
       html,
       text: `${title}\n\nHola ${user.NAME},\n\n${message}`,
     });
@@ -200,7 +200,7 @@ const HANDLERS: Record<ReminderType, ReminderHandler> = {
         : `${entry.students.slice(0, 3).join(', ')} y ${entry.students.length - 3} más`;
       results.push({
         userId: entry.userId,
-        title: entry.count === 1 ? '📋 Evaluación pendiente' : `📋 ${entry.count} evaluaciones pendientes`,
+        title: entry.count === 1 ? 'Evaluación pendiente' : `${entry.count} evaluaciones pendientes`,
         message: `Tenés ${entry.count} evaluación(es) sin calificar: ${detail}.`,
         dedupId: `count_${entry.count}`,
       });
@@ -246,7 +246,7 @@ const HANDLERS: Record<ReminderType, ReminderHandler> = {
       const date = new Date(visit.VISIT_DATE).toLocaleDateString('es-VE', { day: '2-digit', month: 'long' });
       results.push({
         userId: tutor.t_tutors.USER_ID,
-        title: '📅 Visita programada',
+        title: 'Visita programada',
         message: `Tenés una visita con ${name} para el ${date}.`,
         dedupId: `visit_${visit.VISIT_ID}`,
       });
@@ -290,7 +290,7 @@ const HANDLERS: Record<ReminderType, ReminderHandler> = {
 
       results.push({
         userId: s.USER_ID,
-        title: '⚠️ Bitácora pendiente',
+        title: 'Bitácora pendiente',
         message: lastDate
           ? `No registrás actividades desde el ${lastDate.toLocaleDateString('es-VE')}. Pasó el reporte semanal.`
           : 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.',
@@ -340,7 +340,7 @@ const HANDLERS: Record<ReminderType, ReminderHandler> = {
 
       results.push({
         userId: entry.userId,
-        title: total === 1 ? '📄 Documento pendiente' : `📄 ${total} documentos pendientes`,
+        title: total === 1 ? 'Documento pendiente' : `${total} documentos pendientes`,
         message: msg,
         dedupId: `docs_${total}`,
       });

@@ -17,7 +17,7 @@ import { PlusCircleIcon } from "../../icons/actions";
 import { FileText } from "lucide-react";
 import PeriodModal from "../../features/periods/components/PeriodModal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
+import { CONFIRM_MESSAGES, DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
@@ -257,10 +257,11 @@ export default function Period() {
             return;
         }
 
+        const config = CONFIRM_MESSAGES.activate('el período');
         setConfirmation({
             isOpen: true,
-            title: 'Confirmar Restauración',
-            message: `¿Estás seguro de que deseas restaurar el período "${originalPeriodo.description}"? Volverá a aparecer en la pestaña de activos.`,
+            title: config.title,
+            message: `¿Estás seguro de que deseas restaurar el período "${originalPeriodo.description}"?`,
             onConfirm: async () => {
                 try {
                     await editPeriod({ ...originalPeriodo, status: true });
@@ -270,8 +271,8 @@ export default function Period() {
                     setConfirmation(null);
                 }
             },
-            confirmText: 'Restaurar',
-            variant: 'success'
+            confirmText: config.confirmLabel,
+            variant: config.variant as DialogVariant,
         });
     };
 
@@ -287,9 +288,10 @@ export default function Period() {
             return;
         }
 
+        const config = CONFIRM_MESSAGES.deactivate('el período');
         setConfirmation({
             isOpen: true,
-            title: 'Confirmar Desactivación',
+            title: config.title,
             message: `¿Estás seguro de que deseas desactivar el período "${originalPeriodo.description}"?`,
             onConfirm: async () => {
                 try {
@@ -300,8 +302,8 @@ export default function Period() {
                     setConfirmation(null);
                 }
             },
-            confirmText: 'Desactivar',
-            variant: 'error'
+            confirmText: config.confirmLabel,
+            variant: config.variant as DialogVariant,
         });
     };
 
@@ -309,9 +311,10 @@ export default function Period() {
      * Maneja la eliminación masiva de periodos.
      */
     const handleBulkDelete = async (periodosRow: PeriodoRowData[]) => {
+        const config = CONFIRM_MESSAGES.deactivate('los períodos');
         setConfirmation({
             isOpen: true,
-            title: 'Confirmar Desactivación Masiva',
+            title: `Confirmar desactivación masiva`,
             message: `¿Estás seguro de que deseas desactivar los ${periodosRow.length} períodos seleccionados?`,
             onConfirm: async () => {
                 try {
@@ -327,7 +330,7 @@ export default function Period() {
                 }
             },
             confirmText: 'Desactivar Todos',
-            variant: 'error'
+            variant: config.variant as DialogVariant,
         });
     };
 
@@ -335,12 +338,13 @@ export default function Period() {
      * Maneja la restauración masiva de periodos.
      */
     const handleBulkRestore = async (periodosRow: PeriodoRowData[]) => {
+        const config = CONFIRM_MESSAGES.activate('los períodos');
         setConfirmation({
             isOpen: true,
-            title: 'Confirmar Restauración Masiva',
+            title: `Confirmar restauración masiva`,
             message: `¿Estás seguro de que deseas restaurar los ${periodosRow.length} períodos seleccionados?`,
             confirmText: 'Restaurar Todos',
-            variant: 'success',
+            variant: config.variant as DialogVariant,
             onConfirm: async () => {
                 try {
                     const ids = periodosRow

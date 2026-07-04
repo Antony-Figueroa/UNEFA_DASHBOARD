@@ -230,7 +230,7 @@ export const terminateSession = async (sessionId: number): Promise<{ success: bo
 
 export const getNotificationPrefs = async (): Promise<NotificationPreference[]> => {
   const response = await apiClient.get("/auth/notification-preferences");
-  return response.data;
+  return response.data.data;
 };
 
 export const saveNotificationPrefs = async (prefs: NotificationPreference[]): Promise<{ success: boolean; message: string }> => {

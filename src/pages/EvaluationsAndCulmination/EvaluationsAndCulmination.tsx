@@ -130,7 +130,8 @@ export default function EvaluationsAndCulminationPage() {
   // ─── Render: Evaluations tab ────────────────────────────
   const renderEvaluationsTab = () => (
     <>
-      <div className="overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-visible rounded-lg border border-border-default dark:border-border-dark">
         <Table>
           <TableHeader>
             <TableRow>
@@ -195,7 +196,7 @@ export default function EvaluationsAndCulminationPage() {
                 </TableCell>
                 {!hook.isReadOnly && (
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1">
+                    <div className="flex items-center justify-center">
                       <div className="relative group">
                         <button className="p-1.5 rounded-lg hover:bg-bg-subtle dark:hover:bg-gray-700 transition-colors">
                            <ThreeDotsIcon className="w-4 h-4 text-text-tertiary" />
@@ -263,6 +264,65 @@ export default function EvaluationsAndCulminationPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden flex flex-col gap-4">
+        {paginatedData.map(practice => (
+          <div key={practice.practiceId} className="bg-white dark:bg-gray-800 rounded-lg border border-border-default dark:border-border-dark p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div className="min-w-0">
+                <p className="font-medium text-text-primary dark:text-text-emphasis truncate">{practice.studentName}</p>
+                <p className="text-xs text-text-tertiary">{practice.studentCi}</p>
+              </div>
+              {getStatusBadge(practice.evaluationStatus)}
+            </div>
+            <div className="space-y-1 text-xs text-text-secondary mb-3">
+              <p><span className="font-medium">Período:</span> {practice.periodName}</p>
+              <p><span className="font-medium">Carrera:</span> {practice.careerName}</p>
+              <p><span className="font-medium">Tipo:</span> {practice.practiceTypeName}</p>
+            </div>
+            {/* Evaluation scores */}
+            <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
+              <div className="text-center p-2 rounded bg-bg-subtle dark:bg-gray-700">
+                <p className="text-text-tertiary">Inst.</p>
+                <p className="font-bold text-text-primary">
+                  {practice.evaluations.INSTITUCIONAL?.grade != null ? `${practice.evaluations.INSTITUCIONAL.grade}` : '-'}
+                </p>
+              </div>
+              <div className="text-center p-2 rounded bg-bg-subtle dark:bg-gray-700">
+                <p className="text-text-tertiary">Acad.</p>
+                <p className="font-bold text-text-primary">
+                  {practice.evaluations.ACADEMICO?.grade != null ? `${practice.evaluations.ACADEMICO.grade}` : '-'}
+                </p>
+              </div>
+              <div className="text-center p-2 rounded bg-bg-subtle dark:bg-gray-700">
+                <p className="text-text-tertiary">Comité</p>
+                <p className="font-bold text-text-primary">
+                  {practice.evaluations.COMITE?.grade != null ? `${practice.evaluations.COMITE.grade}` : '-'}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-between items-center text-sm mb-3">
+              <span className="text-text-secondary">Nota Final:</span>
+              <span className="font-bold text-brand-500">
+                {practice.finalGrade != null ? `${Math.round((practice.finalGrade / evalConfig.score.displayScale) * 100)}%` : '-'}
+              </span>
+            </div>
+            {/* Mobile actions */}
+            {!hook.isReadOnly && (
+              <div className="pt-3 border-t border-border-default dark:border-border-dark flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => hook.handleOpenEvaluation(practice, 'INSTITUCIONAL')}>
+                  Evaluar
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)}>
+                  <EyeIcon className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
       {totalPages > 1 && (
         <Pagination
           currentPage={hook.currentPage}
@@ -319,7 +379,7 @@ export default function EvaluationsAndCulminationPage() {
                 <TableCell className="text-center text-sm tabular-nums">{practice.totalHours}h</TableCell>
                 <TableCell className="text-center">{getCulminationBadge(practice.culminationStatus)}</TableCell>
                 <TableCell className="text-center">
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex items-center justify-center flex-wrap gap-1">
                     <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)}>
                       <EyeIcon className="w-4 h-4" />
                     </Button>
@@ -367,7 +427,10 @@ export default function EvaluationsAndCulminationPage() {
                 Certificado: {practice.certificateNumber}
               </p>
             )}
-            <div className="pt-3 border-t border-border-default dark:border-border-dark flex gap-2">
+            <div className="pt-3 border-t border-border-default dark:border-border-dark flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)}>
+                <EyeIcon className="w-4 h-4" />
+              </Button>
               {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
                 <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>Aprobar</Button>
               )}

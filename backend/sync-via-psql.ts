@@ -54,6 +54,11 @@ function esc(val: any): string {
   if (val === null || val === undefined) return 'NULL';
   if (typeof val === 'boolean') return val ? 'true' : 'false';
   if (typeof val === 'number') return String(val);
+  if (typeof val === 'object') {
+    const json = JSON.stringify(val);
+    const s = json.replace(/\\/g, '\\\\').replace(/'/g, "''");
+    return `'${s}'::jsonb`;
+  }
   const s = String(val)
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "''");

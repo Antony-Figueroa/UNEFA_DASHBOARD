@@ -144,11 +144,11 @@ export const createPerson = async (req: AuthRequest, res: Response) => {
     // Normalizar texto antes de guardar
     const normalizedData = {
       ...personData,
-      firstName: sanitizeText(personData.firstName) ?? personData.firstName,
-      lastName: sanitizeText(personData.lastName) ?? personData.lastName,
-      middleName: personData.middleName ? sanitizeText(personData.middleName) : personData.middleName,
-      secondLastName: personData.secondLastName ? sanitizeText(personData.secondLastName) : personData.secondLastName,
-      address: personData.address ? sanitizeText(personData.address) : personData.address,
+      firstName: sanitizeText(personData.firstName) ?? '',
+      lastName: sanitizeText(personData.lastName) ?? '',
+      middleName: personData.middleName ? sanitizeText(personData.middleName) : null,
+      secondLastName: personData.secondLastName ? sanitizeText(personData.secondLastName) : null,
+      address: personData.address ? sanitizeText(personData.address) : null,
     };
 
     const newPerson = await personService.createPerson(normalizedData);
@@ -208,11 +208,11 @@ export const updatePerson = async (req: AuthRequest, res: Response) => {
     // Normalizar texto antes de guardar
     const normalizedData = {
       ...personData,
-      ...(personData.firstName !== undefined ? { firstName: sanitizeText(personData.firstName) ?? personData.firstName } : {}),
-      ...(personData.lastName !== undefined ? { lastName: sanitizeText(personData.lastName) ?? personData.lastName } : {}),
-      ...(personData.middleName !== undefined ? { middleName: personData.middleName ? sanitizeText(personData.middleName) : personData.middleName } : {}),
-      ...(personData.secondLastName !== undefined ? { secondLastName: personData.secondLastName ? sanitizeText(personData.secondLastName) : personData.secondLastName } : {}),
-      ...(personData.address !== undefined ? { address: personData.address ? sanitizeText(personData.address) : personData.address } : {}),
+      ...(personData.firstName !== undefined ? { firstName: sanitizeText(personData.firstName) ?? '' } : {}),
+      ...(personData.lastName !== undefined ? { lastName: sanitizeText(personData.lastName) ?? '' } : {}),
+      ...(personData.middleName !== undefined ? { middleName: personData.middleName ? sanitizeText(personData.middleName) : null } : {}),
+      ...(personData.secondLastName !== undefined ? { secondLastName: personData.secondLastName ? sanitizeText(personData.secondLastName) : null } : {}),
+      ...(personData.address !== undefined ? { address: personData.address ? sanitizeText(personData.address) : null } : {}),
     };
 
     const updatedPerson = await personService.updatePerson(personId, normalizedData);

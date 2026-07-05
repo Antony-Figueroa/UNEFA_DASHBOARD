@@ -853,7 +853,7 @@ export const withdrawPractice = async (req: AuthRequest, res: Response) => {
     const updateData: Record<string, any> = {
       PRACTICES_STATUS: PRACTICES_STATUS.RETIRADO,
       WITHDRAWAL_TYPE: withdrawalType,
-      OBSERVATION: sanitizeText(observation) ?? observation,
+      OBSERVATION: sanitizeText(observation) ?? '',
     };
     if (!observation) delete updateData.OBSERVATION;
 

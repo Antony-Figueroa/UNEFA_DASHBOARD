@@ -1,6 +1,7 @@
 import PageMeta from "../../../components/common/PageMeta";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import GraceDefaultsSection from "../components/GraceDefaultsSection";
+import EvaluationConfigSection from "../components/EvaluationConfigSection";
 
 export default function AcademicConfigPage() {
   return (
@@ -10,6 +11,7 @@ export default function AcademicConfigPage() {
 
       <div className="space-y-6 animate-fadeIn">
         <GraceDefaultsSection />
+        <EvaluationConfigSection />
       </div>
     </>
   );

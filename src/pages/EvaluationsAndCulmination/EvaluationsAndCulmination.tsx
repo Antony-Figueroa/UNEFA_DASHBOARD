@@ -11,6 +11,7 @@ import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
 import Button from '../../components/ui/button/Button';
 import Badge from '../../components/ui/badge/Badge';
+import CustomSelect from '../../components/form/CustomSelect';
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from '../../components/ui/table';
 import { EmptyState } from '../../components/ui/table/EmptyState';
 import { TableSkeleton } from '../../components/ui/skeleton';
@@ -277,166 +278,125 @@ export default function EvaluationsAndCulminationPage() {
   );
 
   // ─── Render: Culmination tab ────────────────────────────
-  const renderCulminationTab = () => {
-    const culminFiltered = hook.filteredPractices.filter(p =>
-      hook.filters.culminationStatus ? p.culminationStatus === hook.filters.culminationStatus : true
-    );
-    const culminPaginated = culminFiltered.slice(
-      (hook.currentPage - 1) * hook.itemsPerPage,
-      hook.currentPage * hook.itemsPerPage
-    );
-    const culminTotalPages = Math.ceil(culminFiltered.length / hook.itemsPerPage);
+  const renderCulminationTab = () => (
+    <>
+      <StatsCardsGrid
+        columns={4}
+        stats={[
+          { title: 'Total', value: hook.culminationStats.total },
+          { title: 'Pendientes', value: hook.culminationStats.pending, color: 'warning' },
+          { title: 'Aprobados', value: hook.culminationStats.approved, color: 'success' },
+          { title: 'Certificados', value: hook.culminationStats.certified, color: 'primary' },
+        ]}
+      />
 
-    return (
-      <>
-        <StatsCardsGrid
-          columns={4}
-          stats={[
-            { title: 'Total', value: hook.culminationStats.total },
-            { title: 'Pendientes', value: hook.culminationStats.pending, color: 'warning' },
-            { title: 'Aprobados', value: hook.culminationStats.approved, color: 'success' },
-            { title: 'Certificados', value: hook.culminationStats.certified, color: 'primary' },
-          ]}
-        />
-
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-6">
-          <div className="w-full sm:w-64">
-            <input
-              type="text"
-              placeholder="Buscar estudiante, cédula, institución..."
-              value={hook.searchTerm}
-              onChange={(e) => { hook.setSearchTerm(e.target.value); hook.setCurrentPage(1); }}
-              className="w-full px-4 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-          <select
-            value={hook.filters.culminationStatus || ''}
-            onChange={(e) => hook.updateFilter('culminationStatus', e.target.value)}
-            className="w-full sm:w-44 px-3 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm"
-          >
-            {CULMINATION_STATUS_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          <select
-            value={String(hook.filters.periodId || '')}
-            onChange={(e) => hook.updateFilter('periodId', e.target.value)}
-            className="w-full sm:w-40 px-3 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm"
-          >
-            {periodOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Desktop table */}
-        <div className="hidden md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableCell isHeader>Estudiante</TableCell>
-                <TableCell isHeader>Carrera</TableCell>
-                <TableCell isHeader>Institución</TableCell>
-                <TableCell isHeader>Período</TableCell>
-                <TableCell isHeader className="text-center">Horas</TableCell>
-                <TableCell isHeader className="text-center">Estado</TableCell>
-                <TableCell isHeader className="text-center">Acciones</TableCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {culminPaginated.map(practice => (
-                <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
-                  <TableCell>
-                    <div className="font-medium text-text-primary dark:text-text-emphasis">
-                      {practice.studentName}
-                    </div>
-                    <div className="text-xs text-text-tertiary">{practice.studentCi}</div>
-                  </TableCell>
-                  <TableCell className="text-sm text-text-secondary">{practice.careerName}</TableCell>
-                  <TableCell className="text-sm text-text-secondary">{practice.institutionName}</TableCell>
-                  <TableCell className="text-sm text-text-secondary">{practice.periodName}</TableCell>
-                  <TableCell className="text-center text-sm tabular-nums">{practice.totalHours}h</TableCell>
-                  <TableCell className="text-center">{getCulminationBadge(practice.culminationStatus)}</TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)}>
-                        <EyeIcon className="w-4 h-4" />
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableCell isHeader>Estudiante</TableCell>
+              <TableCell isHeader>Carrera</TableCell>
+              <TableCell isHeader>Institución</TableCell>
+              <TableCell isHeader>Período</TableCell>
+              <TableCell isHeader className="text-center">Horas</TableCell>
+              <TableCell isHeader className="text-center">Estado</TableCell>
+              <TableCell isHeader className="text-center">Acciones</TableCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedData.map(practice => (
+              <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
+                <TableCell>
+                  <div className="font-medium text-text-primary dark:text-text-emphasis">
+                    {practice.studentName}
+                  </div>
+                  <div className="text-xs text-text-tertiary">{practice.studentCi}</div>
+                </TableCell>
+                <TableCell className="text-sm text-text-secondary">{practice.careerName}</TableCell>
+                <TableCell className="text-sm text-text-secondary">{practice.institutionName}</TableCell>
+                <TableCell className="text-sm text-text-secondary">{practice.periodName}</TableCell>
+                <TableCell className="text-center text-sm tabular-nums">{practice.totalHours}h</TableCell>
+                <TableCell className="text-center">{getCulminationBadge(practice.culminationStatus)}</TableCell>
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)}>
+                      <EyeIcon className="w-4 h-4" />
+                    </Button>
+                    {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
+                      <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>
+                        Aprobar
                       </Button>
-                      {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
-                        <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>
-                          Aprobar
-                        </Button>
-                      )}
-                      {practice.culminationStatus === 'approved' && (
-                        <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)}>
-                          Certificar
-                        </Button>
-                      )}
-                      {practice.culminationStatus === 'certified' && (
-                        <Button size="sm" variant="outline" onClick={() => hook.handleDownloadPdf(practice)}>
-                          <DownloadIcon className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                    )}
+                    {practice.culminationStatus === 'approved' && (
+                      <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)}>
+                        Certificar
+                      </Button>
+                    )}
+                    {practice.culminationStatus === 'certified' && (
+                      <Button size="sm" variant="outline" onClick={() => hook.handleDownloadPdf(practice)}>
+                        <DownloadIcon className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
-        {/* Mobile cards */}
-        <div className="md:hidden flex flex-col gap-4">
-          {culminPaginated.map(practice => (
-            <div key={practice.practiceId} className="bg-white dark:bg-gray-800 rounded-lg border border-border-default dark:border-border-dark p-4">
-              <div className="flex justify-between items-start mb-3">
-                <div className="min-w-0">
-                  <p className="font-medium text-text-primary dark:text-text-emphasis truncate">{practice.studentName}</p>
-                  <p className="text-xs text-text-tertiary">{practice.studentCi}</p>
-                </div>
-                {getCulminationBadge(practice.culminationStatus)}
+      {/* Mobile cards */}
+      <div className="md:hidden flex flex-col gap-4">
+        {paginatedData.map(practice => (
+          <div key={practice.practiceId} className="bg-white dark:bg-gray-800 rounded-lg border border-border-default dark:border-border-dark p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div className="min-w-0">
+                <p className="font-medium text-text-primary dark:text-text-emphasis truncate">{practice.studentName}</p>
+                <p className="text-xs text-text-tertiary">{practice.studentCi}</p>
               </div>
-              <div className="space-y-1 text-xs text-text-secondary mb-3">
-                <p><span className="font-medium">Carrera:</span> {practice.careerName}</p>
-                <p><span className="font-medium">Institución:</span> {practice.institutionName}</p>
-                <p><span className="font-medium">Horas:</span> {practice.totalHours}h</p>
-              </div>
-              {practice.certificateNumber && (
-                <p className="text-xs text-brand-600 dark:text-brand-400 mb-3">
-                  Certificado: {practice.certificateNumber}
-                </p>
-              )}
-              <div className="pt-3 border-t border-border-default dark:border-border-dark flex gap-2">
-                {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
-                  <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>Aprobar</Button>
-                )}
-                {practice.culminationStatus === 'approved' && (
-                  <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)}>Certificar</Button>
-                )}
-                {practice.culminationStatus === 'certified' && (
-                  <Button size="sm" variant="outline" onClick={() => hook.handleDownloadPdf(practice)}>
-                    <DownloadIcon className="w-4 h-4" /> PDF
-                  </Button>
-                )}
-              </div>
+              {getCulminationBadge(practice.culminationStatus)}
             </div>
-          ))}
-        </div>
+            <div className="space-y-1 text-xs text-text-secondary mb-3">
+              <p><span className="font-medium">Carrera:</span> {practice.careerName}</p>
+              <p><span className="font-medium">Institución:</span> {practice.institutionName}</p>
+              <p><span className="font-medium">Horas:</span> {practice.totalHours}h</p>
+            </div>
+            {practice.certificateNumber && (
+              <p className="text-xs text-brand-600 dark:text-brand-400 mb-3">
+                Certificado: {practice.certificateNumber}
+              </p>
+            )}
+            <div className="pt-3 border-t border-border-default dark:border-border-dark flex gap-2">
+              {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
+                <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>Aprobar</Button>
+              )}
+              {practice.culminationStatus === 'approved' && (
+                <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)}>Certificar</Button>
+              )}
+              {practice.culminationStatus === 'certified' && (
+                <Button size="sm" variant="outline" onClick={() => hook.handleDownloadPdf(practice)}>
+                  <DownloadIcon className="w-4 h-4" /> PDF
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
 
-        {culminTotalPages > 1 && (
-          <Pagination
-            currentPage={hook.currentPage}
-            totalPages={culminTotalPages}
-            totalItems={culminFiltered.length}
-            itemsPerPage={hook.itemsPerPage}
-            onPageChange={hook.setCurrentPage}
-            onItemsPerPageChange={(items) => { hook.setItemsPerPage(items); hook.setCurrentPage(1); }}
-            itemsPerPageOptions={[10, 25, 50]}
-          />
-        )}
-      </>
-    );
-  };
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={hook.currentPage}
+          totalPages={totalPages}
+          totalItems={hook.filteredPractices.length}
+          itemsPerPage={hook.itemsPerPage}
+          onPageChange={hook.setCurrentPage}
+          onItemsPerPageChange={(items) => { hook.setItemsPerPage(items); hook.setCurrentPage(1); }}
+          itemsPerPageOptions={[10, 25, 50]}
+        />
+      )}
+    </>
+  );
 
   // ─── Tab content switch ─────────────────────────────────
   const renderTabContent = () => {
@@ -511,19 +471,28 @@ export default function EvaluationsAndCulminationPage() {
             </div>
           )}
 
-          {tabsState.activeTab !== 'culmination' && (
-            <EvaluationFilters
-              searchTerm={hook.searchTerm}
-              onSearchChange={(v) => { hook.setSearchTerm(v); hook.setCurrentPage(1); }}
-              filters={hook.filters}
-              onFilterChange={hook.updateFilter}
-              onClear={hook.clearFilters}
-              periodOptions={periodOptions}
-              careerOptions={careerOptions}
-              practiceTypeOptions={practiceTypeOptions}
-              hasActiveFilters={hasActiveFilters}
-            />
-          )}
+          {/* Filtros unificados para ambos tabs */}
+          <EvaluationFilters
+            searchTerm={hook.searchTerm}
+            onSearchChange={(v) => { hook.setSearchTerm(v); hook.setCurrentPage(1); }}
+            filters={hook.filters}
+            onFilterChange={hook.updateFilter}
+            onClear={hook.clearFilters}
+            periodOptions={periodOptions}
+            careerOptions={careerOptions}
+            practiceTypeOptions={practiceTypeOptions}
+            hasActiveFilters={hasActiveFilters}
+            extraFilters={
+              tabsState.activeTab === 'culmination' ? (
+                <CustomSelect
+                  options={CULMINATION_STATUS_OPTIONS.filter(o => o.value !== 'all').map(o => ({ value: o.value, label: o.label }))}
+                  value={String(hook.filters.culminationStatus || '')}
+                  onChange={(v) => hook.updateFilter('culminationStatus', v as string)}
+                  className="w-full"
+                />
+              ) : undefined
+            }
+          />
 
           {renderTabContent()}
         </ComponentCard>

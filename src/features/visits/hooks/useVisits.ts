@@ -11,6 +11,10 @@ import {
 
 const resourceName = 'Visita';
 
+type TutorService = typeof import('../../tutor/services/tutorService').tutorService;
+type GetVisitsByPractice = TutorService['getVisitsByPractice'];
+type CreateVisit = TutorService['createVisit'];
+
 interface UseVisitsReturn {
   visits: Visit[];
   loading: boolean;
@@ -40,10 +44,17 @@ export const useVisits = (tutorMode?: boolean): UseVisitsReturn => {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<VisitStats | null>(null);
 
-  // ponytail: lazy import para evitar circular en prod
   const svc = tutorMode
-    ? { getVisitsByPractice: (...args: any[]) => import('../../tutor/services/tutorService').then(m => m.tutorService.getVisitsByPractice(...args)),
-        createVisit: (...args: any[]) => import('../../tutor/services/tutorService').then(m => m.tutorService.createVisit(...args)) }
+    ? {
+        getVisitsByPractice: async (...args: Parameters<GetVisitsByPractice>) => {
+          const m = await import('../../tutor/services/tutorService');
+          return m.tutorService.getVisitsByPractice(...args);
+        },
+        createVisit: async (...args: Parameters<CreateVisit>) => {
+          const m = await import('../../tutor/services/tutorService');
+          return m.tutorService.createVisit(...args);
+        }
+      }
     : visitsService;
 
   const fetchVisitsByPractice = useCallback(async (practiceId: number, includeInactive?: boolean) => {

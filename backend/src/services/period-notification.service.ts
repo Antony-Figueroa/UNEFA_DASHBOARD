@@ -221,6 +221,41 @@ export const periodNotificationService = {
   },
 
   /**
+   * Notifica a coordinadores cuando un período se cierra y hay prácticas con evaluaciones pendientes.
+   */
+  notifyPeriodClosedWithPendingEvaluations: async (
+    periodId: number,
+    periodName: string,
+    pendingCount: number
+  ): Promise<boolean> => {
+    try {
+      const title = 'Período cerrado — evaluaciones pendientes';
+      const message = `El período "${periodName}" ha sido cerrado. Quedan ${pendingCount} prácticas con evaluaciones pendientes. Revisá el reporte de evaluaciones pendientes.`;
+
+      // Notificar a coordinadores (role = 'coordinador')
+      const result = await sendNotificationByRole('coordinador', 'system', title, message);
+
+      // Email a coordinadores
+      const { data: coordinatorUsers, error } = await supabase
+        .from('t_users')
+        .select('EMAIL, NAME')
+        .eq('STATUS', 1)
+        .eq('ROLE_ID', 3); // ROLE_ID = 3 es coordinador
+
+      if (!error && coordinatorUsers && coordinatorUsers.length > 0) {
+        const recipients = (coordinatorUsers as any[]).map(u => ({ email: u.EMAIL, name: u.NAME }));
+        sendPeriodNotification(recipients, title, message, periodName)
+          .catch(err => console.error('[PeriodNotification] Email error:', err));
+      }
+
+      return !!result;
+    } catch (err) {
+      console.error('[PeriodNotification] Error in notifyPeriodClosedWithPendingEvaluations:', err);
+      return false;
+    }
+  },
+
+  /**
    * Notifica a estudiantes y tutores del período que la holgura de evaluación está por cerrar.
    */
   notifyEvaluationGraceClosing: async (periodId: number, daysRemaining: number): Promise<boolean> => {

@@ -7,10 +7,24 @@ import {
   CreateEvaluationPayload,
   UpdateEvaluationPayload,
   EvaluatorType,
-  CommitteeAssignment
+  CommitteeAssignment,
+  PendingPracticesReport
 } from '../types';
 
 const API_URL = '/evaluations';
+
+export interface AuditEntry {
+  auditId: number;
+  professionalPracticeId: number;
+  evaluationId?: number;
+  action: string;
+  user: string;
+  userId?: number;
+  timestamp: string;
+  oldValue?: string;
+  newValue?: string;
+  details?: string;
+}
 
 interface ApiEvaluation {
   evaluationId: number;
@@ -208,8 +222,33 @@ export const evaluationService = {
     await apiClient.post(`${API_URL}/${practiceId}/grant-extension`, { reason });
   },
 
+  bulkGrantExtension: async (data: { practiceIds: (number | string)[]; reason: string }): Promise<{ grantedCount: number }> => {
+    try {
+      const response = await apiClient.post<{ success: boolean; data: { grantedCount: number } }>(
+        `${API_URL}/bulk-grant-extension`,
+        data
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error('[evaluationService] Error bulk granting extension:', error);
+      throw error;
+    }
+  },
+
   revokeExtension: async (practiceId: number, reason: string): Promise<void> => {
     await apiClient.post(`${API_URL}/${practiceId}/revoke-extension`, { reason });
+  },
+
+  getPendingPracticesReport: async (periodId: number): Promise<PendingPracticesReport> => {
+    try {
+      const response = await apiClient.get<{ success: boolean; data: PendingPracticesReport }>(
+        `${API_URL}/pending-report/${periodId}`
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error('[evaluationService] Error getting pending practices report:', error);
+      throw error;
+    }
   },
 
   getCommitteeAssignments: async (practiceId: number): Promise<CommitteeAssignment[]> => {
@@ -234,7 +273,49 @@ export const evaluationService = {
       console.error('[evaluationService] Error upserting committee assignments:', error);
       throw error;
     }
-  }
+  },
+
+  exportEvaluationsExcel: async (periodId: number | string): Promise<Blob> => {
+    try {
+      const response = await apiClient.get(`/evaluations/export/${periodId}`, {
+        responseType: 'blob',
+      });
+      return response.data;
+    } catch (error) {
+      console.error('[evaluationService] Error exporting evaluations:', error);
+      throw error;
+    }
+  },
+
+  getAuditHistory: async (practiceId: number | string): Promise<AuditEntry[]> => {
+    try {
+      const response = await apiClient.get<{ success: boolean; data: AuditEntry[] }>(
+        `/evaluations/audit/${practiceId}`
+      );
+      return response.data.data || [];
+    } catch (error) {
+      console.error('[evaluationService] Error getting audit history:', error);
+      throw error;
+    }
+  },
+
+  updatePracticeStatus: async (
+    practiceId: number,
+    status: string,
+    withdrawalType?: string,
+    reason?: string
+  ): Promise<void> => {
+    try {
+      await apiClient.post(`/practices/${practiceId}/status`, {
+        status,
+        withdrawalType,
+        reason,
+      });
+    } catch (error) {
+      console.error('[evaluationService] Error updating practice status:', error);
+      throw error;
+    }
+  },
 };
 
 export default evaluationService;

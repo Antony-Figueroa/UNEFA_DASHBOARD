@@ -1,7 +1,7 @@
 import { dbManager } from '../lib/db-manager.js';
 import { periodNotificationService } from './period-notification.service.js';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { PERIOD_STATUS } from '../constants/practice-status.constants.js';
+import { PERIOD_STATUS, PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 interface Period {
   PERIOD_ID: number;
@@ -92,6 +92,31 @@ const autoInactivateExpiredPreEnrollments = async () => {
   }
 };
 
+/**
+ * Cuenta prácticas de un período con evaluaciones pendientes
+ * (inscritas pero sin EVALUATION_STATUS = 'completed').
+ */
+const countPendingEvaluations = async (periodId: number): Promise<number> => {
+  let count = 0;
+  await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from('t_professional_practices')
+      .select('PROFESSIONAL_PRACTICE_ID', { count: 'exact', head: true })
+      .eq('PERIOD_ID', periodId)
+      .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
+      .neq('EVALUATION_STATUS', 'completed')
+      .eq('STATUS', 1);
+
+    if (error) {
+      console.error('[Scheduler] Error counting pending evaluations:', error.message);
+      return;
+    }
+
+    count = data ?? 0;
+  });
+  return count;
+};
+
 export const runPeriodNotificationScheduler = async () => {
   try {
     // Primero auto-inactivar pre-inscripciones vencidas
@@ -173,6 +198,41 @@ export const runPeriodNotificationScheduler = async () => {
             await periodNotificationService.notifyEvaluationGraceClosing(period.PERIOD_ID, evalGraceDaysRemaining);
             markNotifiedToday(evalGraceKey);
             notificationsSent++;
+          } catch (err) {
+            // Silenciar errores de notificación
+          }
+        }
+      }
+    }
+
+    // --- Detección de cierre de período: notificar evaluaciones pendientes ---
+    // Se consulta por separado porque el query principal excluye CULMINADO
+    const closedPeriods = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from('t_internships_period')
+        .select('PERIOD_ID, DESCRIPTION')
+        .eq('STATUS', 1)
+        .eq('PERIOD_STATUS', PERIOD_STATUS.CULMINADO);
+
+      if (error) throw error;
+      return data as Period[];
+    });
+
+    if (closedPeriods && closedPeriods.length > 0) {
+      for (const period of closedPeriods) {
+        const closeKey = `period_closed_${period.PERIOD_ID}`;
+        if (!hasNotifiedToday(closeKey)) {
+          try {
+            const pendingCount = await countPendingEvaluations(period.PERIOD_ID);
+            if (pendingCount > 0) {
+              await periodNotificationService.notifyPeriodClosedWithPendingEvaluations(
+                period.PERIOD_ID,
+                period.DESCRIPTION,
+                pendingCount
+              );
+              markNotifiedToday(closeKey);
+              notificationsSent++;
+            }
           } catch (err) {
             // Silenciar errores de notificación
           }

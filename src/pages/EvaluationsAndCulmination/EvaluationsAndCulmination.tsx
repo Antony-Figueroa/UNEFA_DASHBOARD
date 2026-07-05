@@ -2,6 +2,7 @@
  * @file EvaluationsAndCulmination.tsx
  * @description Página principal del módulo de Evaluaciones y Culminación.
  * Orquestra los componentes del feature, delegando toda la lógica al hook.
+ * Incluye acciones de administrador (retiro, extensión, congelar, auditoría).
  */
 
 import { useMemo } from 'react';
@@ -15,6 +16,7 @@ import { EmptyState } from '../../components/ui/table/EmptyState';
 import { TableSkeleton } from '../../components/ui/skeleton';
 import UnifiedDialog from '../../components/ui/dialog/UnifiedDialog';
 import { DownloadIcon, CheckCircleIcon, EyeIcon } from '../../icons';
+import { ThreeDotsIcon } from '../../icons/actions';
 import { StudentDetailModal } from '../../features/student-detail/components/StudentDetailModal';
 import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
 import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
@@ -22,6 +24,9 @@ import { EvaluationCell } from '../../features/evaluations-culmination/component
 import { useSystemEvaluationConfig } from '../../features/evaluations/hooks/useSystemEvaluationConfig';
 import { StatsCardsGrid } from '../../features/evaluations-culmination/components/StatsCards';
 import { EvaluationFilters } from '../../features/evaluations-culmination/components/EvaluationFilters';
+import { EvaluationActions } from '../../features/evaluations-culmination/components/EvaluationActions';
+import { BulkExtensionModal } from '../../features/evaluations-culmination/components/BulkExtensionModal';
+import { AuditHistoryModal } from '../../features/evaluations-culmination/components/AuditHistoryModal';
 import { useEvaluationsCulmination } from '../../features/evaluations-culmination/hooks/useEvaluationsCulmination';
 import { Tabs } from '../../components/ui/tabs/Tabs';
 import { useTabs } from '../../hooks/useTabs';
@@ -137,6 +142,7 @@ export default function EvaluationsAndCulminationPage() {
               <TableCell isHeader className="text-center">Comité (30%)</TableCell>
               <TableCell isHeader className="text-center">Nota Final</TableCell>
               <TableCell isHeader className="text-center">Estado</TableCell>
+              {!hook.isReadOnly && <TableCell isHeader className="text-center">Acciones</TableCell>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -186,6 +192,71 @@ export default function EvaluationsAndCulminationPage() {
                 <TableCell className="text-center">
                   {getStatusBadge(practice.evaluationStatus)}
                 </TableCell>
+                {!hook.isReadOnly && (
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <div className="relative group">
+                        <button className="p-1.5 rounded-lg hover:bg-bg-subtle dark:hover:bg-gray-700 transition-colors">
+                           <ThreeDotsIcon className="w-4 h-4 text-text-tertiary" />
+                        </button>
+                        {/* Dropdown menu */}
+                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-border-default dark:border-border-dark rounded-lg shadow-lg z-10 hidden group-hover:block">
+                          <div className="py-1">
+                            <button
+                              onClick={() => hook.handleWithdraw(practice.practiceId, practice.studentName)}
+                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
+                            >
+                              Retirar
+                            </button>
+                            <button
+                              onClick={() => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName)}
+                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
+                            >
+                              Reclasificar Retiro
+                            </button>
+                            <button
+                              onClick={() => hook.handleMarkFailed(practice.practiceId, practice.studentName)}
+                              className="w-full text-left px-4 py-2 text-sm text-error-600 dark:text-error-400 hover:bg-bg-subtle dark:hover:bg-gray-700"
+                            >
+                              Marcar Reprobado
+                            </button>
+                            <button
+                              onClick={() => hook.handleUnfreeze(practice.practiceId)}
+                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
+                            >
+                              Descongelar
+                            </button>
+                            <button
+                              onClick={() => hook.handleGrantExtension(practice.practiceId, practice.studentName)}
+                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
+                            >
+                              Otorgar Extensión
+                            </button>
+                            <button
+                              onClick={() => hook.handleRevokeExtension(practice.practiceId)}
+                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
+                            >
+                              Revocar Extensión
+                            </button>
+                            <button
+                              onClick={() => hook.handleOpenCommittee(practice.practiceId, practice.studentName)}
+                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
+                            >
+                              Gestionar Comité
+                            </button>
+                            <div className="border-t border-border-default dark:border-border-dark" />
+                            <button
+                              onClick={() => hook.handleViewAudit(practice.practiceId)}
+                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
+                            >
+                              Ver Auditoría
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
@@ -370,7 +441,7 @@ export default function EvaluationsAndCulminationPage() {
   // ─── Tab content switch ─────────────────────────────────
   const renderTabContent = () => {
     if (hook.loading) {
-      return <TableSkeleton columns={tabsState.activeTab === 'evaluations' ? 9 : 7} rows={10} />;
+      return <TableSkeleton columns={tabsState.activeTab === 'evaluations' ? (hook.isReadOnly ? 9 : 10) : 7} rows={10} />;
     }
 
     if (hook.filteredPractices.length === 0) {
@@ -399,6 +470,15 @@ export default function EvaluationsAndCulminationPage() {
       <PageBreadcrumb pageTitle="Evaluaciones y Culminación" />
 
       <div className="space-y-6 animate-fadeIn">
+        {/* Read-only banner */}
+        {hook.isReadOnly && (
+          <div className="bg-warning-50 dark:bg-warning-500/10 border border-warning-300 dark:border-warning-700 rounded-lg px-4 py-3">
+            <p className="text-sm text-warning-700 dark:text-warning-400 font-medium">
+              Modo de solo lectura — Los permisos de asistente no permiten realizar cambios.
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -419,6 +499,18 @@ export default function EvaluationsAndCulminationPage() {
 
         {/* Filtros y contenido */}
         <ComponentCard title="Listado de Prácticas">
+          {/* Admin actions header */}
+          {tabsState.activeTab === 'evaluations' && (
+            <div className="mb-4">
+              <EvaluationActions
+                isReadOnly={hook.isReadOnly}
+                onFreezeAll={hook.handleFreezeAll}
+                onExportExcel={hook.handleExportExcel}
+                onBulkExtension={hook.handleBulkExtension}
+              />
+            </div>
+          )}
+
           {tabsState.activeTab !== 'culmination' && (
             <EvaluationFilters
               searchTerm={hook.searchTerm}
@@ -437,7 +529,7 @@ export default function EvaluationsAndCulminationPage() {
         </ComponentCard>
       </div>
 
-      {/* Modales */}
+      {/* Modales existentes */}
       <UnifiedDialog
         isOpen={!!hook.confirmDialog}
         onClose={hook.closeConfirmDialog}
@@ -470,6 +562,104 @@ export default function EvaluationsAndCulminationPage() {
         onClose={hook.handleCloseStudentDetail}
         practiceId={hook.selectedStudentPracticeId || 0}
         studentName={hook.selectedStudentName}
+      />
+
+      {/* Admin modals */}
+      {/* Withdraw dialog */}
+      <UnifiedDialog
+        isOpen={hook.withdrawDialogOpen}
+        onClose={() => hook.setWithdrawDialogOpen(false)}
+        onConfirm={hook.handleConfirmWithdraw}
+        title={`Retiro ${hook.withdrawType === 'justified' ? 'Justificado' : 'Injustificado'}`}
+        message={`Registrar retiro ${hook.withdrawType === 'justified' ? 'justificado' : 'injustificado'} para ${hook.withdrawTarget?.studentName || ''}`}
+        confirmLabel="Confirmar Retiro"
+        variant="info"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-text-primary dark:text-text-emphasis mb-2">
+              Tipo de retiro
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  value="justified"
+                  checked={hook.withdrawType === 'justified'}
+                  onChange={() => hook.setWithdrawType('justified')}
+                  className="text-brand-500 focus:ring-brand-500"
+                />
+                <span className="text-sm text-text-secondary">Justificado</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  value="unjustified"
+                  checked={hook.withdrawType === 'unjustified'}
+                  onChange={() => hook.setWithdrawType('unjustified')}
+                  className="text-brand-500 focus:ring-brand-500"
+                />
+                <span className="text-sm text-text-secondary">Injustificado</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-primary dark:text-text-emphasis mb-1">
+              Motivo del retiro *
+            </label>
+            <textarea
+              value={hook.withdrawReason}
+              onChange={(e) => hook.setWithdrawReason(e.target.value)}
+              placeholder="Ingrese el motivo del retiro..."
+              rows={3}
+              className="w-full px-3 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+        </div>
+      </UnifiedDialog>
+
+      {/* Extension dialog */}
+      <UnifiedDialog
+        isOpen={hook.extensionDialogOpen}
+        onClose={() => hook.setExtensionDialogOpen(false)}
+        onConfirm={hook.handleConfirmExtension}
+        title="Otorgar Extensión"
+        message={`Otorgar extensión a ${hook.extensionTarget?.studentName || ''}`}
+        confirmLabel="Otorgar Extensión"
+        variant="info"
+      >
+        <div>
+          <label className="block text-sm font-medium text-text-primary dark:text-text-emphasis mb-1">
+            Motivo de la extensión *
+          </label>
+          <textarea
+            value={hook.extensionReason}
+            onChange={(e) => hook.setExtensionReason(e.target.value)}
+            placeholder="Ingrese el motivo de la extensión..."
+            rows={3}
+            className="w-full px-3 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-brand-500"
+          />
+        </div>
+      </UnifiedDialog>
+
+      {/* Bulk extension modal */}
+      <BulkExtensionModal
+        isOpen={hook.bulkExtensionOpen}
+        onClose={() => hook.setBulkExtensionOpen(false)}
+        onConfirm={hook.handleConfirmBulkExtension}
+        practices={hook.practices}
+        selectedIds={hook.bulkExtensionSelectedIds}
+        onSelectedIdsChange={hook.setBulkExtensionSelectedIds}
+        reason={hook.bulkExtensionReason}
+        onReasonChange={hook.setBulkExtensionReason}
+      />
+
+      {/* Audit history modal */}
+      <AuditHistoryModal
+        isOpen={hook.auditHistoryOpen}
+        onClose={() => hook.setAuditHistoryOpen(false)}
+        data={hook.auditHistoryData}
+        loading={hook.auditHistoryLoading}
       />
     </>
   );

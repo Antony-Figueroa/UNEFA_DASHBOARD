@@ -2,6 +2,7 @@
  * @file useEvaluationsCulmination.ts
  * @description Hook principal del módulo de Evaluaciones y Culminación.
  * Centraliza fetching, filtros, paginación, estadísticas y acciones.
+ * Incluye acciones de administrador (retiro, extensión, congelar, etc.).
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -16,6 +17,8 @@ import {
 } from '../types';
 import type { EvaluatorType } from '../../evaluations/types';
 import { evaluationsCulminationService } from '../services/evaluationsCulminationService';
+import { evaluationService, type AuditEntry } from '../../evaluations/services/evaluationService';
+import { useAuth } from '../../../context/auth';
 import { matchSearch } from '../../../utils/searchNormalizer';
 import { generateCertificatePDF } from '../../../components/ui/pdf/templates/CertificatePDF';
 
@@ -90,6 +93,64 @@ export interface UseEvaluationsCulminationReturn {
 
   /** Recargar datos */
   refresh: () => void;
+
+  /** Estado de solo lectura (asistente) */
+  isReadOnly: boolean;
+
+  /** Retiro */
+  withdrawDialogOpen: boolean;
+  withdrawTarget: { practiceId: number; studentName: string } | null;
+  withdrawType: 'justified' | 'unjustified';
+  setWithdrawType: (type: 'justified' | 'unjustified') => void;
+  withdrawReason: string;
+  setWithdrawReason: (reason: string) => void;
+  handleWithdraw: (practiceId: number, studentName: string) => void;
+  handleConfirmWithdraw: () => void;
+  setWithdrawDialogOpen: (open: boolean) => void;
+  handleReclassifyWithdrawal: (practiceId: number, studentName: string) => void;
+  handleMarkFailed: (practiceId: number, studentName: string) => void;
+
+  /** Descongelar */
+  handleUnfreeze: (practiceId: number) => void;
+
+  /** Extensión individual */
+  extensionDialogOpen: boolean;
+  extensionTarget: { practiceId: number; studentName: string } | null;
+  extensionReason: string;
+  setExtensionReason: (reason: string) => void;
+  handleGrantExtension: (practiceId: number, studentName: string) => void;
+  handleConfirmExtension: () => void;
+  setExtensionDialogOpen: (open: boolean) => void;
+  handleRevokeExtension: (practiceId: number) => void;
+
+  /** Extensión masiva */
+  bulkExtensionOpen: boolean;
+  setBulkExtensionOpen: (open: boolean) => void;
+  bulkExtensionSelectedIds: number[];
+  setBulkExtensionSelectedIds: (ids: number[]) => void;
+  bulkExtensionReason: string;
+  setBulkExtensionReason: (reason: string) => void;
+  handleBulkExtension: () => void;
+  handleConfirmBulkExtension: () => void;
+
+  /** Cierre de actas */
+  handleFreezeAll: () => void;
+
+  /** Comité */
+  committeeDialogOpen: boolean;
+  committeeTarget: { practiceId: number; studentName: string } | null;
+  handleOpenCommittee: (practiceId: number, studentName: string) => void;
+  setCommitteeDialogOpen: (open: boolean) => void;
+
+  /** Exportar Excel */
+  handleExportExcel: () => void;
+
+  /** Auditoría */
+  auditHistoryOpen: boolean;
+  setAuditHistoryOpen: (open: boolean) => void;
+  auditHistoryData: AuditEntry[];
+  auditHistoryLoading: boolean;
+  handleViewAudit: (practiceId: number) => void;
 }
 
 export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => {
@@ -131,6 +192,30 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     message: string;
     onConfirm: () => void;
   } | null>(null);
+
+  // ─── Admin State ───────────────────────────────────────
+  const { user } = useAuth();
+  const isReadOnly = user?.role === 2; // role 2 = assistant (read-only)
+
+  const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
+  const [withdrawTarget, setWithdrawTarget] = useState<{ practiceId: number; studentName: string } | null>(null);
+  const [withdrawType, setWithdrawType] = useState<'justified' | 'unjustified'>('justified');
+  const [withdrawReason, setWithdrawReason] = useState('');
+
+  const [extensionDialogOpen, setExtensionDialogOpen] = useState(false);
+  const [extensionTarget, setExtensionTarget] = useState<{ practiceId: number; studentName: string } | null>(null);
+  const [extensionReason, setExtensionReason] = useState('');
+
+  const [committeeDialogOpen, setCommitteeDialogOpen] = useState(false);
+  const [committeeTarget, setCommitteeTarget] = useState<{ practiceId: number; studentName: string } | null>(null);
+
+  const [bulkExtensionOpen, setBulkExtensionOpen] = useState(false);
+  const [bulkExtensionSelectedIds, setBulkExtensionSelectedIds] = useState<number[]>([]);
+  const [bulkExtensionReason, setBulkExtensionReason] = useState('');
+
+  const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
+  const [auditHistoryData, setAuditHistoryData] = useState<AuditEntry[]>([]);
+  const [auditHistoryLoading, setAuditHistoryLoading] = useState(false);
 
   // ─── Data Fetching ──────────────────────────────────────
   const fetchPractices = useCallback(async () => {
@@ -356,6 +441,218 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     setSelectedStudentName('');
   }, []);
 
+  // ─── Admin Actions ──────────────────────────────────────
+
+  const handleWithdraw = useCallback((practiceId: number, studentName: string) => {
+    setWithdrawTarget({ practiceId, studentName });
+    setWithdrawType('justified');
+    setWithdrawReason('');
+    setWithdrawDialogOpen(true);
+  }, []);
+
+  const handleConfirmWithdraw = useCallback(async () => {
+    if (!withdrawTarget) return;
+    try {
+      await evaluationService.updatePracticeStatus(
+        withdrawTarget.practiceId,
+        'withdrawn',
+        withdrawType,
+        withdrawReason
+      );
+      addToast({ ...TOAST.updated('Retiro'), message: `Retiro ${withdrawType === 'justified' ? 'justificado' : 'injustificado'} registrado para ${withdrawTarget.studentName}` });
+      fetchPractices();
+    } catch (error) {
+      addToast(TOAST.updateError('Retiro'));
+    } finally {
+      setWithdrawDialogOpen(false);
+      setWithdrawTarget(null);
+    }
+  }, [withdrawTarget, withdrawType, withdrawReason, fetchPractices]);
+
+  const handleReclassifyWithdrawal = useCallback((practiceId: number, studentName: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Reclasificar Retiro',
+      message: `¿Desea reclasificar el tipo de retiro de ${studentName}?`,
+      onConfirm: async () => {
+        try {
+          await evaluationService.updatePracticeStatus(practiceId, 'reclassified');
+          addToast({ ...TOAST.updated('Reclasificación'), message: `Retiro reclasificado exitosamente para ${studentName}` });
+          fetchPractices();
+        } catch (error) {
+          addToast(TOAST.updateError('Reclasificación'));
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
+  }, [fetchPractices]);
+
+  const handleMarkFailed = useCallback((practiceId: number, studentName: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Marcar como Reprobado',
+      message: `¿Está seguro de marcar como reprobado el práctico de ${studentName}? Esta acción es irreversible.`,
+      onConfirm: async () => {
+        try {
+          await evaluationService.updatePracticeStatus(practiceId, 'failed');
+          addToast({ ...TOAST.updated('Resultado'), message: `${studentName} marcado como reprobado` });
+          fetchPractices();
+        } catch (error) {
+          addToast(TOAST.updateError('Resultado'));
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
+  }, [fetchPractices]);
+
+  const handleUnfreeze = useCallback((practiceId: number) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Descongelar Evaluación',
+      message: '¿Desea descongelar esta evaluación para correcciones?',
+      onConfirm: async () => {
+        try {
+          await evaluationService.unfreezePractice(practiceId, 'Corrección administrativa');
+          addToast({ ...TOAST.updated('Descongelar'), message: 'Evaluación descongelada exitosamente' });
+          fetchPractices();
+        } catch (error) {
+          addToast(TOAST.updateError('Descongelar'));
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
+  }, [fetchPractices]);
+
+  const handleGrantExtension = useCallback((practiceId: number, studentName: string) => {
+    setExtensionTarget({ practiceId, studentName });
+    setExtensionReason('');
+    setExtensionDialogOpen(true);
+  }, []);
+
+  const handleConfirmExtension = useCallback(async () => {
+    if (!extensionTarget || !extensionReason.trim()) return;
+    try {
+      await evaluationService.grantExtension(extensionTarget.practiceId, extensionReason);
+      addToast({ ...TOAST.updated('Extensión'), message: `Extensión otorgada a ${extensionTarget.studentName}` });
+      fetchPractices();
+    } catch (error) {
+      addToast(TOAST.updateError('Extensión'));
+    } finally {
+      setExtensionDialogOpen(false);
+      setExtensionTarget(null);
+    }
+  }, [extensionTarget, fetchPractices]);
+
+  const handleRevokeExtension = useCallback((practiceId: number) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Revocar Extensión',
+      message: '¿Desea revocar la extensión de esta práctica?',
+      onConfirm: async () => {
+        try {
+          await evaluationService.revokeExtension(practiceId, 'Revocación administrativa');
+          addToast({ ...TOAST.updated('Extensión'), message: 'Extensión revocada exitosamente' });
+          fetchPractices();
+        } catch (error) {
+          addToast(TOAST.updateError('Extensión'));
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
+  }, [fetchPractices]);
+
+  const handleBulkExtension = useCallback(() => {
+    setBulkExtensionSelectedIds([]);
+    setBulkExtensionReason('');
+    setBulkExtensionOpen(true);
+  }, []);
+
+  const handleConfirmBulkExtension = useCallback(async () => {
+    if (bulkExtensionSelectedIds.length === 0 || !bulkExtensionReason.trim()) return;
+    try {
+      const result = await evaluationService.bulkGrantExtension({
+        practiceIds: bulkExtensionSelectedIds,
+        reason: bulkExtensionReason,
+      });
+      addToast({ ...TOAST.updated('Extensión Masiva'), message: `${result.grantedCount} extensiones otorgadas` });
+      fetchPractices();
+    } catch (error) {
+      addToast(TOAST.updateError('Extensión Masiva'));
+    } finally {
+      setBulkExtensionOpen(false);
+    }
+  }, [bulkExtensionSelectedIds, bulkExtensionReason, fetchPractices]);
+
+  const handleFreezeAll = useCallback(() => {
+    const completedIds = (Array.isArray(practices) ? practices : [])
+      .filter(p => p.evaluationStatus === 'completed')
+      .map(p => p.practiceId);
+
+    if (completedIds.length === 0) {
+      toast.error('No hay evaluaciones completas para congelar');
+      return;
+    }
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Cerrar Actas',
+      message: `¿Desea congelar ${completedIds.length} evaluaciones completas? Esta acción cerrará las actas de evaluación.`,
+      onConfirm: async () => {
+        try {
+          const result = await evaluationService.freezeBatch(completedIds);
+          addToast({ ...TOAST.updated('Cierre de Actas'), message: `${result.frozenCount} evaluaciones congeladas` });
+          fetchPractices();
+        } catch (error) {
+          addToast(TOAST.updateError('Cierre de Actas'));
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
+  }, [practices, fetchPractices]);
+
+  const handleOpenCommittee = useCallback((practiceId: number, studentName: string) => {
+    setCommitteeTarget({ practiceId, studentName });
+    setCommitteeDialogOpen(true);
+  }, []);
+
+  const handleExportExcel = useCallback(async () => {
+    const periodId = filters.periodId || 'all';
+    try {
+      toast.loading('Exportando evaluaciones...', { id: 'export-excel' });
+      const blob = await evaluationService.exportEvaluationsExcel(periodId);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Evaluaciones_${periodId}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success('Evaluaciones exportadas exitosamente', { id: 'export-excel' });
+    } catch (error) {
+      toast.error('Error al exportar evaluaciones', { id: 'export-excel' });
+    }
+  }, [filters.periodId]);
+
+  const handleViewAudit = useCallback(async (practiceId: number) => {
+    setAuditHistoryOpen(true);
+    setAuditHistoryLoading(true);
+    try {
+      const data = await evaluationService.getAuditHistory(practiceId);
+      setAuditHistoryData(data);
+    } catch (error) {
+      toast.error('Error al cargar historial de auditoría');
+      setAuditHistoryData([]);
+    } finally {
+      setAuditHistoryLoading(false);
+    }
+  }, []);
+
   // ─── Confirm Dialog ─────────────────────────────────────
   const closeConfirmDialog = useCallback(() => {
     setConfirmDialog(null);
@@ -399,8 +696,55 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     confirmDialog,
     closeConfirmDialog,
     refresh: fetchPractices,
-    // Exponemos periodOptions, careerOptions, practiceTypeOptions para componentes
-    // (se acceden desde meta)
+    // Admin state
+    isReadOnly,
+    // Withdraw
+    withdrawDialogOpen,
+    withdrawTarget,
+    withdrawType,
+    setWithdrawType,
+    withdrawReason,
+    setWithdrawReason,
+    handleWithdraw,
+    handleConfirmWithdraw,
+    setWithdrawDialogOpen,
+    handleReclassifyWithdrawal,
+    handleMarkFailed,
+    // Unfreeze
+    handleUnfreeze,
+    // Extension
+    extensionDialogOpen,
+    extensionTarget,
+    extensionReason,
+    setExtensionReason,
+    handleGrantExtension,
+    handleConfirmExtension,
+    setExtensionDialogOpen,
+    handleRevokeExtension,
+    // Bulk extension
+    bulkExtensionOpen,
+    setBulkExtensionOpen,
+    bulkExtensionSelectedIds,
+    setBulkExtensionSelectedIds,
+    bulkExtensionReason,
+    setBulkExtensionReason,
+    handleBulkExtension,
+    handleConfirmBulkExtension,
+    // Freeze all
+    handleFreezeAll,
+    // Committee
+    committeeDialogOpen,
+    committeeTarget,
+    handleOpenCommittee,
+    setCommitteeDialogOpen,
+    // Export
+    handleExportExcel,
+    // Audit
+    auditHistoryOpen,
+    setAuditHistoryOpen,
+    auditHistoryData,
+    auditHistoryLoading,
+    handleViewAudit,
   };
 };
 

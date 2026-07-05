@@ -116,6 +116,25 @@ export interface CommitteeAssignment {
   evaluatorCi?: string;
 }
 
+export interface PendingPracticeEntry {
+  practiceId: string;
+  studentName: string;
+  institutionName: string;
+  daysSinceClose: number;
+}
+
+export interface PendingPracticesReport {
+  periodId: number;
+  periodName: string;
+  closedAt: string;
+  totalPending: number;
+  byEvaluatorType: {
+    INSTITUCIONAL: PendingPracticeEntry[];
+    ACADEMICO: PendingPracticeEntry[];
+    COMITE: PendingPracticeEntry[];
+  };
+}
+
 /**
  * Valores por defecto del sistema de evaluación.
  * Se usan como fallback si no se puede obtener la configuración del backend.

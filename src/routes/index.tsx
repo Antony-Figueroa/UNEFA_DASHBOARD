@@ -53,7 +53,6 @@ const StudentTracking = lazy(() => import("../pages/Student/StudentTracking"));
 
 const AdminRequests = lazy(() => import("../pages/Admin/AdminRequests"));
 
-const EvaluationsList = lazy(() => import("../pages/Evaluations/EvaluationsList"));
 const EvaluationsAndCulmination = lazy(() => import("../pages/EvaluationsAndCulmination/EvaluationsAndCulmination"));
 
 const Calendar = lazy(() => import("../pages/Calendar"));

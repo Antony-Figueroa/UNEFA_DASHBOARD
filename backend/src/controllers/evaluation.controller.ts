@@ -8,6 +8,8 @@ import { getPersonField } from '../utils/person-utils.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getEvalConfig, scaleToDisplay, calculateWeightedGrade, invalidateEvalConfigCache } from '../services/evaluation-config.service.js';
 import { checkSequentialPrerequisite } from '../utils/sequential-validation.js';
+import { generateWorkbook } from '../services/excel-export.service.js';
+import type { SheetSection } from '../services/excel-export.service.js';
 
 interface EvaluationCriteria {
   criteriaId: number;
@@ -1305,6 +1307,112 @@ export const revokeExtension = async (req: AuthRequest, res: Response) => {
 };
 
 /**
+ * POST /api/evaluations/bulk-grant-extension
+ * Concede carga extemporánea para múltiples prácticas en periodo cerrado.
+ * Retorna resumen de éxitos/fallos por práctica.
+ */
+export const bulkGrantExtension = async (req: AuthRequest, res: Response) => {
+  try {
+    const { practiceIds, reason } = req.body;
+    const userId = req.user?.userId;
+    const supabase = dbManager.getConnection();
+
+    if (!practiceIds || !Array.isArray(practiceIds) || practiceIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requiere un array de practiceIds'
+      });
+    }
+
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'El motivo de la extensión es requerido (mínimo 10 caracteres)'
+      });
+    }
+
+    const now = new Date().toISOString();
+    const details: Array<{ practiceId: string; success: boolean; error?: string }> = [];
+
+    for (const practiceId of practiceIds) {
+      try {
+        // Verificar que la práctica existe
+        const { data: practice, error: practiceError } = await supabase
+          .from('t_professional_practices')
+          .select('PROFESSIONAL_PRACTICE_ID, PERIOD_ID')
+          .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+          .single();
+
+        if (practiceError || !practice) {
+          details.push({ practiceId: String(practiceId), success: false, error: 'Práctica no encontrada' });
+          continue;
+        }
+
+        // Validar que la práctica pertenezca a un periodo activo
+        const { data: period } = await supabase
+          .from('t_internships_period')
+          .select('PERIOD_STATUS')
+          .eq('PERIOD_ID', (practice as any).PERIOD_ID)
+          .single();
+
+        if (!period || (period as any).PERIOD_STATUS !== '2') {
+          details.push({ practiceId: String(practiceId), success: false, error: 'El periodo académico no está activo' });
+          continue;
+        }
+
+        // Conceder extensión
+        const { error: updateError } = await supabase
+          .from('t_professional_practices')
+          .update({
+            EXTENSION_GRANTED: true,
+            EXTENSION_REASON: reason.trim(),
+            EXTENSION_GRANTED_BY: userId,
+            EXTENSION_GRANTED_AT: now
+          })
+          .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
+
+        if (updateError) throw updateError;
+
+        // Auditoría
+        await auditCreate(req, 't_professional_practices', {
+          ACTION: 'BULK_GRANT_EXTENSION',
+          PROFESSIONAL_PRACTICE_ID: practiceId,
+          REASON: reason.trim()
+        }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON']);
+
+        details.push({ practiceId: String(practiceId), success: true });
+      } catch (itemError) {
+        details.push({
+          practiceId: String(practiceId),
+          success: false,
+          error: itemError instanceof Error ? itemError.message : 'Error desconocido'
+        });
+      }
+    }
+
+    const successes = details.filter(d => d.success).length;
+    const failures = details.filter(d => !d.success).length;
+
+    res.json({
+      success: true,
+      data: {
+        total: practiceIds.length,
+        successes,
+        failures,
+        details
+      }
+    });
+
+  } catch (error) {
+    console.error('[Evaluation] Error in bulk grant extension:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al conceder extensiones en lote'
+    });
+  }
+};
+
+/**
  * POST /api/evaluations/freeze
  * Congela todas las evaluaciones de las prácticas indicadas (cierre de actas).
  */
@@ -1752,7 +1860,173 @@ export const upsertCommitteeAssignment = async (req: AuthRequest, res: Response)
 };
 
 /**
- * PUT /api/evaluations/system-config
+ * GET /api/evaluations/pending-report/:periodId
+ * Retorna reporte de prácticas con evaluaciones pendientes, agrupadas por tipo de evaluador.
+ */
+export const getPendingPracticesReport = async (req: AuthRequest, res: Response) => {
+  try {
+    const { periodId } = req.params;
+    const supabase = dbManager.getConnection();
+
+    // Obtener datos del período
+    const { data: period, error: periodError } = await supabase
+      .from('t_internships_period')
+      .select('PERIOD_ID, DESCRIPTION, END_DATE, PERIOD_STATUS')
+      .eq('PERIOD_ID', periodId)
+      .single();
+
+    if (periodError || !period) {
+      return res.status(404).json({
+        success: false,
+        message: 'Período no encontrado'
+      });
+    }
+
+    // Obtener prácticas inscritas con evaluación incompleta
+    const { data: practices, error: practicesError } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        STUDENTS_ID,
+        INSTITUTION_ID,
+        EVALUATION_STATUS,
+        CAREER_ID,
+        INTERNSHIP_TYPE_ID,
+        t_persons!inner(first_name, last_name, ci),
+        t_institution!inner(INSTITUTION_NAME)
+      `)
+      .eq('PERIOD_ID', periodId)
+      .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
+      .eq('STATUS', 1)
+      .neq('EVALUATION_STATUS', 'completed');
+
+    if (practicesError) throw practicesError;
+
+    if (!practices || practices.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          periodId: Number(periodId),
+          periodName: (period as any).DESCRIPTION,
+          closedAt: (period as any).END_DATE,
+          totalPending: 0,
+          byEvaluatorType: {
+            INSTITUCIONAL: [],
+            ACADEMICO: [],
+            COMITE: []
+          }
+        }
+      });
+    }
+
+    const practiceIds = (practices as any[]).map(p => p.PROFESSIONAL_PRACTICE_ID);
+
+    // Obtener evaluaciones existentes para estas prácticas
+    const { data: existingEvals, error: evalsError } = await supabase
+      .from('t_evaluation')
+      .select('PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE')
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+      .eq('STATUS', 1);
+
+    if (evalsError) throw evalsError;
+
+    // Obtener evaluaciones de comité
+    const { data: comiteEvals } = await supabase
+      .from('t_evaluation')
+      .select('PROFESSIONAL_PRACTICE_ID')
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+      .eq('EVALUATOR_TYPE', 'COMITE')
+      .eq('STATUS', 1);
+
+    const comiteCountByPractice = new Map<number, number>();
+    (comiteEvals || []).forEach((e: any) => {
+      comiteCountByPractice.set(
+        e.PROFESSIONAL_PRACTICE_ID,
+        (comiteCountByPractice.get(e.PROFESSIONAL_PRACTICE_ID) || 0) + 1
+      );
+    });
+
+    // Eval config para saber mínimo de comité
+    const evalConfig = await getEvalConfig();
+    const committeeMin = evalConfig.committeeMinMembers ?? 3;
+
+    // Mapear evaluaciones existentes por práctica
+    const evalTypesByPractice = new Map<number, Set<string>>();
+    (existingEvals || []).forEach((e: any) => {
+      const types = evalTypesByPractice.get(e.PROFESSIONAL_PRACTICE_ID) || new Set();
+      if (e.EVALUATOR_TYPE === 'COMITE') {
+        const count = comiteCountByPractice.get(e.PROFESSIONAL_PRACTICE_ID) || 0;
+        if (count >= committeeMin) {
+          types.add('COMITE');
+        }
+      } else {
+        types.add(e.EVALUATOR_TYPE);
+      }
+      evalTypesByPractice.set(e.PROFESSIONAL_PRACTICE_ID, types);
+    });
+
+    const now = new Date();
+    const periodEndDate = new Date((period as any).END_DATE);
+
+    // Determinar qué tipos de evaluador faltan por práctica
+    const byEvaluatorType: Record<string, any[]> = {
+      INSTITUCIONAL: [],
+      ACADEMICO: [],
+      COMITE: []
+    };
+
+    for (const practice of practices as any[]) {
+      const completedTypes = evalTypesByPractice.get(practice.PROFESSIONAL_PRACTICE_ID) || new Set();
+      const student = practice.t_persons;
+      const institution = practice.t_institution;
+      const firstName = getPersonField(student, 'first_name') || '';
+      const lastName = getPersonField(student, 'last_name') || '';
+      const studentName = `${firstName} ${lastName}`.trim() || 'Sin nombre';
+      const institutionName = institution?.INSTITUTION_NAME || 'Sin institución';
+      const daysSinceClose = Math.max(0, Math.floor((now.getTime() - periodEndDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+      const entry = {
+        practiceId: String(practice.PROFESSIONAL_PRACTICE_ID),
+        studentName,
+        institutionName,
+        daysSinceClose
+      };
+
+      if (!completedTypes.has('INSTITUCIONAL')) {
+        byEvaluatorType.INSTITUCIONAL.push(entry);
+      }
+      if (!completedTypes.has('ACADEMICO')) {
+        byEvaluatorType.ACADEMICO.push(entry);
+      }
+      if (!completedTypes.has('COMITE')) {
+        byEvaluatorType.COMITE.push(entry);
+      }
+    }
+
+    const totalPending = (practices as any[]).length;
+
+    res.json({
+      success: true,
+      data: {
+        periodId: Number(periodId),
+        periodName: (period as any).DESCRIPTION,
+        closedAt: (period as any).END_DATE,
+        totalPending,
+        byEvaluatorType
+      }
+    });
+
+  } catch (error) {
+    console.error('[Evaluation] Error getting pending practices report:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener reporte de evaluaciones pendientes'
+    });
+  }
+};
+
+/**
+ * POST /api/evaluations/system-config
  * Actualiza la configuración global del sistema de evaluación.
  * Valida que no existan evaluaciones registradas si se cambian valores que afectan puntajes.
  */
@@ -1854,6 +2128,284 @@ export const updateSystemConfig = async (req: AuthRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Error al actualizar configuración de evaluación'
+    });
+  }
+};
+
+/**
+ * GET /api/evaluations/export/:periodId
+ * Exporta evaluaciones del período a Excel con formato institucional UNEFA.
+ * Hoja 1: Resumen — una fila por práctica con notas finales.
+ * Hoja 2: Institucional — evaluaciones detalladas INSTITUCIONAL.
+ * Hoja 3: Académica — evaluaciones detalladas ACADEMICO.
+ * Hoja 4: Comité — evaluaciones detalladas COMITE.
+ */
+export const exportEvaluationsExcel = async (req: AuthRequest, res: Response) => {
+  try {
+    const { periodId } = req.params;
+    const supabase = dbManager.getConnection();
+    const evalConfig = await getEvalConfig();
+
+    // 1. Obtener período
+    const { data: period, error: periodError } = await supabase
+      .from('t_internships_period')
+      .select('PERIOD_ID, DESCRIPTION')
+      .eq('PERIOD_ID', periodId)
+      .single();
+
+    if (periodError || !period) {
+      return res.status(404).json({
+        success: false,
+        message: 'Período no encontrado'
+      });
+    }
+
+    const periodDesc = (period as any).DESCRIPTION || `Período ${periodId}`;
+
+    // 2. Obtener prácticas del período con datos de estudiante, institución, carrera
+    const { data: practices, error: practicesError } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        GRADE,
+        EVALUATION_STATUS,
+        PRACTICES_STATUS,
+        t_persons!inner (
+          ci,
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name
+        ),
+        t_institution (
+          INSTITUTION_NAME
+        ),
+        t_internship_type (
+          NAME
+        ),
+        t_evaluation (
+          EVALUATION_ID,
+          EVALUATOR_TYPE,
+          COMITE_MEMBER_INDEX,
+          EVALUATOR_NAME,
+          EVALUATOR_CI,
+          TOTAL_SCORE,
+          OBSERVATIONS,
+          EVALUATION_DATE
+        )
+      `)
+      .eq('PERIOD_ID', periodId)
+      .eq('STATUS', 1);
+
+    if (practicesError) throw practicesError;
+
+    if (!practices || practices.length === 0) {
+      const workbook = await generateWorkbook([{
+        title: 'EVALUACIONES',
+        periodLabel: periodDesc,
+        columns: [{ header: 'N°', key: 'nro', width: 5 }],
+        rows: [],
+      }]);
+      const buffer = await workbook.xlsx.writeBuffer();
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="evaluaciones-${periodId}.xlsx"`);
+      res.send(buffer);
+      return;
+    }
+
+    // 3. Procesar datos — una fila por práctica en resumen
+    const resumenRows: Record<string, any>[] = [];
+    const institucionalRows: Record<string, any>[] = [];
+    const academicoRows: Record<string, any>[] = [];
+    const comiteRows: Record<string, any>[] = [];
+
+    (practices as any[]).forEach((practice, idx) => {
+      const student = practice.t_persons;
+      const institution = practice.t_institution;
+      const internshipType = practice.t_internship_type;
+      const evaluations: any[] = practice.t_evaluation || [];
+
+      const studentCi = getPersonField(student, 'ci') || '';
+      const firstName = getPersonField(student, 'first_name') || '';
+      const middleName = getPersonField(student, 'middle_name') || '';
+      const lastName = getPersonField(student, 'last_name') || '';
+      const secondLastName = getPersonField(student, 'second_last_name') || '';
+      const studentName = [firstName, middleName, lastName, secondLastName].filter(Boolean).join(' ').trim();
+
+      // Obtener notas por tipo
+      const evalInst = evaluations.find(e => e.EVALUATOR_TYPE === 'INSTITUCIONAL');
+      const evalAcad = evaluations.find(e => e.EVALUATOR_TYPE === 'ACADEMICO');
+      const comiteEvals = evaluations.filter(e => e.EVALUATOR_TYPE === 'COMITE');
+
+      const notaInstitucional = evalInst?.TOTAL_SCORE ?? null;
+      const notaAcademica = evalAcad?.TOTAL_SCORE ?? null;
+
+      // Nota comité: promedio de miembros
+      let notaComite: number | null = null;
+      if (comiteEvals.length > 0) {
+        const sum = comiteEvals.reduce((s, e) => s + (e.TOTAL_SCORE || 0), 0);
+        notaComite = parseFloat((sum / comiteEvals.length).toFixed(1));
+      }
+
+      const notaFinal = practice.GRADE ?? null;
+
+      // Estado
+      let estado = 'PENDIENTE';
+      if (practice.PRACTICES_STATUS === PRACTICES_STATUS.CULMINADO) {
+        estado = 'APROBADO';
+      } else if (practice.PRACTICES_STATUS === PRACTICES_STATUS.REPROBADO) {
+        estado = 'REPROBADO';
+      } else if (notaFinal !== null && notaFinal !== undefined) {
+        estado = practice.EVALUATION_STATUS === 'completed' ? 'APROBADO' : 'PENDIENTE';
+      }
+
+      // Fila resumen
+      resumenRows.push({
+        nro: idx + 1,
+        ciEstudiante: studentCi,
+        nombreEstudiante: studentName,
+        institucion: institution?.INSTITUTION_NAME || '',
+        tipoPractica: internshipType?.NAME || '',
+        notaInstitucional: notaInstitucional ?? '',
+        notaAcademica: notaAcademica ?? '',
+        notaComite: notaComite ?? '',
+        notaFinal: notaFinal ?? '',
+        estado,
+      });
+
+      // Filas detalladas por tipo de evaluador
+      if (evalInst) {
+        institucionalRows.push({
+          nro: institucionalRows.length + 1,
+          ciEstudiante: studentCi,
+          nombreEstudiante: studentName,
+          institucion: institution?.INSTITUTION_NAME || '',
+          evaluador: evalInst.EVALUATOR_NAME || '',
+          ciEvaluador: evalInst.EVALUATOR_CI || '',
+          nota: evalInst.TOTAL_SCORE ?? '',
+          fecha: evalInst.EVALUATION_DATE || '',
+          observaciones: evalInst.OBSERVATIONS || '',
+        });
+      }
+
+      if (evalAcad) {
+        academicoRows.push({
+          nro: academicoRows.length + 1,
+          ciEstudiante: studentCi,
+          nombreEstudiante: studentName,
+          institucion: institution?.INSTITUTION_NAME || '',
+          evaluador: evalAcad.EVALUATOR_NAME || '',
+          ciEvaluador: evalAcad.EVALUATOR_CI || '',
+          nota: evalAcad.TOTAL_SCORE ?? '',
+          fecha: evalAcad.EVALUATION_DATE || '',
+          observaciones: evalAcad.OBSERVATIONS || '',
+        });
+      }
+
+      comiteEvals.forEach(evalCom => {
+        comiteRows.push({
+          nro: comiteRows.length + 1,
+          ciEstudiante: studentCi,
+          nombreEstudiante: studentName,
+          institucion: institution?.INSTITUTION_NAME || '',
+          miembro: evalCom.COMITE_MEMBER_INDEX || '',
+          evaluador: evalCom.EVALUATOR_NAME || '',
+          ciEvaluador: evalCom.EVALUATOR_CI || '',
+          nota: evalCom.TOTAL_SCORE ?? '',
+          fecha: evalCom.EVALUATION_DATE || '',
+          observaciones: evalCom.OBSERVATIONS || '',
+        });
+      });
+    });
+
+    // 4. Construir secciones Excel
+    const sections: SheetSection[] = [
+      // Hoja 1: Resumen
+      {
+        title: 'RESUMEN DE EVALUACIONES',
+        periodLabel: periodDesc,
+        columns: [
+          { header: 'N°', key: 'nro', width: 5 },
+          { header: 'CI ESTUDIANTE', key: 'ciEstudiante', width: 16 },
+          { header: 'NOMBRE ESTUDIANTE', key: 'nombreEstudiante', width: 30 },
+          { header: 'INSTITUCIÓN', key: 'institucion', width: 24 },
+          { header: 'TIPO PRÁCTICA', key: 'tipoPractica', width: 18 },
+          { header: 'NOTA INSTITUCIONAL', key: 'notaInstitucional', width: 12 },
+          { header: 'NOTA ACADÉMICA', key: 'notaAcademica', width: 12 },
+          { header: 'NOTA COMITÉ', key: 'notaComite', width: 12 },
+          { header: 'NOTA FINAL', key: 'notaFinal', width: 12 },
+          { header: 'ESTADO', key: 'estado', width: 14 },
+        ],
+        rows: resumenRows,
+      },
+      // Hoja 2: Institucional
+      {
+        title: 'EVALUACIONES INSTITUCIONALES',
+        periodLabel: periodDesc,
+        columns: [
+          { header: 'N°', key: 'nro', width: 5 },
+          { header: 'CI ESTUDIANTE', key: 'ciEstudiante', width: 16 },
+          { header: 'NOMBRE ESTUDIANTE', key: 'nombreEstudiante', width: 30 },
+          { header: 'INSTITUCIÓN', key: 'institucion', width: 24 },
+          { header: 'EVALUADOR', key: 'evaluador', width: 24 },
+          { header: 'CI EVALUADOR', key: 'ciEvaluador', width: 16 },
+          { header: 'NOTA', key: 'nota', width: 10 },
+          { header: 'FECHA', key: 'fecha', width: 18 },
+          { header: 'OBSERVACIONES', key: 'observaciones', width: 28 },
+        ],
+        rows: institucionalRows,
+      },
+      // Hoja 3: Académica
+      {
+        title: 'EVALUACIONES ACADÉMICAS',
+        periodLabel: periodDesc,
+        columns: [
+          { header: 'N°', key: 'nro', width: 5 },
+          { header: 'CI ESTUDIANTE', key: 'ciEstudiante', width: 16 },
+          { header: 'NOMBRE ESTUDIANTE', key: 'nombreEstudiante', width: 30 },
+          { header: 'INSTITUCIÓN', key: 'institucion', width: 24 },
+          { header: 'EVALUADOR', key: 'evaluador', width: 24 },
+          { header: 'CI EVALUADOR', key: 'ciEvaluador', width: 16 },
+          { header: 'NOTA', key: 'nota', width: 10 },
+          { header: 'FECHA', key: 'fecha', width: 18 },
+          { header: 'OBSERVACIONES', key: 'observaciones', width: 28 },
+        ],
+        rows: academicoRows,
+      },
+      // Hoja 4: Comité
+      {
+        title: 'EVALUACIONES DEL COMITÉ',
+        periodLabel: periodDesc,
+        columns: [
+          { header: 'N°', key: 'nro', width: 5 },
+          { header: 'CI ESTUDIANTE', key: 'ciEstudiante', width: 16 },
+          { header: 'NOMBRE ESTUDIANTE', key: 'nombreEstudiante', width: 30 },
+          { header: 'INSTITUCIÓN', key: 'institucion', width: 24 },
+          { header: 'MIEMBRO', key: 'miembro', width: 10 },
+          { header: 'EVALUADOR', key: 'evaluador', width: 24 },
+          { header: 'CI EVALUADOR', key: 'ciEvaluador', width: 16 },
+          { header: 'NOTA', key: 'nota', width: 10 },
+          { header: 'FECHA', key: 'fecha', width: 18 },
+          { header: 'OBSERVACIONES', key: 'observaciones', width: 28 },
+        ],
+        rows: comiteRows,
+      },
+    ];
+
+    // 5. Generar workbook y enviar
+    const workbook = await generateWorkbook(sections);
+    const fileName = `evaluaciones-${periodId}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('[Evaluation] Error exporting evaluations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al exportar evaluaciones a Excel'
     });
   }
 };

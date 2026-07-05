@@ -18,7 +18,10 @@ import {
   unfreezeEvaluation,
   unfreezePracticeEvaluations,
   grantExtension,
-  revokeExtension
+  revokeExtension,
+  bulkGrantExtension,
+  getPendingPracticesReport,
+  exportEvaluationsExcel
 } from '../controllers/evaluation.controller.js';
 
 const router = Router();
@@ -29,6 +32,8 @@ router.put('/criteria/:id', requirePermission('evaluations:edit'), updateCriteri
 router.get('/practice/:practiceId/status', requirePermission('evaluations:view'), getPracticeEvaluationStatus);
 router.get('/practice/:practiceId/tutor-info', requirePermission('evaluations:view'), getPracticeTutorInfo);
 router.get('/batch-status', requirePermission('evaluations:view'), getBatchPracticeStatus);
+router.get('/pending-report/:periodId', requirePermission('evaluations:view'), getPendingPracticesReport);
+router.get('/export/:periodId', requirePermission('evaluations:view'), exportEvaluationsExcel);
 router.get('/', requirePermission('evaluations:view'), getEvaluations);
 router.get('/:id', requirePermission('evaluations:view'), getEvaluationById);
 router.post('/', requirePermission('evaluations:create'), validateCreateEvaluationPeriod, createEvaluation);
@@ -36,6 +41,7 @@ router.put('/:id', requirePermission('evaluations:edit'), validateUpdateEvaluati
 router.delete('/:id', requirePermission('evaluations:delete'), deleteEvaluation);
 router.post('/unfreeze-practice', requirePermission('evaluations:unfreeze'), unfreezePracticeEvaluations);
 router.post('/freeze', requirePermission('evaluations:freeze'), freezeEvaluations);
+router.post('/bulk-grant-extension', requirePermission('evaluations:freeze'), bulkGrantExtension);
 router.post('/:id/unfreeze', requirePermission('evaluations:unfreeze'), unfreezeEvaluation);
 router.post('/:practiceId/mark-failed', requirePermission('evaluations:edit'), markPracticeAsFailed);
 router.post('/:practiceId/grant-extension', requirePermission('evaluations:freeze'), grantExtension);

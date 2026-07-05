@@ -263,6 +263,7 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
         .single();
 
       if (practiceError || !practice) {
+        console.error('[PeriodValidator] Practice lookup failed:', { practiceId, practiceError, practice });
         return res.status(404).json({
           success: false,
           message: 'Práctica profesional no encontrada.',

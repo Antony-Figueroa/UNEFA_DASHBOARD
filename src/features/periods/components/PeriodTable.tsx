@@ -13,6 +13,7 @@ import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { matchSearch } from "../../../utils/searchNormalizer";
 import { TableSkeleton } from "../../../components/ui/skeleton";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import DisplayText from "../../../components/common/DisplayText";
 import CustomSelect from "../../../components/form/CustomSelect";
 import InputField from "../../../components/form/input/InputField";
 import {
@@ -764,7 +765,7 @@ const PeriodTable = ({
                                             />
                                         </TableCell>
                                         <TableCell className="font-medium text-text-primary dark:text-text-emphasis">
-                                            {periodo.description}
+                                            <DisplayText>{periodo.description}</DisplayText>
                                         </TableCell>
                                         <TableCell className="text-text-secondary dark:text-text-tertiary">
                                             {periodo.startDate}
@@ -850,7 +851,7 @@ const PeriodTable = ({
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
                                         <h3 className="font-semibold text-text-primary dark:text-text-emphasis">
-                                            {periodo.description}
+                                            <DisplayText>{periodo.description}</DisplayText>
                                         </h3>
                                         <p className="text-sm text-text-secondary dark:text-text-tertiary mt-1">
                                             {periodo.startDate} - {periodo.endDate}

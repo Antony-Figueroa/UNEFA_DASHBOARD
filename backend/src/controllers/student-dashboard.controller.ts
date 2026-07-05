@@ -300,7 +300,7 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
         EMPLOYMENT,
         STATUS,
         REGISTRATION_DATE,
-        t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birth_date, address, marital_status)
+        t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birthdate, address, marital_status)
       `)
       .eq('USER_ID', userId)
       .single();
@@ -338,7 +338,7 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
         email: (student as any)?.t_persons?.email,
         phone: (student as any)?.t_persons?.phone,
         gender: (student as any)?.t_persons?.gender,
-        birthdate: (student as any)?.t_persons?.birth_date,
+        birthdate: (student as any)?.t_persons?.birthdate,
         address: (student as any)?.t_persons?.address,
         maritalStatus: (student as any)?.t_persons?.marital_status,
         semester: (enrollment as any)?.SEMESTER || null,
@@ -657,7 +657,7 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
         STUDENTS_ID,
         STUDENT_TYPE,
         MILITARY_RANK, EMPLOYMENT, STATUS, REGISTRATION_DATE,
-        t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birth_date, address, marital_status)
+        t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birthdate, address, marital_status)
       `)
       .eq('USER_ID', userId)
       .single();
@@ -693,7 +693,7 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
         email: (updated as any)?.t_persons?.email,
         phone: (updated as any)?.t_persons?.phone,
         gender: (updated as any)?.t_persons?.gender,
-        birthdate: (updated as any)?.t_persons?.birth_date,
+        birthdate: (updated as any)?.t_persons?.birthdate,
         address: (updated as any)?.t_persons?.address,
         maritalStatus: (updated as any)?.t_persons?.marital_status,
         semester: (updateEnrollment as any)?.SEMESTER || null,
@@ -765,8 +765,8 @@ export const createStudentRequest = async (req: AuthRequest, res: Response) => {
       STUDENT_ID: student.STUDENTS_ID,
       student_person_id: student.person_id,
       REQUEST_TYPE_ID: typeId,
-      SUBJECT: sanitizeText(subject) ?? subject,
-      DESCRIPTION: sanitizeText(description) ?? description,
+      SUBJECT: sanitizeText(subject) ?? '',
+      DESCRIPTION: sanitizeText(description) ?? '',
       STATUS: 'pending',
       IS_REASSIGNMENT: isReassignment ? 1 : 0
     };

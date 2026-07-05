@@ -270,13 +270,30 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
   // ─── Filtered Data ─────────────────────────────────────
   const filteredPractices = useMemo(() => {
     const list = Array.isArray(practices) ? practices : [];
-    if (!searchTerm) return list;
-    return list.filter(p =>
-      matchSearch(p.studentName, searchTerm) ||
-      matchSearch(p.studentCi, searchTerm) ||
-      matchSearch(p.institutionName, searchTerm)
-    );
-  }, [practices, searchTerm]);
+    return list.filter(p => {
+      // Search filter
+      if (searchTerm) {
+        const matchesSearch =
+          matchSearch(p.studentName, searchTerm) ||
+          matchSearch(p.studentCi, searchTerm) ||
+          matchSearch(p.institutionName, searchTerm);
+        if (!matchesSearch) return false;
+      }
+      // Period filter
+      if (filters.periodId && p.periodId !== filters.periodId) return false;
+      // Career filter
+      if (filters.careerId && p.careerId !== filters.careerId) return false;
+      // Practice type filter
+      if (filters.practiceTypeId && p.practiceTypeId !== filters.practiceTypeId) return false;
+      // Culmination status filter
+      if (filters.culminationStatus && p.culminationStatus !== filters.culminationStatus) return false;
+      // Evaluation status filter
+      if (filters.evaluationStatus && p.evaluationStatus !== filters.evaluationStatus) return false;
+      // Result filter
+      if (filters.result && p.result !== filters.result) return false;
+      return true;
+    });
+  }, [practices, searchTerm, filters]);
 
   // ─── Stats ──────────────────────────────────────────────
   const evaluationStats = useMemo((): EvaluationStats => {

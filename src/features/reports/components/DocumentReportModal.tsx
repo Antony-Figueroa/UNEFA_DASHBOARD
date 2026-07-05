@@ -168,7 +168,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
     e.preventDefault();
     const id = parseInt(recordId, 10);
     if (!id || id <= 0) {
-      addToast({ variant: "error", title: "Dato inválido", message: "Ingrese un ID válido" });
+      addToast({ variant: "error", title: "Dato inválido", message: "Ingrese un CI válido" });
       return;
     }
     setLoading(true);

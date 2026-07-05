@@ -29,31 +29,52 @@ const SEED_PRES = path.join(__dirname, 'seed', 'seed-presentacion.sql');
 // (cuyos ; internos NO son separadores de statement)
 function splitStatements(sql: string): string[] {
   const stmts: string[] = [];
-  let current = '';
+  let cur = '';
   let inDollar = false;
+  let inQuote = false;
+  let i = 0;
 
-  // Split por ; — luego re-agrupamos DO blocks que tienen ; internos
-  for (const chunk of sql.split(';')) {
-    const t = chunk.trim();
-    if (!t && !current) continue;
+  while (i < sql.length) {
+    const c = sql[i];
+    const nxt = sql[i + 1] || '';
 
-    current += (current ? ';' : '') + chunk;
-
-    // Count $$ toggles
-    const count = (chunk.match(/\$\$/g) || []).length;
-    if (count % 2 === 1) inDollar = !inDollar;
-
-    // Emit solo si estamos fuera de DO block
-    if (!inDollar && current.trim()) {
-      stmts.push(current.trim().replace(/;\s*$/, ''));
-      current = '';
+    // $$ dollar-quote block
+    if (c === '$' && nxt === '$') {
+      inDollar = !inDollar;
+      cur += '$$';
+      i += 2;
+      continue;
     }
+
+    // ' single-quote string (solo fuera de $$), maneja '' escapado
+    if (c === "'" && !inDollar) {
+      cur += "'";
+      i += 1;
+      if (inQuote && nxt === "'") {
+        // '' dentro de string = comilla escapada, NO toggle
+        cur += "'";
+        i += 1;
+      } else {
+        inQuote = !inQuote;
+      }
+      continue;
+    }
+
+    // ; fuera de string = boundary
+    if (c === ';' && !inQuote && !inDollar) {
+      const t = cur.trim();
+      if (t) stmts.push(t);
+      cur = '';
+      i += 1;
+      continue;
+    }
+
+    cur += c;
+    i += 1;
   }
 
-  // Flush remaining (no debería pasar)
-  if (current.trim()) stmts.push(current.trim());
-
-  return stmts.filter(s => s.length > 0);
+  if (cur.trim()) stmts.push(cur.trim());
+  return stmts;
 }
 
 // ─── Schema extraction ───
@@ -104,6 +125,22 @@ async function initSchema(pglite: PGlite): Promise<void> {
     }
   }
   console.log(`[Offline] ✅ Schema: ${ok}/${stmts.length} tablas`);
+
+  // Tablas adicionales que están en migraciones separadas de Supabase
+  await pglite.query(`
+    CREATE TABLE IF NOT EXISTS "t_user_sessions" (
+      "ID" SERIAL NOT NULL,
+      "USER_ID" INTEGER NOT NULL,
+      "TOKEN_HASH" VARCHAR(64) NOT NULL,
+      "DEVICE_INFO" TEXT,
+      "IP_ADDRESS" VARCHAR(45),
+      "LAST_ACTIVITY" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      "CREATED_AT" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      "STATUS" SMALLINT DEFAULT 1,
+      PRIMARY KEY ("ID")
+    )
+  `).catch(() => {});
+  await pglite.query(`CREATE INDEX IF NOT EXISTS "idx_user_sessions_user" ON "t_user_sessions"("USER_ID")`).catch(() => {});
 }
 
 async function runSeed(pglite: PGlite, filePath: string, label: string): Promise<void> {
@@ -158,6 +195,10 @@ async function main() {
   console.log('[Offline] 🔄 Configurando adaptador offline...');
   dbManager.setOfflineAdapter(new PGliteAdapter(pglite));
   dbManager.setMode('offline');
+
+  // JWT fallback para offline — dotenv no carga .env como SYSTEM user
+  process.env.JWT_SECRET ||= 'offline-dev-secret-do-not-use-in-production';
+  process.env.MODE = 'offline';
 
   // Importar app (connect() falla, ok)
   console.log('[Offline] 📦 Importando Express...');

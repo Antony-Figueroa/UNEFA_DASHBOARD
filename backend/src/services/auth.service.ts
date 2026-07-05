@@ -230,11 +230,11 @@ export const login = async (userCi: string, password: string, ip: string, userAg
        .from('t_user')
        .select('*, t_user_roles(ID_ROLES)')
        .eq('USER_CI', userCi)
-       .single();
+       .maybeSingle();
 
-    const user = userData as unknown as UserRow;
+     const user = userData as unknown as UserRow;
 
-    if (userError || !user) {
+     if (userError || !user) {
       await logAuthAction(null, userCi, 'LOGIN_FAILED', ip, userAgent, 'Usuario no encontrado');
       return { success: false, status: 401, message: 'Credenciales inválidas.' };
     }

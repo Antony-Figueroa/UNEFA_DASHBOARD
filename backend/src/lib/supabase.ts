@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -16,4 +16,27 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
   console.error('[CONFIG] ERROR: Missing Supabase credentials in .env');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+function emptyResponse(): any {
+  return { data: null, error: null };
+}
+
+function noopChain(result: any = { data: [], error: null }): any {
+  return new Proxy({}, {
+    get: () => () => noopChain(result),
+    apply: (_, __, args) => Promise.resolve(args[0]?.(result) ?? result),
+  });
+}
+
+// ponytail: offline mode — mock client that never hits network
+export const supabase: SupabaseClient = (supabaseUrl && supabaseServiceRoleKey)
+  ? createClient(supabaseUrl, supabaseServiceRoleKey)
+  : new Proxy({} as any, {
+      get(_t, prop) {
+        if (prop === 'then') return undefined; // not a thenable
+        if (prop === 'rpc') return async () => emptyResponse();
+        if (prop === 'storage') return { from: () => ({ upload: async () => emptyResponse(), download: async () => emptyResponse(), getPublicUrl: () => emptyResponse() }) };
+        if (prop === 'auth') return { getSession: async () => emptyResponse(), signOut: async () => emptyResponse() };
+        // from('table').select(...).eq(...).single() → noop chain
+        return () => noopChain(emptyResponse());
+      },
+    });

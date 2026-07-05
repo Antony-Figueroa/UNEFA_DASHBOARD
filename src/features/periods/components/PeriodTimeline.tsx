@@ -8,6 +8,7 @@ import { useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { PeriodoRowData } from "../types";
 import { getSafePeriodStatus, getStatusLabel, getSafeProgress } from "./periodUtils";
+import DisplayText from "../../../components/common/DisplayText";
 
 interface PeriodTimelineProps {
   periods: PeriodoRowData[];
@@ -161,7 +162,7 @@ const PeriodTimeline: React.FC<PeriodTimelineProps> = ({ periods, activePeriodId
 
                   {/* Nombre */}
                   <h4 className="text-base font-bold text-gray-900 dark:text-white truncate mb-2">
-                    {period.description}
+                    <DisplayText>{period.description}</DisplayText>
                   </h4>
 
                   {/* Fechas */}

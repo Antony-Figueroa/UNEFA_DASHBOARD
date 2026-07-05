@@ -113,8 +113,8 @@ export const createAddress = async (req: Request, res: Response) => {
       .from('t_address')
       .insert({
         parroquia_id,
-        street_address: sanitizeText(street_address) ?? street_address,
-        reference: reference ? (sanitizeText(reference) ?? reference) : null,
+        street_address: sanitizeText(street_address) ?? '',
+        reference: reference ? sanitizeText(reference) : null,
       })
       .select('address_id')
       .single();
@@ -185,8 +185,8 @@ export const updateAddress = async (req: Request, res: Response) => {
       .from('t_address')
       .update({
         parroquia_id,
-        street_address: sanitizeText(street_address) ?? street_address,
-        reference: reference ? (sanitizeText(reference) ?? reference) : null,
+        street_address: sanitizeText(street_address) ?? '',
+        reference: reference ? sanitizeText(reference) : null,
       })
       .eq('address_id', bridgeRow.address_id);
 

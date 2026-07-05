@@ -33,18 +33,24 @@ interface UseVisitsReturn {
   clearError: () => void;
 }
 
-export const useVisits = (): UseVisitsReturn => {
+export const useVisits = (tutorMode?: boolean): UseVisitsReturn => {
   const { addToast } = useToast();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<VisitStats | null>(null);
 
+  // ponytail: lazy import para evitar circular en prod
+  const svc = tutorMode
+    ? { getVisitsByPractice: (...args: any[]) => import('../../tutor/services/tutorService').then(m => m.tutorService.getVisitsByPractice(...args)),
+        createVisit: (...args: any[]) => import('../../tutor/services/tutorService').then(m => m.tutorService.createVisit(...args)) }
+    : visitsService;
+
   const fetchVisitsByPractice = useCallback(async (practiceId: number, includeInactive?: boolean) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await visitsService.getVisitsByPractice(practiceId, includeInactive);
+      const response = await svc.getVisitsByPractice(practiceId, includeInactive);
       if (response.success) {
         setVisits(response.data);
       }
@@ -55,7 +61,7 @@ export const useVisits = (): UseVisitsReturn => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tutorMode]);
 
   const fetchAllVisits = useCallback(async (params?: {
     page?: number;
@@ -103,7 +109,7 @@ export const useVisits = (): UseVisitsReturn => {
     setLoading(true);
     setError(null);
     try {
-      const response = await visitsService.createVisit(payload);
+      const response = await svc.createVisit(payload);
       if (response.success) {
         addToast(TOAST.created(resourceName));
         setVisits(prev => [response.data, ...prev]);
@@ -119,7 +125,7 @@ export const useVisits = (): UseVisitsReturn => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tutorMode]);
 
   const updateVisit = useCallback(async (id: number, payload: UpdateVisitPayload): Promise<Visit | null> => {
     setLoading(true);
@@ -195,7 +201,6 @@ export const useVisits = (): UseVisitsReturn => {
       }
     } catch (err: any) {
       console.error('Error fetching visit stats:', err);
-      // No mostramos toast porque las stats no son críticas, el reintento es automático
     }
   }, []);
 

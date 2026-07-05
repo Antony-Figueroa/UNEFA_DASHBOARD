@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { useTabs } from "../../hooks/useTabs";
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
@@ -29,6 +29,8 @@ const parseApiDate = (dateStr: string): Date => {
 export default function VisitRegistration() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const tutorMode = location.pathname.startsWith('/tutor/visits/');
   
   const {
     visits,
@@ -40,7 +42,7 @@ export default function VisitRegistration() {
     deleteVisit,
     restoreVisit,
     fetchStats
-  } = useVisits();
+  } = useVisits(tutorMode);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
@@ -132,7 +134,7 @@ export default function VisitRegistration() {
 
       fetchPracticeInfo();
       loggedFetchVisits();
-      loggedFetchStats();
+      if (!tutorMode) loggedFetchStats();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -169,7 +171,7 @@ export default function VisitRegistration() {
   };
 
   const refreshStats = () => {
-    if (id) fetchStats({ practiceId: parseInt(id) });
+    if (!tutorMode && id) fetchStats({ practiceId: parseInt(id) });
   };
 
   const handleSubmit = async (data: CreateVisitPayload | UpdateVisitPayload): Promise<boolean> => {
@@ -308,7 +310,7 @@ export default function VisitRegistration() {
         </ComponentCard>
       )}
 
-      {stats && (
+      {!tutorMode && stats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" key={`stats-${statsKey}`}>
           <ComponentCard title="Total Visitas">
             <div className="text-center py-2">
@@ -333,10 +335,12 @@ export default function VisitRegistration() {
 
       <ComponentCard title={tabsState.activeTab === 'active' ? "Historial de Visitas" : "Visitas Inactivas"}>
         <Tabs
-          options={[
-            { id: 'active', label: 'Activas' },
-            { id: 'inactive', label: 'Inactivas' },
-          ]}
+          options={tutorMode
+            ? [{ id: 'active', label: 'Activas' }]
+            : [
+              { id: 'active', label: 'Activas' },
+              { id: 'inactive', label: 'Inactivas' },
+            ]}
           {...tabsState.tabProps}
           variant="underline"
           className="mb-6"
@@ -397,7 +401,10 @@ export default function VisitRegistration() {
                           variant="primary"
                         />
 
-                        {tabsState.activeTab === 'inactive' ? (
+                        {tutorMode ? (
+                          /* Modo tutor: solo Ver Detalles */
+                          <></>
+                        ) : tabsState.activeTab === 'inactive' ? (
                           /* SI está inactivo: solo botón Restaurar */
                           <AsyncActionButton
                             onClick={async () => setRestoreDialog({ isOpen: true, visitId: visit.visitId })}
@@ -454,7 +461,7 @@ export default function VisitRegistration() {
         practiceId={parseInt(id || '0')}
         tutorId={1}
         loading={loading}
-        mode="edit"
+        mode={tutorMode ? "view" : "edit"}
         periodStartDate={practiceInfo?.periodStartDate ? parseApiDate(practiceInfo.periodStartDate) : undefined}
         periodEndDate={practiceInfo?.periodEndDate ? parseApiDate(practiceInfo.periodEndDate) : undefined}
         studentName={practiceInfo?.studentName}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
@@ -28,6 +28,8 @@ interface PracticeInfo {
 export default function ActivityLogPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const tutorMode = location.pathname.startsWith('/tutor/activity-logs/');
   
   const {
     logs,
@@ -39,7 +41,7 @@ export default function ActivityLogPage() {
     updateLog,
     deleteLog,
     approveLog
-  } = useActivityLogs();
+  } = useActivityLogs(tutorMode);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
@@ -64,9 +66,9 @@ export default function ActivityLogPage() {
     if (id) {
       const practiceId = parseInt(id);
       fetchLogs({ practiceId });
-      fetchStats(practiceId);
+      if (!tutorMode) fetchStats(practiceId);
     }
-  }, [id]);
+  }, [id, tutorMode]);
 
   useEffect(() => {
     if (logs.length > 0 && !practiceInfo) {
@@ -151,7 +153,7 @@ export default function ActivityLogPage() {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <Button 
           variant="outline" 
-          onClick={() => navigate('/tracking')}
+          onClick={() => navigate(tutorMode ? '/tutor/tracking' : '/tracking')}
           className="flex items-center gap-2"
         >
           <AngleLeftIcon className="w-5 h-5" />
@@ -193,7 +195,7 @@ export default function ActivityLogPage() {
         </ComponentCard>
       )}
 
-      {stats && (
+      {!tutorMode && stats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <ComponentCard title="Horas Totales">
             <div className="text-center py-2">
@@ -251,10 +253,10 @@ export default function ActivityLogPage() {
         <ActivityLogTable
           data={filteredLogs}
           loading={loading}
-          onEdit={handleOpenModal}
-          onDelete={(log) => setDeleteDialog({ isOpen: true, log })}
           onView={(log) => setViewDialog({ isOpen: true, log })}
-          onApprove={(log) => setApproveDialog({ isOpen: true, log })}
+          onEdit={tutorMode ? undefined : handleOpenModal}
+          onDelete={tutorMode ? undefined : (log) => setDeleteDialog({ isOpen: true, log })}
+          onApprove={tutorMode ? undefined : (log) => setApproveDialog({ isOpen: true, log })}
           showStudent={false}
         />
       </ComponentCard>

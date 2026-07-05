@@ -3,6 +3,7 @@ import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 interface TutorStudent {
   enrollmentId: string;
@@ -899,5 +900,191 @@ export const getTutorPractice = async (req: AuthRequest, res: Response) => {
       message: 'Error al obtener práctica',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
+  }
+};
+
+// ──────────────────────────────────────────────
+// Tutor Visitas — solo para sus estudiantes asignados
+// ──────────────────────────────────────────────
+
+/** Helper: obtiene TUTOR_ID del user logueado */
+const getTutorId = async (supabase: any, userId: number): Promise<number> => {
+  const { data, error } = await supabase
+    .from('t_tutors')
+    .select('TUTOR_ID')
+    .eq('USER_ID', userId)
+    .single();
+
+  if (error || !data) throw new Error('Tutor no encontrado');
+  return data.TUTOR_ID;
+};
+
+/** Helper: verifica que el practiceId tenga un tutor linkeado al tutor logueado */
+const verifyPracticeBelongsToTutor = async (supabase: any, tutorId: number, practiceId: number): Promise<void> => {
+  const { data } = await supabase
+    .from('t_professional_practices_tutor')
+    .select('PROFESSIONAL_PRACTICES_TUTOR_ID')
+    .eq('TUTOR_ID', tutorId)
+    .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+    .eq('ACTIVE', true)
+    .maybeSingle();
+
+  if (!data) {
+    throw new Error('La práctica no pertenece a tus estudiantes asignados');
+  }
+};
+
+export const createTutorVisit = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const supabase = dbManager.getConnection();
+    const tutorId = await getTutorId(supabase, userId);
+
+    const { practiceId, visitDate, visitType, visitCase, hoursWorked, activitiesPerformed, observations, recommendations } = req.body;
+
+    // Validar que la práctica le pertenece
+    await verifyPracticeBelongsToTutor(supabase, tutorId, practiceId);
+
+    // Resolver tutor_person_id
+    const { data: tutor } = await supabase
+      .from('t_tutors')
+      .select('person_id')
+      .eq('TUTOR_ID', tutorId)
+      .single();
+
+    const { data, error } = await supabase
+      .from('t_practice_visits')
+      .insert([{
+        PROFESSIONAL_PRACTICE_ID: practiceId,
+        TUTOR_ID: tutorId,
+        tutor_person_id: (tutor as any)?.person_id || null,
+        VISIT_DATE: visitDate || new Date().toISOString(),
+        VISIT_TYPE: sanitizeText(visitType) ?? 'PRESENCIAL',
+        VISIT_CASE: sanitizeText(visitCase) ?? 'SEGUIMIENTO_REGULAR',
+        HOURS_WORKED: hoursWorked || 0,
+        ACTIVITIES_PERFORMED: sanitizeText(activitiesPerformed) ?? '',
+        OBSERVATIONS: sanitizeText(observations) ?? '',
+        RECOMMENDATIONS: sanitizeText(recommendations) ?? '',
+        STATUS: 1,
+        CREATED_BY: userId
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.status(201).json({ success: true, message: 'Visita registrada exitosamente', data });
+  } catch (error: any) {
+    console.error('[TutorDashboard] Error creating visit:', error);
+    const status = error.message?.includes('no pertenece') ? 403 : 500;
+    res.status(status).json({ success: false, message: error.message || 'Error al crear visita' });
+  }
+};
+
+export const getTutorVisitsByPractice = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const supabase = dbManager.getConnection();
+    const tutorId = await getTutorId(supabase, userId);
+    const { practiceId } = req.params;
+
+    await verifyPracticeBelongsToTutor(supabase, tutorId, Number(practiceId));
+
+    const { data, error } = await supabase
+      .from('t_practice_visits')
+      .select(`
+        *,
+        t_persons!inner (ci, first_name, last_name),
+        t_professional_practices (
+          PROFESSIONAL_PRACTICE_ID, START_DATE, END_DATE,
+          t_persons!inner (ci, first_name, last_name),
+          t_institution (INSTITUTION_ID, INSTITUTION_NAME)
+        )
+      `)
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .eq('STATUS', 1)
+      .order('VISIT_DATE', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ success: true, data: data || [] });
+  } catch (error: any) {
+    console.error('[TutorDashboard] Error getting visits:', error);
+    const status = error.message?.includes('no pertenece') ? 403 : 500;
+    res.status(status).json({ success: false, message: error.message || 'Error al obtener visitas' });
+  }
+};
+
+export const createTutorActivityLog = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const supabase = dbManager.getConnection();
+    const tutorId = await getTutorId(supabase, userId);
+
+    const { professionalPracticeId, studentId, activityDate, weekNumber, hoursWorked, activityType, activityDescription, tasksCompleted, challenges, learnings } = req.body;
+
+    await verifyPracticeBelongsToTutor(supabase, tutorId, professionalPracticeId);
+
+    const { data, error } = await supabase
+      .from('t_activity_logs')
+      .insert({
+        PROFESSIONAL_PRACTICE_ID: professionalPracticeId,
+        STUDENT_ID: studentId,
+        ACTIVITY_DATE: activityDate,
+        WEEK_NUMBER: weekNumber,
+        HOURS_WORKED: hoursWorked,
+        ACTIVITY_TYPE: sanitizeText(activityType) ?? '',
+        ACTIVITY_DESCRIPTION: sanitizeText(activityDescription) ?? '',
+        TASKS_COMPLETED: sanitizeText(tasksCompleted) ?? '',
+        CHALLENGES: sanitizeText(challenges) ?? '',
+        LEARNINGS: sanitizeText(learnings) ?? '',
+        CREATED_BY: userId
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.status(201).json({ success: true, data });
+  } catch (error: any) {
+    console.error('[TutorDashboard] Error creating activity log:', error);
+    const status = error.message?.includes('no pertenece') ? 403 : 500;
+    res.status(status).json({ success: false, message: error.message || 'Error al crear registro de actividad' });
+  }
+};
+
+export const getTutorActivityLogsByPractice = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const supabase = dbManager.getConnection();
+    const tutorId = await getTutorId(supabase, userId);
+    const { practiceId } = req.params;
+
+    await verifyPracticeBelongsToTutor(supabase, tutorId, Number(practiceId));
+
+    const { data, error } = await supabase
+      .from('t_activity_logs')
+      .select(`
+        *,
+        t_persons!inner (ci, first_name, last_name),
+        t_professional_practices (START_DATE, END_DATE)
+      `)
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .eq('STATUS', 1)
+      .order('ACTIVITY_DATE', { ascending: false });
+
+    if (error) throw error;
+
+    const logs = (data || []).map((log: any) => ({
+      ...log,
+      studentName: getPersonFullName(log.t_persons) || 'Sin estudiante',
+      studentCi: getPersonField(log.t_persons, 'ci') || '',
+    }));
+
+    res.json({ success: true, data: logs });
+  } catch (error: any) {
+    console.error('[TutorDashboard] Error getting activity logs:', error);
+    const status = error.message?.includes('no pertenece') ? 403 : 500;
+    res.status(status).json({ success: false, message: error.message || 'Error al obtener registros de actividad' });
   }
 };

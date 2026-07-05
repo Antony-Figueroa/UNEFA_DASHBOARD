@@ -263,7 +263,23 @@ export const AppRoutes = () => {
                 </ProtectedRoute>
               }
             />
- 
+            <Route
+              path="/tutor/visits/:id"
+              element={
+                <ProtectedRoute allowedRoles={[3]}>
+                  <VisitRegistration />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tutor/activity-logs/:id"
+              element={
+                <ProtectedRoute allowedRoles={[3]}>
+                  <ActivityLogPage />
+                </ProtectedRoute>
+              }
+            />
+  
             {/* Student Dashboard - wrapped in StudentLayout */}
             <Route element={<ProtectedRoute allowedRoles={[4]}><StudentLayout /></ProtectedRoute>}>
               <Route index path="/student" element={<StudentDashboard />} />

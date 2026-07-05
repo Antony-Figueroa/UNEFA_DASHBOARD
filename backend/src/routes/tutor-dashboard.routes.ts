@@ -8,7 +8,11 @@ import {
   getTutorReports,
   getTutorProfile,
   getTutorPractice,
-  getTutorActivityLogs
+  getTutorActivityLogs,
+  createTutorVisit,
+  getTutorVisitsByPractice,
+  createTutorActivityLog,
+  getTutorActivityLogsByPractice
 } from '../controllers/tutor-dashboard.controller.js';
 
 const router = Router();
@@ -24,5 +28,13 @@ router.put('/grades/:enrollmentId', updateStudentGrade);
 router.get('/reports', getTutorReports);
 router.get('/profile', getTutorProfile);
 router.get('/activity-logs', getTutorActivityLogs);
+
+// Visitas — solo sobre estudiantes asignados al tutor
+router.post('/visits', createTutorVisit);
+router.get('/visits/practice/:practiceId', getTutorVisitsByPractice);
+
+// Activity logs — solo sobre estudiantes asignados al tutor
+router.post('/activity-logs', createTutorActivityLog);
+router.get('/activity-logs/practice/:practiceId', getTutorActivityLogsByPractice);
 
 export default router;

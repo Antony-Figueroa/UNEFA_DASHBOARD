@@ -11,12 +11,18 @@ import {
 
 const resourceName = 'Registro de actividad';
 
-export const useActivityLogs = () => {
+export const useActivityLogs = (tutorMode?: boolean) => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [stats, setStats] = useState<ActivityLogStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
   const { addToast } = useToast();
+
+  // ponytail: lazy import para evitar circular
+  const svc = tutorMode
+    ? { getAll: (params?: any) => import('../../tutor/services/tutorService').then(m => m.tutorService.getActivityLogsByPractice(params?.practiceId)),
+        create: (data: any) => import('../../tutor/services/tutorService').then(m => m.tutorService.createActivityLog(data)) }
+    : activityLogsService;
 
   // Almacena los últimos filtros usados para refrescar después de mutaciones
   const lastParamsRef = useRef<{
@@ -38,7 +44,7 @@ export const useActivityLogs = () => {
     const effectiveParams = params || lastParamsRef.current;
     if (params) lastParamsRef.current = params;
     try {
-      const response = await activityLogsService.getAll(effectiveParams);
+      const response = await svc.getAll(effectiveParams);
       if (response.success) {
         setLogs(response.data);
       }
@@ -48,9 +54,10 @@ export const useActivityLogs = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tutorMode]);
 
   const fetchStats = useCallback(async (practiceId: number) => {
+    if (tutorMode) return; // no stats endpoint for tutors
     try {
       const response = await activityLogsService.getStats(practiceId);
       if (response.success) {
@@ -59,14 +66,13 @@ export const useActivityLogs = () => {
     } catch (error) {
       console.error('[useActivityLogs] Error fetching stats:', error);
     }
-  }, []);
+  }, [tutorMode]);
 
   const createLog = useCallback(async (data: CreateActivityLogPayload): Promise<boolean> => {
     setLoadingAction(true);
     try {
-      const response = await activityLogsService.create(data);
+      const response = await svc.create(data);
       if (response.success) {
-        // Refrescar desde el servidor en vez de mutar localmente
         await fetchLogs({ practiceId: data.professionalPracticeId });
         addToast(TOAST.created(resourceName));
         return true;
@@ -79,14 +85,14 @@ export const useActivityLogs = () => {
     } finally {
       setLoadingAction(false);
     }
-  }, [fetchLogs]);
+  }, [fetchLogs, tutorMode]);
 
   const updateLog = useCallback(async (id: number, data: UpdateActivityLogPayload): Promise<boolean> => {
+    if (tutorMode) return false;
     setLoadingAction(true);
     try {
       const response = await activityLogsService.update(id, data);
       if (response.success) {
-        // Refrescar desde el servidor en vez de mutar localmente
         await fetchLogs();
         addToast(TOAST.updated(resourceName));
         return true;
@@ -99,9 +105,10 @@ export const useActivityLogs = () => {
     } finally {
       setLoadingAction(false);
     }
-  }, [fetchLogs]);
+  }, [fetchLogs, tutorMode]);
 
   const deleteLog = useCallback(async (id: number): Promise<boolean> => {
+    if (tutorMode) return false;
     setLoadingAction(true);
     try {
       await activityLogsService.delete(id);
@@ -115,9 +122,10 @@ export const useActivityLogs = () => {
     } finally {
       setLoadingAction(false);
     }
-  }, [fetchLogs]);
+  }, [fetchLogs, tutorMode]);
 
   const approveLog = useCallback(async (id: number, comments?: string): Promise<boolean> => {
+    if (tutorMode) return false;
     setLoadingAction(true);
     try {
       const response = await activityLogsService.approve(id, comments);
@@ -134,7 +142,7 @@ export const useActivityLogs = () => {
     } finally {
       setLoadingAction(false);
     }
-  }, [fetchLogs]);
+  }, [fetchLogs, tutorMode]);
 
   return {
     logs,
@@ -149,3 +157,5 @@ export const useActivityLogs = () => {
     approveLog
   };
 };
+
+export default useActivityLogs;

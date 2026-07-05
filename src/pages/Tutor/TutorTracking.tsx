@@ -185,14 +185,14 @@ export default function TutorTracking() {
                             <Eye className="w-4 h-4 text-text-secondary" />
                           </button>
                           <button
-                            onClick={() => openTab(`/visit-registration/${student.enrollmentId}`, `Visita #${student.enrollmentId}`)}
+                            onClick={() => openTab(`/tutor/visits/${student.enrollmentId}`, `Visita #${student.enrollmentId}`)}
                             className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                             title="Registro de Visitas"
                           >
                             <Calendar className="w-4 h-4 text-blue-500" />
                           </button>
                           <button
-                            onClick={() => openTab(`/activity-logs/${student.enrollmentId}`, `Actividades #${student.enrollmentId}`)}
+                            onClick={() => openTab(`/tutor/activity-logs/${student.enrollmentId}`, `Actividades #${student.enrollmentId}`)}
                             className="p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
                             title="Registro de Actividades"
                           >

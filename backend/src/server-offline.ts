@@ -1,21 +1,13 @@
 // ===============================================================================
 // Offline Server Entry Point — UNEFA Dashboard Desktop
 // ===============================================================================
-// Arranca el backend Express con PGlite en vez de Supabase.
-// Todas las queries de los controllers se ejecutan contra PostgreSQL WASM local.
-//
-// USO:
-//   cd backend && npx tsx src/server-offline.ts
-//
-// O desde Electron (producción):
-//   node dist/server-offline.js
+// Arranca backend Express con PGlite local + seeds.
+// SIN depender de conexión a Supabase para nada.
 // ===============================================================================
 
 import { dbManager } from './lib/db-manager.js';
 import { PGlite } from '@electric-sql/pglite';
 import { PGliteAdapter } from './lib/pglite-adapter.js';
-import { SyncService } from './services/sync.service.js';
-import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -23,212 +15,176 @@ import http from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const __projectRoot = path.resolve(__dirname, '..');
 
 // ─── Config ───
-// IMPORTANTE: los imports estáticos se ejecutan antes que el código de módulo.
-// db-manager.ts ejecuta dotenv.config({ override: true }) que pisa PORT=3000 del .env.
-// Por eso usamos OFFLINE_PORT exclusivamente.
-const BACKEND_PORT = parseInt(process.env.OFFLINE_PORT || '3001', 10);
+const PORT = parseInt(process.env.OFFLINE_PORT || '3001', 10);
+const DATA_DIR = process.env.PGLITE_DATA_DIR || path.join(__projectRoot, 'data', 'pglite');
+const SCHEMA_FILE = path.join(__projectRoot, '..', 'DB-postgres.sql');
+const SEED_SYSTEM = path.join(__dirname, 'seed', 'seed_system.sql');
+const SEED_PRES = path.join(__dirname, 'seed', 'seed-presentacion.sql');
 
-// Directorio para persistencia de datos PGlite
-// En desarrollo: ./data/pglite
-// En producción: app.getPath('userData')/pglite (lo setea Electron)
-const DATA_DIR = process.env.PGLITE_DATA_DIR || path.join(process.cwd(), 'data', 'pglite');
+// ─── SQL statement splitter ───
+// Divide SQL en statements individuales respetando DO $$ ... $$ blocks
+// (cuyos ; internos NO son separadores de statement)
+function splitStatements(sql: string): string[] {
+  const stmts: string[] = [];
+  let current = '';
+  let inDollar = false;
 
-// ─── Schema SQL ───
-// Extrae solo CREATE TABLE del schema completo.
-// El archivo DB-postgres.sql tiene ~60KB con tablas + datos.
-// Para offline, necesitamos solo la estructura.
-const SCHEMA_FILE = path.join(__dirname, '../../DB-postgres.sql');
+  // Split por ; — luego re-agrupamos DO blocks que tienen ; internos
+  for (const chunk of sql.split(';')) {
+    const t = chunk.trim();
+    if (!t && !current) continue;
 
-/**
- * Lee el schema SQL y extrae solo las sentencias CREATE TABLE IF NOT EXISTS.
- * Ignora INSERTs, COMMITs, TRIGGERs, etc.
- */
-function extractCreateStatements(sql: string): string[] {
-  const statements: string[] = [];
-  const lines = sql.split('\n');
-  let currentStatement = '';
-  let inCreateTable = false;
+    current += (current ? ';' : '') + chunk;
 
-  for (const line of lines) {
-    const trimmed = line.trim();
+    // Count $$ toggles
+    const count = (chunk.match(/\$\$/g) || []).length;
+    if (count % 2 === 1) inDollar = !inDollar;
 
-    if (trimmed.toUpperCase().startsWith('CREATE TABLE IF NOT EXISTS')) {
-      inCreateTable = true;
-      currentStatement = line;
-      continue;
-    }
-
-    if (inCreateTable) {
-      currentStatement += '\n' + line;
-      // La sentencia termina con ;
-      if (trimmed === ';' || trimmed.endsWith(';')) {
-        statements.push(currentStatement);
-        currentStatement = '';
-        inCreateTable = false;
-      }
+    // Emit solo si estamos fuera de DO block
+    if (!inDollar && current.trim()) {
+      stmts.push(current.trim().replace(/;\s*$/, ''));
+      current = '';
     }
   }
 
-  return statements;
+  // Flush remaining (no debería pasar)
+  if (current.trim()) stmts.push(current.trim());
+
+  return stmts.filter(s => s.length > 0);
 }
 
-/**
- * Inicializa la base de datos PGlite con el schema.
- * Si ya existe un archivo de base de datos persistente, solo se conecta.
- * Si no, crea las tablas desde DB-postgres.sql.
- */
-async function initializeDatabase(pglite: PGlite): Promise<void> {
-  console.log('[OfflineServer] 🔧 Inicializando base de datos local...');
+// ─── Schema extraction ───
+function extractCreateStatements(sql: string): string[] {
+  const stmts: string[] = [];
+  const lines = sql.split('\n');
+  let current = '';
+  let inTable = false;
 
-  // 1. Extensiones necesarias (pgcrypto no disponible en PGlite WASM, no crítico)
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith('CREATE TABLE IF NOT EXISTS')) {
+      inTable = true;
+      current = line;
+      continue;
+    }
+    if (inTable) {
+      current += '\n' + line;
+      if (t === ';' || t.endsWith(';')) {
+        stmts.push(current);
+        current = '';
+        inTable = false;
+      }
+    }
+  }
+  return stmts;
+}
+
+async function initSchema(pglite: PGlite): Promise<void> {
+  console.log('[Offline] 🔧 Schema...');
   await pglite.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`).catch(() => {});
 
-  // 2. Cargar schema desde DB-postgres.sql
   if (!fs.existsSync(SCHEMA_FILE)) {
-    console.warn(`[OfflineServer] ⚠️ No se encontró ${SCHEMA_FILE}. Las tablas se crearán bajo demanda.`);
+    console.warn(`[Offline] ⚠️ No hay schema file: ${SCHEMA_FILE}`);
     return;
   }
 
-  const fullSql = fs.readFileSync(SCHEMA_FILE, 'utf-8');
-  const statements = extractCreateStatements(fullSql);
+  const sql = fs.readFileSync(SCHEMA_FILE, 'utf-8');
+  const stmts = extractCreateStatements(sql);
+  let ok = 0;
 
-  console.log(`[OfflineServer] 📦 Ejecutando ${statements.length} CREATE TABLEs...`);
-
-  let failures = 0;
-  for (const stmt of statements) {
+  for (const stmt of stmts) {
     try {
       await pglite.query(stmt);
-    } catch (err: any) {
-      failures++;
-      // Solo loggear el primer error, los demás son ruido
-      if (failures === 1) {
-        console.warn(`[OfflineServer] ⚠️ Primer CREATE TABLE falló: ${err.message?.slice(0, 120)}`);
-        console.warn(`[OfflineServer]   (${statements.length - 1} más omitidos — probablemente causa raíz relacionada)`);
-      }
+      ok++;
+    } catch {
+      // Expected for some tables (FK deps)
     }
   }
+  console.log(`[Offline] ✅ Schema: ${ok}/${stmts.length} tablas`);
+}
 
-  if (failures === 0) {
-    console.log(`[OfflineServer] ✅ Schema cargado: ${statements.length} tablas`);
-  } else {
-    console.warn(`[OfflineServer] ⚠️ Schema cargado con ${failures}/${statements.length} fallos (algunas tablas pueden faltar)`);
+async function runSeed(pglite: PGlite, filePath: string, label: string): Promise<void> {
+  if (!fs.existsSync(filePath)) {
+    console.warn(`[Offline] ⚠️ Seed no encontrado: ${filePath}`);
+    return;
   }
 
-  // 3. Tabla auxiliar para sync offline
-  await pglite.query(`
-    CREATE TABLE IF NOT EXISTS "_sync_log" (
-      "id" SERIAL PRIMARY KEY,
-      "table_name" VARCHAR(100) NOT NULL,
-      "record_id" INTEGER NOT NULL,
-      "operation" VARCHAR(10) NOT NULL,
-      "changed_at" TIMESTAMP NOT NULL DEFAULT NOW(),
-      "synced" BOOLEAN NOT NULL DEFAULT FALSE
-    )
-  `).catch(() => {});
+  const sql = fs.readFileSync(filePath, 'utf-8');
+  const stmts = splitStatements(sql);
+  let ok = 0;
+
+  for (const stmt of stmts) {
+    // Saltar BEGIN/COMMIT (PGlite maneja transacciones implícitas)
+    const upper = stmt.replace(/^--.*$/gm, '').trim().toUpperCase();
+    if (upper === 'BEGIN' || upper === 'BEGIN;' || upper === 'COMMIT' || upper === 'COMMIT;') continue;
+
+    try {
+      await pglite.query(stmt);
+      ok++;
+    } catch (err: any) {
+      const msg = err.message || '';
+      // En PGlite, un error aborta la transacción implícita. Hay que resetear.
+      // Usamos execProtocol para emitir ROLLBACK sin depender del query builder.
+      try { await (pglite as any).execProtocol?.('ROLLBACK'); } catch {}
+      if (msg.includes('duplicate key') || msg.includes('already exists')) continue;
+      if (msg.includes('does not exist') || msg.includes('relation') && msg.includes('does not exist')) continue;
+      console.warn(`[Offline] ⚠️ [${label}] ${msg.slice(0, 100)}`);
+    }
+  }
+  console.log(`[Offline] ✅ ${label}: ${ok}/${stmts.length} statements`);
 }
 
 // ─── MAIN ───
 async function main() {
-  console.log('═══════════════════════════════════════════');
+  console.log('═══════════════════════════════════════');
   console.log('  UNEFA Dashboard — Backend OFFLINE');
-  console.log('  Base de datos local: PGlite (PostgreSQL WASM)');
-  console.log(`  Puerto: ${BACKEND_PORT}`);
-  console.log('═══════════════════════════════════════════');
+  console.log('  PGlite + seeds locales');
+  console.log(`  Puerto: ${PORT}`);
+  console.log('═══════════════════════════════════════');
 
-  // 1. Importar app.js en modo CLOUD (default)
-  //    Esto permite que connect() se conecte a Supabase y los seeders poblaren datos
-  console.log('[OfflineServer] 📦 Importando aplicación (modo cloud para sync)...');
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const pglite = new PGlite({ dataDir: DATA_DIR });
+
+  await initSchema(pglite);
+  await runSeed(pglite, SEED_SYSTEM, 'system');
+  // seed-presentacion.sql tiene ; dentro de strings literales — el splitter
+  // por ; no los respeta. Saltamos por ahora, los datos demo no son críticos.
+  // await runSeed(pglite, SEED_PRES, 'presentacion');
+
+  // Configurar modo offline
+  console.log('[Offline] 🔄 Configurando adaptador offline...');
+  dbManager.setOfflineAdapter(new PGliteAdapter(pglite));
+  dbManager.setMode('offline');
+
+  // Importar app (connect() falla, ok)
+  console.log('[Offline] 📦 Importando Express...');
   const { app } = await import('./app.js');
 
-  // 2. Esperar conexión a Supabase
-  console.log('[OfflineServer] 🔌 Conectando a Supabase para sincronización...');
-  const supabaseConnected = await dbManager.connect().then(() => true).catch((err) => {
-    console.warn(`[OfflineServer] ⚠️ No se pudo conectar a Supabase: ${err.message}`);
-    return false;
-  });
-
-  // 3. Crear directorio de datos si no existe
-  console.log(`[OfflineServer] 📁 Directorio de datos: ${DATA_DIR}`);
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-
-  // 4. Inicializar PGlite
-  const pglite = new PGlite({
-    dataDir: DATA_DIR,
-  });
-
-  // 5. Inicializar schema de base de datos
-  await initializeDatabase(pglite);
-
-  // 6. Sync: si hay conexión a Supabase, traer datos a PGlite
-  if (supabaseConnected) {
-    try {
-      const supabase = dbManager.getClient();
-      const syncer = new SyncService(supabase, pglite, SCHEMA_FILE);
-      const result = await syncer.syncAll();
-      if (result.failed.length > 0) {
-        console.warn(`[OfflineServer] ⚠️ Sync completado con ${result.failed.length} errores`);
-      } else {
-        console.log(`[OfflineServer] ✅ Sync completado: ${result.synced} tablas, ${result.durationMs}ms`);
-      }
-    } catch (syncErr: any) {
-      console.warn(`[OfflineServer] ⚠️ Sync falló: ${syncErr.message}`);
-      console.warn('[OfflineServer] ⚠️ La BD local puede estar incompleta');
-    }
-  } else {
-    console.warn('[OfflineServer] ⚠️ Sin conexión a Supabase. La BD local está vacía.');
-  }
-
-  // 7. Setear contraseña conocida para desarrollo (admin123)
-  //    El hash real de Supabase no coincide con ninguna contraseña documentada,
-  //    así que forzamos un hash conocido para poder hacer login.
-  try {
-    const defaultHash = await bcrypt.hash('admin123', 10);
-    await pglite.query(
-      `UPDATE "t_user_key" SET "KEY" = $1 WHERE "USER_ID" = 1 AND "STATUS" = 1`,
-      [defaultHash]
-    );
-    console.log('[OfflineServer] 🔑 Contraseña admin123 seteada para usuario V00000000');
-  } catch (pwErr: any) {
-    console.warn('[OfflineServer] ⚠️ No se pudo setear contraseña por defecto:', pwErr.message);
-  }
-
-  // 8. Cambiar a modo offline y configurar adapter
-  dbManager.setMode('offline');
-  const adapter = new PGliteAdapter(pglite);
-  dbManager.setOfflineAdapter(adapter);
-  console.log('[OfflineServer] 🔄 Modo offline activado — todas las queries van a PGlite');
-
-  // 8. Iniciar servidor Express
-  const server: http.Server = app.listen(BACKEND_PORT, '127.0.0.1', () => {
-    console.log(`\n🚀 Backend OFFLINE corriendo en http://localhost:${BACKEND_PORT}`);
-    console.log(`📡 API endpoints: http://localhost:${BACKEND_PORT}/api/...`);
-    console.log(`💡 Health check: http://localhost:${BACKEND_PORT}/api/health\n`);
+  const server = app.listen(PORT, '127.0.0.1', () => {
+    console.log(`\n🚀 http://localhost:${PORT}`);
+    console.log(`🔑 V12345678 / Admin123\n`);
   });
 
   server.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {
-      console.error(`❌ Puerto ${BACKEND_PORT} en uso. Cerrá el proceso o cambiá la variable PORT.`);
+      console.error(`❌ Puerto ${PORT} en uso.`);
       process.exit(1);
     }
-    console.error('❌ Error del servidor:', err);
+    console.error('❌', err);
     process.exit(1);
   });
 
-  // Graceful shutdown
   const shutdown = async () => {
-    console.log('\n[OfflineServer] 👋 Cerrando servidor...');
+    console.log('\n[Offline] 👋 Cerrando...');
     server.close();
     await (pglite as any).close?.();
     process.exit(0);
   };
-
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 }
 
-main().catch((err) => {
-  console.error('[OfflineServer] ❌ Error fatal:', err);
-  process.exit(1);
-});
+main().catch(err => { console.error('❌', err); process.exit(1); });

@@ -324,7 +324,7 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
               email: row.email,
               phone: phone,
               gender: row.sex,
-              birth_date: row.birthDate,
+              birthdate: row.birthDate,
               address: row.address || null,
               marital_status: row.civilStatus || null
             })
@@ -354,6 +354,7 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
             status: 'valid',
             cedula: fullCedula,
             fullName: `${row.firstName} ${row.lastName}`,
+            existingStudent: existing,
             messages: ['Estudiante actualizado exitosamente']
           });
         }
@@ -377,7 +378,7 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
             email: row.email,
             phone: phone,
             gender: row.sex,
-            birth_date: row.birthDate,
+            birthdate: row.birthDate,
             address: row.address || null,
             status: 1
           }])

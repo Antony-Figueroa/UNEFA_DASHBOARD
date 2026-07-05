@@ -141,6 +141,29 @@ export const tutorService = {
   getActivityLogs: async (params?: { limit?: number; offset?: number; type?: string; status?: string }): Promise<{ data: any[]; meta: { total: number } }> => {
     const response = await apiClient.get(`${API_URL}/activity-logs`, { params });
     return response.data;
+  },
+
+  // ── Visitas ───────────────────────────────────
+  getVisitsByPractice: async (practiceId: number, includeInactive?: boolean): Promise<any> => {
+    const params = includeInactive ? '?includeInactive=true' : '';
+    const response = await apiClient.get(`${API_URL}/visits/practice/${practiceId}${params}`);
+    return response.data;
+  },
+
+  createVisit: async (payload: any): Promise<any> => {
+    const response = await apiClient.post(`${API_URL}/visits`, payload);
+    return response.data;
+  },
+
+  // ── Activity Logs ─────────────────────────────
+  getActivityLogsByPractice: async (practiceId: number): Promise<any> => {
+    const response = await apiClient.get(`${API_URL}/activity-logs/practice/${practiceId}`);
+    return response.data;
+  },
+
+  createActivityLog: async (payload: any): Promise<any> => {
+    const response = await apiClient.post(`${API_URL}/activity-logs`, payload);
+    return response.data;
   }
 };
 

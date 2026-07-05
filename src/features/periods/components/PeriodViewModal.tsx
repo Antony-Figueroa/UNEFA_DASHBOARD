@@ -7,6 +7,7 @@ import { Periodo } from '../types';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
 import DualCalendar from './DualCalendar';
+import DisplayText from '../../../components/common/DisplayText';
 
 interface PeriodViewModalProps {
     isOpen: boolean;
@@ -34,7 +35,7 @@ export default function PeriodViewModal({ isOpen, onClose, periodo }: PeriodView
                             </span>
                         </div>
                         <h5 className="mb-1 font-bold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-                            {periodo.description}
+                            <DisplayText>{periodo.description}</DisplayText>
                         </h5>
                         <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
                             Cronograma académico y distribución de semanas para el lapso seleccionado.

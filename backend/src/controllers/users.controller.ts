@@ -97,8 +97,8 @@ export const createUser = async (req: AuthRequest, res: Response) => {
     // Normalizar texto antes de guardar
     const normalizedData = {
       ...userData,
-      name: sanitizeText(userData.name) ?? userData.name,
-      surname: sanitizeText(userData.surname) ?? userData.surname,
+      name: sanitizeText(userData.name) ?? '',
+      surname: sanitizeText(userData.surname) ?? '',
     };
     
     // Generar clave temporal aleatoria (8 caracteres)

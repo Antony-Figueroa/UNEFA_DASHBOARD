@@ -7,6 +7,7 @@
 import { motion } from "framer-motion";
 import { PeriodoRowData } from "../types";
 import { getSafeProgress } from "./periodUtils";
+import DisplayText from "../../../components/common/DisplayText";
 
 interface CurrentPeriodCardProps {
   period: PeriodoRowData;
@@ -95,7 +96,7 @@ const CurrentPeriodCard: React.FC<CurrentPeriodCardProps> = ({
 
         {/* Información principal */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2">{period.description}</h2>
+          <h2 className="text-2xl font-bold mb-2"><DisplayText>{period.description}</DisplayText></h2>
           <div className="flex flex-wrap items-center gap-4 text-sm text-white/80">
             <div className="flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,10 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { SearchInput } from "../../../../../components/ui/form/SearchInput";
-import { SkeletonLoader, Skeleton } from "../../../../../components/ui/skeleton";
-import ComponentCard from "../../../../../components/common/ComponentCard";
-import { ListIcon, FolderIcon, SearchIcon, ShieldCheckIcon } from "../../../../../icons";
-import { List } from "../../../../../features/lists/types";
-import { isProtectedList } from "../../../../../constants/systemLists";
+import { SearchInput } from "@/components/ui/form/SearchInput";
+import { SkeletonLoader, Skeleton } from "@/components/ui/skeleton";
+import ComponentCard from "@/components/common/ComponentCard";
+import { ListIcon, FolderIcon, SearchIcon, ShieldCheckIcon } from "@/icons";
+import { List } from "@/features/lists/types";
+import { isProtectedList } from "@/constants/systemLists";
 
 // ─── Variants de animación ─────────────────────────────────────────────
 const itemVariants = {

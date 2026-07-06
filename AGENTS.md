@@ -212,7 +212,6 @@ backend/src/
 | **security-questions** | Preguntas de seguridad | `/api/security-questions` | SecurityQuestionsForm |
 | **student-detail** | Detalle de estudiante | - | StudentDetailView |
 | **visits** | Visitas de seguimiento | `/api/visits` | VisitForm |
-| **config** | Configuración del sistema | `/api/dashboard-config` | DashboardConfigurator |
 
 
 ### Estructura de un Feature (Patrón Estándar)

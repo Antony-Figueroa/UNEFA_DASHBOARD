@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
-import PageMeta from "../../../../components/common/PageMeta";
-import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton } from "../../../../components/ui/skeleton";
-import { List, ListValue } from "../../../../features/lists/types";
-import * as listsService from "../../../../features/lists/services/listsService";
-import { ShieldCheckIcon } from "../../../../icons";
-import { Modal, ModalHeader, ModalBody } from "../../../../components/ui/modal";
-import { CrudForm, CrudFieldConfig, CrudFormValues } from "../../../../features/crudTemplate/components/CrudForm";
-import { UnifiedDialog } from "../../../../components/ui/dialog/UnifiedDialog";
-import { CONFIRM_MESSAGES, MODAL_CONFIG } from "../../../../components/ui/dialog/DialogConfig";
-import { useUnsavedChanges } from "../../../../hooks/useUnsavedChanges";
-import { useToast } from "../../../../context/toast";
-import { matchSearch } from "../../../../utils/searchNormalizer";
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import PageMeta from "@/components/common/PageMeta";
+import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton } from "@/components/ui/skeleton";
+import { List, ListValue } from "@/features/lists/types";
+import * as listsService from "@/features/lists/services/listsService";
+import { ShieldCheckIcon } from "@/icons";
+import { Modal, ModalHeader, ModalBody } from "@/components/ui/modal";
+import { CrudForm, CrudFieldConfig, CrudFormValues } from "@/features/crudTemplate/components/CrudForm";
+import { UnifiedDialog } from "@/components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, MODAL_CONFIG } from "@/components/ui/dialog/DialogConfig";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { useToast } from "@/context/toast";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import { matchSearch } from "@/utils/searchNormalizer";
 import ConfigLayout from "../../ConfigLayout";
 import ListSelector from "./components/ListSelector";
 import ListValueEditor from "./components/ListValueEditor";
@@ -31,18 +32,7 @@ const ListsConfiguration = () => {
   const [editingValue, setEditingValue] = useState<ListValue | null>(null);
   const [isValueDirty, setIsValueDirty] = useState(false);
 
-  // ─── Tipos y estado de confirmación ───────────────────────────────────
-  type ConfirmationInfo = {
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => Promise<void> | void;
-    confirmText?: string;
-    cancelText?: string;
-    variant?: "info" | "warning" | "error" | "success" | "confirm";
-  };
-
-  const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
+  const { confirmDialog, showConfirm, hideConfirm } = useConfirmDialog();
 
   const {
     showConfirmation: showValueExitConfirm,
@@ -107,11 +97,9 @@ const ListsConfiguration = () => {
     const config = isActivating
       ? CONFIRM_MESSAGES.activate('el valor')
       : CONFIRM_MESSAGES.deactivate('el valor');
-    setConfirmation({
-      isOpen: true,
+    showConfirm({
       title: config.title,
       message: `¿Estás seguro de que deseas ${isActivating ? 'activar' : 'desactivar'} el valor "${value.name}"?`,
-      confirmText: config.confirmLabel,
       variant: config.variant!,
       onConfirm: async () => {
         try {
@@ -120,7 +108,7 @@ const ListsConfiguration = () => {
         } catch (error) {
           console.error("Error toggling value status:", error);
         } finally {
-          setConfirmation(null);
+          hideConfirm();
         }
       },
     });
@@ -167,9 +155,9 @@ const ListsConfiguration = () => {
           <div>
             <SkeletonLoader isLoading={isLoading} skeleton={<TitleSkeleton />} id="lists-title">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
+                <h1 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
                   Gestión de Listas (Combos)
-                </h2>
+                </h1>
               </div>
               <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
                 Administra las opciones de los campos desplegables en todo el sistema.
@@ -243,18 +231,15 @@ const ListsConfiguration = () => {
       />
 
       {/* General Action Confirmation Dialog */}
-      {confirmation && (
-        <UnifiedDialog
-          isOpen={confirmation.isOpen}
-          onClose={() => setConfirmation(null)}
-          onConfirm={confirmation.onConfirm}
-          title={confirmation.title}
-          message={confirmation.message}
-          confirmLabel={confirmation.confirmText || "Confirmar"}
-          cancelLabel={confirmation.cancelText || "Cancelar"}
-          variant={confirmation.variant || "info"}
-        />
-      )}
+      <UnifiedDialog
+        isOpen={!!confirmDialog}
+        onClose={hideConfirm}
+        onConfirm={confirmDialog?.onConfirm || (() => {})}
+        title={confirmDialog?.title || ""}
+        message={confirmDialog?.message || ""}
+        confirmLabel="Confirmar"
+        variant={confirmDialog?.variant || "info"}
+      />
     </ConfigLayout>
   );
 };

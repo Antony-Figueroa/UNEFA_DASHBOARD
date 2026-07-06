@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import PageMeta from '../../../../components/common/PageMeta';
-import PageBreadcrumb from '../../../../components/common/PageBreadCrumb';
-import { landingConfigService } from '../../../../features/landing-config/services/landingConfigService';
-import { LandingConfig, LandingCareer, LandingFAQ } from '../../../../features/landing-config/types';
-import { useToast } from '../../../../context/toast';
-import { TOAST } from '../../../../components/ui/dialog/DialogConfig';
+import PageMeta from '@/components/common/PageMeta';
+import PageBreadcrumb from '@/components/common/PageBreadCrumb';
+import { landingConfigService } from '@/features/landing-config/services/landingConfigService';
+import { LandingConfig, LandingCareer, LandingFAQ } from '@/features/landing-config/types';
+import { useToast } from '@/context/toast';
+import { TOAST } from '@/components/ui/dialog/DialogConfig';
 import ConfigLayout from '../../ConfigLayout';
 import HeroSectionEditor from './components/HeroSectionEditor';
 import MissionVisionEditor from './components/MissionVisionEditor';

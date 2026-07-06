@@ -1,10 +1,10 @@
 import { useSearchParams } from "react-router";
 import ConfigLayout from "../../ConfigLayout";
-import PageMeta from "../../../../components/common/PageMeta";
-import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
+import PageMeta from "@/components/common/PageMeta";
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import InstitutionConfig from "./InstitutionConfig";
 import NucleiManager from "./NucleiManager";
-import GraceDefaultsSection from "../../../../features/academic-config/components/GraceDefaultsSection";
+import GraceDefaultsSection from "@/features/academic-config/components/GraceDefaultsSection";
 
 const TABS = [
   { id: "institution", label: "Institución" },

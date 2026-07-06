@@ -1,25 +1,26 @@
 import { useState, useEffect, useCallback } from "react";
-import { useConfirmDialog } from "../../../../hooks/useConfirmDialog";
-import PageMeta from "../../../../components/common/PageMeta";
-import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
-import ComponentCard from "../../../../components/common/ComponentCard";
-import Button from "../../../../components/ui/button/Button";
-import Badge from "../../../../components/ui/badge/Badge";
-import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
-import { CONFIRM_MESSAGES, MODAL_CONFIG } from "../../../../components/ui/dialog/DialogConfig";
-import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../../components/ui/modal";
-import MultiSelect from "../../../../components/form/MultiSelect";
-import apiClient from "../../../../api/apiClient";
-import { useToast } from "../../../../context/toast";
-import { TOAST } from "../../../../components/ui/dialog/DialogConfig";
-import { EditIcon, TrashIcon, PlusCircleIcon, EyeIcon } from "../../../../icons/actions";
-import AsyncActionButton from "../../../../components/common/AsyncActionButton";
-import CustomSelect from "../../../../components/form/CustomSelect";
-import type { MultiSelectOption } from "../../../../components/form/MultiSelect";
-import { getCareers } from "../../../../features/careers/services/careersService";
-import { unwrapData } from "../../../../api/crudServiceFactory";
-import * as listsService from "../../../../features/lists/services/listsService";
-import type { ListValue } from "../../../../features/lists/types";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import { inputClass, labelClass } from "@/features/config/components/sharedClasses";
+import PageMeta from "@/components/common/PageMeta";
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import ComponentCard from "@/components/common/ComponentCard";
+import Button from "@/components/ui/button/Button";
+import Badge from "@/components/ui/badge/Badge";
+import UnifiedDialog from "@/components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, MODAL_CONFIG } from "@/components/ui/dialog/DialogConfig";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/modal";
+import MultiSelect from "@/components/form/MultiSelect";
+import apiClient from "@/api/apiClient";
+import { useToast } from "@/context/toast";
+import { TOAST } from "@/components/ui/dialog/DialogConfig";
+import { EditIcon, TrashIcon, PlusCircleIcon, EyeIcon } from "@/icons/actions";
+import AsyncActionButton from "@/components/common/AsyncActionButton";
+import CustomSelect from "@/components/form/CustomSelect";
+import type { MultiSelectOption } from "@/components/form/MultiSelect";
+import { getCareers } from "@/features/careers/services/careersService";
+import { unwrapData } from "@/api/crudServiceFactory";
+import * as listsService from "@/features/lists/services/listsService";
+import type { ListValue } from "@/features/lists/types";
 
 /* ─── Types ─── */
 
@@ -81,14 +82,7 @@ export default function NucleiManager() {
   const [addValueInput, setAddValueInput] = useState("");
   const [savingNewValue, setSavingNewValue] = useState(false);
 
-  // Confirmation dialog
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-    variant?: "info" | "success" | "error" | "warning";
-  } | null>(null);
+  const { confirmDialog, showConfirm, hideConfirm } = useConfirmDialog();
 
   /* ─── Data Fetching ─── */
 
@@ -260,8 +254,7 @@ export default function NucleiManager() {
     const config = goingInactive
       ? CONFIRM_MESSAGES.deactivate('el núcleo')
       : CONFIRM_MESSAGES.activate('el núcleo');
-    setConfirmDialog({
-      isOpen: true,
+    showConfirm({
       title: config.title,
       message: `¿Estás seguro de que deseas ${goingInactive ? "desactivar" : "activar"} el núcleo "${nucleus.name}"?`,
       variant: (config.variant ?? 'warning') as 'info' | 'error' | 'warning' | 'success',
@@ -276,15 +269,14 @@ export default function NucleiManager() {
           addToast({ variant: "error", title: "Error", message: msg });
         } finally {
           setActionLoading(false);
-          setConfirmDialog(null);
+          hideConfirm();
         }
       },
     });
   };
 
   const handleDelete = (nucleus: Nucleus) => {
-    setConfirmDialog({
-      isOpen: true,
+    showConfirm({
       title: "Eliminar Núcleo",
       message: `¿Estás seguro de que deseas eliminar permanentemente el núcleo "${nucleus.name}"? Esta acción no se puede deshacer.`,
       variant: "error",
@@ -299,7 +291,7 @@ export default function NucleiManager() {
           addToast({ variant: "error", title: "Error al eliminar", message: msg });
         } finally {
           setActionLoading(false);
-          setConfirmDialog(null);
+          hideConfirm();
         }
       },
     });
@@ -322,10 +314,6 @@ export default function NucleiManager() {
       <span className="text-xs text-text-tertiary">—</span>
     );
   };
-
-  const inputClass =
-    "w-full px-3 py-2 text-sm rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors";
-  const labelClass = "block text-sm font-medium text-text-primary dark:text-text-emphasis mb-1.5";
 
   /* ─── Render ─── */
 
@@ -439,8 +427,8 @@ export default function NucleiManager() {
 
       {/* Confirmation Dialog */}
       <UnifiedDialog
-        isOpen={confirmDialog?.isOpen || false}
-        onClose={() => !actionLoading && setConfirmDialog(null)}
+        isOpen={!!confirmDialog}
+        onClose={hideConfirm}
         title={confirmDialog?.title || ""}
         message={confirmDialog?.message || ""}
         variant={confirmDialog?.variant || "info"}

@@ -1,20 +1,17 @@
 import { useState } from "react";
-import { useConfirmDialog } from "../../../../hooks/useConfirmDialog";
-import PageMeta from "../../../../components/common/PageMeta";
-import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
-import ComponentCard from "../../../../components/common/ComponentCard";
-import Button from "../../../../components/ui/button/Button";
-import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
-import { BulkImportModal } from "../../../../features/bulk-import/components/BulkImportModal";
-import { configService, SystemHealth } from "../../../../features/config/services/configService";
-import { useToast } from "../../../../context/toast";
-import { TOAST } from "../../../../components/ui/dialog/DialogConfig";
-import ConfigLayout from "../../ConfigLayout";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import PageMeta from "@/components/common/PageMeta";
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import ComponentCard from "@/components/common/ComponentCard";
+import Button from "@/components/ui/button/Button";
+import UnifiedDialog from "@/components/ui/dialog/UnifiedDialog";
+import { BulkImportModal } from "@/features/bulk-import/components/BulkImportModal";
+import { useSystemHealth } from "@/features/config/hooks/useSystemHealth";
+import ConfigLayout from "@/pages/Config/ConfigLayout";
 
 export default function MaintenancePage() {
-  const { addToast } = useToast();
+  const { health, checkHealth, clearOldLogs, syncData } = useSystemHealth();
   const [executing, setExecuting] = useState<string | null>(null);
-  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const { confirmDialog, showConfirm, hideConfirm } = useConfirmDialog();
 
@@ -25,11 +22,7 @@ export default function MaintenancePage() {
       onConfirm: async () => {
         setExecuting('clear-logs');
         try {
-          const result = await configService.clearOldLogs(90);
-          addToast({ variant: "success", title: "Logs limpiados", message: result.message || "Los logs se limpiaron correctamente." });
-        } catch (error) {
-          console.error('Error clearing logs:', error);
-          addToast(TOAST.deleteError('logs'));
+          await clearOldLogs(90);
         } finally {
           setExecuting(null);
           hideConfirm();
@@ -46,15 +39,7 @@ export default function MaintenancePage() {
       onConfirm: async () => {
         setExecuting('sync');
         try {
-          const result = await configService.syncData();
-          if (result.success) {
-            addToast({ variant: "success", title: "Sincronización completa", message: result.message });
-          } else {
-            addToast({ variant: "error", title: "Error de sincronización", message: "Ocurrió un error al sincronizar los datos." });
-          }
-        } catch (error) {
-          console.error('Error syncing data:', error);
-          addToast({ variant: "error", title: "Error de sincronización", message: "Ocurrió un error al sincronizar los datos." });
+          await syncData();
         } finally {
           setExecuting(null);
           hideConfirm();
@@ -66,19 +51,8 @@ export default function MaintenancePage() {
 
   const handleVerifySystem = async () => {
     setExecuting('verify');
-    try {
-      const health = await configService.getSystemHealth();
-      setSystemHealth(health);
-      if (health.status === 'healthy') {
-        addToast({ variant: "success", title: "Sistema saludable", message: "El sistema está funcionando correctamente." });
-      } else {
-        addToast({ variant: "error", title: "Problemas detectados", message: "Se encontraron problemas en el sistema. Revisá el estado para más detalles." });
-      }
-    } catch (error) {
-      addToast(TOAST.loadError());
-    } finally {
-      setExecuting(null);
-    }
+    await checkHealth();
+    setExecuting(null);
   };
 
   const actions = [
@@ -152,17 +126,17 @@ export default function MaintenancePage() {
         </div>
 
         {/* Health Status Banner */}
-        {systemHealth && (
+        {health && (
           <div className={`rounded-xl border p-4 ${
-            systemHealth.status === 'healthy'
+            health.status === 'healthy'
               ? 'border-success-300 bg-success-50 dark:bg-success-500/10'
               : 'border-error-300 bg-error-50 dark:bg-error-500/10'
           }`}>
             <div className="flex items-center gap-3">
               <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${
-                systemHealth.status === 'healthy' ? 'bg-success-100' : 'bg-error-100'
+                health.status === 'healthy' ? 'bg-success-100' : 'bg-error-100'
               }`}>
-                {systemHealth.status === 'healthy' ? (
+                {health.status === 'healthy' ? (
                   <svg className="w-5 h-5 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -174,12 +148,12 @@ export default function MaintenancePage() {
               </div>
               <div>
                 <p className={`font-medium ${
-                  systemHealth.status === 'healthy' ? 'text-success-700 dark:text-success-400' : 'text-error-700 dark:text-error-400'
+                  health.status === 'healthy' ? 'text-success-700 dark:text-success-400' : 'text-error-700 dark:text-error-400'
                 }`}>
-                  Sistema {systemHealth.status === 'healthy' ? 'Saludable' : 'Con Problemas'}
+                  Sistema {health.status === 'healthy' ? 'Saludable' : 'Con Problemas'}
                 </p>
                 <p className="text-xs text-text-tertiary">
-                  Base de datos: {systemHealth.checks.database.message} • {systemHealth.checks.logs.count} registros en logs
+                  Base de datos: {health.checks.database.message} • {health.checks.logs.count} registros en logs
                 </p>
               </div>
             </div>

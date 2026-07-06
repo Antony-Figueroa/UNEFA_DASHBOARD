@@ -1,12 +1,12 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { SearchInput } from "../../../../../components/ui/form/SearchInput";
-import { SkeletonLoader, Skeleton } from "../../../../../components/ui/skeleton";
-import ComponentCard from "../../../../../components/common/ComponentCard";
-import Button from "../../../../../components/ui/button/Button";
-import { PlusCircleIcon } from "../../../../../icons/actions";
-import { PencilIcon, ListIcon, FolderIcon, SearchIcon, CheckIcon, CloseLineIcon, ShieldCheckIcon } from "../../../../../icons";
-import { List, ListValue } from "../../../../../features/lists/types";
-import { isProtectedList } from "../../../../../constants/systemLists";
+import { SearchInput } from "@/components/ui/form/SearchInput";
+import { SkeletonLoader, Skeleton } from "@/components/ui/skeleton";
+import ComponentCard from "@/components/common/ComponentCard";
+import Button from "@/components/ui/button/Button";
+import { PlusCircleIcon } from "@/icons/actions";
+import { PencilIcon, ListIcon, FolderIcon, SearchIcon, CheckIcon, CloseLineIcon, ShieldCheckIcon } from "@/icons";
+import { List, ListValue } from "@/features/lists/types";
+import { isProtectedList } from "@/constants/systemLists";
 
 // ─── Variants de animación ─────────────────────────────────────────────
 const itemVariants = {

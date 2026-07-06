@@ -15,15 +15,15 @@ const FirstLogin = lazy(() => import("../pages/AuthPages/FirstLogin"));
 const PasswordRecovery = lazy(() => import("../pages/AuthPages/PasswordRecovery"));
 const UserProfiles = lazy(() => import("../pages/UserProfiles"));
 const UserManagementPage = lazy(() => import("../pages/Config/sections/admin/UsersPage"));
-const ListsConfiguration = lazy(() => import("../pages/Config/sections/system/ListsPage"));
-const AuditoriaPage = lazy(() => import("../pages/Config/sections/admin/AuditPage"));
-const RolesPermissions = lazy(() => import("../pages/Config/sections/admin/RolesPage"));
-const SystemSettings = lazy(() => import("../pages/Config/sections/system/ParametersPage"));
-const Maintenance = lazy(() => import("../pages/Config/sections/system/MaintenancePage"));
-const Backups = lazy(() => import("../pages/Config/sections/system/BackupsPage"));
-const LandingConfigPage = lazy(() => import("../pages/Config/sections/customize/LandingPage"));
-const ReminderConfigPage = lazy(() => import("../pages/Config/sections/customize/RemindersPage"));
-const OrganizationConfig = lazy(() => import("../pages/Config/sections/system/OrganizationPage"));
+const ListsPage = lazy(() => import("../pages/Config/sections/system/ListsPage"));
+const AuditPage = lazy(() => import("../pages/Config/sections/admin/AuditPage"));
+const RolesPermissionsPage = lazy(() => import("../pages/Config/sections/admin/RolesPage"));
+const ParametersPage = lazy(() => import("../pages/Config/sections/system/ParametersPage"));
+const MaintenancePage = lazy(() => import("../pages/Config/sections/system/MaintenancePage"));
+const BackupsPage = lazy(() => import("../pages/Config/sections/system/BackupsPage"));
+const LandingConfigPage = lazy(() => import("../pages/Config/sections/customize/LandingConfigPage"));
+const RemindersPage = lazy(() => import("../pages/Config/sections/customize/RemindersPage"));
+const OrganizationPage = lazy(() => import("../pages/Config/sections/system/OrganizationPage"));
 const EvaluationConfigPage = lazy(() => import("../pages/Config/sections/system/EvaluationConfigPage"));
 
 const DashboardConfigurator = lazy(() => import("../pages/Config/sections/customize/DashboardPage"));
@@ -314,7 +314,7 @@ export const AppRoutes = () => {
               path="/configure/lists"
               element={
                 <ProtectedRoute requiredPermissions={['lists:view']}>
-                  <ListsConfiguration />
+                  <ListsPage />
                 </ProtectedRoute>
               }
             />
@@ -322,7 +322,7 @@ export const AppRoutes = () => {
               path="/configure/auditoria"
               element={
                 <ProtectedRoute requiredPermissions={['activity-logs:view']}>
-                  <AuditoriaPage />
+                  <AuditPage />
                 </ProtectedRoute>
               }
             />
@@ -330,7 +330,7 @@ export const AppRoutes = () => {
               path="/configure/roles"
               element={
                 <ProtectedRoute requiredPermissions={['roles:manage']}>
-                  <RolesPermissions />
+                  <RolesPermissionsPage />
                 </ProtectedRoute>
               }
             />
@@ -338,7 +338,7 @@ export const AppRoutes = () => {
               path="/configure/settings"
               element={
                 <ProtectedRoute requiredPermissions={['config:view']}>
-                  <SystemSettings />
+                  <ParametersPage />
                 </ProtectedRoute>
               }
             />
@@ -346,7 +346,7 @@ export const AppRoutes = () => {
               path="/configure/maintenance"
               element={
                 <ProtectedRoute requiredPermissions={['config:view']}>
-                  <Maintenance />
+                  <MaintenancePage />
                 </ProtectedRoute>
               }
             />
@@ -354,7 +354,7 @@ export const AppRoutes = () => {
               path="/configure/backups"
               element={
                 <ProtectedRoute requiredPermissions={['backups:view']}>
-                  <Backups />
+                  <BackupsPage />
                 </ProtectedRoute>
               }
             />
@@ -370,7 +370,7 @@ export const AppRoutes = () => {
               path="/configure/organizacion"
               element={
                 <ProtectedRoute requiredPermissions={['config:view']}>
-                  <OrganizationConfig />
+                  <OrganizationPage />
                 </ProtectedRoute>
               }
             />
@@ -386,7 +386,7 @@ export const AppRoutes = () => {
               path="/configure/reminders"
               element={
                 <ProtectedRoute requiredPermissions={['config:view']}>
-                  <ReminderConfigPage />
+                  <RemindersPage />
                 </ProtectedRoute>
               }
             />

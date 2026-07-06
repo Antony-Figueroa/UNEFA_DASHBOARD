@@ -1,24 +1,25 @@
 import { useState, useEffect } from "react";
-import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
-import PageMeta from "../../../../components/common/PageMeta";
-import ComponentCard from "../../../../components/common/ComponentCard";
-import Button from "../../../../components/ui/button/Button";
-import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../../../components/ui/skeleton";
-import { PlusCircleIcon, RefreshIcon, TrashIcon } from "../../../../icons/actions";
-import UserTable from "../../../../features/users/components/UserTable";
-import UserModal from "../../../../features/users/components/UserModal";
-import { useUsers } from "../../../../features/users/hooks/useUsers";
-import { useLists } from "../../../../features/lists/hooks/useLists";
-import { useDebounce } from "../../../../hooks/useDebounce";
-import { useAuth } from "../../../../context/auth";
-import { useToast } from "../../../../context/toast";
-import { User, UserRowData, CreateUserPayload, UpdateUserPayload } from "../../../../features/users/types";
-import { rolesService } from "../../../../features/roles/services/rolesService";
-import { resetUserPassword } from "../../../../features/users/services/userService";
-import UserDetailModal from "../../../../features/users/components/UserDetailModal";
-import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
-import { CONFIRM_MESSAGES, DialogVariant } from "../../../../components/ui/dialog/DialogConfig";
-import { toTitleCase } from "../../../../utils/textFormat";
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import PageMeta from "@/components/common/PageMeta";
+import ComponentCard from "@/components/common/ComponentCard";
+import Button from "@/components/ui/button/Button";
+import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "@/components/ui/skeleton";
+import { PlusCircleIcon, RefreshIcon, TrashIcon } from "@/icons/actions";
+import UserTable from "@/features/users/components/UserTable";
+import UserModal from "@/features/users/components/UserModal";
+import { useUsers } from "@/features/users/hooks/useUsers";
+import { useLists } from "@/features/lists/hooks/useLists";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import { useAuth } from "@/context/auth";
+import { useToast } from "@/context/toast";
+import { User, UserRowData, CreateUserPayload, UpdateUserPayload } from "@/features/users/types";
+import { rolesService } from "@/features/roles/services/rolesService";
+import { resetUserPassword } from "@/features/users/services/userService";
+import UserDetailModal from "@/features/users/components/UserDetailModal";
+import UnifiedDialog from "@/components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, DialogVariant } from "@/components/ui/dialog/DialogConfig";
+import { toTitleCase } from "@/utils/textFormat";
 import ConfigLayout from "../../ConfigLayout";
 
 /**
@@ -55,16 +56,7 @@ const UserManagementPage = () => {
     2: "ASISTENTE"
   });
 
-  // Diálogo de confirmación
-  const [confirmation, setConfirmation] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string | React.ReactNode;
-    onConfirm: () => void;
-    confirmText: string;
-    variant: DialogVariant;
-  } | null>(null);
-
+  const { confirmDialog, showConfirm, hideConfirm } = useConfirmDialog();
 
   const { fetchMultipleLists } = useLists();
   
@@ -159,8 +151,7 @@ const UserManagementPage = () => {
       ? CONFIRM_MESSAGES.deactivate('al usuario')
       : CONFIRM_MESSAGES.activate('al usuario');
 
-    setConfirmation({
-      isOpen: true,
+    showConfirm({
       title: config.title,
       message: `¿Estás seguro de que deseas ${isDeactivating ? 'desactivar' : 'restaurar'} al usuario "${user.name} ${user.surname}"?`,
       onConfirm: async () => {
@@ -169,32 +160,19 @@ const UserManagementPage = () => {
         } catch (error) {
           console.error("[UserManagementPage] Error toggling status:", error);
         } finally {
-          setConfirmation(null);
+          hideConfirm();
         }
       },
-      confirmText: config.confirmLabel,
+      confirmLabel: config.confirmLabel,
       variant: config.variant as DialogVariant,
     });
   };
 
   const handleResetPassword = (user: User) => {
-    setConfirmation({
-      isOpen: true,
+    showConfirm({
       title: "Resetear Clave",
-      message: (
-        <>
-          <p>Se va a resetear la clave del siguiente usuario:</p>
-          <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm dark:bg-gray-800">
-            <p><strong>Nombre:</strong> {user.name} {user.surname}</p>
-            <p><strong>Cédula:</strong> {user.userCi}</p>
-            <p><strong>Correo:</strong> {user.email}</p>
-          </div>
-          <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
-            Se generará una clave temporal de 8 caracteres y se enviará por correo al usuario.
-            El usuario deberá cambiar la clave en su próximo inicio de sesión.
-          </p>
-        </>
-      ),
+      // ponytail: string message avoids type gymnastics with useConfirmDialog
+      message: `Se va a resetear la clave de ${user.name} ${user.surname} (${user.email}). Se generará una clave temporal y se enviará por correo.`,
       onConfirm: async () => {
         try {
           await resetUserPassword(user.id);
@@ -207,11 +185,11 @@ const UserManagementPage = () => {
           const msg = error?.response?.data?.message || "Error al resetear la clave";
           addToast({ variant: "error", title: "Error", message: msg });
         } finally {
-          setConfirmation(null);
+          hideConfirm();
         }
       },
-      confirmText: "Resetear Clave",
-      variant: "warning" as any,
+      confirmLabel: "Resetear Clave",
+      variant: "warning",
     });
   };
 
@@ -226,8 +204,7 @@ const UserManagementPage = () => {
       ? CONFIRM_MESSAGES.deactivate('los usuarios')
       : CONFIRM_MESSAGES.activate('los usuarios');
     
-    setConfirmation({
-      isOpen: true,
+    showConfirm({
       title: isDeactivating ? 'Confirmar desactivación masiva' : 'Confirmar restauración masiva',
       message: `¿Estás seguro de que deseas ${isDeactivating ? 'desactivar' : 'restaurar'} los ${selectedIds.length} usuarios seleccionados?`,
       onConfirm: async () => {
@@ -237,10 +214,10 @@ const UserManagementPage = () => {
         } catch (e) {
           console.error("[UserManagementPage] Error en acción masiva:", e);
         } finally {
-          setConfirmation(null);
+          hideConfirm();
         }
       },
-      confirmText: isDeactivating ? 'Desactivar Todos' : 'Restaurar Todos',
+      confirmLabel: isDeactivating ? 'Desactivar Todos' : 'Restaurar Todos',
       variant: config.variant as DialogVariant,
     });
   };
@@ -301,9 +278,9 @@ const UserManagementPage = () => {
           <div>
             <SkeletonLoader isLoading={status === "loading" && users.length === 0} skeleton={<TitleSkeleton />} id="users-title">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
+                <h1 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
                   Administración de Usuarios
-                </h2>
+                </h1>
               </div>
               <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
                 Gestiona los accesos y roles de los usuarios del sistema.
@@ -419,13 +396,13 @@ const UserManagementPage = () => {
 
       {/* Diálogo de confirmación */}
       <UnifiedDialog
-        isOpen={!!confirmation}
-        onClose={() => setConfirmation(null)}
-        title={confirmation?.title || ""}
-        message={confirmation?.message || ""}
-        onConfirm={confirmation?.onConfirm || (() => {})}
-        confirmLabel={confirmation?.confirmText || "Confirmar"}
-        variant={confirmation?.variant || "info"}
+        isOpen={!!confirmDialog}
+        onClose={hideConfirm}
+        title={confirmDialog?.title || ""}
+        message={confirmDialog?.message || ""}
+        onConfirm={confirmDialog?.onConfirm || (() => {})}
+        confirmLabel={confirmDialog?.confirmLabel || "Confirmar"}
+        variant={confirmDialog?.variant || "info"}
         isLoading={loadingAction}
       />
     </ConfigLayout>

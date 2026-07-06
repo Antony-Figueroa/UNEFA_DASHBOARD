@@ -42,7 +42,7 @@ export const routeComponents: Record<
   "/configure/settings": lazyPreload(() => import("../pages/Config/sections/system/ParametersPage")),
   "/configure/maintenance": lazyPreload(() => import("../pages/Config/sections/system/MaintenancePage")),
   "/configure/backups": lazyPreload(() => import("../pages/Config/sections/system/BackupsPage")),
-  "/configure/landing": lazyPreload(() => import("../pages/Config/sections/customize/LandingPage")),
+  "/configure/landing": lazyPreload(() => import("../pages/Config/sections/customize/LandingConfigPage")),
   "/configure/organizacion": lazyPreload(() => import("../pages/Config/sections/system/OrganizationPage")),
   "/configure/evaluacion": lazyPreload(() => import("../pages/Config/sections/system/EvaluationConfigPage")),
   "/configure/academic": lazyPreload(() => import("../pages/Config/sections/system/OrganizationPage")),

@@ -8,13 +8,15 @@ export interface ConfirmDialogState {
   message: string;
   onConfirm: () => void | Promise<void>;
   variant?: ConfirmDialogVariant;
+  confirmLabel?: string;
+  cancelLabel?: string;
 }
 
 export function useConfirmDialog() {
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
 
   const showConfirm = useCallback(
-    (opts: { title: string; message: string; onConfirm: () => void | Promise<void>; variant?: ConfirmDialogVariant }) => {
+    (opts: { title: string; message: string; onConfirm: () => void | Promise<void>; variant?: ConfirmDialogVariant; confirmLabel?: string; cancelLabel?: string }) => {
       setConfirmDialog({ isOpen: true, ...opts });
     },
     []

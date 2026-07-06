@@ -5,13 +5,13 @@ import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
 import ComponentCard from "../../../../components/common/ComponentCard";
 import Button from "../../../../components/ui/button/Button";
 import Badge from "../../../../components/ui/badge/Badge";
+import { SkeletonLoader } from "../../../../components/ui/skeleton";
 import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
-import { configService, ConfigItem, CategorizedConfig } from "../../../../features/config/services/configService";
-import { useToast } from "../../../../context/toast";
-import { TOAST } from "../../../../components/ui/dialog/DialogConfig";
+import { useSystemConfig } from "../../../../features/config/hooks/useSystemConfig";
+import type { ConfigItem } from "../../../../features/config/types";
 import ConfigLayout from "../../ConfigLayout";
 
-// ponytail: lookup table en vez de 6 condicionales inline con SVGs repetidos
+// ponytail: lookup table > icon lib import for 7 entries
 const CATEGORY_ICONS: Record<string, string> = {
   Seguridad: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
   Contraseñas: "M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z",
@@ -23,34 +23,18 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default function ParametersPage() {
-  const { addToast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState<CategorizedConfig[]>([]);
+  const { config, loading, fetchConfig, updateConfig } = useSystemConfig();
   const [activeCategory, setActiveCategory] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [localChanges, setLocalChanges] = useState<Record<string, string | number | boolean>>({});
   const { confirmDialog, showConfirm, hideConfirm } = useConfirmDialog();
 
-  const fetchConfig = async () => {
-    setLoading(true);
-    try {
-      const configRes = await configService.getConfig();
-      setConfig(configRes.categorized);
-
-      if (configRes.categorized.length > 0) {
-        setActiveCategory(configRes.categorized[0].category);
-      }
-    } catch (error) {
-      console.error('Error fetching config:', error);
-      addToast(TOAST.loadError());
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ponytail: init activeCategory on first load, hook handles fetch on mount
   useEffect(() => {
-    fetchConfig();
-  }, []);
+    if (config.length > 0) {
+      setActiveCategory((prev) => prev || config[0].category);
+    }
+  }, [config]);
 
   const updateLocalConfig = (key: string, value: string | number | boolean) => {
     setLocalChanges((prev) => ({ ...prev, [key]: value }));
@@ -69,18 +53,12 @@ export default function ParametersPage() {
       title: "Guardar Configuración",
       message: "¿Estás seguro de guardar los cambios en la configuración del sistema?",
       onConfirm: async () => {
-        try {
-          await configService.updateConfig(localChanges);
+        const success = await updateConfig(localChanges);
+        if (success) {
           setHasChanges(false);
           setLocalChanges({});
-          addToast({ variant: "success", title: "Configuración guardada", message: "La configuración se guardó correctamente." });
-          await fetchConfig();
-        } catch (error) {
-          console.error('Error saving config:', error);
-          addToast(TOAST.updateError('configuración'));
-        } finally {
-          hideConfirm();
         }
+        hideConfirm();
       },
       variant: "info",
     });
@@ -133,13 +111,13 @@ export default function ParametersPage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
           <ComponentCard title="Categorías" className="lg:col-span-1">
-            {loading ? (
-              <div className="space-y-2 animate-pulse">
+            <SkeletonLoader isLoading={loading} skeleton={
+              <div className="space-y-2">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                  <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
                 ))}
               </div>
-            ) : (
+            } id="categories-skeleton">
               <nav className="space-y-1">
                 {config.map((cat) => (
                   <button
@@ -165,12 +143,12 @@ export default function ParametersPage() {
                   </button>
                 ))}
               </nav>
-            )}
+            </SkeletonLoader>
           </ComponentCard>
 
           <ComponentCard title={`Configuración de ${activeCategory}`} className="lg:col-span-3">
-            {loading ? (
-              <div className="space-y-4 animate-pulse">
+            <SkeletonLoader isLoading={loading} skeleton={
+              <div className="space-y-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="p-4 rounded-lg border border-border-light dark:border-white/10">
                     <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2"></div>
@@ -178,7 +156,8 @@ export default function ParametersPage() {
                   </div>
                 ))}
               </div>
-            ) : activeCategoryItems.length > 0 ? (
+            } id="config-panel-skeleton">
+              {activeCategoryItems.length > 0 ? (
               <div className="space-y-4">
                 {activeCategoryItems.map((item) => {
                   const effectiveValue = getEffectiveValue(item);
@@ -242,11 +221,12 @@ export default function ParametersPage() {
                   );
                 })}
               </div>
-            ) : (
-              <div className="text-center py-8 text-text-tertiary">
-                No hay configuraciones para esta categoría
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-8 text-text-tertiary">
+                  No hay configuraciones para esta categoría
+                </div>
+              )}
+            </SkeletonLoader>
           </ComponentCard>
         </div>
       </div>

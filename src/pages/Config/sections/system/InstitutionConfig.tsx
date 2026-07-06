@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
-import ComponentCard from "../../../../components/common/ComponentCard";
-import Button from "../../../../components/ui/button/Button";
-import apiClient from "../../../../api/apiClient";
-import { useToast } from "../../../../context/toast";
-import { TOAST } from "../../../../components/ui/dialog/DialogConfig";
-import { EditIcon } from "../../../../icons/actions";
-import * as listsService from "../../../../features/lists/services/listsService";
-import type { ListValue } from "../../../../features/lists/types";
-import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
+import { inputClass, labelClass } from "@/features/config/components/sharedClasses";
+import ComponentCard from "@/components/common/ComponentCard";
+import { SkeletonLoader } from "@/components/ui/skeleton";
+import Button from "@/components/ui/button/Button";
+import apiClient from "@/api/apiClient";
+import { useToast } from "@/context/toast";
+import { TOAST } from "@/components/ui/dialog/DialogConfig";
+import { EditIcon } from "@/icons/actions";
+import * as listsService from "@/features/lists/services/listsService";
+import type { ListValue } from "@/features/lists/types";
+import UnifiedDialog from "@/components/ui/dialog/UnifiedDialog";
 
 interface InstitutionData {
   legal_name: string;
@@ -187,11 +189,6 @@ export default function InstitutionConfig() {
     fetchInstitution();
   };
 
-  const inputClass =
-    "w-full px-3 py-2 text-sm rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors";
-
-  const labelClass = "block text-sm font-medium text-text-primary dark:text-text-emphasis mb-1.5";
-
   return (
     <>
       <div className="space-y-6 animate-fadeIn">
@@ -217,8 +214,8 @@ export default function InstitutionConfig() {
           )}
         </div>
 
-        {loading ? (
-          <div className="space-y-4 animate-pulse">
+        <SkeletonLoader isLoading={loading} skeleton={
+          <div className="space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="p-4 rounded-lg border border-border-light dark:border-white/10">
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2" />
@@ -226,7 +223,7 @@ export default function InstitutionConfig() {
               </div>
             ))}
           </div>
-        ) : (
+        } id="institution-skeleton">
           <>
             {/* Información General */}
             <ComponentCard title="Información General">
@@ -387,7 +384,7 @@ export default function InstitutionConfig() {
               </div>
             )}
           </>
-            )}
+        </SkeletonLoader>
       </div>
 
       {/* Modal para agregar nuevo valor a lista */}

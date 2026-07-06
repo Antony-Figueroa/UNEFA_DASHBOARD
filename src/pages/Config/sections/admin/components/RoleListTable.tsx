@@ -1,15 +1,15 @@
-import Button from "../../../../../components/ui/button/Button";
-import Badge from "../../../../../components/ui/badge/Badge";
+import Button from "@/components/ui/button/Button";
+import Badge from "@/components/ui/badge/Badge";
 import {
   Table,
   TableBody,
   TableCell,
   TableHeader,
   TableRow,
-} from "../../../../../components/ui/table";
-import { TableSkeleton } from "../../../../../components/ui/skeleton";
-import type { Role } from "../../../../../features/roles/services/rolesService";
-import type { Permission } from "../../../../../features/permissions/services/permissionService";
+} from "@/components/ui/table";
+import { TableSkeleton } from "@/components/ui/skeleton";
+import type { Role } from "@/features/roles/services/rolesService";
+import type { Permission } from "@/features/permissions/services/permissionService";
 
 interface RoleWithPermissions extends Role {
   permissionIds: number[];

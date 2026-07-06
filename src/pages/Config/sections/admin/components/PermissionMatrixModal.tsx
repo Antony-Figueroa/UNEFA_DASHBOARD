@@ -1,25 +1,25 @@
 import { useState, useEffect, useMemo } from "react";
-import Button from "../../../../../components/ui/button/Button";
-import Badge from "../../../../../components/ui/badge/Badge";
+import Button from "@/components/ui/button/Button";
+import Badge from "@/components/ui/badge/Badge";
 import {
   Modal,
   ModalHeader,
   ModalBody,
   ModalFooter,
-} from "../../../../../components/ui/modal";
-import InputField from "../../../../../components/form/input/InputField";
-import UnifiedDialog from "../../../../../components/ui/dialog/UnifiedDialog";
+} from "@/components/ui/modal";
+import InputField from "@/components/form/input/InputField";
+import UnifiedDialog from "@/components/ui/dialog/UnifiedDialog";
 import {
   rolesService,
   type Role,
-} from "../../../../../features/roles/services/rolesService";
+} from "@/features/roles/services/rolesService";
 import {
   permissionService,
   type Permission,
   type GroupedPermissions,
-} from "../../../../../features/permissions/services/permissionService";
-import { useToast } from "../../../../../context/toast";
-import { TOAST } from "../../../../../components/ui/dialog/DialogConfig";
+} from "@/features/permissions/services/permissionService";
+import { useToast } from "@/context/toast";
+import { TOAST } from "@/components/ui/dialog/DialogConfig";
 
 interface RoleWithPermissions extends Role {
   permissionIds: number[];

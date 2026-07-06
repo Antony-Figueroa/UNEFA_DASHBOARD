@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
-import { useConfirmDialog } from "../../../../hooks/useConfirmDialog";
-import PageMeta from "../../../../components/common/PageMeta";
-import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
-import ComponentCard from "../../../../components/common/ComponentCard";
-import Button from "../../../../components/ui/button/Button";
-import Badge from "../../../../components/ui/badge/Badge";
-import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
-import { useToast } from "../../../../context/toast";
-import { TOAST } from "../../../../components/ui/dialog/DialogConfig";
-import apiClient from "../../../../api/apiClient";
-import evaluationService from "../../../../features/evaluations/services/evaluationService";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import PageMeta from "@/components/common/PageMeta";
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import ComponentCard from "@/components/common/ComponentCard";
+import Button from "@/components/ui/button/Button";
+import Badge from "@/components/ui/badge/Badge";
+import { SkeletonLoader } from "@/components/ui/skeleton";
+import UnifiedDialog from "@/components/ui/dialog/UnifiedDialog";
+import { useToast } from "@/context/toast";
+import { TOAST } from "@/components/ui/dialog/DialogConfig";
+import apiClient from "@/api/apiClient";
+import evaluationService from "@/features/evaluations/services/evaluationService";
 import ConfigLayout from "../../ConfigLayout";
-import type { SystemEvaluationConfig, EvaluationCriteria } from "../../../../features/evaluations/types";
+import type { SystemEvaluationConfig, EvaluationCriteria } from "@/features/evaluations/types";
 
 const WEIGHT_FIELDS = [
   { key: 'INSTITUCIONAL' as const, label: 'Institucional', description: 'Peso de la evaluación institucional en la nota final' },
@@ -27,8 +28,11 @@ export default function EvaluationConfigPage() {
   const [local, setLocal] = useState<SystemEvaluationConfig | null>(null);
   const { confirmDialog, showConfirm, hideConfirm } = useConfirmDialog();
 
-  const hasChanges = local !== null && config !== null &&
-    JSON.stringify(local) !== JSON.stringify(config);
+  const hasChanges = local !== null && config !== null && (
+    local.committeeMinMembers !== config.committeeMinMembers ||
+    JSON.stringify(local.weights) !== JSON.stringify(config.weights) ||
+    JSON.stringify(local.score) !== JSON.stringify(config.score)
+  );
 
   // ── Criteria editor state ────────────────────────────────────────────────
   const [criteriaList, setCriteriaList] = useState<EvaluationCriteria[]>([]);
@@ -187,14 +191,18 @@ export default function EvaluationConfigPage() {
         <PageBreadcrumb pageTitle="Configuración de Evaluación" />
         <div className="space-y-4 animate-fadeIn">
           <ComponentCard title="Cargando...">
-            <div className="space-y-4 animate-pulse">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="p-4 rounded-lg border border-border-light dark:border-white/10">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2"></div>
-                  <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                </div>
-              ))}
-            </div>
+            <SkeletonLoader isLoading={true} skeleton={
+              <div className="space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="p-4 rounded-lg border border-border-light dark:border-white/10">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2"></div>
+                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            } id="evaluation-page-skeleton">
+              <div />
+            </SkeletonLoader>
           </ComponentCard>
         </div>
       </ConfigLayout>
@@ -367,13 +375,13 @@ export default function EvaluationConfigPage() {
             Descripciones de cada criterio por tipo de evaluador. Los cambios se guardan en batch.
           </p>
 
-          {criteriaLoading ? (
-            <div className="space-y-3 animate-pulse">
+          <SkeletonLoader isLoading={criteriaLoading} skeleton={
+            <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 rounded" />
               ))}
             </div>
-          ) : (
+          } id="criteria-skeleton">
             <div className="space-y-3">
               {(['INSTITUCIONAL', 'ACADEMICO', 'COMITE'] as const).map(type => {
                 const items = criteriaByType(type);
@@ -431,7 +439,7 @@ export default function EvaluationConfigPage() {
                 </div>
               )}
             </div>
-          )}
+          </SkeletonLoader>
         </ComponentCard>
 
         {/* ⚠️ Nota sobre cambios que afectan evaluaciones existentes */}

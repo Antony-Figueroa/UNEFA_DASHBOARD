@@ -1,8 +1,8 @@
 import React from 'react';
-import ComponentCard from '../../../../../components/common/ComponentCard';
-import Button from '../../../../../components/ui/button/Button';
+import ComponentCard from '@/components/common/ComponentCard';
+import Button from '@/components/ui/button/Button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LandingFAQ } from '../../../../../features/landing-config/types';
+import { LandingFAQ } from '@/features/landing-config/types';
 
 interface FaqEditorProps {
   faqs: LandingFAQ[];

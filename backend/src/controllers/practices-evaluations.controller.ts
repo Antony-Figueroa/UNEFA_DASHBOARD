@@ -58,7 +58,8 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         ),
         t_internship_type (
           INTERNSHIP_TYPE_ID,
-          NAME
+          NAME,
+          HOURS_REQUIRED
         )
       `)
       .eq('STATUS', 1)
@@ -229,6 +230,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         startDate: p.START_DATE || '',
         endDate: p.END_DATE || '',
         totalHours,
+        hoursRequired: (p as any).t_internship_type?.HOURS_REQUIRED ?? 360,
         evaluationStatus: evalStatus,
         evaluations: {
           INSTITUCIONAL: statusMap['INSTITUCIONAL'],

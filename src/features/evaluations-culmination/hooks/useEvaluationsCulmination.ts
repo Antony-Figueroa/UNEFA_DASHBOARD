@@ -156,6 +156,11 @@ export interface UseEvaluationsCulminationReturn {
   auditHistoryData: AuditEntry[];
   auditHistoryLoading: boolean;
   handleViewAudit: (practiceId: number) => void;
+
+  /** Override de horas */
+  overrideTarget: { practice: PracticeWithEvaluations; reason: string } | null;
+  setOverrideTarget: (target: { practice: PracticeWithEvaluations; reason: string } | null) => void;
+  handleConfirmOverride: () => void;
 }
 
 export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => {
@@ -224,6 +229,11 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
   const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
   const [auditHistoryData, setAuditHistoryData] = useState<AuditEntry[]>([]);
   const [auditHistoryLoading, setAuditHistoryLoading] = useState(false);
+
+  const [overrideTarget, setOverrideTarget] = useState<{
+    practice: PracticeWithEvaluations;
+    reason: string;
+  } | null>(null);
 
   // ─── Data Fetching ──────────────────────────────────────
   const fetchPractices = useCallback(async () => {
@@ -338,22 +348,30 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
 
   // ─── Culmination Actions ────────────────────────────────
   const handleApprove = useCallback((practice: PracticeWithEvaluations) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Aprobar Culminación',
-      message: `¿Está seguro de aprobar la culminación de prácticas de ${practice.studentName}?`,
-      onConfirm: async () => {
-        try {
-          await evaluationsCulminationService.approveCulmination(practice.practiceId);
-          addToast(TOAST.updated(resourceName));
-          fetchPractices();
-        } catch (error) {
-          addToast(TOAST.updateError(resourceName));
-        } finally {
-          setConfirmDialog(null);
-        }
-      },
-    });
+    const hasEnoughHours = practice.totalHours >= practice.hoursRequired;
+
+    if (hasEnoughHours) {
+      // Normal flow — direct confirmation
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Aprobar Culminación',
+        message: `¿Está seguro de aprobar la culminación de prácticas de ${practice.studentName}?`,
+        onConfirm: async () => {
+          try {
+            await evaluationsCulminationService.approveCulmination(practice.practiceId);
+            addToast(TOAST.updated(resourceName));
+            fetchPractices();
+          } catch (error) {
+            addToast(TOAST.updateError(resourceName));
+          } finally {
+            setConfirmDialog(null);
+          }
+        },
+      });
+    } else {
+      // Hours deficit — show override dialog
+      setOverrideTarget({ practice, reason: '' });
+    }
   }, [fetchPractices]);
 
   const handleGenerateCertificate = useCallback((practice: PracticeWithEvaluations) => {
@@ -683,6 +701,23 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     setConfirmDialog(null);
   }, []);
 
+  // ─── Hours Override ─────────────────────────────────────
+  const handleConfirmOverride = useCallback(async () => {
+    if (!overrideTarget || !overrideTarget.reason.trim()) return;
+    try {
+      await evaluationsCulminationService.approveCulmination(overrideTarget.practice.practiceId, {
+        overrideHours: true,
+        overrideReason: overrideTarget.reason.trim(),
+      });
+      addToast(TOAST.updated(resourceName));
+      fetchPractices();
+    } catch (error) {
+      addToast(TOAST.updateError(resourceName));
+    } finally {
+      setOverrideTarget(null);
+    }
+  }, [overrideTarget, fetchPractices]);
+
   return {
     practices,
     meta,
@@ -775,6 +810,10 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     auditHistoryData,
     auditHistoryLoading,
     handleViewAudit,
+    // Override
+    overrideTarget,
+    setOverrideTarget,
+    handleConfirmOverride,
   };
 };
 

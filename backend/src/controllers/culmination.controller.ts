@@ -257,6 +257,7 @@ export const approveCulmination = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
     const { practiceId } = req.params;
+    const { overrideHours, overrideReason } = req.body as { overrideHours?: boolean; overrideReason?: string };
 
     // 1. Obtener práctica con tipo y estado de evaluación
     const { data: practice, error: fetchError } = await supabase
@@ -298,12 +299,19 @@ export const approveCulmination = async (req: Request, res: Response) => {
 
     const totalHours = (visits || []).reduce((sum: number, v: any) => sum + (v.HOURS_WORKED || 0), 0);
 
-    // 3. Validar horas mínimas
+    // 3. Validar horas mínimas (con opción de override)
     if (totalHours < hoursRequired) {
-      res.status(400).json({
-        message: `El estudiante no ha completado las horas requeridas (${totalHours}/${hoursRequired})`
-      });
-      return;
+      if (!overrideHours || !overrideReason?.trim()) {
+        res.status(400).json({
+          message: `El estudiante no ha completado las horas requeridas (${totalHours}/${hoursRequired})`,
+          code: 'HOURS_INSUFFICIENT',
+          totalHours,
+          hoursRequired
+        });
+        return;
+      }
+      // Override approved — log the exception
+      console.log(`[Culmination] Hours override approved for practice ${practiceId}: ${totalHours}/${hoursRequired}. Reason: ${overrideReason.trim()}`);
     }
 
     // 4. Validar que las evaluaciones estén completas

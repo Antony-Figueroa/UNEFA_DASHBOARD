@@ -132,8 +132,11 @@ export const evaluationsCulminationService = {
   /**
    * Aprueba la culminación de una práctica
    */
-  approveCulmination: async (practiceId: number): Promise<ApproveResponse> => {
-    const response = await apiClient.post(`/culmination/${practiceId}/approve`);
+  approveCulmination: async (practiceId: number, options?: { overrideHours?: boolean; overrideReason?: string }): Promise<ApproveResponse> => {
+    const response = await apiClient.post(`/culmination/${practiceId}/approve`, {
+      overrideHours: options?.overrideHours,
+      overrideReason: options?.overrideReason,
+    });
     return response.data;
   },
 

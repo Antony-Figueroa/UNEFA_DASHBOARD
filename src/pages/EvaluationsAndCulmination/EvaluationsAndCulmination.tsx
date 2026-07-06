@@ -368,6 +368,11 @@ export default function EvaluationsAndCulminationPage() {
                         Aprobar
                       </Button>
                     )}
+                    {practice.culminationStatus === 'pending' && practice.result !== 'approved' && (
+                      <Button size="sm" variant="outline" onClick={() => hook.handleMarkFailed(practice.practiceId, practice.studentName)} className="text-error-600 dark:text-error-400 border-error-300 dark:border-error-700 hover:bg-error-50 dark:hover:bg-error-900/20">
+                        Reprobar
+                      </Button>
+                    )}
                     {practice.culminationStatus === 'approved' && (
                       <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)}>
                         Certificar
@@ -413,6 +418,11 @@ export default function EvaluationsAndCulminationPage() {
               </Button>
               {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
                 <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>Aprobar</Button>
+              )}
+              {practice.culminationStatus === 'pending' && practice.result !== 'approved' && (
+                <Button size="sm" variant="outline" onClick={() => hook.handleMarkFailed(practice.practiceId, practice.studentName)} className="text-error-600 dark:text-error-400 border-error-300 dark:border-error-700 hover:bg-error-50 dark:hover:bg-error-900/20">
+                  Reprobar
+                </Button>
               )}
               {practice.culminationStatus === 'approved' && (
                 <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)}>Certificar</Button>
@@ -551,6 +561,37 @@ export default function EvaluationsAndCulminationPage() {
         confirmLabel="Confirmar"
         variant="info"
       />
+
+      {/* Hours override dialog */}
+      <UnifiedDialog
+        isOpen={!!hook.overrideTarget}
+        onClose={() => hook.setOverrideTarget(null)}
+        onConfirm={hook.handleConfirmOverride}
+        title="Aprobar con Excepción de Horas"
+        confirmLabel="Aprobar con Excepción"
+        variant="warning"
+      >
+        <div className="space-y-4">
+          <div className="bg-warning-50 dark:bg-warning-500/10 border border-warning-300 dark:border-warning-700 rounded-lg p-3">
+            <p className="text-sm text-warning-700 dark:text-warning-400">
+              <strong>Horas insuficientes:</strong> El estudiante tiene {hook.overrideTarget?.practice.totalHours}h de {hook.overrideTarget?.practice.hoursRequired}h requeridas.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-primary dark:text-text-emphasis mb-1">
+              Motivo de la excepción *
+            </label>
+            <textarea
+              value={hook.overrideTarget?.reason || ''}
+              onChange={(e) => hook.overrideTarget && hook.setOverrideTarget({ ...hook.overrideTarget, reason: e.target.value })}
+              placeholder="Ingrese el motivo por el cual se aprueba con menos horas..."
+              rows={3}
+              className="w-full px-3 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-brand-500"
+              autoFocus
+            />
+          </div>
+        </div>
+      </UnifiedDialog>
 
       {/* Descongelar — input de razón */}
       <UnifiedDialog

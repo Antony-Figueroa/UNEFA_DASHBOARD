@@ -79,7 +79,10 @@ export interface PracticeWithEvaluations {
   
   /** Horas trabajadas */
   totalHours: number;
-  
+
+  /** Horas requeridas según el tipo de práctica */
+  hoursRequired: number;
+
   /** Estado de evaluaciones */
   evaluationStatus: EvaluationStatus;
   evaluations: EvaluationState;

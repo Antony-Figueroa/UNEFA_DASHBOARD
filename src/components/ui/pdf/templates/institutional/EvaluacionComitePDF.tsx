@@ -181,11 +181,11 @@ export function EvaluacionComitePDF({ data, textos }: Props) {
               <Text style={styles.jurorTitle}>
                 JURADO N° {idx + 1} — {ev.evaluatorName || `Miembro del Comité`}
               </Text>
-              {ev.observations && (
-                <Text style={{ fontSize: 10, marginBottom: 6, fontStyle: 'italic' }}>
-                  Observaciones: {ev.observations}
-                </Text>
-              )}
+{ev.observations && (
+                  <Text style={{ fontSize: 10, marginBottom: 6 }}>
+                    Observaciones: {ev.observations}
+                  </Text>
+                )}
               {renderCriterios(ev)}
             </View>
           ))}

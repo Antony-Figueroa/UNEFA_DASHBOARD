@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
+import CustomInput from '../../../components/ui/form/input/CustomInput';
 
 import { useToast } from '@/context/toast';
 import { TOAST } from '@/components/ui/dialog/DialogConfig';
@@ -126,11 +127,13 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
   const config = DOCUMENT_CONFIG[documentType];
   const isPracticeDoc = PRACTICE_DOCS.has(documentType);
   const isTutorDoc = TUTOR_DOCS.has(documentType);
+  const isSolicitudInstitucion = documentType === 'solicitud-institucion';
 
   const [recordId, setRecordId] = useState('');
   const [loading, setLoading] = useState(false);
   const [pdfData, setPdfData] = useState<any>(null);
   const [textos, setTextos] = useState<Record<string, string>>({});
+  const [editableTextos, setEditableTextos] = useState<Record<string, string>>({});
   const [showPdf, setShowPdf] = useState(false);
 
   // Selection state for summary card
@@ -144,8 +147,16 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
       setRecordId('');
       setSelectedRecord(null);
       setShowRecordList(false);
+      setEditableTextos({});
     }
   }, [isOpen, documentType]);
+
+  // Initialize editable texts when textos are loaded
+  useEffect(() => {
+    if (Object.keys(textos).length > 0) {
+      setEditableTextos({...textos});
+    }
+  }, [textos]);
 
   const handleSelectPractice = (item: PracticeSearchResult | TutorSearchResult | EligibleStudent) => {
     const practice = item as PracticeSearchResult;
@@ -192,12 +203,21 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
     }
   };
 
+  const handleEditableTextChange = (key: string, value: string) => {
+    setEditableTextos(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
   const renderTemplate = useCallback(
     (data: any) => {
       const Tpl = DOCUMENT_CONFIG[documentType]?.pdfTemplate;
-      return Tpl ? <Tpl data={data} textos={textos} /> : <></>;
+      // Use editableTextos if available, otherwise use original textos
+      const textosToUse = Object.keys(editableTextos).length > 0 ? editableTextos : textos;
+      return Tpl ? <Tpl data={data} textos={textosToUse} /> : <></>;
     },
-    [documentType, textos]
+    [documentType, textos, editableTextos]
   );
 
   const searchSubtitle = isPracticeDoc
@@ -312,30 +332,84 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
               : undefined
           }
           extraSidebarContent={
-            selectedRecord ? (
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10">
-                  <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
-                    CI / Rif
-                  </label>
-                  <p className="text-xs font-semibold text-text-primary dark:text-white/90">
-                    {isPracticeDoc
-                      ? (selectedRecord as PracticeSearchResult).studentCi
-                      : (selectedRecord as TutorSearchResult).ci}
-                  </p>
-                </div>
-                {isPracticeDoc && (selectedRecord as PracticeSearchResult).careerName && (
+            <div className="space-y-4">
+              {/* Info básica del registro */}
+              {selectedRecord && (
+                <div className="space-y-3">
                   <div className="p-3 rounded-lg bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10">
                     <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
-                      Carrera
+                      CI / Rif
                     </label>
                     <p className="text-xs font-semibold text-text-primary dark:text-white/90">
-                      {(selectedRecord as PracticeSearchResult).careerName}
+                      {isPracticeDoc
+                        ? (selectedRecord as PracticeSearchResult).studentCi
+                        : (selectedRecord as TutorSearchResult).ci}
                     </p>
                   </div>
-                )}
-              </div>
-            ) : undefined
+                  {isPracticeDoc && (selectedRecord as PracticeSearchResult).careerName && (
+                    <div className="p-3 rounded-lg bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10">
+                      <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                        Carrera
+                      </label>
+                      <p className="text-xs font-semibold text-text-primary dark:text-white/90">
+                        {(selectedRecord as PracticeSearchResult).careerName}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Opciones de configuración para Solicitud de Institución */}
+              {isSolicitudInstitucion && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-brand-500 mb-1">
+                    <div className="h-4 w-4 flex items-center justify-center">⚙️</div>
+                    <h5 className="font-bold uppercase tracking-wider text-[10px]">Configuración del Documento</h5>
+                  </div>
+
+                  <CustomInput
+                    label="Destinatario (Atte:)"
+                    placeholder="Nombre del destinatario"
+                    value={editableTextos.destinatario || ''}
+                    onChange={(e) => handleEditableTextChange('destinatario', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Cargo Destinatario"
+                    placeholder="Cargo del destinatario"
+                    value={editableTextos.cargo || ''}
+                    onChange={(e) => handleEditableTextChange('cargo', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Nombre de la Firma"
+                    placeholder="Nombre de quien firma"
+                    value={editableTextos.firmaNombre || ''}
+                    onChange={(e) => handleEditableTextChange('firmaNombre', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Cargo de la Firma"
+                    placeholder="Cargo de quien firma"
+                    value={editableTextos.firmaCargo || ''}
+                    onChange={(e) => handleEditableTextChange('firmaCargo', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Orden Administrativa"
+                    placeholder="Según Orden administrativa..."
+                    value={editableTextos.firmaOrden || ''}
+                    onChange={(e) => handleEditableTextChange('firmaOrden', e.target.value)}
+                  />
+
+                  <div className="p-3 rounded-lg sm:rounded-xl bg-info-500/5 border border-info-500/10">
+                    <p className="text-[10px] sm:text-[11px] text-info-600 dark:text-info-400 leading-relaxed">
+                      <span className="font-bold">Nota:</span> Los cambios se reflejan automáticamente en la vista previa del documento.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           }
         />
       )}

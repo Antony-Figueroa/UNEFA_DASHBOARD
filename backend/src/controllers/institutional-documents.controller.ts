@@ -171,8 +171,8 @@ export const getDataSolicitudInstitucion = async (req: Request, res: Response) =
         } : null,
         periodo: periodo ? {
           description: periodo.DESCRIPTION || '',
-          startDate: periodo.period_start || '',
-          endDate: periodo.period_end || '',
+          startDate: periodo.START_DATE || '',
+          endDate: periodo.END_DATE || '',
         } : null,
       },
     });
@@ -413,8 +413,8 @@ export const getDataEvaluacionTutorAcademico = async (req: Request, res: Respons
         } : null,
         periodo: periodo ? {
           description: periodo.DESCRIPTION || '',
-          startDate: periodo.period_start || '',
-          endDate: periodo.period_end || '',
+          startDate: periodo.START_DATE || '',
+          endDate: periodo.END_DATE || '',
         } : null,
         evaluacion: evalAcad || null,
       },
@@ -498,8 +498,8 @@ export const getDataEvaluacionComite = async (req: Request, res: Response) => {
         } : null,
         periodo: periodo ? {
           description: periodo.DESCRIPTION || '',
-          startDate: periodo.period_start || '',
-          endDate: periodo.period_end || '',
+          startDate: periodo.START_DATE || '',
+          endDate: periodo.END_DATE || '',
         } : null,
         coordinadorPP: formatCoord(coordinadorPP),
         coordinadorCarrera: formatCoord(coordinadorCarrera),

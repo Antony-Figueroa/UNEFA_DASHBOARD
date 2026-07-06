@@ -97,7 +97,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     if (q.length < 2) { setSearchResults([]); return; }
     setSearching(true);
     try {
-      const res = await apiClient.get('/api/persons/search', { params: { q } });
+      const res = await apiClient.get('/persons/search', { params: { q } });
       setSearchResults(res.data.data || []);
     } catch { /* silent fail */ }
     setSearching(false);

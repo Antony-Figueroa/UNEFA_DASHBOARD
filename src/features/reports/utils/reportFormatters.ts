@@ -1,16 +1,31 @@
 export function parseCI(ci: string | null | undefined): { prefix: string; number: string } {
   if (!ci) return { prefix: '', number: '' };
   const parts = ci.split('-');
+  // Limpiar cualquier caracter que no sea dígito del número
+  const cleanNumber = (parts[1] || ci).replace(/\D/g, '');
   return {
     prefix: parts[0] || 'V',
-    number: parts[1] || ci
+    number: cleanNumber
   };
+}
+
+// Formatea el número con separadores de miles
+function formatNumberWithDots(num: string): string {
+  const parts = [];
+  for (let i = num.length - 1, j = 0; i >= 0; i--, j++) {
+    if (j > 0 && j % 3 === 0) {
+      parts.unshift('.');
+    }
+    parts.unshift(num[i]);
+  }
+  return parts.join('');
 }
 
 export function formatCI(ci: string | null | undefined): string {
   if (!ci) return '';
   const { prefix, number } = parseCI(ci);
-  return `${prefix}/E - ${number}`;
+  const formattedNumber = formatNumberWithDots(number);
+  return `${prefix}-${formattedNumber}`;
 }
 
 export function getTutorTitle(titulo: string | null): string {

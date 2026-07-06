@@ -34,6 +34,8 @@ export interface EvaluationSummary {
   score: number;
   evaluatorName: string;
   evaluationId?: number;
+  // ponytail: backend envía members para COMITE, modal los necesita
+  members?: { memberIndex: number; evaluatorName: string; score: number; evaluationId: number }[];
 }
 
 /** Estado de evaluaciones por tipo */

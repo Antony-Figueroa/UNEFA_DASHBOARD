@@ -579,6 +579,7 @@ export default function EvaluationsAndCulminationPage() {
           practiceId={hook.selectedPracticeForEval.practiceId}
           evaluatorType={hook.selectedEvaluatorType}
           evaluationId={hook.editingEvaluationId}
+          existingComiteMembers={hook.selectedPracticeForEval.evaluations.COMITE.members || []}
           onSuccess={hook.handleEvaluationSuccess}
         />
       )}

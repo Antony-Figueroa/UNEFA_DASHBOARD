@@ -17,7 +17,7 @@ import { EmptyState } from '../../components/ui/table/EmptyState';
 import { TableSkeleton } from '../../components/ui/skeleton';
 import UnifiedDialog from '../../components/ui/dialog/UnifiedDialog';
 import { DownloadIcon, CheckCircleIcon, EyeIcon } from '../../icons';
-import { ThreeDotsIcon } from '../../icons/actions';
+import { ActionDropdown } from '../../features/evaluations-culmination/components/ActionDropdown';
 import { StudentDetailModal } from '../../features/student-detail/components/StudentDetailModal';
 import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
 import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
@@ -196,67 +196,17 @@ export default function EvaluationsAndCulminationPage() {
                 </TableCell>
                 {!hook.isReadOnly && (
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center">
-                      <div className="relative group">
-                        <button className="p-1.5 rounded-lg hover:bg-bg-subtle dark:hover:bg-gray-700 transition-colors">
-                           <ThreeDotsIcon className="w-4 h-4 text-text-tertiary" />
-                        </button>
-                        {/* Dropdown menu */}
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-border-default dark:border-border-dark rounded-lg shadow-lg z-10 hidden group-hover:block">
-                          <div className="py-1">
-                            <button
-                              onClick={() => hook.handleWithdraw(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Retirar
-                            </button>
-                            <button
-                              onClick={() => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Reclasificar Retiro
-                            </button>
-                            <button
-                              onClick={() => hook.handleMarkFailed(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-error-600 dark:text-error-400 hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Marcar Reprobado
-                            </button>
-                            <button
-                              onClick={() => hook.handleUnfreeze(practice.practiceId)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Descongelar
-                            </button>
-                            <button
-                              onClick={() => hook.handleGrantExtension(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Otorgar Extensión
-                            </button>
-                            <button
-                              onClick={() => hook.handleRevokeExtension(practice.practiceId)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Revocar Extensión
-                            </button>
-                            <button
-                              onClick={() => hook.handleOpenCommittee(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Gestionar Comité
-                            </button>
-                            <div className="border-t border-border-default dark:border-border-dark" />
-                            <button
-                              onClick={() => hook.handleViewAudit(practice.practiceId)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Ver Auditoría
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <ActionDropdown actions={[
+                      { label: 'Retirar', onClick: () => hook.handleWithdraw(practice.practiceId, practice.studentName) },
+                      { label: 'Reclasificar Retiro', onClick: () => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName) },
+                      { label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' },
+                      { label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) },
+                      { label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) },
+                      { label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) },
+                      { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
+                      { separator: true, label: '', onClick: () => {} },
+                      { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                    ]} />
                   </TableCell>
                 )}
               </TableRow>

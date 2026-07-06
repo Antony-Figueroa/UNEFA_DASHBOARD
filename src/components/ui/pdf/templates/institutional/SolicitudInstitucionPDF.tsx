@@ -1,5 +1,5 @@
 import { Text, View, StyleSheet, Document, Page, Image } from '@react-pdf/renderer';
-import { formatNombreCompleto, formatFecha, getFechaParts, parseCI } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatFecha, getFechaParts, formatCI } from '@/features/reports/utils/reportFormatters';
 
 const styles = StyleSheet.create({
   page: {
@@ -160,15 +160,9 @@ interface Props {
 
 export function SolicitudInstitucionPDF({ data, textos }: Props) {
   const fechaHoy = getFechaParts(null);
-  
-  // Formatear CI usando el prefijo original de la base de datos
-  const formatCIForDocument = (ci: string): string => {
-    const { prefix, number } = parseCI(ci);
-    return `${prefix}-${number}`;
-  };
 
   const estudianteNombre = formatNombreCompleto(data.estudiante);
-  const estudianteCI = formatCIForDocument(data.estudiante.ci);
+  const estudianteCI = formatCI(data.estudiante.ci);
   const carreraNombre = data.carrera.nombre;
   const lapsoInicio = data.periodo ? formatFecha(data.periodo.startDate) : '________________________';
   const lapsoFin = data.periodo ? formatFecha(data.periodo.endDate) : '________________________';

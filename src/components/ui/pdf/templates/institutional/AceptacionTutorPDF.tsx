@@ -1,5 +1,5 @@
 import { Text, View, StyleSheet, Document, Page, Image } from '@react-pdf/renderer';
-import { formatNombreCompleto, formatFecha, getFechaParts, parseCI } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatFecha, getFechaParts, formatCI } from '@/features/reports/utils/reportFormatters';
 
 const styles = StyleSheet.create({
   page: {
@@ -127,21 +127,16 @@ const getTutorTitle = (titulo: string | null): string => {
   return 'Maestr';
 };
 
-const formatCIForDocument = (ci: string): string => {
-  const { prefix, number } = parseCI(ci);
-  return `${prefix}-${number}`;
-};
-
 export function AceptacionTutorPDF({ data }: Props) {
   const fechaHoy = getFechaParts(null);
   
   const tutorTitle = data.tutor ? getTutorTitle(data.tutor.titulo) : 'Maestr';
   const tutorName = data.tutor ? formatNombreCompleto(data.tutor) : '';
-  const tutorCI = data.tutor ? formatCIForDocument(data.tutor.ci) : '';
+  const tutorCI = data.tutor ? formatCI(data.tutor.ci) : '';
   const tutorTelefono = data.tutor?.telefono || '';
   
   const estudianteNombre = formatNombreCompleto(data.estudiante);
-  const estudianteCI = formatCIForDocument(data.estudiante.ci);
+  const estudianteCI = formatCI(data.estudiante.ci);
   const carreraNombre = data.carrera.nombre;
 
   const currentDate = new Date();

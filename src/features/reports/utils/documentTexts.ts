@@ -13,11 +13,35 @@ Teléfono: {{tutorTelefono}}`,
     firma: '___________________________________\n{{tutorTitulo}} {{tutorNombreCompleto}}\nTutor(a) Académico(a)\nC.I.: {{tutorCi}}\nTeléfono: {{tutorTelefono}}',
   },
   solicitud_institucion: {
+    encabezado: `REPÚBLICA BOLIVARIANA DE VENEZUELA
+MINISTERIO DEL PODER POPULAR PARA LA DEFENSA
+UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA
+DE LA FUERZA ARMADA NACIONAL BOLIVARIANA
+VICERRECTORADO REGIÓN LOS LLANOS
+NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA
+
+{{lugar}}, {{dia}} de {{mes}} del {{anio}}
+
+Señores:
+{{institucionNombre}}
+Presente
+Atte: {{destinatario}}
+{{cargo}}`,
+    cuerpo: `Tengo el agrado de dirigirme a usted, en la oportunidad de presentarle a el Bachiller {{estudianteNombreCompleto}}, titular de la cédula de identidad ({{estudianteCi}}), estudiante de la carrera {{carrera}}, el mencionado Bachiller está autorizado para realizar trámites en la Organización que usted representa, relacionados con la posibilidad de desarrollar en su práctica profesional un proyecto con un mínimo de 480 horas laborales, comprendidas desde {{lapsoInicio}} hasta {{lapsoFin}}.
+
+Es necesario señalar que, el estudiante que obtenga de usted la autorización para realizar la práctica profesional, reciba de la organización la carta de aceptación, plan de trabajo, resumen curricular del tutor institucional, los recursos y el asesoramiento requerido para el cumplimiento de las actividades asignadas. Así mismo, es importante destacar que la Organización se compromete a entregar la evaluación realizada por el tutor institucional y el certificado de culminación el último día de las prácticas.
+
+Por otra parte, el bachiller será supervisado durante dos (2) oportunidades por un docente, debidamente autorizado por la UNEFA, Anexo a esta carta, se facilita el perfil del egresado del estudiante.
+
+Agradeciendo la atención sobre este particular, quedo de usted.
+
+Atentamente,`,
     destinatario: 'MSc. Marbelys del Valle Rivero',
     cargo: 'Decana del Núcleo Portuguesa',
-    orden: 'Según Orden administrativa N° 0005 de fecha 18 de marzo de 2022',
-    cuerpo: 'Yo, {{estudianteNombreCompleto}}, titular de la C.I. {{estudianteCi}}, cursante de la carrera {{carrera}}, ante usted ocurro para solicitar formalmente la asignación de la institución {{institucionNombre}} para la realización de mis Prácticas Profesionales correspondientes al lapso académico {{lapsoInicio}} - {{lapsoFin}}.',
-    firma: '___________________________________\nMSc. Marbelys del Valle Rivero\nDecana del Núcleo Portuguesa\nSegún Orden administrativa N° 0005 de fecha 18 de marzo de 2022',
+    firmaNombre: 'MSc. Marbelys del Valle Rivero',
+    firmaCargo: 'Decana del Núcleo Portuguesa',
+    firmaOrden: 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022',
+    firma: '___________________________________\n{{firmaNombre}}\n{{firmaCargo}}\n{{firmaOrden}}',
   },
   carta_postulacion: {
     cuerpo: `CIUDADANO:

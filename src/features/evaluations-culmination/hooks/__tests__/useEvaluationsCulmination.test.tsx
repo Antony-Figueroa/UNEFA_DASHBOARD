@@ -177,7 +177,7 @@ describe('useEvaluationsCulmination', () => {
         evaluations: {
           INSTITUCIONAL: { completed: true, score: 18, evaluatorName: 'Dr. Smith' },
           ACADEMICO: { completed: true, score: 16, evaluatorName: 'Prof. Garcia' },
-          COMITE: { completed: true, score: 17, evaluatorName: 'Comite', members: [{ memberIndex: 1, evaluatorName: 'Comite', score: 17, evaluationId: 1 }] },
+          COMITE: { completed: true, score: 17, evaluatorName: 'Comite' },
         },
         finalGrade: 17,
         certificateNumber: 'CERT-001',
@@ -283,7 +283,7 @@ describe('useEvaluationsCulmination', () => {
         evaluations: {
           INSTITUCIONAL: { completed: true, score: 18, evaluatorName: 'Dr. Smith' },
           ACADEMICO: { completed: true, score: 16, evaluatorName: 'Prof. Garcia' },
-          COMITE: { completed: true, score: 17, evaluatorName: 'Comite', members: [{ memberIndex: 1, evaluatorName: 'Comite', score: 17, evaluationId: 1 }] },
+          COMITE: { completed: true, score: 17, evaluatorName: 'Comite' },
         },
         finalGrade: 17,
       },

@@ -97,7 +97,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     if (q.length < 2) { setSearchResults([]); return; }
     setSearching(true);
     try {
-      const res = await apiClient.get('/persons/search', { params: { q } });
+      const res = await apiClient.get('/api/persons/search', { params: { q } });
       setSearchResults(res.data.data || []);
     } catch { /* silent fail */ }
     setSearching(false);
@@ -227,17 +227,6 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       loadExistingEvaluation(evaluationId);
     }
   }, [isOpen, evaluationId, criteria, dataLoaded, isComiteMode]);
-
-  // Auto-fill tutor info para INSTITUCIONAL/ACADEMICO en creación nueva
-  useEffect(() => {
-    if (!isOpen || isComiteMode || evaluationId || !practiceId) return;
-    evaluationService.getPracticeTutorInfo(practiceId, evaluatorType).then(info => {
-      if (info) {
-        setValue('evaluatorName', info.name);
-        setValue('evaluatorCi', info.ci);
-      }
-    });
-  }, [isOpen, practiceId, evaluatorType, evaluationId, isComiteMode]);
 
   // Inicializar scores para el miembro activo en comité, o para creación normal
   useEffect(() => {

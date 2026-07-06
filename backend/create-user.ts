@@ -2,9 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 
-const url = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!key) throw new Error('Set SUPABASE_SERVICE_ROLE_KEY env var before running');
+const url = 'http://127.0.0.1:54321';
+const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.***REMOVED***';
 const supabase = createClient(url, key, { auth: { persistSession: false } });
 
 async function main() {

@@ -4,7 +4,7 @@ import { formatNombreCompleto, formatFecha, getFechaParts, parseCI } from '@/fea
 const styles = StyleSheet.create({
   page: {
     paddingTop: 20,
-    paddingBottom: 30,
+    paddingBottom: 40,
     paddingHorizontal: 45,
     fontFamily: 'Helvetica',
     fontSize: 11,
@@ -123,6 +123,29 @@ const styles = StyleSheet.create({
     color: '#000000',
     textAlign: 'center',
   },
+  footerContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 45,
+    right: 45,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  qrCode: {
+    width: 50,
+    height: 50,
+  },
+  validationText: {
+    fontSize: 9,
+    color: '#4a5568',
+    textAlign: 'center',
+  },
+  pageNumber: {
+    fontSize: 9,
+    color: '#4a5568',
+    textAlign: 'right',
+  },
 });
 
 interface Props {
@@ -153,6 +176,15 @@ export function SolicitudInstitucionPDF({ data, textos }: Props) {
   const firmaNombre = textos.firmaNombre || 'MSc. Marbelys del Valle Rivero';
   const firmaCargo = textos.firmaCargo || 'Decana del Núcleo Portuguesa';
   const firmaOrden = textos.firmaOrden || textos.orden || 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022';
+
+  const currentDate = new Date();
+  const formattedDate = currentDate.toLocaleDateString('es-VE', {
+    year: 'numeric',
+    month: 'long',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   return (
     <Document title="SOLICITUD DE INSTITUCIÓN">
@@ -216,6 +248,19 @@ export function SolicitudInstitucionPDF({ data, textos }: Props) {
           <Text style={styles.centeredFirmaNombre}>{firmaNombre}</Text>
           <Text style={styles.centeredFirmaCargo}>{firmaCargo}</Text>
           <Text style={styles.centeredFirmaOrden}>{firmaOrden}</Text>
+        </View>
+        
+        {/* Footer */}
+        <View style={styles.footerContainer}>
+          <Image 
+            src="/pdfs-docs/qr.png" 
+            style={styles.qrCode} 
+          />
+          <View style={{ flex: 1, marginHorizontal: 20 }}>
+            <Text style={styles.validationText}>Generado el {formattedDate}.</Text>
+            <Text style={styles.validationText}>Documento validado digitalmente por la Coordinación de Prácticas Profesionales</Text>
+          </View>
+          <Text style={styles.pageNumber}>Página 1 de 1</Text>
         </View>
       </Page>
     </Document>

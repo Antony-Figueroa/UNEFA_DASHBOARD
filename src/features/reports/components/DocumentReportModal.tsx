@@ -132,6 +132,8 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
   const [recordId, setRecordId] = useState('');
   const [loading, setLoading] = useState(false);
   const [pdfData, setPdfData] = useState<any>(null);
+  const [editableData, setEditableData] = useState<any>(null);
+  const [renderKey, setRenderKey] = useState(0);
   const [textos, setTextos] = useState<Record<string, string>>({});
   const [editableTextos, setEditableTextos] = useState<Record<string, string>>({});
   const [showPdf, setShowPdf] = useState(false);
@@ -148,6 +150,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
       setSelectedRecord(null);
       setShowRecordList(false);
       setEditableTextos({});
+      setEditableData(null);
     }
   }, [isOpen, documentType]);
 
@@ -194,7 +197,19 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
       }
       const dbKey = documentType.replace(/-/g, '_');
       setTextos(allTextos[dbKey] || {});
-      setPdfData(response.data);
+      const initData = JSON.parse(JSON.stringify(response.data));
+      // Inicializar título del tutor con abreviatura de la DB
+      if (initData.tutor?.tituloAbrev) {
+        initData.tutor.titulo = initData.tutor.tituloAbrev;
+      }
+      // Inicializar fecha de validación editable para carta-postulacion
+      if (documentType === 'carta-postulacion' && !initData.fechaValidacion) {
+        const hoy = new Date();
+        const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        initData.fechaValidacion = `${hoy.getDate()} de ${meses[hoy.getMonth()]} de ${hoy.getFullYear()}`;
+      }
+      setPdfData(initData);
+      setEditableData(initData);
       setShowPdf(true);
     } catch (error: any) {
       addToast(error?.response?.data?.message ? { variant: "error", title: "Error al cargar", message: error.response.data.message } : { ...TOAST.loadError(), message: `Error al cargar ${resourceName.toLowerCase()}. Intentá de nuevo.` });
@@ -210,14 +225,30 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
     }));
   };
 
+  const handleDataChange = (path: string, value: any) => {
+    setEditableData((prev: any) => {
+      if (!prev) return prev;
+      const copy = JSON.parse(JSON.stringify(prev));
+      const keys = path.split('.');
+      let obj = copy;
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!obj[keys[i]]) obj[keys[i]] = {};
+        obj = obj[keys[i]];
+      }
+      obj[keys[keys.length - 1]] = value;
+      return copy;
+    });
+    setRenderKey(k => k + 1);
+  };
+
   const renderTemplate = useCallback(
     (data: any) => {
       const Tpl = DOCUMENT_CONFIG[documentType]?.pdfTemplate;
-      // Use editableTextos if available, otherwise use original textos
+      const dataToUse = editableData || data;
       const textosToUse = Object.keys(editableTextos).length > 0 ? editableTextos : textos;
-      return Tpl ? <Tpl data={data} textos={textosToUse} /> : <></>;
+      return Tpl ? <Tpl key={renderKey} data={dataToUse} textos={textosToUse} /> : <></>;
     },
-    [documentType, textos, editableTextos]
+    [documentType, textos, editableTextos, editableData, renderKey]
   );
 
   const searchSubtitle = isPracticeDoc
@@ -363,8 +394,6 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
               {isSolicitudInstitucion && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-brand-500 mb-1">
-                    <div className="h-4 w-4 flex items-center justify-center">⚙️</div>
-                    <h5 className="font-bold uppercase tracking-wider text-[10px]">Configuración del Documento</h5>
                   </div>
 
                   <CustomInput
@@ -407,6 +436,164 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
                       <span className="font-bold">Nota:</span> Los cambios se reflejan automáticamente en la vista previa del documento.
                     </p>
                   </div>
+                </div>
+              )}
+
+              {/* Opciones editables para Constancia Tutor Institucional */}
+              {documentType === 'constancia-tutor-institucional' && editableData && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-brand-500 mb-1">
+                    <h4 className="font-bold uppercase tracking-wider text-[10px] sm:text-xs">
+                      Datos Editables
+                    </h4>
+                  </div>
+
+                  <CustomInput
+                    label="Horas Totales"
+                    placeholder="Ej: 480"
+                    type="number"
+                    value={String(editableData.hoursRequired || '')}
+                    onChange={(e) => handleDataChange('hoursRequired', parseInt(e.target.value) || 0)}
+                  />
+
+                  <CustomInput
+                    label="Nombre de la Institución"
+                    placeholder="Nombre de la institución"
+                    value={editableData.institucion?.nombre || ''}
+                    onChange={(e) => handleDataChange('institucion.nombre', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Título del Tutor"
+                    placeholder="Ej: TÉCNICO SUPERIOR UNIVERSITARIO"
+                    value={editableData.tutor?.titulo || ''}
+                    onChange={(e) => handleDataChange('tutor.titulo', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Período Académico"
+                    placeholder="Ej: 2-2026"
+                    value={editableData.periodo?.description || ''}
+                    onChange={(e) => handleDataChange('periodo.description', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Fecha de Inicio"
+                    placeholder="dd/mm/aaaa"
+                    value={editableData.periodo?.startDate || ''}
+                    onChange={(e) => handleDataChange('periodo.startDate', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Fecha de Fin"
+                    placeholder="dd/mm/aaaa"
+                    value={editableData.periodo?.endDate || ''}
+                    onChange={(e) => handleDataChange('periodo.endDate', e.target.value)}
+                  />
+
+                  <hr className="border-border-light dark:border-white/10 my-2" />
+
+                  <CustomInput
+                    label="Nombre de la Firma"
+                    placeholder="Nombre de quien firma"
+                    value={editableTextos.firmaNombre || textos.firmaNombre || ''}
+                    onChange={(e) => handleEditableTextChange('firmaNombre', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Cargo de la Firma"
+                    placeholder="Cargo de quien firma"
+                    value={editableTextos.firmaCargo || textos.firmaCargo || ''}
+                    onChange={(e) => handleEditableTextChange('firmaCargo', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Orden Administrativa"
+                    placeholder="Según Orden administrativa..."
+                    value={editableTextos.firmaOrden || textos.firmaOrden || ''}
+                    onChange={(e) => handleEditableTextChange('firmaOrden', e.target.value)}
+                  />
+
+                  <div className="p-3 rounded-lg sm:rounded-xl bg-info-500/5 border border-info-500/10">
+                    <p className="text-[10px] sm:text-[11px] text-info-600 dark:text-info-400 leading-relaxed">
+                      <span className="font-bold">Nota:</span> Los cambios se reflejan automáticamente en la vista previa del documento.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Opciones editables para Carta de Postulación */}
+              {documentType === 'carta-postulacion' && editableData && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-brand-500 mb-1">
+                    <h4 className="font-bold uppercase tracking-wider text-[10px] sm:text-xs">
+                      Datos Editables
+                    </h4>
+                  </div>
+
+                  <CustomInput
+                    label="Teléfono de Contacto"
+                    placeholder="Ej: 0412-5555555"
+                    value={editableData.estudiante?.telefono || ''}
+                    onChange={(e) => handleDataChange('estudiante.telefono', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Correo Electrónico"
+                    placeholder="Ej: correo@ejemplo.com"
+                    value={editableData.estudiante?.email || ''}
+                    onChange={(e) => handleDataChange('estudiante.email', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Semestre"
+                    placeholder="Ej: 8"
+                    value={editableData.practica?.semester || ''}
+                    onChange={(e) => handleDataChange('practica.semester', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Régimen (DIURNO / NOCTURNO)"
+                    placeholder="DIURNO"
+                    value={editableData.practica?.regime || ''}
+                    onChange={(e) => handleDataChange('practica.regime', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Trabaja (dejar vacío = NO, cualquier valor = SÍ)"
+                    placeholder="Ej: SÍ"
+                    value={editableData.estudiante?.empleo || ''}
+                    onChange={(e) => handleDataChange('estudiante.empleo', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Nombre de la Institución"
+                    placeholder="Nombre de la institución"
+                    value={editableData.institucion?.nombre || ''}
+                    onChange={(e) => handleDataChange('institucion.nombre', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Nombre del Gerente de Talento Humano"
+                    placeholder="Nombre completo"
+                    value={
+                      editableData.tutorInstitucional
+                        ? [editableData.tutorInstitucional.primerNombre, editableData.tutorInstitucional.primerApellido].filter(Boolean).join(' ')
+                        : ''
+                    }
+                    onChange={(e) => {
+                      const parts = e.target.value.split(' ');
+                      handleDataChange('tutorInstitucional.primerNombre', parts[0] || '');
+                      handleDataChange('tutorInstitucional.primerApellido', parts.slice(1).join(' ') || '');
+                    }}
+                  />
+
+                  <CustomInput
+                    label="Fecha de Validación"
+                    placeholder="Ej: 6 de julio de 2026"
+                    value={editableData.fechaValidacion || ''}
+                    onChange={(e) => handleDataChange('fechaValidacion', e.target.value)}
+                  />
                 </div>
               )}
             </div>

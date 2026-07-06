@@ -1,71 +1,132 @@
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
-import { formatNombreCompleto, formatCI, formatFecha, getTutorTitle } from '@/features/reports/utils/reportFormatters';
-import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
+import { formatNombreCompleto, getFechaParts } from '@/features/reports/utils/reportFormatters';
 
 const styles = StyleSheet.create({
-  title: { textAlign: 'center', fontSize: 16, fontWeight: 'bold', marginBottom: 30, textDecoration: 'underline' },
-  paragraph: { marginBottom: 20, textAlign: 'justify', fontSize: 12, lineHeight: 1.5 },
-  firmaContainer: { marginTop: 60, alignItems: 'center' },
-  firmaLine: { marginBottom: 5 },
-  firmaNombre: { fontWeight: 'bold', fontSize: 11 },
-  firmaRol: { fontSize: 10, color: '#4a5568' },
+  paragraph: { 
+    marginBottom: 10, 
+    textAlign: 'justify', 
+    fontSize: 11, 
+    lineHeight: 1.5,
+    textIndent: 30,
+  },
+  placeDate: { 
+    marginBottom: 15, 
+    fontSize: 11, 
+    textAlign: 'right',
+  },
+  leftSection: {
+    marginBottom: 5,
+  },
+  rightSection: {
+    alignItems: 'flex-end',
+    marginBottom: 15,
+  },
+  labelText: { 
+    marginBottom: 2, 
+    fontSize: 11,
+  },
+  firmaContainer: { 
+    marginTop: 40, 
+    alignItems: 'center',
+  },
+  firmaLine: { 
+    width: 220, 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#000000', 
+    marginBottom: 5,
+  },
+  atentamente: {
+    marginBottom: 20,
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  firmaData: { 
+    fontSize: 11,
+    marginBottom: 3,
+    textAlign: 'center',
+  },
+  firmaNombre: {
+    fontWeight: 'bold',
+    fontSize: 11,
+    marginBottom: 2,
+  },
 });
+
+function formatFechaShort(fecha: string | null): string {
+  if (!fecha) return '__/__/____';
+  const d = new Date(fecha);
+  if (isNaN(d.getTime())) return fecha;
+  const dia = String(d.getDate()).padStart(2, '0');
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const anio = d.getFullYear();
+  return `${dia}/${mes}/${anio}`;
+}
 
 interface Props {
   data: {
-    estudiante?: {
-      ci: string; primerNombre: string; segundoNombre?: string;
-      primerApellido: string; segundoApellido?: string;
-    } | null;
     tutor: {
-      ci: string; titulo: string | null; primerNombre: string; segundoNombre?: string;
+      ci: string; titulo: string | null; tituloAbrev?: string; primerNombre: string; segundoNombre?: string;
       primerApellido: string; segundoApellido?: string;
     };
     institucion: { nombre: string } | null;
-    totalHours: number;
+    hoursRequired: number;
     periodo: { description: string; startDate: string; endDate: string } | null;
   };
   textos: Record<string, string>;
 }
 
-const CUERPO_TEMPLATE = `Señor(a):
-{{institucionNombre}}
-Presente.
-
-Atención: {{tutorTitulo}} {{tutorNombreCompleto}}.
-
-    Tengo el agrado de dirigirme a usted, en la oportunidad de extender nuestro sincero agradecimiento por su apoyo y participación incondicional, al desempeñarse como Tutor Institucional de la asignatura Práctica Profesional (Pasantía) de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA), al asesorar, supervisar y evaluar estudiantes, colaborando de esta forma en el proceso formativo y de capacitación integral de estos futuros profesionales, realizando un acompañamiento con un total de {{totalHours}} horas, en el periodo académico {{periodo}}, comprendido entre las fechas {{inicioLapso}} y {{finLapso}}.
-
-    Sin otro particular al cual referirme, me despido de usted quedando a sus gratas órdenes.`;
-
 export function ConstanciaTutorInstitucionalPDF({ data, textos }: Props) {
-  const template = textos.cuerpo?.includes('{{tutorNombreCompleto}}')
-    ? textos.cuerpo
-    : CUERPO_TEMPLATE;
+  const fechaHoy = getFechaParts(null);
 
-  const cuerpo = renderDocumentText(template, {
-    tutorTitulo: getTutorTitle(data.tutor.titulo),
-    tutorNombreCompleto: formatNombreCompleto(data.tutor),
-    tutorCi: formatCI(data.tutor.ci),
-    institucionNombre: data.institucion?.nombre || 'No especificada',
-    totalHours: String(data.totalHours),
-    periodo: data.periodo?.description || '',
-    inicioLapso: data.periodo ? formatFecha(data.periodo.startDate) : '',
-    finLapso: data.periodo ? formatFecha(data.periodo.endDate) : '',
-    estudianteNombreCompleto: data.estudiante ? formatNombreCompleto(data.estudiante) : '',
-    estudianteCi: data.estudiante ? formatCI(data.estudiante.ci) : '',
-  });
+  const tutorName = formatNombreCompleto(data.tutor).toUpperCase();
+  const tutorTitulo = (data.tutor.titulo || 'LCDO.').toUpperCase();
+  const institucionNombre = (data.institucion?.nombre || '________________________').toUpperCase();
+
+  const hoursRequired = data.hoursRequired || 480;
+  const periodoDesc = data.periodo?.description || '_________';
+  const lapsoInicio = data.periodo ? formatFechaShort(data.periodo.startDate) : '__/__/____';
+  const lapsoFin = data.periodo ? formatFechaShort(data.periodo.endDate) : '__/__/____';
+
+  const firmaNombre = textos.firmaNombre || 'MSc. MARBELYS DEL VALLE RIVERO';
+  const firmaCargo = textos.firmaCargo || 'DECANA';
+  const firmaOrden = textos.firmaOrden || 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022';
 
   return (
     <PDFLayout title="CONSTANCIA DE TUTOR INSTITUCIONAL">
-      <Text style={styles.title}>CONSTANCIA DE TUTOR INSTITUCIONAL</Text>
-      <Text style={styles.paragraph}>{cuerpo}</Text>
+      {/* Fecha alineada a la derecha */}
+      <Text style={styles.placeDate}>Guanare, {fechaHoy.dia} de {fechaHoy.mes} del {fechaHoy.anio}.</Text>
+
+      {/* Sección izquierda: Señor (a), Institución, Presente */}
+      <View style={styles.leftSection}>
+        <Text style={styles.labelText}>Señor (a):</Text>
+        <Text style={styles.labelText}>{institucionNombre}</Text>
+        <Text style={styles.labelText}>Presente.</Text>
+      </View>
+
+      {/* Sección derecha: Atnn. */}
+      <View style={styles.rightSection}>
+        <Text style={styles.labelText}>Atnn. {tutorTitulo} {tutorName}.</Text>
+      </View>
+
+      {/* Cuerpo del texto — primer párrafo */}
+      <Text style={styles.paragraph}>
+        Tengo el agrado de dirigirme a usted, en la oportunidad de extender nuestro sincero agradecimiento por su apoyo y participación incondicional, al desempeñarse como Tutor Institucional de la asignatura Práctica Profesional (Pasantía) de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA), al asesorar, supervisar y evaluar estudiantes, colaborando de esta forma en el proceso formativo y de capacitación integral de estos futuros profesionales, realizando un acompañamiento con un total de {hoursRequired} horas, en el periodo académico {periodoDesc}, comprendido entre las fechas {lapsoInicio} y {lapsoFin}.
+      </Text>
+
+      {/* Cuerpo del texto — segundo párrafo */}
+      <Text style={styles.paragraph}>
+        Sin otro particular al cual referirme, me despido de usted (es) quedando a sus gratas órdenes.
+      </Text>
+
+      {/* Firma Centrada */}
+      <Text style={styles.atentamente}>Atentamente</Text>
+
       <View style={styles.firmaContainer}>
-        <Text style={styles.firmaLine}>___________________________________</Text>
-        <Text style={styles.firmaNombre}>MSc. Marbelys del Valle Rivero</Text>
-        <Text style={styles.firmaRol}>DECANA</Text>
-        <Text style={styles.firmaRol}>Según Orden Administrativa N° 0005 de fecha 18 de Marzo 2022</Text>
+        <View style={styles.firmaLine} />
+        <Text style={styles.firmaNombre}>{firmaNombre}</Text>
+        <Text style={styles.firmaData}>{firmaCargo}</Text>
+        <Text style={styles.firmaData}>{firmaOrden}</Text>
       </View>
     </PDFLayout>
   );

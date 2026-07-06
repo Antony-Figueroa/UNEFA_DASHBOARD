@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '../../../components/ui/modal';
 import InputField from '../../../components/form/input/InputField';
+import { useToast } from '../../../context/toast';
+import { TOAST } from '../../../components/ui/dialog/DialogConfig';
 import reportsService, {
   PracticeSearchResult,
   TutorSearchResult,
@@ -32,6 +34,7 @@ interface StudentRecord {
 }
 
 export function RecordListModal({ isOpen, onClose, recordType, documentType, periodId, onSelect }: RecordListModalProps) {
+  const { addToast } = useToast();
   const [page, setPage] = useState(0);
   const [query, setQuery] = useState('');
   const [records, setRecords] = useState<any[]>([]);
@@ -78,9 +81,11 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, per
         const res = await fetchFn(page, query);
         setRecords(res.data || []);
         setTotal(res.meta?.total || 0);
-      } catch {
+      } catch (err: any) {
         setRecords([]);
         setTotal(0);
+        const msg = err?.response?.data?.message || 'Error al cargar datos. Verifique la conexión con la base de datos.';
+        addToast({ variant: 'error', title: 'Error', message: msg });
       } finally {
         setLoading(false);
       }

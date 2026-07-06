@@ -27,23 +27,27 @@ export function SearchableInput<T>({
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [error, setError] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const doSearch = useCallback(async (q: string) => {
     if (q.length < minChars) {
+      setError('');
       setItems([]);
       setShowDropdown(false);
       return;
     }
     setIsSearching(true);
+    setError('');
     try {
       const results = await search(q);
       setItems(results);
       setShowDropdown(results.length > 0);
       setFocusedIndex(-1);
-    } catch {
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Error al buscar');
       setItems([]);
       setShowDropdown(false);
     } finally {
@@ -151,7 +155,10 @@ export function SearchableInput<T>({
         </div>
       )}
 
-      {value.length >= minChars && !isSearching && items.length === 0 && !showDropdown && (
+      {error && (
+        <p className="text-xs text-red-500 mt-1">{error}</p>
+      )}
+      {!error && value.length >= minChars && !isSearching && items.length === 0 && !showDropdown && (
         <p className="text-xs text-text-tertiary mt-1">Sin resultados. Puedes ingresar el ID manualmente.</p>
       )}
     </div>

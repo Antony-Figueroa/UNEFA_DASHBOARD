@@ -451,7 +451,8 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     setEvalModalOpen(false);
     setSelectedPracticeForEval(null);
     setEditingEvaluationId(undefined);
-  }, []);
+    fetchPractices();
+  }, [fetchPractices]);
 
   const handleEvaluationSuccess = useCallback(() => {
     setEvalModalOpen(false);

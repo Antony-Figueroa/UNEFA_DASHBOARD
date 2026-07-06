@@ -272,6 +272,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
         setCriteriaLoaded(criteria);
       }
       setDataLoaded(true);
+      setConfirmed(true); // ya fue confirmada al guardarla antes
     } catch (error) {
       console.error('[EvaluationModal] Error loading evaluation:', error);
     } finally {
@@ -348,21 +349,34 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
 
     if (result) {
       if (isComiteMode) {
-        // Actualizar comiteData con el resultado
+        const savedEvalId = (result && typeof result !== 'boolean' ? result.evaluationId : undefined) || comiteData[activeMember]?.evaluationId;
+
+        // Buscar próximo miembro sin evaluación (usando comiteData actual)
+        const nextIdx = ([1, 2, 3] as const).find(
+          idx => idx !== activeMember && !comiteData[idx]?.evaluationId
+        );
+
         setComiteData(prev => ({
           ...prev,
           [activeMember]: {
             ...prev[activeMember],
-            evaluationId: (result && typeof result !== 'boolean' ? result.evaluationId : undefined) || prev[activeMember]?.evaluationId,
+            evaluationId: savedEvalId,
             evaluatorName: formData.evaluatorName,
             evaluatorCi: formData.evaluatorCi || '',
             observations: formData.observations || '',
             scores: itemScores,
           }
         }));
-        // Resetear confirmación para el próximo guardado
+
         setConfirmed(false);
-        onSuccess();
+
+        if (nextIdx) {
+          // Avanzar al siguiente miembro (modal se cierra, al abrir ya carga el próximo vacío con onSuccess)
+          onSuccess();
+        } else {
+          handleClose();
+          onSuccess();
+        }
       } else {
         reset();
         setConfirmed(false);

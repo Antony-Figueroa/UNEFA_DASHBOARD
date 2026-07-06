@@ -626,7 +626,6 @@ export default function VisitModal({
     
     const success = await onSubmit(payload);
     if (success) {
-      addToast(isEditing ? TOAST.updated('Visita') : TOAST.created('Visita'));
       onClose();
     }
     // NOTA: el mensaje de error real lo muestra useVisits (toast.error) desde el hook

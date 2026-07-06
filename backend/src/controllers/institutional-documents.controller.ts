@@ -40,17 +40,38 @@ async function getPracticeTutors(supabase: any, practiceId: number) {
     .from('t_professional_practices_tutor')
     .select(`
       TUTOR_TYPE,
-      t_tutors!inner(TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME,
-        TITULO, CONDITION, DEDICATION, CATEGORY, CONTACT_PHONE, EMAIL,
-        ATTENTION_SCHEDULE)
+      t_tutors!inner(
+        TUTOR_CI,
+        TITULO,
+        CONDITION,
+        DEDICATION,
+        CATEGORY,
+        ATTENTION_SCHEDULE,
+        person_id,
+        t_persons(ci, first_name, middle_name, last_name, second_last_name, email, phone)
+      )
     `)
     .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
 
   if (!data) return [];
-  return data.map((item: any) => ({
-    tutorType: item.TUTOR_TYPE,
-    ...item.t_tutors,
-  }));
+  return data.map((item: any) => {
+    const tutor = item.t_tutors;
+    const persona = tutor?.t_persons;
+    return {
+      tutorType: item.TUTOR_TYPE,
+      ci: tutor.TUTOR_CI || persona?.ci || '',
+      titulo: tutor.TITULO,
+      primerNombre: persona?.first_name || '',
+      segundoNombre: persona?.middle_name || '',
+      primerApellido: persona?.last_name || '',
+      segundoApellido: persona?.second_last_name || '',
+      condicion: tutor.CONDITION || '',
+      dedicacion: tutor.DEDICATION || '',
+      categoria: tutor.CATEGORY || '',
+      telefono: persona?.phone || '',
+      email: persona?.email || '',
+    };
+  });
 }
 
 async function getEvaluations(supabase: any, practiceId: number) {
@@ -92,7 +113,11 @@ export const getDataAceptacionTutor = async (req: Request, res: Response) => {
     }
 
     const tutors = await getPracticeTutors(supabase, practiceId);
-    const tutorAcademico = tutors.find((t: any) => t.tutorType === 'ACADEMICO');
+    const tutorAcademico = tutors.find((t: any) => 
+      t.tutorType?.toUpperCase().includes('ACADEMIC')
+    );
+    console.log('[getDataAceptacionTutor] tutors:', tutors.map(t => ({ type: t.tutorType, name: t.primerNombre, surname: t.primerApellido })));
+    console.log('[getDataAceptacionTutor] tutorAcademico selected:', tutorAcademico);
     const estudiante: any = practice.t_students;
     const carrera: any = practice.t_career;
 
@@ -114,17 +139,17 @@ export const getDataAceptacionTutor = async (req: Request, res: Response) => {
         },
         carrera: { nombre: carrera.CAREER_NAME, abreviatura: carrera.CAREER_ABBREVIATION },
         tutor: tutorAcademico ? {
-          ci: tutorAcademico.TUTOR_CI || '',
-          titulo: tutorAcademico.TITULO,
-          primerNombre: tutorAcademico.NAME || '',
-          segundoNombre: tutorAcademico.SECOND_NAME || '',
-          primerApellido: tutorAcademico.SURNAME || '',
-          segundoApellido: tutorAcademico.SECOND_SURNAME || '',
-          condicion: tutorAcademico.CONDITION || '',
-          dedicacion: tutorAcademico.DEDICATION || '',
-          categoria: tutorAcademico.CATEGORY || '',
-          telefono: tutorAcademico.CONTACT_PHONE || '',
-          email: tutorAcademico.EMAIL || '',
+          ci: tutorAcademico.ci || '',
+          titulo: tutorAcademico.titulo,
+          primerNombre: tutorAcademico.primerNombre || '',
+          segundoNombre: tutorAcademico.segundoNombre || '',
+          primerApellido: tutorAcademico.primerApellido || '',
+          segundoApellido: tutorAcademico.segundoApellido || '',
+          condicion: tutorAcademico.condicion || '',
+          dedicacion: tutorAcademico.dedicacion || '',
+          categoria: tutorAcademico.categoria || '',
+          telefono: tutorAcademico.telefono || '',
+          email: tutorAcademico.email || '',
         } : null,
       },
     });
@@ -226,12 +251,12 @@ export const getDataCartaPostulacion = async (req: Request, res: Response) => {
           endDate: practice.END_DATE || '',
         },
         tutorInstitucional: tutorInstitucional ? {
-          ci: tutorInstitucional.TUTOR_CI || '',
-          titulo: tutorInstitucional.TITULO,
-          primerNombre: tutorInstitucional.NAME || '',
-          segundoNombre: tutorInstitucional.SECOND_NAME || '',
-          primerApellido: tutorInstitucional.SURNAME || '',
-          segundoApellido: tutorInstitucional.SECOND_SURNAME || '',
+          ci: tutorInstitucional.ci || '',
+          titulo: tutorInstitucional.titulo,
+          primerNombre: tutorInstitucional.primerNombre || '',
+          segundoNombre: tutorInstitucional.segundoNombre || '',
+          primerApellido: tutorInstitucional.primerApellido || '',
+          segundoApellido: tutorInstitucional.segundoApellido || '',
         } : null,
       },
     });
@@ -358,12 +383,12 @@ export const getDataEvaluacionTutorInstitucional = async (req: Request, res: Res
         institucion: institucion ? { nombre: institucion.INSTITUTION_NAME } : null,
         department: practice.DEPARTMENT || null,
         tutorInstitucional: tutorInst ? {
-          ci: tutorInst.TUTOR_CI || '',
-          titulo: tutorInst.TITULO,
-          primerNombre: tutorInst.NAME || '',
-          segundoNombre: tutorInst.SECOND_NAME || '',
-          primerApellido: tutorInst.SURNAME || '',
-          segundoApellido: tutorInst.SECOND_SURNAME || '',
+          ci: tutorInst.ci || '',
+          titulo: tutorInst.titulo,
+          primerNombre: tutorInst.primerNombre || '',
+          segundoNombre: tutorInst.segundoNombre || '',
+          primerApellido: tutorInst.primerApellido || '',
+          segundoApellido: tutorInst.segundoApellido || '',
         } : null,
         evaluacion: evalInst || null,
       },
@@ -404,12 +429,12 @@ export const getDataEvaluacionTutorAcademico = async (req: Request, res: Respons
         },
         carrera: { nombre: carrera.CAREER_NAME, abreviatura: carrera.CAREER_ABBREVIATION },
         tutorAcademico: tutorAcad ? {
-          ci: tutorAcad.TUTOR_CI || '',
-          titulo: tutorAcad.TITULO,
-          primerNombre: tutorAcad.NAME || '',
-          segundoNombre: tutorAcad.SECOND_NAME || '',
-          primerApellido: tutorAcad.SURNAME || '',
-          segundoApellido: tutorAcad.SECOND_SURNAME || '',
+          ci: tutorAcad.ci || '',
+          titulo: tutorAcad.titulo,
+          primerNombre: tutorAcad.primerNombre || '',
+          segundoNombre: tutorAcad.segundoNombre || '',
+          primerApellido: tutorAcad.primerApellido || '',
+          segundoApellido: tutorAcad.segundoApellido || '',
         } : null,
         periodo: periodo ? {
           description: periodo.DESCRIPTION || '',
@@ -489,12 +514,12 @@ export const getDataEvaluacionComite = async (req: Request, res: Response) => {
         },
         carrera: { nombre: carrera.CAREER_NAME, abreviatura: carrera.CAREER_ABBREVIATION },
         tutorAcademico: tutorAcad ? {
-          ci: tutorAcad.TUTOR_CI || '',
-          titulo: tutorAcad.TITULO,
-          primerNombre: tutorAcad.NAME || '',
-          segundoNombre: tutorAcad.SECOND_NAME || '',
-          primerApellido: tutorAcad.SURNAME || '',
-          segundoApellido: tutorAcad.SECOND_SURNAME || '',
+          ci: tutorAcad.ci || '',
+          titulo: tutorAcad.titulo,
+          primerNombre: tutorAcad.primerNombre || '',
+          segundoNombre: tutorAcad.segundoNombre || '',
+          primerApellido: tutorAcad.primerApellido || '',
+          segundoApellido: tutorAcad.segundoApellido || '',
         } : null,
         periodo: periodo ? {
           description: periodo.DESCRIPTION || '',
@@ -520,7 +545,11 @@ export const getDataConstanciaTutorAcademico = async (req: Request, res: Respons
 
     const { data: tutor } = await supabase
       .from('t_tutors')
-      .select('TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, TITULO, CONDITION, DEDICATION, CATEGORY, CONTACT_PHONE, EMAIL')
+      .select(`
+        TUTOR_CI, TITULO, CONDITION, DEDICATION, CATEGORY,
+        person_id,
+        t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone)
+      `)
       .eq('TUTOR_ID', tutorId)
       .single();
 
@@ -586,27 +615,31 @@ export const getDataConstanciaTutorAcademico = async (req: Request, res: Respons
       periodoData = periodo;
     }
 
+    const persona = tutor.t_persons;
+
     res.json({
       success: true,
       data: {
         practiceId: 0,
         estudiante: estudianteData ? {
           ci: (estudianteData?.t_persons?.ci ?? estudianteData?.STUDENTS_CI) || '',
-          primerNombre: (estudianteData?.t_persons?.first_name ?? estudianteData?.NAME) || '',
-          segundoNombre: (estudianteData?.t_persons?.middle_name ?? estudianteData?.SECOND_NAME) || '',
-          primerApellido: (estudianteData?.t_persons?.last_name ?? estudianteData?.SURNAME) || '',
-          segundoApellido: (estudianteData?.t_persons?.second_last_name ?? estudianteData?.SECOND_SURNAME) || '',
+          primerNombre: estudianteData?.t_persons?.first_name || '',
+          segundoNombre: estudianteData?.t_persons?.middle_name || '',
+          primerApellido: estudianteData?.t_persons?.last_name || '',
+          segundoApellido: estudianteData?.t_persons?.second_last_name || '',
         } : null,
         tutor: {
-          ci: (tutor.t_persons?.ci ?? tutor.TUTOR_CI) || '',
+          ci: persona?.ci || tutor.TUTOR_CI || '',
           titulo: tutor.TITULO,
-          primerNombre: (tutor.t_persons?.first_name ?? tutor.NAME) || '',
-          segundoNombre: (tutor.t_persons?.middle_name ?? tutor.SECOND_NAME) || '',
-          primerApellido: (tutor.t_persons?.last_name ?? tutor.SURNAME) || '',
-          segundoApellido: (tutor.t_persons?.second_last_name ?? tutor.SECOND_SURNAME) || '',
+          primerNombre: persona?.first_name || '',
+          segundoNombre: persona?.middle_name || '',
+          primerApellido: persona?.last_name || '',
+          segundoApellido: persona?.second_last_name || '',
           condicion: tutor.CONDITION || '',
           dedicacion: tutor.DEDICATION || '',
           categoria: tutor.CATEGORY || '',
+          telefono: persona?.phone || '',
+          email: persona?.email || '',
         },
         totalHours,
         periodo: periodoData ? {
@@ -629,12 +662,41 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
 
     const { data: tutor } = await supabase
       .from('t_tutors')
-      .select('TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, TITULO, person_id, t_persons!fk_tutors_person(ci, first_name, middle_name, last_name, second_last_name)')
+      .select(`
+        TUTOR_CI, TITULO, CONDITION, DEDICATION, CATEGORY,
+        person_id,
+        t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone)
+      `)
       .eq('TUTOR_ID', tutorId)
       .single();
 
     if (!tutor) {
       return res.status(404).json({ success: false, message: 'Tutor no encontrado' });
+    }
+
+    const persona = tutor.t_persons;
+
+    // Obtener abreviatura del título desde la lista de valores
+    let tituloAbrev = tutor.TITULO || '';
+    if (tutor.TITULO) {
+      const { data: titleList } = await supabase
+        .from('t_list')
+        .select('LIST_ID')
+        .eq('NAME', 'TÍTULO')
+        .single();
+      if (titleList) {
+        const { data: values } = await supabase
+          .from('t_value_list')
+          .select('NAME, ABBREVIATION')
+          .eq('LIST_ID', titleList.LIST_ID)
+          .eq('STATUS', 1);
+        const match = values?.find(
+          (v: any) => v.NAME.toLowerCase() === tutor.TITULO!.toLowerCase()
+        );
+        if (match?.ABBREVIATION) {
+          tituloAbrev = match.ABBREVIATION;
+        }
+      }
     }
 
     // Obtener horas desde t_practice_visits (t_tracking no existe)
@@ -645,6 +707,7 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
 
     const practiceIds = (tutorPractices || []).map((tp: any) => tp.PROFESSIONAL_PRACTICE_ID);
     let totalHours = 0;
+    let hoursRequired = 480;
     let activePeriodId: number | null = null;
     let estudianteData: any = null;
 
@@ -661,7 +724,7 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
       // Usar la práctica más reciente para obtener período y estudiante
       const { data: latest } = await supabase
         .from('t_professional_practices')
-        .select('PERIOD_ID, STUDENTS_ID')
+        .select('PERIOD_ID, STUDENTS_ID, INTERNSHIP_TYPE_ID')
         .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
         .eq('STATUS', 1)
         .order('START_DATE', { ascending: false })
@@ -713,21 +776,25 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
         practiceId: 0,
         estudiante: estudianteData ? {
           ci: (estudianteData?.t_persons?.ci ?? estudianteData?.STUDENTS_CI) || '',
-          primerNombre: (estudianteData?.t_persons?.first_name ?? estudianteData?.NAME) || '',
-          segundoNombre: (estudianteData?.t_persons?.middle_name ?? estudianteData?.SECOND_NAME) || '',
-          primerApellido: (estudianteData?.t_persons?.last_name ?? estudianteData?.SURNAME) || '',
-          segundoApellido: (estudianteData?.t_persons?.second_last_name ?? estudianteData?.SECOND_SURNAME) || '',
+          primerNombre: estudianteData?.t_persons?.first_name || '',
+          segundoNombre: estudianteData?.t_persons?.middle_name || '',
+          primerApellido: estudianteData?.t_persons?.last_name || '',
+          segundoApellido: estudianteData?.t_persons?.second_last_name || '',
         } : null,
         tutor: {
-          ci: (tutor.t_persons?.ci ?? tutor.TUTOR_CI) || '',
+          ci: persona?.ci || tutor.TUTOR_CI || '',
           titulo: tutor.TITULO,
-          primerNombre: (tutor.t_persons?.first_name ?? tutor.NAME) || '',
-          segundoNombre: (tutor.t_persons?.middle_name ?? tutor.SECOND_NAME) || '',
-          primerApellido: (tutor.t_persons?.last_name ?? tutor.SURNAME) || '',
-          segundoApellido: (tutor.t_persons?.second_last_name ?? tutor.SECOND_SURNAME) || '',
+          tituloAbrev,
+          primerNombre: persona?.first_name || '',
+          segundoNombre: persona?.middle_name || '',
+          primerApellido: persona?.last_name || '',
+          segundoApellido: persona?.second_last_name || '',
+          telefono: persona?.phone || '',
+          email: persona?.email || '',
         },
         institucion: institucionData ? { nombre: institucionData.INSTITUTION_NAME } : null,
         totalHours,
+        hoursRequired,
         periodo: periodoData ? {
           description: periodoData.DESCRIPTION || '',
           startDate: periodoData.START_DATE || '',
@@ -775,7 +842,10 @@ export const searchPractices = async (req: Request, res: Response) => {
 
     if (error) {
       console.error('[institutional-documents] searchPractices error:', error);
-      return res.status(500).json({ success: false, message: 'Error al buscar prácticas' });
+      const dbError = error?.message?.includes('fetch failed') || error?.message?.includes('ENOTFOUND')
+        ? 'Error de conexión con la base de datos. Verifique que Supabase esté accesible.'
+        : 'Error al buscar prácticas';
+      return res.status(500).json({ success: false, message: dbError });
     }
 
     const results = (data || []).map((p: any) => {
@@ -793,9 +863,12 @@ export const searchPractices = async (req: Request, res: Response) => {
     });
 
     res.json({ success: true, data: results });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[institutional-documents] searchPractices error:', error);
-    res.status(500).json({ success: false, message: 'Error al buscar prácticas' });
+    const dbError = error?.message?.includes('fetch failed') || error?.message?.includes('ENOTFOUND')
+      ? 'Error de conexión con la base de datos. Verifique que Supabase esté accesible.'
+      : 'Error al buscar prácticas';
+    res.status(500).json({ success: false, message: dbError });
   }
 };
 
@@ -829,7 +902,10 @@ export const searchTutors = async (req: Request, res: Response) => {
 
     if (error) {
       console.error('[institutional-documents] searchTutors error:', error);
-      return res.status(500).json({ success: false, message: 'Error al buscar tutores' });
+      const dbError = error?.message?.includes('fetch failed') || error?.message?.includes('ENOTFOUND')
+        ? 'Error de conexión con la base de datos. Verifique que Supabase esté accesible.'
+        : 'Error al buscar tutores';
+      return res.status(500).json({ success: false, message: dbError });
     }
 
     const results = (data || []).map((t: any) => {
@@ -850,9 +926,12 @@ export const searchTutors = async (req: Request, res: Response) => {
     });
 
     res.json({ success: true, data: results });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[institutional-documents] searchTutors error:', error);
-    res.status(500).json({ success: false, message: 'Error al buscar tutores' });
+    const dbError = error?.message?.includes('fetch failed') || error?.message?.includes('ENOTFOUND')
+      ? 'Error de conexión con la base de datos. Verifique que Supabase esté accesible.'
+      : 'Error al buscar tutores';
+    res.status(500).json({ success: false, message: dbError });
   }
 };
 
@@ -938,7 +1017,10 @@ export const listPractices = async (req: Request, res: Response) => {
 
     if (error) {
       console.error('[institutional-documents] listPractices error:', error);
-      return res.status(500).json({ success: false, message: 'Error al listar prácticas' });
+      const dbError = error?.message?.includes('fetch failed') || error?.message?.includes('ENOTFOUND')
+        ? 'Error de conexión con la base de datos. Verifique que Supabase esté accesible.'
+        : 'Error al listar prácticas';
+      return res.status(500).json({ success: false, message: dbError });
     }
 
     const results = (data || []).map((p: any) => {
@@ -960,9 +1042,12 @@ export const listPractices = async (req: Request, res: Response) => {
       data: results,
       meta: { total: count || 0, page, limit },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[institutional-documents] listPractices error:', error);
-    res.status(500).json({ success: false, message: 'Error al listar prácticas' });
+    const dbError = error?.message?.includes('fetch failed') || error?.message?.includes('ENOTFOUND')
+      ? 'Error de conexión con la base de datos. Verifique que Supabase esté accesible.'
+      : 'Error al listar prácticas';
+    res.status(500).json({ success: false, message: dbError });
   }
 };
 
@@ -1004,7 +1089,10 @@ export const listTutors = async (req: Request, res: Response) => {
 
     if (error) {
       console.error('[institutional-documents] listTutors error:', error);
-      return res.status(500).json({ success: false, message: 'Error al listar tutores' });
+      const dbError = error?.message?.includes('fetch failed') || error?.message?.includes('ENOTFOUND')
+        ? 'Error de conexión con la base de datos. Verifique que Supabase esté accesible.'
+        : 'Error al listar tutores';
+      return res.status(500).json({ success: false, message: dbError });
     }
 
     const results = (data || []).map((t: any) => {
@@ -1029,8 +1117,11 @@ export const listTutors = async (req: Request, res: Response) => {
       data: results,
       meta: { total: count || 0, page, limit },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[institutional-documents] listTutors error:', error);
-    res.status(500).json({ success: false, message: 'Error al listar tutores' });
+    const dbError = error?.message?.includes('fetch failed') || error?.message?.includes('ENOTFOUND')
+      ? 'Error de conexión con la base de datos. Verifique que Supabase esté accesible.'
+      : 'Error al listar tutores';
+    res.status(500).json({ success: false, message: dbError });
   }
 };

@@ -48,22 +48,10 @@ Atentamente,`,
 DECANA UNEFA NÚCLEO PORTUGUESA
 SU DESPACHO
 
-Tengo el honor de dirigirme a usted en la oportunidad de solicitarle la Carta de Postulación correspondiente al proceso de Práctica Profesional; solicitud que respetuosamente hago llegar para su conocimiento y fines consiguientes.
+Tengo el honor de dirigirme a usted en la oportunidad de solicitarle la Carta de Postulación correspondiente al proceso de Práctica Profesional; solicitud que respetuosamente hago llegar para su conocimiento y fines consiguientes.`,
+    acta: `Quienes suscriben, Tutor Académico, Tutor Evaluador Especialista y Tutor Metodológico hacemos constar que el informe de Prácticas Profesionales de la carrera: {{carrera}}, presentado por el (la) bachiller: {{estudianteNombreCompleto}}, C.I. N° {{estudianteCi}}, está apto, revisado y aprobado para ser entregado a la coordinación de Prácticas Profesionales en los lapsos establecidos para tal fin, por lo que está autorizado para defensa y demás fines consiguientes.
 
-NOMBRES Y APELLIDOS:    {{estudianteNombreCompleto}}
-CÉDULA DE IDENTIDAD:     {{estudianteCi}}
-NÚMEROS DE CONTACTO:  {{estudianteTelefono}}
-CORREO ELECTRÓNICO:   {{estudianteEmail}}
-RÉGIMEN: {{regimen}}
-CARRERA:    {{carrera}}
-SEMESTRE:  {{semestre}}
-TRABAJO:  {{empleo}}
-NOMBRE DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: {{institucionNombre}}
-NOMBRE Y APELLIDOS DEL (DE LA) GERENTE DE TALENTO HUMANO DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS: {{tutorInstitucionalNombre}}
-
-_________________________________              ___________________________________
-      FIRMA DEL ESTUDIANTE                    FIRMA Y SELLO DE LA COORDINACIÓN
-                                               DE PRÁCTICA PROFESIONAL DEL NÚCLEO`,
+Sin otro particular,`,
   },
   acta_validacion: {
     cuerpo: `Quienes suscriben, Tutor Académico, Tutor Evaluador Especialista y Tutor Metodológico hacemos constar que el informe de Prácticas Profesionales de la carrera: {{carrera}}, presentado por el (la) bachiller: {{estudianteNombreCompleto}}, C.I. N° {{estudianteCi}}, está apto, revisado y aprobado para ser entregado a la coordinación de Prácticas Profesionales en los lapsos establecidos para tal fin, por lo que está autorizado para defensa y demás fines consiguientes.

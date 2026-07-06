@@ -14,6 +14,7 @@ import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { ReportList } from "../../features/reports/components/ReportList";
 import { DocumentReportModal } from "../../features/reports/components/DocumentReportModal";
 import { ProyeccionModal } from "./ProyeccionModal";
+import { RelacionInstitucionesModal } from "./RelacionInstitucionesModal";
 import { useReports } from "../../features/reports/hooks/useReports";
 import { getReportConfig, DOCUMENT_SECTIONS, ReportType, setCurrentTutorId, currentTutorId } from "../../features/reports/config/reportConfig";
 
@@ -51,7 +52,7 @@ export default function ReportsPage() {
   const [loadingExcelId, setLoadingExcelId] = useState<string | null>(null);
 
   const [isProyeccionModalOpen, setIsProyeccionModalOpen] = useState(false);
-
+  const [isRelacionInstitucionesModalOpen, setIsRelacionInstitucionesModalOpen] = useState(false);
 
   const [paginationInfo, setPaginationInfo] = useState<{ page: number; totalPages: number; totalRecords: number } | null>(null);
   const activeReportConfigRef = useRef<{ type: string; periodNum?: number } | null>(null);
@@ -138,6 +139,10 @@ export default function ReportsPage() {
       setIsProyeccionModalOpen(true);
       return;
     }
+    if (type === "relacion-instituciones-solicitan") {
+      setIsRelacionInstitucionesModalOpen(true);
+      return;
+    }
     if (type === "relacion-individual-docente" && !currentTutorId) {
       setPendingViewType(type);
       setShowTutorSelector(true);
@@ -211,6 +216,10 @@ export default function ReportsPage() {
   const handleExportExcel = useCallback(async (type: string, preSelectedTutorId?: number) => {
     if (type === "proyeccion-pasantias") {
       setIsProyeccionModalOpen(true);
+      return;
+    }
+    if (type === "relacion-instituciones-solicitan") {
+      setIsRelacionInstitucionesModalOpen(true);
       return;
     }
     // Para relacion-individual-docente, necesitamos un tutorId
@@ -599,6 +608,11 @@ export default function ReportsPage() {
         <ProyeccionModal
           isOpen={isProyeccionModalOpen}
           onClose={() => setIsProyeccionModalOpen(false)}
+        />
+
+        <RelacionInstitucionesModal
+          isOpen={isRelacionInstitucionesModalOpen}
+          onClose={() => setIsRelacionInstitucionesModalOpen(false)}
         />
 
       </div>

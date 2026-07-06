@@ -7,10 +7,22 @@ Font.register({
     {
       src: "https://fonts.gstatic.com/s/nunito/v32/XRXI3I6Li01BKofiOc5wtlZ2di8HDLshRTM.ttf",
       fontWeight: "normal",
+      fontStyle: "normal",
+    },
+    {
+      src: "https://fonts.gstatic.com/s/nunito/v32/XRXQ3I6Li01BKofIMN4oYVv_Ek8.ttf",
+      fontWeight: "normal",
+      fontStyle: "italic",
     },
     {
       src: "https://fonts.gstatic.com/s/nunito/v32/XRXI3I6Li01BKofiOc5wtlZ2di8HDFwmRTM.ttf",
       fontWeight: "bold",
+      fontStyle: "normal",
+    },
+    {
+      src: "https://fonts.gstatic.com/s/nunito/v32/XRXQ3I6Li01BKofIMN7AXVv_Ek8.ttf",
+      fontWeight: "bold",
+      fontStyle: "italic",
     },
   ],
 });

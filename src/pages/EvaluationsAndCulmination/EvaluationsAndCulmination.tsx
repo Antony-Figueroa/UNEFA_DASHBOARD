@@ -17,7 +17,7 @@ import { EmptyState } from '../../components/ui/table/EmptyState';
 import { TableSkeleton } from '../../components/ui/skeleton';
 import UnifiedDialog from '../../components/ui/dialog/UnifiedDialog';
 import { DownloadIcon, CheckCircleIcon, EyeIcon } from '../../icons';
-import { ThreeDotsIcon } from '../../icons/actions';
+import { ActionDropdown } from '../../features/evaluations-culmination/components/ActionDropdown';
 import { StudentDetailModal } from '../../features/student-detail/components/StudentDetailModal';
 import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
 import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
@@ -130,7 +130,8 @@ export default function EvaluationsAndCulminationPage() {
   // ─── Render: Evaluations tab ────────────────────────────
   const renderEvaluationsTab = () => (
     <>
-      <div className="overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-visible rounded-lg border border-border-default dark:border-border-dark">
         <Table>
           <TableHeader>
             <TableRow>
@@ -165,6 +166,7 @@ export default function EvaluationsAndCulminationPage() {
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
+                    isFrozen={practice.isFrozen}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -174,6 +176,7 @@ export default function EvaluationsAndCulminationPage() {
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
+                    isFrozen={practice.isFrozen}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -183,6 +186,7 @@ export default function EvaluationsAndCulminationPage() {
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
+                    isFrozen={practice.isFrozen}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -191,71 +195,31 @@ export default function EvaluationsAndCulminationPage() {
                   </span>
                 </TableCell>
                 <TableCell className="text-center">
-                  {getStatusBadge(practice.evaluationStatus)}
+                  <div className="flex items-center justify-center gap-1.5">
+                    {getStatusBadge(practice.evaluationStatus)}
+                    {practice.isFrozen && (
+                      <Badge color="warning" variant="light" className="text-xs">
+                        <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-6V9a4 4 0 00-8 0v2" />
+                        </svg>
+                        Actas Cerradas
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 {!hook.isReadOnly && (
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <div className="relative group">
-                        <button className="p-1.5 rounded-lg hover:bg-bg-subtle dark:hover:bg-gray-700 transition-colors">
-                           <ThreeDotsIcon className="w-4 h-4 text-text-tertiary" />
-                        </button>
-                        {/* Dropdown menu */}
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-border-default dark:border-border-dark rounded-lg shadow-lg z-10 hidden group-hover:block">
-                          <div className="py-1">
-                            <button
-                              onClick={() => hook.handleWithdraw(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Retirar
-                            </button>
-                            <button
-                              onClick={() => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Reclasificar Retiro
-                            </button>
-                            <button
-                              onClick={() => hook.handleMarkFailed(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-error-600 dark:text-error-400 hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Marcar Reprobado
-                            </button>
-                            <button
-                              onClick={() => hook.handleUnfreeze(practice.practiceId)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Descongelar
-                            </button>
-                            <button
-                              onClick={() => hook.handleGrantExtension(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Otorgar Extensión
-                            </button>
-                            <button
-                              onClick={() => hook.handleRevokeExtension(practice.practiceId)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Revocar Extensión
-                            </button>
-                            <button
-                              onClick={() => hook.handleOpenCommittee(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Gestionar Comité
-                            </button>
-                            <div className="border-t border-border-default dark:border-border-dark" />
-                            <button
-                              onClick={() => hook.handleViewAudit(practice.practiceId)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Ver Auditoría
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <ActionDropdown actions={[
+                      { label: 'Retirar', onClick: () => hook.handleWithdraw(practice.practiceId, practice.studentName) },
+                      { label: 'Reclasificar Retiro', onClick: () => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName) },
+                      { label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' },
+                      ...(practice.isFrozen ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }] : []),
+                      { label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) },
+                      { label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) },
+                      { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
+                      { separator: true, label: '', onClick: () => {} },
+                      { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                    ]} />
                   </TableCell>
                 )}
               </TableRow>
@@ -263,6 +227,82 @@ export default function EvaluationsAndCulminationPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden flex flex-col gap-4">
+        {paginatedData.map(practice => (
+          <div key={practice.practiceId} className="bg-white dark:bg-gray-800 rounded-lg border border-border-default dark:border-border-dark p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div className="min-w-0">
+                <p className="font-medium text-text-primary dark:text-text-emphasis truncate">{practice.studentName}</p>
+                <p className="text-xs text-text-tertiary">{practice.studentCi}</p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {getStatusBadge(practice.evaluationStatus)}
+                {practice.isFrozen && (
+                  <Badge color="warning" variant="light" className="text-xs">
+                    <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-6V9a4 4 0 00-8 0v2" />
+                    </svg>
+                    Cerradas
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <div className="space-y-1 text-xs text-text-secondary mb-3">
+              <p><span className="font-medium">Período:</span> {practice.periodName}</p>
+              <p><span className="font-medium">Carrera:</span> {practice.careerName}</p>
+              <p><span className="font-medium">Tipo:</span> {practice.practiceTypeName}</p>
+            </div>
+            {/* Evaluation scores */}
+            <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
+              <div className="text-center p-2 rounded bg-bg-subtle dark:bg-gray-700">
+                <p className="text-text-tertiary">Inst.</p>
+                <p className="font-bold text-text-primary">
+                  {practice.evaluations.INSTITUCIONAL?.score != null ? `${Math.round((practice.evaluations.INSTITUCIONAL.score / evalConfig.score.displayScale) * 100)}%` : '-'}
+                </p>
+              </div>
+              <div className="text-center p-2 rounded bg-bg-subtle dark:bg-gray-700">
+                <p className="text-text-tertiary">Acad.</p>
+                <p className="font-bold text-text-primary">
+                  {practice.evaluations.ACADEMICO?.score != null ? `${Math.round((practice.evaluations.ACADEMICO.score / evalConfig.score.displayScale) * 100)}%` : '-'}
+                </p>
+              </div>
+              <div className="text-center p-2 rounded bg-bg-subtle dark:bg-gray-700">
+                <p className="text-text-tertiary">Comité</p>
+                <p className="font-bold text-text-primary">
+                  {practice.evaluations.COMITE?.score != null ? `${Math.round((practice.evaluations.COMITE.score / evalConfig.score.displayScale) * 100)}%` : '-'}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-between items-center text-sm mb-3">
+              <span className="text-text-secondary">Nota Final:</span>
+              <span className="font-bold text-brand-500">
+                {practice.finalGrade != null ? `${Math.round((practice.finalGrade / evalConfig.score.displayScale) * 100)}%` : '-'}
+              </span>
+            </div>
+            {/* Mobile actions */}
+            {!hook.isReadOnly && (
+              <div className="pt-3 border-t border-border-default dark:border-border-dark flex flex-wrap gap-2">
+                {!practice.isFrozen && (
+                  <Button size="sm" variant="outline" onClick={() => hook.handleOpenEvaluation(practice, 'INSTITUCIONAL')}>
+                    Evaluar
+                  </Button>
+                )}
+                {practice.isFrozen && (
+                  <Button size="sm" variant="outline" onClick={() => hook.handleUnfreeze(practice.practiceId)}>
+                    Descongelar
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)}>
+                  <EyeIcon className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
       {totalPages > 1 && (
         <Pagination
           currentPage={hook.currentPage}
@@ -319,13 +359,18 @@ export default function EvaluationsAndCulminationPage() {
                 <TableCell className="text-center text-sm tabular-nums">{practice.totalHours}h</TableCell>
                 <TableCell className="text-center">{getCulminationBadge(practice.culminationStatus)}</TableCell>
                 <TableCell className="text-center">
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex items-center justify-center flex-wrap gap-1">
                     <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)}>
                       <EyeIcon className="w-4 h-4" />
                     </Button>
                     {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
                       <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>
                         Aprobar
+                      </Button>
+                    )}
+                    {practice.culminationStatus === 'pending' && practice.result !== 'approved' && (
+                      <Button size="sm" variant="outline" onClick={() => hook.handleMarkFailed(practice.practiceId, practice.studentName)} className="text-error-600 dark:text-error-400 border-error-300 dark:border-error-700 hover:bg-error-50 dark:hover:bg-error-900/20">
+                        Reprobar
                       </Button>
                     )}
                     {practice.culminationStatus === 'approved' && (
@@ -367,9 +412,17 @@ export default function EvaluationsAndCulminationPage() {
                 Certificado: {practice.certificateNumber}
               </p>
             )}
-            <div className="pt-3 border-t border-border-default dark:border-border-dark flex gap-2">
+            <div className="pt-3 border-t border-border-default dark:border-border-dark flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)}>
+                <EyeIcon className="w-4 h-4" />
+              </Button>
               {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
                 <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>Aprobar</Button>
+              )}
+              {practice.culminationStatus === 'pending' && practice.result !== 'approved' && (
+                <Button size="sm" variant="outline" onClick={() => hook.handleMarkFailed(practice.practiceId, practice.studentName)} className="text-error-600 dark:text-error-400 border-error-300 dark:border-error-700 hover:bg-error-50 dark:hover:bg-error-900/20">
+                  Reprobar
+                </Button>
               )}
               {practice.culminationStatus === 'approved' && (
                 <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)}>Certificar</Button>
@@ -509,6 +562,64 @@ export default function EvaluationsAndCulminationPage() {
         variant="info"
       />
 
+      {/* Hours override dialog */}
+      <UnifiedDialog
+        isOpen={!!hook.overrideTarget}
+        onClose={() => hook.setOverrideTarget(null)}
+        onConfirm={hook.handleConfirmOverride}
+        title="Aprobar con Excepción de Horas"
+        confirmLabel="Aprobar con Excepción"
+        variant="warning"
+      >
+        <div className="space-y-4">
+          <div className="bg-warning-50 dark:bg-warning-500/10 border border-warning-300 dark:border-warning-700 rounded-lg p-3">
+            <p className="text-sm text-warning-700 dark:text-warning-400">
+              <strong>Horas insuficientes:</strong> El estudiante tiene {hook.overrideTarget?.practice.totalHours}h de {hook.overrideTarget?.practice.hoursRequired}h requeridas.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-primary dark:text-text-emphasis mb-1">
+              Motivo de la excepción *
+            </label>
+            <textarea
+              value={hook.overrideTarget?.reason || ''}
+              onChange={(e) => hook.overrideTarget && hook.setOverrideTarget({ ...hook.overrideTarget, reason: e.target.value })}
+              placeholder="Ingrese el motivo por el cual se aprueba con menos horas..."
+              rows={3}
+              className="w-full px-3 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-brand-500"
+              autoFocus
+            />
+          </div>
+        </div>
+      </UnifiedDialog>
+
+      {/* Descongelar — input de razón */}
+      <UnifiedDialog
+        isOpen={!!hook.unfreezeTarget}
+        onClose={() => hook.setUnfreezeTarget(null)}
+        onConfirm={hook.handleConfirmUnfreeze}
+        title="Descongelar Evaluación"
+        confirmLabel="Descongelar"
+        variant="warning"
+        confirmStartIcon={
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-6V9a4 4 0 00-8 0v2" />
+          </svg>
+        }
+      >
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          Ingrese la razón para descongelar esta evaluación:
+        </p>
+        <input
+          type="text"
+          value={hook.unfreezeReason}
+          onChange={(e) => hook.setUnfreezeReason(e.target.value)}
+          placeholder="Ej: Corrección administrativa"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white"
+          autoFocus
+        />
+      </UnifiedDialog>
+
       {hook.selectedPracticeForEval && (
         <EvaluationModal
           isOpen={hook.evalModalOpen}
@@ -516,7 +627,9 @@ export default function EvaluationsAndCulminationPage() {
           practiceId={hook.selectedPracticeForEval.practiceId}
           evaluatorType={hook.selectedEvaluatorType}
           evaluationId={hook.editingEvaluationId}
+          existingComiteMembers={hook.selectedPracticeForEval.evaluations.COMITE.members || []}
           onSuccess={hook.handleEvaluationSuccess}
+          isFrozen={hook.selectedPracticeForEval.isFrozen}
         />
       )}
 

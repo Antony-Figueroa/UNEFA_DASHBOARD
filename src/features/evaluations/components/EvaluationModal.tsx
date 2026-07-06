@@ -49,6 +49,8 @@ interface EvaluationModalProps {
   existingComiteMembers?: ComiteMemberInfo[];
   committeeAssignments?: { memberIndex: number; evaluatorName: string; evaluatorCi?: string }[];
   onSuccess: () => void;
+  /** Si es true, la evaluación está congelada (actas cerradas) — solo lectura */
+  isFrozen?: boolean;
 }
 
 interface ComiteMemberData {
@@ -67,7 +69,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   evaluationId,
   existingComiteMembers = [],
   committeeAssignments = [],
-  onSuccess
+  onSuccess,
+  isFrozen = false,
 }) => {
   const { criteria, fetchCriteria, createEvaluation, updateEvaluation, loading, error: submitError } = useEvaluations();
   const { config } = useSystemEvaluationConfig();
@@ -421,6 +424,24 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
         {modalTitle}
       </ModalHeader>
 
+      {isFrozen && (
+        <div className="mx-4 mt-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-6V9a4 4 0 00-8 0v2" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                Actas Cerradas — Evaluación congelada
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                Las evaluaciones están cerradas. Solo puede visualizar los datos.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {initialLoading ? (
         <ModalBody>
           <div className="flex justify-center py-12">
@@ -483,7 +504,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                         key={idx}
                         type="button"
                         onClick={() => switchMember(idx)}
-                        className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border-2 transition-all ${
+                        disabled={isFrozen}
+                        className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
                           activeMember === idx
                             ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 shadow-sm'
                             : isUsed
@@ -518,13 +540,15 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                         }
                       }
                     })}
-                    className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                    disabled={isFrozen}
+                    className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="Nombre del evaluador"
                   />
                   <button
                     type="button"
                     onClick={() => setSearchOpen(true)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                    disabled={isFrozen}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     title="Buscar reemplazo"
                   >
                     <SearchIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
@@ -542,7 +566,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 <input
                   type="text"
                   {...register('evaluatorCi')}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                  disabled={isFrozen}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 disabled:opacity-60 disabled:cursor-not-allowed"
                   placeholder="V00.000.000"
                   maxLength={12}
                 />
@@ -556,7 +581,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
               <textarea
                 {...register('observations')}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white"
+                disabled={isFrozen}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed"
                 placeholder="Observaciones adicionales..."
               />
             </div>
@@ -600,7 +626,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                             step={scoreStep}
                             value={itemScores[criterion.criteriaId] ?? midpoint}
                             onChange={(e) => handleScoreChange(criterion.criteriaId, parseFloat(e.target.value))}
-                            className="flex-1 sm:w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            disabled={isFrozen}
+                            className="flex-1 sm:w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                           />
                           <input
                             type="number"
@@ -617,7 +644,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                                 handleScoreChange(criterion.criteriaId, parseFloat(val) || 0);
                               }
                             }}
-                            className={`w-14 px-2 py-1 text-center border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white ${getScoreInputClass(criterion.criteriaId)}`}
+                            disabled={isFrozen}
+                            className={`w-14 px-2 py-1 text-center border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed ${getScoreInputClass(criterion.criteriaId)}`}
                           />
                           <span className="text-xs text-gray-400">/{scoreRange.max}</span>
                         </div>
@@ -630,12 +658,13 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
 
             {/* Firma de responsabilidad */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-              <label className="flex items-start gap-3 cursor-pointer">
+              <label className={`flex items-start gap-3 ${isFrozen ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
                 <input
                   type="checkbox"
                   checked={confirmed}
                   onChange={(e) => setConfirmed(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500"
+                  disabled={isFrozen}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500 disabled:opacity-60"
                 />
                 <div>
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -656,16 +685,18 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
               onClick={handleClose}
               disabled={loading}
             >
-              Cancelar
+              {isFrozen ? 'Cerrar' : 'Cancelar'}
             </Button>
-            <Button
-              type="submit"
-              disabled={loading || criteriaLoaded.length === 0 || !confirmed}
-              loading={loading}
-              loadingText="Guardando..."
-            >
-              {submitLabel}
-            </Button>
+            {!isFrozen && (
+              <Button
+                type="submit"
+                disabled={loading || criteriaLoaded.length === 0 || !confirmed}
+                loading={loading}
+                loadingText="Guardando..."
+              >
+                {submitLabel}
+              </Button>
+            )}
           </ModalFooter>
         </form>
       )}

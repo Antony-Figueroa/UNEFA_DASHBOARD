@@ -112,6 +112,11 @@ export interface UseEvaluationsCulminationReturn {
 
   /** Descongelar */
   handleUnfreeze: (practiceId: number) => void;
+  unfreezeTarget: { practiceId: number } | null;
+  unfreezeReason: string;
+  setUnfreezeReason: (reason: string) => void;
+  handleConfirmUnfreeze: () => void;
+  setUnfreezeTarget: (target: { practiceId: number } | null) => void;
 
   /** Extensión individual */
   extensionDialogOpen: boolean;
@@ -151,6 +156,11 @@ export interface UseEvaluationsCulminationReturn {
   auditHistoryData: AuditEntry[];
   auditHistoryLoading: boolean;
   handleViewAudit: (practiceId: number) => void;
+
+  /** Override de horas */
+  overrideTarget: { practice: PracticeWithEvaluations; reason: string } | null;
+  setOverrideTarget: (target: { practice: PracticeWithEvaluations; reason: string } | null) => void;
+  handleConfirmOverride: () => void;
 }
 
 export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => {
@@ -213,9 +223,17 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
   const [bulkExtensionSelectedIds, setBulkExtensionSelectedIds] = useState<number[]>([]);
   const [bulkExtensionReason, setBulkExtensionReason] = useState('');
 
+  const [unfreezeTarget, setUnfreezeTarget] = useState<{ practiceId: number } | null>(null);
+  const [unfreezeReason, setUnfreezeReason] = useState('');
+
   const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
   const [auditHistoryData, setAuditHistoryData] = useState<AuditEntry[]>([]);
   const [auditHistoryLoading, setAuditHistoryLoading] = useState(false);
+
+  const [overrideTarget, setOverrideTarget] = useState<{
+    practice: PracticeWithEvaluations;
+    reason: string;
+  } | null>(null);
 
   // ─── Data Fetching ──────────────────────────────────────
   const fetchPractices = useCallback(async () => {
@@ -330,22 +348,30 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
 
   // ─── Culmination Actions ────────────────────────────────
   const handleApprove = useCallback((practice: PracticeWithEvaluations) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Aprobar Culminación',
-      message: `¿Está seguro de aprobar la culminación de prácticas de ${practice.studentName}?`,
-      onConfirm: async () => {
-        try {
-          await evaluationsCulminationService.approveCulmination(practice.practiceId);
-          addToast(TOAST.updated(resourceName));
-          fetchPractices();
-        } catch (error) {
-          addToast(TOAST.updateError(resourceName));
-        } finally {
-          setConfirmDialog(null);
-        }
-      },
-    });
+    const hasEnoughHours = practice.totalHours >= practice.hoursRequired;
+
+    if (hasEnoughHours) {
+      // Normal flow — direct confirmation
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Aprobar Culminación',
+        message: `¿Está seguro de aprobar la culminación de prácticas de ${practice.studentName}?`,
+        onConfirm: async () => {
+          try {
+            await evaluationsCulminationService.approveCulmination(practice.practiceId);
+            addToast(TOAST.updated(resourceName));
+            fetchPractices();
+          } catch (error) {
+            addToast(TOAST.updateError(resourceName));
+          } finally {
+            setConfirmDialog(null);
+          }
+        },
+      });
+    } else {
+      // Hours deficit — show override dialog
+      setOverrideTarget({ practice, reason: '' });
+    }
   }, [fetchPractices]);
 
   const handleGenerateCertificate = useCallback((practice: PracticeWithEvaluations) => {
@@ -525,23 +551,23 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
   }, [fetchPractices]);
 
   const handleUnfreeze = useCallback((practiceId: number) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Descongelar Evaluación',
-      message: '¿Desea descongelar esta evaluación para correcciones?',
-      onConfirm: async () => {
-        try {
-          await evaluationService.unfreezePractice(practiceId, 'Corrección administrativa');
-          addToast({ ...TOAST.updated('Descongelar'), message: 'Evaluación descongelada exitosamente' });
-          fetchPractices();
-        } catch (error) {
-          addToast(TOAST.updateError('Descongelar'));
-        } finally {
-          setConfirmDialog(null);
-        }
-      },
-    });
-  }, [fetchPractices]);
+    setUnfreezeTarget({ practiceId });
+    setUnfreezeReason('');
+  }, []);
+
+  const handleConfirmUnfreeze = useCallback(async () => {
+    if (!unfreezeTarget || !unfreezeReason.trim()) return;
+    try {
+      await evaluationService.unfreezePractice(unfreezeTarget.practiceId, unfreezeReason.trim());
+      addToast({ ...TOAST.updated('Descongelar'), message: 'Evaluación descongelada exitosamente' });
+      fetchPractices();
+    } catch (error) {
+      addToast(TOAST.updateError('Descongelar'));
+    } finally {
+      setUnfreezeTarget(null);
+      setUnfreezeReason('');
+    }
+  }, [unfreezeTarget, unfreezeReason, fetchPractices]);
 
   const handleGrantExtension = useCallback((practiceId: number, studentName: string) => {
     setExtensionTarget({ practiceId, studentName });
@@ -675,6 +701,23 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     setConfirmDialog(null);
   }, []);
 
+  // ─── Hours Override ─────────────────────────────────────
+  const handleConfirmOverride = useCallback(async () => {
+    if (!overrideTarget || !overrideTarget.reason.trim()) return;
+    try {
+      await evaluationsCulminationService.approveCulmination(overrideTarget.practice.practiceId, {
+        overrideHours: true,
+        overrideReason: overrideTarget.reason.trim(),
+      });
+      addToast(TOAST.updated(resourceName));
+      fetchPractices();
+    } catch (error) {
+      addToast(TOAST.updateError(resourceName));
+    } finally {
+      setOverrideTarget(null);
+    }
+  }, [overrideTarget, fetchPractices]);
+
   return {
     practices,
     meta,
@@ -729,6 +772,11 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     handleMarkFailed,
     // Unfreeze
     handleUnfreeze,
+    unfreezeTarget,
+    unfreezeReason,
+    setUnfreezeReason,
+    handleConfirmUnfreeze,
+    setUnfreezeTarget,
     // Extension
     extensionDialogOpen,
     extensionTarget,
@@ -762,6 +810,10 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     auditHistoryData,
     auditHistoryLoading,
     handleViewAudit,
+    // Override
+    overrideTarget,
+    setOverrideTarget,
+    handleConfirmOverride,
   };
 };
 

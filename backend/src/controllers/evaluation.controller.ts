@@ -895,7 +895,7 @@ export const getBatchPracticeStatus = async (req: AuthRequest, res: Response) =>
     // 3. Traer evaluaciones de todas las prácticas
     const { data: evaluations, error: evalError } = await supabase
       .from('t_evaluation')
-      .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME, COMITE_MEMBER_INDEX')
+      .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME, COMITE_MEMBER_INDEX, FROZEN_AT')
       .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
       .eq('STATUS', 1);
 
@@ -966,7 +966,8 @@ export const getBatchPracticeStatus = async (req: AuthRequest, res: Response) =>
             memberIndex: e.COMITE_MEMBER_INDEX,
             score: e.TOTAL_SCORE,
             evaluatorName: e.EVALUATOR_NAME,
-            evaluationId: e.EVALUATION_ID
+            evaluationId: e.EVALUATION_ID,
+            frozenAt: e.FROZEN_AT || null
           });
           comite.completedCount = `${comite.members.length}/${committeeMin}`;
           comite.score = comite.members.length > 0
@@ -978,7 +979,8 @@ export const getBatchPracticeStatus = async (req: AuthRequest, res: Response) =>
             completed: true,
             score: e.TOTAL_SCORE,
             evaluatorName: e.EVALUATOR_NAME,
-            evaluationId: e.EVALUATION_ID
+            evaluationId: e.EVALUATION_ID,
+            frozenAt: e.FROZEN_AT || null
           };
         }
       });
@@ -1017,11 +1019,15 @@ export const getBatchPracticeStatus = async (req: AuthRequest, res: Response) =>
         }
       }
 
+      // Determinar si las evaluaciones de esta práctica están congeladas
+      const isFrozen = practiceEvals.some((e: any) => e.FROZEN_AT != null);
+
       result[practice.PROFESSIONAL_PRACTICE_ID] = {
         practiceId: String(practice.PROFESSIONAL_PRACTICE_ID),
         currentGrade: practice.GRADE,
         evaluationStatus,
         evaluations: statusMap,
+        isFrozen,
         finalGrade: finalGrade.toFixed(1),
         completedCount,
         canEvaluate: canEvaluate && !sequentialBlocked,

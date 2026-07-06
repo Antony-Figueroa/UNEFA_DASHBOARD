@@ -34,6 +34,10 @@ export interface EvaluationSummary {
   score: number;
   evaluatorName: string;
   evaluationId?: number;
+  /** Timestamp de congelación de la evaluación. Si tiene valor, la evaluación es de solo lectura */
+  frozenAt?: string | null;
+  // ponytail: backend envía members para COMITE, modal los necesita
+  members?: { memberIndex: number; evaluatorName: string; score: number; evaluationId: number }[];
 }
 
 /** Estado de evaluaciones por tipo */
@@ -75,10 +79,16 @@ export interface PracticeWithEvaluations {
   
   /** Horas trabajadas */
   totalHours: number;
-  
+
+  /** Horas requeridas según el tipo de práctica */
+  hoursRequired: number;
+
   /** Estado de evaluaciones */
   evaluationStatus: EvaluationStatus;
   evaluations: EvaluationState;
+  
+  /** Indica si las evaluaciones de esta práctica están congeladas (actas cerradas). Default: false */
+  isFrozen?: boolean;
   
   /** Nota final calculada (null si no hay evaluaciones) */
   finalGrade: number | null;

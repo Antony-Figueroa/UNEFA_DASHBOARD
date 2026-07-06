@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'http://127.0.0.1:54321';
-const serviceRole = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk1Nn0.EGIM96RAZx35l06S0vR7lJYSY7N1WIXrRwP9Tq5p8EM';
+const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
+const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!serviceRole) throw new Error('Set SUPABASE_SERVICE_ROLE_KEY env var before running');
 
 const supabase = createClient(supabaseUrl, serviceRole);
 

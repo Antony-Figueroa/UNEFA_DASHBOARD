@@ -547,64 +547,71 @@ export const updateEnrollment = async (req: AuthRequest, res: Response) => {
         if (changeError) console.error('[updateEnrollment] Error saving field changes:', changeError);
       }
 
-      // 3. Actualizar Tutores (soft-delete + insert)
+      // 3. Actualizar Tutores (upsert: buscar existente → UPDATE o INSERT)
       if (academicTutorId || methodologicalTutorId) {
-        // Obtener tutores actuales para el history
+        // Obtener tutores actuales (todos, activos e inactivos) para history y upsert
         const { data: oldTutors } = await supabase
           .from('t_professional_practices_tutor')
-          .select('TUTOR_ID, TUTOR_TYPE, t_tutors(t_persons!inner(first_name, last_name))')
-          .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
-          .eq('ACTIVE', true);
-
-        // Soft-delete: marcar como inactivos
-        await supabase
-          .from('t_professional_practices_tutor')
-          .update({ ACTIVE: false, UPDATED_AT: new Date().toISOString() })
-          .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
-          .eq('ACTIVE', true);
+          .select('TUTOR_ID, TUTOR_TYPE, ACTIVE, t_tutors(t_persons!inner(first_name, last_name))')
+          .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id));
 
         const tutorChanges = [];
-        const tutorsToInsert = [];
+
+        // Helper: upsert tutor (buscar existente → reactivar/UPDATE, o INSERT)
+        const upsertTutor = async (tutorId: number, tutorType: string) => {
+          const existing = oldTutors?.find((t: any) => t.TUTOR_TYPE === tutorType);
+          const oldName = existing?.t_tutors?.t_persons
+            ? `${(existing.t_tutors.t_persons as any).first_name} ${(existing.t_tutors.t_persons as any).last_name}`
+            : '';
+          const { data: newTutor } = await supabase.from('t_tutors').select('t_persons!inner(first_name, last_name)').eq('TUTOR_ID', tutorId).maybeSingle();
+          const newName = newTutor?.t_persons
+            ? `${(newTutor.t_persons as any).first_name} ${(newTutor.t_persons as any).last_name}`
+            : String(tutorId);
+
+          if (oldName && oldName !== newName) {
+            tutorChanges.push({ fieldName: tutorType === 'ACADEMICO' ? 'TUTOR_ACADEMICO' : 'TUTOR_METODOLOGICO', oldValue: oldName, newValue: newName });
+          }
+
+          if (existing) {
+            // Reactivar/UPDATE registro existente (evita conflicto de auto-increment)
+            const { error: updateErr } = await supabase
+              .from('t_professional_practices_tutor')
+              .update({ TUTOR_ID: tutorId, ACTIVE: true, UPDATED_AT: new Date().toISOString() })
+              .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
+              .eq('TUTOR_TYPE', tutorType);
+            if (updateErr) throw updateErr;
+          } else {
+            // INSERT solo si no existe ningún registro para este tipo
+            const { error: insertErr } = await supabase
+              .from('t_professional_practices_tutor')
+              .insert({
+                TUTOR_ID: tutorId,
+                PROFESSIONAL_PRACTICE_ID: parseInt(id),
+                TUTOR_TYPE: tutorType,
+                ACTIVE: true,
+                CREATED_AT: new Date().toISOString()
+              });
+            if (insertErr) throw insertErr;
+          }
+        };
 
         if (academicTutorId) {
-          const oldTutor = oldTutors?.find((t: any) => t.TUTOR_TYPE === 'ACADEMICO');
-          const oldName = oldTutor?.t_tutors?.t_persons ? `${(oldTutor.t_tutors.t_persons as any).first_name} ${(oldTutor.t_tutors.t_persons as any).last_name}` : '';
-          const { data: newTutor } = await supabase.from('t_tutors').select('t_persons!inner(first_name, last_name)').eq('TUTOR_ID', parseInt(academicTutorId)).maybeSingle();
-          const newName = newTutor?.t_persons ? `${(newTutor.t_persons as any).first_name} ${(newTutor.t_persons as any).last_name}` : academicTutorId;
-          if (oldName && oldName !== newName) {
-            tutorChanges.push({ fieldName: 'TUTOR_ACADEMICO', oldValue: oldName, newValue: newName });
-          }
-          tutorsToInsert.push({
-            TUTOR_ID: parseInt(academicTutorId),
-            PROFESSIONAL_PRACTICE_ID: parseInt(id),
-            TUTOR_TYPE: 'ACADEMICO',
-            ACTIVE: true,
-            CREATED_AT: new Date().toISOString()
-          });
+          await upsertTutor(parseInt(academicTutorId), 'ACADEMICO');
         }
 
         if (methodologicalTutorId) {
-          const oldTutor = oldTutors?.find((t: any) => t.TUTOR_TYPE === 'METODOLOGICO');
-          const oldName = oldTutor?.t_tutors?.t_persons ? `${(oldTutor.t_tutors.t_persons as any).first_name} ${(oldTutor.t_tutors.t_persons as any).last_name}` : '';
-          const { data: newTutor } = await supabase.from('t_tutors').select('t_persons!inner(first_name, last_name)').eq('TUTOR_ID', parseInt(methodologicalTutorId)).maybeSingle();
-          const newName = newTutor?.t_persons ? `${(newTutor.t_persons as any).first_name} ${(newTutor.t_persons as any).last_name}` : methodologicalTutorId;
-          if (oldName && oldName !== newName) {
-            tutorChanges.push({ fieldName: 'TUTOR_METODOLOGICO', oldValue: oldName, newValue: newName });
-          }
-          tutorsToInsert.push({
-            TUTOR_ID: parseInt(methodologicalTutorId),
-            PROFESSIONAL_PRACTICE_ID: parseInt(id),
-            TUTOR_TYPE: 'METODOLOGICO',
-            ACTIVE: true,
-            CREATED_AT: new Date().toISOString()
-          });
+          await upsertTutor(parseInt(methodologicalTutorId), 'METODOLOGICO');
         }
 
-        if (tutorsToInsert.length > 0) {
-          const { error: tutorsError } = await supabase
+        // Desactivar tutores que NO están en la nueva asignación
+        const activeTypes = [academicTutorId ? 'ACADEMICO' : null, methodologicalTutorId ? 'METODOLOGICO' : null].filter(Boolean);
+        if (activeTypes.length > 0) {
+          await supabase
             .from('t_professional_practices_tutor')
-            .insert(tutorsToInsert);
-          if (tutorsError) throw tutorsError;
+            .update({ ACTIVE: false, UPDATED_AT: new Date().toISOString() })
+            .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
+            .eq('ACTIVE', true)
+            .not('TUTOR_TYPE', 'in', `(${activeTypes.join(',')})`);
         }
 
         // Guardar cambios de tutores en tabla de historial

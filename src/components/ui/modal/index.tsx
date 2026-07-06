@@ -179,7 +179,7 @@ export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "
         {showCloseButton && (
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 p-2 rounded-full text-text-secondary hover:bg-bg-secondary dark:text-text-tertiary dark:hover:bg-white/5 transition-colors z-10"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-2 rounded-full text-text-secondary hover:bg-bg-secondary dark:text-text-tertiary dark:hover:bg-white/5 transition-colors z-10"
             aria-label="Cerrar modal"
           >
             <svg
@@ -219,11 +219,11 @@ export const ModalHeader: React.FC<{
   return (
     <div
       className={cn(
-        "px-6 py-4 border-b border-border-light dark:border-border-dark shrink-0",
+        "px-4 py-3 sm:px-6 sm:py-4 border-b border-border-light dark:border-border-dark shrink-0",
         className
       )}
     >
-      <h2 className="text-xl font-bold text-text-primary dark:text-text-emphasis">
+      <h2 className="text-lg sm:text-xl font-bold text-text-primary dark:text-text-emphasis">
         {children}
       </h2>
     </div>

@@ -5,8 +5,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { execSync } from 'child_process';
 
-const PROD_URL = 'https://rgvnwslyvixviypgegra.supabase.co';
-const PROD_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJndm53c2x5dml4dml5cGdlZ3JhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzg5MzA0NywiZXhwIjoyMDgzNDY5MDQ3fQ.DPCy1Mcz__uFfmgy-1czBxVTUUghRx6oOa84LPBI0kY';
+const PROD_URL = process.env.SUPABASE_URL || 'https://rgvnwslyvixviypgegra.supabase.co';
+const PROD_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!PROD_KEY) throw new Error('Set SUPABASE_SERVICE_ROLE_KEY env var before running');
 const prod = createClient(PROD_URL, PROD_KEY, { auth: { persistSession: false } });
 
 const PAGE_SIZE = 1000;

@@ -228,6 +228,17 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     }
   }, [isOpen, evaluationId, criteria, dataLoaded, isComiteMode]);
 
+  // Auto-fill tutor info para INSTITUCIONAL/ACADEMICO en creación nueva
+  useEffect(() => {
+    if (!isOpen || isComiteMode || evaluationId || !practiceId) return;
+    evaluationService.getPracticeTutorInfo(practiceId, evaluatorType).then(info => {
+      if (info) {
+        setValue('evaluatorName', info.name);
+        setValue('evaluatorCi', info.ci);
+      }
+    });
+  }, [isOpen, practiceId, evaluatorType, evaluationId, isComiteMode]);
+
   // Inicializar scores para el miembro activo en comité, o para creación normal
   useEffect(() => {
     if (criteria.length === 0 || dataLoaded) return;

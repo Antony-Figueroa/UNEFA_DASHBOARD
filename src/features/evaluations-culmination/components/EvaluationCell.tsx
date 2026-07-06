@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { CheckCircleIcon, TimeIcon, EyeIcon } from '../../../icons';
+import { CheckCircleIcon, TimeIcon, EyeIcon, LockIcon } from '../../../icons';
 import { EvaluatorType } from '../../../features/evaluations/types';
 
 interface EvaluationSummary {
@@ -12,6 +12,7 @@ interface EvaluationSummary {
   score: number;
   evaluatorName: string;
   evaluationId?: number;
+  frozenAt?: string | null;
 }
 
 interface EvaluationCellProps {
@@ -20,6 +21,8 @@ interface EvaluationCellProps {
   onEvaluate: (type: EvaluatorType, existingEvalId?: number) => void;
   onViewDetails: (evaluationId: number) => void;
   displayScale: number;
+  /** Si la práctica completa está congelada (actas cerradas), solo permite ver detalles */
+  isFrozen?: boolean;
 }
 
 export const EvaluationCell: React.FC<EvaluationCellProps> = ({
@@ -28,7 +31,30 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
   onEvaluate,
   onViewDetails,
   displayScale,
+  isFrozen = false,
 }) => {
+  // Congelada: solo permite ver detalles, no editar
+  if (isFrozen && evaluation.completed) {
+    return (
+      <div className="flex items-center justify-center gap-1">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            evaluation.evaluationId && onViewDetails(evaluation.evaluationId);
+          }}
+          className="flex items-center gap-1 px-2 py-1.5 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+          title="Ver detalles"
+        >
+          <EyeIcon className="w-4 h-4" />
+        </button>
+        <span className="flex items-center gap-1 px-2 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-lg" title="Actas cerradas — evaluación congelada">
+          <LockIcon className="w-3.5 h-3.5" />
+          <span className="font-medium">{Math.round((evaluation.score / displayScale) * 100)}%</span>
+        </span>
+      </div>
+    );
+  }
+
   if (evaluation.completed) {
     return (
       <div className="flex items-center justify-center gap-1">
@@ -54,6 +80,17 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
           <span>{Math.round((evaluation.score / displayScale) * 100)}%</span>
         </button>
       </div>
+    );
+  }
+
+  // Pendiente — si congelada, no permite crear
+  if (isFrozen) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500">
+        <TimeIcon className="w-4 h-4" />
+        <span>Pendiente</span>
+        <LockIcon className="w-3 h-3" />
+      </span>
     );
   }
 

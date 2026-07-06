@@ -107,7 +107,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
     // Obtener evaluaciones de todas las prácticas
     const { data: allEvaluations } = await supabase
       .from('t_evaluation')
-      .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME, STATUS')
+      .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME, STATUS, FROZEN_AT')
       .eq('STATUS', 1)
       .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
 
@@ -161,7 +161,8 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
             completed: true,
             score: e.TOTAL_SCORE || 0,
             evaluatorName: e.EVALUATOR_NAME || '',
-            evaluationId: e.EVALUATION_ID
+            evaluationId: e.EVALUATION_ID,
+            frozenAt: e.FROZEN_AT || null
           };
         }
       });
@@ -184,6 +185,9 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
           }, 0);
         finalGrade = Math.round(finalGrade * 100) / 100;
       }
+
+      // Determinar si las evaluaciones están congeladas (actas cerradas)
+      const isFrozen = evaluations.some(e => e.FROZEN_AT != null);
 
       // Obtener nota mínima de la carrera
       const minimumGrade = career?.MINIMUM_GRADE || 10;
@@ -231,6 +235,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
           ACADEMICO: statusMap['ACADEMICO'],
           COMITE: statusMap['COMITE']
         },
+        isFrozen,
         finalGrade,
         result: practiceResult,
         culminationStatus: culminStatus,

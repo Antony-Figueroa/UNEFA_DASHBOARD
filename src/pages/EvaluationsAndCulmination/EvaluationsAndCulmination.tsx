@@ -166,6 +166,7 @@ export default function EvaluationsAndCulminationPage() {
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
+                    isFrozen={practice.isFrozen}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -175,6 +176,7 @@ export default function EvaluationsAndCulminationPage() {
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
+                    isFrozen={practice.isFrozen}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -184,6 +186,7 @@ export default function EvaluationsAndCulminationPage() {
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
+                    isFrozen={practice.isFrozen}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -192,7 +195,17 @@ export default function EvaluationsAndCulminationPage() {
                   </span>
                 </TableCell>
                 <TableCell className="text-center">
-                  {getStatusBadge(practice.evaluationStatus)}
+                  <div className="flex items-center justify-center gap-1.5">
+                    {getStatusBadge(practice.evaluationStatus)}
+                    {practice.isFrozen && (
+                      <Badge color="warning" variant="light" className="text-xs">
+                        <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-6V9a4 4 0 00-8 0v2" />
+                        </svg>
+                        Actas Cerradas
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 {!hook.isReadOnly && (
                   <TableCell className="text-center">
@@ -200,7 +213,7 @@ export default function EvaluationsAndCulminationPage() {
                       { label: 'Retirar', onClick: () => hook.handleWithdraw(practice.practiceId, practice.studentName) },
                       { label: 'Reclasificar Retiro', onClick: () => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName) },
                       { label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' },
-                      { label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) },
+                      ...(practice.isFrozen ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }] : []),
                       { label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) },
                       { label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) },
                       { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
@@ -224,7 +237,17 @@ export default function EvaluationsAndCulminationPage() {
                 <p className="font-medium text-text-primary dark:text-text-emphasis truncate">{practice.studentName}</p>
                 <p className="text-xs text-text-tertiary">{practice.studentCi}</p>
               </div>
-              {getStatusBadge(practice.evaluationStatus)}
+              <div className="flex items-center gap-1.5">
+                {getStatusBadge(practice.evaluationStatus)}
+                {practice.isFrozen && (
+                  <Badge color="warning" variant="light" className="text-xs">
+                    <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-6V9a4 4 0 00-8 0v2" />
+                    </svg>
+                    Cerradas
+                  </Badge>
+                )}
+              </div>
             </div>
             <div className="space-y-1 text-xs text-text-secondary mb-3">
               <p><span className="font-medium">Período:</span> {practice.periodName}</p>
@@ -236,19 +259,19 @@ export default function EvaluationsAndCulminationPage() {
               <div className="text-center p-2 rounded bg-bg-subtle dark:bg-gray-700">
                 <p className="text-text-tertiary">Inst.</p>
                 <p className="font-bold text-text-primary">
-                  {practice.evaluations.INSTITUCIONAL?.grade != null ? `${practice.evaluations.INSTITUCIONAL.grade}` : '-'}
+                  {practice.evaluations.INSTITUCIONAL?.score != null ? `${Math.round((practice.evaluations.INSTITUCIONAL.score / evalConfig.score.displayScale) * 100)}%` : '-'}
                 </p>
               </div>
               <div className="text-center p-2 rounded bg-bg-subtle dark:bg-gray-700">
                 <p className="text-text-tertiary">Acad.</p>
                 <p className="font-bold text-text-primary">
-                  {practice.evaluations.ACADEMICO?.grade != null ? `${practice.evaluations.ACADEMICO.grade}` : '-'}
+                  {practice.evaluations.ACADEMICO?.score != null ? `${Math.round((practice.evaluations.ACADEMICO.score / evalConfig.score.displayScale) * 100)}%` : '-'}
                 </p>
               </div>
               <div className="text-center p-2 rounded bg-bg-subtle dark:bg-gray-700">
                 <p className="text-text-tertiary">Comité</p>
                 <p className="font-bold text-text-primary">
-                  {practice.evaluations.COMITE?.grade != null ? `${practice.evaluations.COMITE.grade}` : '-'}
+                  {practice.evaluations.COMITE?.score != null ? `${Math.round((practice.evaluations.COMITE.score / evalConfig.score.displayScale) * 100)}%` : '-'}
                 </p>
               </div>
             </div>
@@ -261,9 +284,16 @@ export default function EvaluationsAndCulminationPage() {
             {/* Mobile actions */}
             {!hook.isReadOnly && (
               <div className="pt-3 border-t border-border-default dark:border-border-dark flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={() => hook.handleOpenEvaluation(practice, 'INSTITUCIONAL')}>
-                  Evaluar
-                </Button>
+                {!practice.isFrozen && (
+                  <Button size="sm" variant="outline" onClick={() => hook.handleOpenEvaluation(practice, 'INSTITUCIONAL')}>
+                    Evaluar
+                  </Button>
+                )}
+                {practice.isFrozen && (
+                  <Button size="sm" variant="outline" onClick={() => hook.handleUnfreeze(practice.practiceId)}>
+                    Descongelar
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)}>
                   <EyeIcon className="w-4 h-4" />
                 </Button>
@@ -522,6 +552,33 @@ export default function EvaluationsAndCulminationPage() {
         variant="info"
       />
 
+      {/* Descongelar — input de razón */}
+      <UnifiedDialog
+        isOpen={!!hook.unfreezeTarget}
+        onClose={() => hook.setUnfreezeTarget(null)}
+        onConfirm={hook.handleConfirmUnfreeze}
+        title="Descongelar Evaluación"
+        confirmLabel="Descongelar"
+        variant="warning"
+        confirmStartIcon={
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-6V9a4 4 0 00-8 0v2" />
+          </svg>
+        }
+      >
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          Ingrese la razón para descongelar esta evaluación:
+        </p>
+        <input
+          type="text"
+          value={hook.unfreezeReason}
+          onChange={(e) => hook.setUnfreezeReason(e.target.value)}
+          placeholder="Ej: Corrección administrativa"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white"
+          autoFocus
+        />
+      </UnifiedDialog>
+
       {hook.selectedPracticeForEval && (
         <EvaluationModal
           isOpen={hook.evalModalOpen}
@@ -531,6 +588,7 @@ export default function EvaluationsAndCulminationPage() {
           evaluationId={hook.editingEvaluationId}
           existingComiteMembers={hook.selectedPracticeForEval.evaluations.COMITE.members || []}
           onSuccess={hook.handleEvaluationSuccess}
+          isFrozen={hook.selectedPracticeForEval.isFrozen}
         />
       )}
 

@@ -112,6 +112,11 @@ export interface UseEvaluationsCulminationReturn {
 
   /** Descongelar */
   handleUnfreeze: (practiceId: number) => void;
+  unfreezeTarget: { practiceId: number } | null;
+  unfreezeReason: string;
+  setUnfreezeReason: (reason: string) => void;
+  handleConfirmUnfreeze: () => void;
+  setUnfreezeTarget: (target: { practiceId: number } | null) => void;
 
   /** Extensión individual */
   extensionDialogOpen: boolean;
@@ -212,6 +217,9 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
   const [bulkExtensionOpen, setBulkExtensionOpen] = useState(false);
   const [bulkExtensionSelectedIds, setBulkExtensionSelectedIds] = useState<number[]>([]);
   const [bulkExtensionReason, setBulkExtensionReason] = useState('');
+
+  const [unfreezeTarget, setUnfreezeTarget] = useState<{ practiceId: number } | null>(null);
+  const [unfreezeReason, setUnfreezeReason] = useState('');
 
   const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
   const [auditHistoryData, setAuditHistoryData] = useState<AuditEntry[]>([]);
@@ -525,23 +533,23 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
   }, [fetchPractices]);
 
   const handleUnfreeze = useCallback((practiceId: number) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Descongelar Evaluación',
-      message: '¿Desea descongelar esta evaluación para correcciones?',
-      onConfirm: async () => {
-        try {
-          await evaluationService.unfreezePractice(practiceId, 'Corrección administrativa');
-          addToast({ ...TOAST.updated('Descongelar'), message: 'Evaluación descongelada exitosamente' });
-          fetchPractices();
-        } catch (error) {
-          addToast(TOAST.updateError('Descongelar'));
-        } finally {
-          setConfirmDialog(null);
-        }
-      },
-    });
-  }, [fetchPractices]);
+    setUnfreezeTarget({ practiceId });
+    setUnfreezeReason('');
+  }, []);
+
+  const handleConfirmUnfreeze = useCallback(async () => {
+    if (!unfreezeTarget || !unfreezeReason.trim()) return;
+    try {
+      await evaluationService.unfreezePractice(unfreezeTarget.practiceId, unfreezeReason.trim());
+      addToast({ ...TOAST.updated('Descongelar'), message: 'Evaluación descongelada exitosamente' });
+      fetchPractices();
+    } catch (error) {
+      addToast(TOAST.updateError('Descongelar'));
+    } finally {
+      setUnfreezeTarget(null);
+      setUnfreezeReason('');
+    }
+  }, [unfreezeTarget, unfreezeReason, fetchPractices]);
 
   const handleGrantExtension = useCallback((practiceId: number, studentName: string) => {
     setExtensionTarget({ practiceId, studentName });
@@ -729,6 +737,11 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     handleMarkFailed,
     // Unfreeze
     handleUnfreeze,
+    unfreezeTarget,
+    unfreezeReason,
+    setUnfreezeReason,
+    handleConfirmUnfreeze,
+    setUnfreezeTarget,
     // Extension
     extensionDialogOpen,
     extensionTarget,

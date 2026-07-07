@@ -128,6 +128,15 @@ export default function EvaluationsAndCulminationPage() {
   // Estado de filtros activos
   const hasActiveFilters = Object.keys(hook.filters).length > 0;
 
+  /** Returns Tailwind text color class based on grade value (1-10 scale) */
+  const getGradeColor = (grade: number | null | undefined): string => {
+    if (grade == null) return 'text-text-tertiary';
+    if (grade >= 9) return 'text-success-600 dark:text-success-400';
+    if (grade >= 7) return 'text-text-primary dark:text-text-emphasis';
+    if (grade >= 6) return 'text-warning-600 dark:text-warning-400';
+    return 'text-error-600 dark:text-error-400';
+  };
+
   // ─── Render: Evaluations tab ────────────────────────────
   const renderEvaluationsTab = () => (
     <>

@@ -251,10 +251,23 @@ export const evaluationService = {
     }
   },
 
+  /**
+   * Marca una práctica como reprobada
+   * POST /evaluations/:practiceId/mark-failed
+   */
+  markFailed: async (practiceId: number): Promise<void> => {
+    try {
+      await apiClient.post(`${API_URL}/${practiceId}/mark-failed`);
+    } catch (error) {
+      console.error('[evaluationService] Error marking practice as failed:', error);
+      throw error;
+    }
+  },
+
   getCommitteeAssignments: async (practiceId: number): Promise<CommitteeAssignment[]> => {
     try {
       const response = await apiClient.get<{ success: boolean; data: CommitteeAssignment[] }>(
-        `/committee-assignments/${practiceId}`
+        `/committee/${practiceId}`
       );
       return response.data.data || [];
     } catch (error) {
@@ -268,7 +281,7 @@ export const evaluationService = {
     members: { memberIndex: number; evaluatorName: string; evaluatorCi?: string }[]
   ): Promise<void> => {
     try {
-      await apiClient.post('/committee-assignments', { practiceId, members });
+      await apiClient.post('/committee', { practiceId, members });
     } catch (error) {
       console.error('[evaluationService] Error upserting committee assignments:', error);
       throw error;
@@ -299,23 +312,6 @@ export const evaluationService = {
     }
   },
 
-  updatePracticeStatus: async (
-    practiceId: number,
-    status: string,
-    withdrawalType?: string,
-    reason?: string
-  ): Promise<void> => {
-    try {
-      await apiClient.post(`/practices/${practiceId}/status`, {
-        status,
-        withdrawalType,
-        reason,
-      });
-    } catch (error) {
-      console.error('[evaluationService] Error updating practice status:', error);
-      throw error;
-    }
-  },
 };
 
 export default evaluationService;

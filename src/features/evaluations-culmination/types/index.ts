@@ -88,6 +88,9 @@ export interface PracticeWithEvaluations {
   /** Horas trabajadas */
   totalHours: number;
   
+  /** Horas requeridas por el tipo de práctica (default: 360) */
+  hoursRequired?: number;
+  
   /** Estado de evaluaciones */
   evaluationStatus: EvaluationStatus;
   evaluations: EvaluationState;
@@ -100,6 +103,15 @@ export interface PracticeWithEvaluations {
   
   /** Resultado de la práctica */
   result: PracticeResult;
+  
+  /** Estado de la práctica en DB (INSCRITO, RETIRADO, REPROBADO, CULMINADO, etc.) */
+  practicesStatus?: string;
+  
+  /** Indica si la extensión está otorgada */
+  extensionGranted?: boolean;
+  
+  /** Indica si las evaluaciones de esta práctica están congeladas (actas cerradas). Default: false */
+  isFrozen?: boolean;
   
   /** Información de certificado */
   certificateNumber?: string;

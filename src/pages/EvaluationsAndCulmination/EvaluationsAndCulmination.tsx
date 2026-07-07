@@ -17,7 +17,7 @@ import { EmptyState } from '../../components/ui/table/EmptyState';
 import { TableSkeleton } from '../../components/ui/skeleton';
 import UnifiedDialog from '../../components/ui/dialog/UnifiedDialog';
 import { DownloadIcon, CheckCircleIcon, EyeIcon } from '../../icons';
-import { ThreeDotsIcon } from '../../icons/actions';
+import { ActionDropdown, type ActionItem } from '../../features/evaluations-culmination/components/ActionDropdown';
 import { StudentDetailModal } from '../../features/student-detail/components/StudentDetailModal';
 import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
 import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
@@ -28,6 +28,7 @@ import { EvaluationFilters } from '../../features/evaluations-culmination/compon
 import { EvaluationActions } from '../../features/evaluations-culmination/components/EvaluationActions';
 import { BulkExtensionModal } from '../../features/evaluations-culmination/components/BulkExtensionModal';
 import { AuditHistoryModal } from '../../features/evaluations-culmination/components/AuditHistoryModal';
+import { CommitteeModal } from '../../features/evaluations-culmination/components/CommitteeModal';
 import { useEvaluationsCulmination } from '../../features/evaluations-culmination/hooks/useEvaluationsCulmination';
 import { Tabs } from '../../components/ui/tabs/Tabs';
 import { useTabs } from '../../hooks/useTabs';
@@ -195,67 +196,41 @@ export default function EvaluationsAndCulminationPage() {
                 </TableCell>
                 {!hook.isReadOnly && (
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <div className="relative group">
-                        <button className="p-1.5 rounded-lg hover:bg-bg-subtle dark:hover:bg-gray-700 transition-colors">
-                           <ThreeDotsIcon className="w-4 h-4 text-text-tertiary" />
-                        </button>
-                        {/* Dropdown menu */}
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-border-default dark:border-border-dark rounded-lg shadow-lg z-10 hidden group-hover:block">
-                          <div className="py-1">
-                            <button
-                              onClick={() => hook.handleWithdraw(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Retirar
-                            </button>
-                            <button
-                              onClick={() => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Reclasificar Retiro
-                            </button>
-                            <button
-                              onClick={() => hook.handleMarkFailed(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-error-600 dark:text-error-400 hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Marcar Reprobado
-                            </button>
-                            <button
-                              onClick={() => hook.handleUnfreeze(practice.practiceId)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Descongelar
-                            </button>
-                            <button
-                              onClick={() => hook.handleGrantExtension(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Otorgar Extensión
-                            </button>
-                            <button
-                              onClick={() => hook.handleRevokeExtension(practice.practiceId)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Revocar Extensión
-                            </button>
-                            <button
-                              onClick={() => hook.handleOpenCommittee(practice.practiceId, practice.studentName)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Gestionar Comité
-                            </button>
-                            <div className="border-t border-border-default dark:border-border-dark" />
-                            <button
-                              onClick={() => hook.handleViewAudit(practice.practiceId)}
-                              className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-subtle dark:hover:bg-gray-700"
-                            >
-                              Ver Auditoría
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <ActionDropdown actions={[
+                      // Retirar — solo si no está ya retirado/reprobado/culminado
+                      ...(practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'CULMINADO'
+                        ? [{ label: 'Retirar', onClick: () => hook.handleWithdraw(practice.practiceId, practice.studentName) }]
+                        : []),
+                      // Reclasificar Retiro — solo si está retirado
+                      ...(practice.practicesStatus === 'RETIRADO'
+                        ? [{ label: 'Reclasificar Retiro', onClick: () => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName) }]
+                        : []),
+                      // Marcar Reprobado — solo si no está ya reprobado/retirado/culminado
+                      ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
+                        ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
+                        : []),
+                      // Descongelar — solo si está congelado
+                      ...(practice.isFrozen
+                        ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
+                        : []),
+                      // Culminar — solo si evaluaciones completas, aprobado, y pendiente de culminar
+                      ...(practice.evaluationStatus === 'completed' && practice.result === 'approved' && practice.culminationStatus === 'pending'
+                        ? [{ label: 'Culminar', onClick: () => hook.handleApprove(practice), className: 'text-success-600 dark:text-success-400' }]
+                        : []),
+                      // Otorgar Extensión — solo si no tiene extensión
+                      ...(!practice.extensionGranted
+                        ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
+                        : []),
+                      // Revocar Extensión — solo si tiene extensión
+                      ...(practice.extensionGranted
+                        ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
+                        : []),
+                      // Gestionar Comité — siempre visible
+                      { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
+                      { separator: true, label: '', onClick: () => {} },
+                      // Ver Auditoría — siempre visible
+                      { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                    ]} />
                   </TableCell>
                 )}
               </TableRow>
@@ -263,6 +238,75 @@ export default function EvaluationsAndCulminationPage() {
           </TableBody>
         </Table>
       </div>
+      {/* Mobile cards */}
+      <div className="md:hidden flex flex-col gap-4 mb-4">
+        {paginatedData.map(practice => (
+          <div key={practice.practiceId} className="bg-white dark:bg-gray-800 rounded-lg border border-border-default dark:border-border-dark p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div className="min-w-0">
+                <p className="font-medium text-text-primary dark:text-text-emphasis truncate">{practice.studentName}</p>
+                <p className="text-xs text-text-tertiary">{practice.studentCi}</p>
+              </div>
+              {getStatusBadge(practice.evaluationStatus)}
+            </div>
+            <div className="space-y-1 text-xs text-text-secondary mb-3">
+              <p><span className="font-medium">Carrera:</span> {practice.careerName}</p>
+              <p><span className="font-medium">Período:</span> {practice.periodName}</p>
+              <p><span className="font-medium">Tipo:</span> {practice.practiceType}</p>
+            </div>
+            <div className="flex justify-between items-center mb-2 text-sm">
+              <span className="text-text-secondary">Institucional:</span>
+              <span className={`font-medium ${getGradeColor(practice.institutionalScore ?? practice.grade)}`}>{practice.institutionalScore != null ? practice.institutionalScore.toFixed(1) : (practice.grade != null ? practice.grade.toFixed(1) : '—')}</span>
+            </div>
+            <div className="flex justify-between items-center mb-2 text-sm">
+              <span className="text-text-secondary">Académica:</span>
+              <span className={`font-medium ${getGradeColor(practice.academicScore)}`}>{practice.academicScore != null ? practice.academicScore.toFixed(1) : '—'}</span>
+            </div>
+            <div className="flex justify-between items-center mb-2 text-sm">
+              <span className="text-text-secondary">Comité:</span>
+              <span className={`font-medium ${getGradeColor(practice.committeeScore)}`}>{practice.committeeScore != null ? practice.committeeScore.toFixed(1) : '—'}</span>
+            </div>
+            <div className="flex justify-between items-center mb-3 text-sm">
+              <span className="text-text-secondary font-medium">Promedio:</span>
+              <span className={`font-semibold ${getGradeColor(practice.weightedAverage)}`}>{practice.weightedAverage != null ? practice.weightedAverage.toFixed(1) : '—'}</span>
+            </div>
+            <div className="pt-3 border-t border-border-default dark:border-border-dark flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)} className="flex-1">
+                <EyeIcon className="w-4 h-4" /> Ver
+              </Button>
+              {!hook.isReadOnly && (
+                <ActionDropdown actions={[
+                  ...(practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'CULMINADO'
+                    ? [{ label: 'Retirar', onClick: () => hook.handleWithdraw(practice.practiceId, practice.studentName) }]
+                    : []),
+                  ...(practice.practicesStatus === 'RETIRADO'
+                    ? [{ label: 'Reclasificar Retiro', onClick: () => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName) }]
+                    : []),
+                  ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
+                    ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
+                    : []),
+                  ...(practice.isFrozen
+                    ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
+                    : []),
+                  ...(practice.evaluationStatus === 'completed' && practice.result === 'approved' && practice.culminationStatus === 'pending'
+                    ? [{ label: 'Culminar', onClick: () => hook.handleApprove(practice), className: 'text-success-600 dark:text-success-400' }]
+                    : []),
+                  ...(!practice.extensionGranted
+                    ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
+                    : []),
+                  ...(practice.extensionGranted
+                    ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
+                    : []),
+                  { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
+                  { separator: true, label: '', onClick: () => {} },
+                  { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                ]} />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
       {totalPages > 1 && (
         <Pagination
           currentPage={hook.currentPage}
@@ -338,6 +382,25 @@ export default function EvaluationsAndCulminationPage() {
                         <DownloadIcon className="w-4 h-4" />
                       </Button>
                     )}
+                    {!hook.isReadOnly && (
+                      <ActionDropdown actions={[
+                        ...(practice.practicesStatus === 'RETIRADO'
+                          ? [{ label: 'Reclasificar Retiro', onClick: () => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName) }]
+                          : []),
+                        ...(practice.isFrozen
+                          ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
+                          : []),
+                        ...(!practice.extensionGranted
+                          ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
+                          : []),
+                        ...(practice.extensionGranted
+                          ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
+                          : []),
+                        { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
+                        { separator: true, label: '', onClick: () => {} },
+                        { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                      ]} />
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -368,16 +431,38 @@ export default function EvaluationsAndCulminationPage() {
               </p>
             )}
             <div className="pt-3 border-t border-border-default dark:border-border-dark flex gap-2">
-              {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
-                <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>Aprobar</Button>
-              )}
+              <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)} className="flex-1">
+                <EyeIcon className="w-4 h-4" /> Ver
+              </Button>
               {practice.culminationStatus === 'approved' && (
-                <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)}>Certificar</Button>
+                <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)} className="flex-1">Certificar</Button>
               )}
               {practice.culminationStatus === 'certified' && (
-                <Button size="sm" variant="outline" onClick={() => hook.handleDownloadPdf(practice)}>
+                <Button size="sm" variant="outline" onClick={() => hook.handleDownloadPdf(practice)} className="flex-1">
                   <DownloadIcon className="w-4 h-4" /> PDF
                 </Button>
+              )}
+              {!hook.isReadOnly && (
+                <ActionDropdown actions={[
+                  ...(practice.practicesStatus === 'RETIRADO'
+                    ? [{ label: 'Reclasificar Retiro', onClick: () => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName) }]
+                    : []),
+                  ...(practice.isFrozen
+                    ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
+                    : []),
+                  ...(practice.evaluationStatus === 'completed' && practice.result === 'approved' && practice.culminationStatus === 'pending'
+                    ? [{ label: 'Culminar', onClick: () => hook.handleApprove(practice), className: 'text-success-600 dark:text-success-400' }]
+                    : []),
+                  ...(!practice.extensionGranted
+                    ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
+                    : []),
+                  ...(practice.extensionGranted
+                    ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
+                    : []),
+                  { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
+                  { separator: true, label: '', onClick: () => {} },
+                  { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                ]} />
               )}
             </div>
           </div>
@@ -644,6 +729,17 @@ export default function EvaluationsAndCulminationPage() {
         data={hook.auditHistoryData}
         loading={hook.auditHistoryLoading}
       />
+
+      {/* Committee assignment modal */}
+      {hook.committeeTarget && (
+        <CommitteeModal
+          isOpen={hook.committeeDialogOpen}
+          onClose={() => hook.setCommitteeDialogOpen(false)}
+          practiceId={hook.committeeTarget.practiceId}
+          studentName={hook.committeeTarget.studentName}
+          onSuccess={hook.refresh}
+        />
+      )}
     </>
   );
 }

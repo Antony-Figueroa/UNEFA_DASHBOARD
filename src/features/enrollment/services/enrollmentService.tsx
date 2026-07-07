@@ -76,6 +76,22 @@ export const withdrawPractice = async (
 };
 
 /**
+ * Reclasifica un retiro injustificado a justificado.
+ * PATCH /enrollments/:id/reclassify-withdrawal
+ *
+ * @param practiceId - The practice ID.
+ * @param justificationReason - Required reason (min 10 chars).
+ */
+export const reclassifyWithdrawal = async (
+  practiceId: string,
+  justificationReason: string,
+): Promise<void> => {
+  await apiClient.patch(`${API_URL}/${practiceId}/reclassify-withdrawal`, {
+    justificationReason,
+  });
+};
+
+/**
  * Deletes (soft-deactivates) an enrollment record by its ID.
  * 
  * @param id - The unique identifier of the enrollment.

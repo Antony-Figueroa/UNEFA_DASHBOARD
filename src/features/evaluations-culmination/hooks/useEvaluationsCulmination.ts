@@ -18,6 +18,7 @@ import {
 import type { EvaluatorType } from '../../evaluations/types';
 import { evaluationsCulminationService } from '../services/evaluationsCulminationService';
 import { evaluationService, type AuditEntry } from '../../evaluations/services/evaluationService';
+import { withdrawPractice, reclassifyWithdrawal } from '../../enrollment/services/enrollmentService';
 import { useAuth } from '../../../context/auth';
 import { matchSearch } from '../../../utils/searchNormalizer';
 import { generateCertificatePDF } from '../../../components/ui/pdf/templates/CertificatePDF';
@@ -348,7 +349,7 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
 
   // ─── Culmination Actions ────────────────────────────────
   const handleApprove = useCallback((practice: PracticeWithEvaluations) => {
-    const hasEnoughHours = practice.totalHours >= practice.hoursRequired;
+    const hasEnoughHours = practice.totalHours >= (practice.hoursRequired ?? 360);
 
     if (hasEnoughHours) {
       // Normal flow — direct confirmation
@@ -497,10 +498,9 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
   const handleConfirmWithdraw = useCallback(async () => {
     if (!withdrawTarget) return;
     try {
-      await evaluationService.updatePracticeStatus(
-        withdrawTarget.practiceId,
-        'withdrawn',
-        withdrawType,
+      await withdrawPractice(
+        String(withdrawTarget.practiceId),
+        withdrawType as 'justified' | 'unjustified',
         withdrawReason
       );
       addToast({ ...TOAST.updated('Retiro'), message: `Retiro ${withdrawType === 'justified' ? 'justificado' : 'injustificado'} registrado para ${withdrawTarget.studentName}` });
@@ -517,10 +517,16 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     setConfirmDialog({
       isOpen: true,
       title: 'Reclasificar Retiro',
-      message: `¿Desea reclasificar el tipo de retiro de ${studentName}?`,
+      message: `¿Desea reclasificar el retiro injustificado de ${studentName} a justificado? Ingrese el motivo en el siguiente paso.`,
       onConfirm: async () => {
         try {
-          await evaluationService.updatePracticeStatus(practiceId, 'reclassified');
+          // Pedir motivo al usuario — usamos un prompt temporal
+          const reason = window.prompt('Motivo de la reclasificación (mínimo 10 caracteres):');
+          if (!reason || reason.trim().length < 10) {
+            toast.error('Debe proporcionar un motivo de al menos 10 caracteres');
+            return;
+          }
+          await reclassifyWithdrawal(String(practiceId), reason.trim());
           addToast({ ...TOAST.updated('Reclasificación'), message: `Retiro reclasificado exitosamente para ${studentName}` });
           fetchPractices();
         } catch (error) {
@@ -539,11 +545,11 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
       message: `¿Está seguro de marcar como reprobado el práctico de ${studentName}? Esta acción es irreversible.`,
       onConfirm: async () => {
         try {
-          await evaluationService.updatePracticeStatus(practiceId, 'failed');
-          addToast({ ...TOAST.updated('Resultado'), message: `${studentName} marcado como reprobado` });
+          await evaluationService.markFailed(practiceId);
+          addToast({ ...TOAST.updated('Reprobado'), message: `${studentName} marcado como reprobado` });
           fetchPractices();
         } catch (error) {
-          addToast(TOAST.updateError('Resultado'));
+          addToast(TOAST.updateError('Reprobado'));
         } finally {
           setConfirmDialog(null);
         }

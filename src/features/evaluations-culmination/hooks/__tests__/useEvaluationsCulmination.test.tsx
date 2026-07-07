@@ -58,7 +58,7 @@ vi.mock('../../services/evaluationsCulminationService', () => ({
 // Mock evaluationService
 vi.mock('../../../evaluations/services/evaluationService', () => ({
   evaluationService: {
-    updatePracticeStatus: vi.fn().mockResolvedValue(undefined),
+    markFailed: vi.fn().mockResolvedValue(undefined),
     unfreezePractice: vi.fn().mockResolvedValue(undefined),
     grantExtension: vi.fn().mockResolvedValue(undefined),
     revokeExtension: vi.fn().mockResolvedValue(undefined),
@@ -67,6 +67,12 @@ vi.mock('../../../evaluations/services/evaluationService', () => ({
     exportEvaluationsExcel: vi.fn().mockResolvedValue(new Blob()),
     getAuditHistory: vi.fn().mockResolvedValue([]),
   },
+}));
+
+// Mock enrollmentService
+vi.mock('../../../enrollment/services/enrollmentService', () => ({
+  withdrawPractice: vi.fn().mockResolvedValue(undefined),
+  reclassifyWithdrawal: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock useAuth — path relative to THIS test file (hooks/__tests__/)

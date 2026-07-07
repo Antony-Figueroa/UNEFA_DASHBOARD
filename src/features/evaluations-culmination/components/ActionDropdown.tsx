@@ -33,7 +33,6 @@ export const ActionDropdown: React.FC<ActionDropdownProps> = ({ actions, disable
   const [activeIndex, setActiveIndex] = useState(0);
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const portalRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const interactiveActions = useMemo(() => getInteractiveActions(actions), [actions]);
@@ -68,14 +67,14 @@ export const ActionDropdown: React.FC<ActionDropdownProps> = ({ actions, disable
     const handler = (e: MouseEvent) => {
       if (
         menuRef.current && !menuRef.current.contains(e.target as Node) &&
-        btnRef.current && !btnRef.current.contains(e.target as Node) &&
-        portalRef.current && !portalRef.current.contains(e.target as Node)
+        btnRef.current && !btnRef.current.contains(e.target as Node)
       ) {
         setOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    // Delay to avoid closing on the same click that opened
+    const timer = setTimeout(() => document.addEventListener('mousedown', handler), 0);
+    return () => { clearTimeout(timer); document.removeEventListener('mousedown', handler); };
   }, [open]);
 
   // Keyboard on menu
@@ -105,7 +104,6 @@ export const ActionDropdown: React.FC<ActionDropdownProps> = ({ actions, disable
           setActiveIndex(interactiveActions.length - 1);
           break;
         case 'Tab':
-          // Trap focus inside menu
           e.preventDefault();
           if (e.shiftKey) {
             setActiveIndex(prev => (prev - 1 + interactiveActions.length) % interactiveActions.length);
@@ -134,7 +132,8 @@ export const ActionDropdown: React.FC<ActionDropdownProps> = ({ actions, disable
     }
   }, [open, activeIndex]);
 
-  const toggle = useCallback(() => {
+  const toggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!open) {
       calculatePosition();
       setActiveIndex(0);
@@ -160,7 +159,7 @@ export const ActionDropdown: React.FC<ActionDropdownProps> = ({ actions, disable
   }, [actions]);
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative inline-block">
       <button
         ref={btnRef}
         type="button"
@@ -173,10 +172,10 @@ export const ActionDropdown: React.FC<ActionDropdownProps> = ({ actions, disable
         <ThreeDotsIcon className="w-4 h-4 text-text-tertiary" />
       </button>
 
-      <AnimatePresence>
-        {open && createPortal(
+      {open && createPortal(
+        <AnimatePresence>
           <motion.div
-            ref={portalRef}
+            ref={menuRef}
             initial={{ opacity: 0, y: -8, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
@@ -221,10 +220,10 @@ export const ActionDropdown: React.FC<ActionDropdownProps> = ({ actions, disable
                 </button>
               );
             })}
-          </motion.div>,
-          document.body
-        )}
-      </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };

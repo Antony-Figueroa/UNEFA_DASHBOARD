@@ -108,7 +108,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
     // Obtener evaluaciones de todas las prácticas
     const { data: allEvaluations } = await supabase
       .from('t_evaluation')
-      .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME, STATUS, FROZEN_AT')
+      .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME, STATUS, FROZEN_AT, UNFROZEN_AT')
       .eq('STATUS', 1)
       .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
 
@@ -188,7 +188,8 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
       }
 
       // Determinar si las evaluaciones están congeladas (actas cerradas)
-      const isFrozen = evaluations.some(e => e.FROZEN_AT != null);
+      // Frozen = FROZEN_AT set AND UNFROZEN_AT null (not yet unfrozen)
+      const isFrozen = evaluations.some(e => e.FROZEN_AT != null && e.UNFROZEN_AT == null);
 
       // Obtener nota mínima de la carrera
       const minimumGrade = career?.MINIMUM_GRADE || 10;

@@ -1434,11 +1434,14 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Normalize practiceIds to numbers
+    const normalizedIds = practiceIds.map((id: any) => Number(id)).filter((id: any) => !isNaN(id));
+
     // Validar que todas las prácticas existan
     const { data: practices, error: practicesError } = await supabase
       .from('t_professional_practices')
       .select('PROFESSIONAL_PRACTICE_ID')
-      .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
+      .in('PROFESSIONAL_PRACTICE_ID', normalizedIds);
 
     if (practicesError || !practices || practices.length === 0) {
       return res.status(404).json({
@@ -1447,12 +1450,34 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Congelar evaluaciones que aún no estén congeladas
-    const { data: frozenResult, error: freezeError } = await (supabase
+    // Step 1: Fetch ALL evaluations for these practices, filter non-frozen in JS
+    // "Not frozen" = never frozen (FROZEN_AT null) OR previously unfrozen (UNFROZEN_AT set)
+    const { data: allEvals, error: findError } = await supabase
       .from('t_evaluation')
-      .update({ FROZEN_AT: new Date().toISOString() }) as any)
-      .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
-      .is('FROZEN_AT', null)
+      .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID, FROZEN_AT, UNFROZEN_AT')
+      .in('PROFESSIONAL_PRACTICE_ID', normalizedIds);
+
+    if (findError) throw findError;
+
+    const unfrozenEvals = (allEvals || []).filter((e: any) =>
+      e.FROZEN_AT == null || e.UNFROZEN_AT != null
+    );
+
+    if (unfrozenEvals.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No hay evaluaciones para congelar. Todas ya están congeladas.'
+      });
+    }
+
+    // Step 2: Update only the non-frozen evaluation IDs, clear UNFROZEN_AT
+    const evalIds = unfrozenEvals.map((e: any) => e.EVALUATION_ID);
+    const now = new Date().toISOString();
+
+    const { data: frozenResult, error: freezeError } = await supabase
+      .from('t_evaluation')
+      .update({ FROZEN_AT: now, UNFROZEN_AT: null, UNFREEZE_REASON: null, UNFREEZE_AUTHORIZED_BY: null })
+      .in('EVALUATION_ID', evalIds)
       .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID');
 
     if (freezeError) throw freezeError;
@@ -1462,7 +1487,7 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
     if (frozenCount === 0) {
       return res.status(400).json({
         success: false,
-        message: 'No hay evaluaciones para congelar. Todas ya están congeladas.'
+        message: 'No se pudieron congelar las evaluaciones.'
       });
     }
 
@@ -1473,7 +1498,7 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
         await auditCreate(req, 't_evaluation', {
           PROFESSIONAL_PRACTICE_ID: pid,
           ACTION: 'FREEZE',
-          FROZEN_AT: new Date().toISOString()
+          FROZEN_AT: now
         }, ['PROFESSIONAL_PRACTICE_ID', 'ACTION', 'FROZEN_AT']);
       }
     } catch (auditError) {
@@ -1585,10 +1610,11 @@ export const unfreezeEvaluation = async (req: AuthRequest, res: Response) => {
 export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Response) => {
   try {
     const { practiceId, reason } = req.body;
+    const normalizedPracticeId = Number(practiceId);
     const userId = req.user?.userId;
     const supabase = dbManager.getConnection();
 
-    if (!practiceId || typeof practiceId !== 'number') {
+    if (!practiceId || isNaN(normalizedPracticeId)) {
       return res.status(400).json({ success: false, message: 'practiceId requerido' });
     }
 
@@ -1599,25 +1625,27 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
       });
     }
 
-    const now = new Date().toISOString();
-
-    const { data: frozenEvals, error: findError } = await supabase
+    // Step 1: Fetch ALL evaluations for this practice (avoid .not() filter issues)
+    const { data: allEvals, error: findError } = await supabase
       .from('t_evaluation')
-      .select('EVALUATION_ID')
-      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
-      .not('FROZEN_AT', 'is', null)
-      .is('UNFROZEN_AT', null);
+      .select('EVALUATION_ID, FROZEN_AT, UNFROZEN_AT')
+      .eq('PROFESSIONAL_PRACTICE_ID', normalizedPracticeId);
 
     if (findError) throw findError;
 
-    if (!frozenEvals || frozenEvals.length === 0) {
+    // Step 2: Filter frozen evaluations in JS (FROZEN_AT is set, UNFROZEN_AT is null)
+    const frozenEvals = (allEvals || []).filter((e: any) => e.FROZEN_AT != null && e.UNFROZEN_AT == null);
+
+    if (frozenEvals.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'No hay evaluaciones congeladas para descongelar en esta práctica.'
       });
     }
 
-    const evalIds = (frozenEvals as any[]).map(e => e.EVALUATION_ID);
+    // Step 3: Update only the frozen evaluation IDs
+    const evalIds = frozenEvals.map((e: any) => e.EVALUATION_ID);
+    const now = new Date().toISOString();
 
     const { error: updateError } = await supabase
       .from('t_evaluation')
@@ -1634,7 +1662,7 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
     try {
       await auditCreate(req, 't_evaluation', {
         ACTION: 'UNFREEZE_PRACTICE',
-        PROFESSIONAL_PRACTICE_ID: practiceId,
+        PROFESSIONAL_PRACTICE_ID: normalizedPracticeId,
         REASON: reason.trim()
       }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON']);
     } catch (auditError) {

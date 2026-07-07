@@ -175,6 +175,7 @@ export default function EvaluationsAndCulminationPage() {
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
+                    isFrozen={practice.isFrozen}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -184,6 +185,7 @@ export default function EvaluationsAndCulminationPage() {
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
+                    isFrozen={practice.isFrozen}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -193,6 +195,7 @@ export default function EvaluationsAndCulminationPage() {
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
+                    isFrozen={practice.isFrozen}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -611,6 +614,7 @@ export default function EvaluationsAndCulminationPage() {
           evaluatorType={hook.selectedEvaluatorType}
           evaluationId={hook.editingEvaluationId}
           onSuccess={hook.handleEvaluationSuccess}
+          isFrozen={hook.selectedPracticeForEval.isFrozen}
           existingComiteMembers={
             hook.selectedPracticeForEval.evaluations.COMITE?.members?.map(m => ({
               memberIndex: m.memberIndex,

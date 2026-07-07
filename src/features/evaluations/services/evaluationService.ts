@@ -189,14 +189,15 @@ export const evaluationService = {
 
   freezeBatch: async (practiceIds: number[]): Promise<{ frozenCount: number }> => {
     try {
-      const response = await apiClient.post<{ success: boolean; data: { frozenCount: number } }>(
+      const response = await apiClient.post<{ success: boolean; data: { frozenCount: number }; message?: string }>(
         `${API_URL}/freeze`,
         { practiceIds }
       );
       return response.data.data;
-    } catch (error) {
-      console.error('[evaluationService] Error freezing evaluations:', error);
-      throw error;
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Error al congelar evaluaciones';
+      console.error('[evaluationService] Error freezing evaluations:', msg);
+      throw new Error(msg);
     }
   },
 
@@ -212,9 +213,10 @@ export const evaluationService = {
   unfreezePractice: async (practiceId: number, reason: string): Promise<void> => {
     try {
       await apiClient.post(`${API_URL}/unfreeze-practice`, { practiceId, reason });
-    } catch (error) {
-      console.error('[evaluationService] Error unfreezing practice:', error);
-      throw error;
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Error al descongelar evaluaciones';
+      console.error('[evaluationService] Error unfreezing practice:', msg);
+      throw new Error(msg);
     }
   },
 

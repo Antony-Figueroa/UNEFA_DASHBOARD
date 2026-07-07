@@ -572,8 +572,8 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
       await evaluationService.unfreezePractice(unfreezeTarget.practiceId, unfreezeReason.trim());
       addToast({ ...TOAST.updated('Descongelar'), message: 'Evaluación descongelada exitosamente' });
       fetchPractices();
-    } catch (error) {
-      addToast(TOAST.updateError('Descongelar'));
+    } catch (error: any) {
+      addToast({ ...TOAST.updateError('Descongelar'), message: error.message || 'Error al descongelar' });
     } finally {
       setUnfreezeTarget(null);
       setUnfreezeReason('');
@@ -660,8 +660,8 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
           const result = await evaluationService.freezeBatch(completedIds);
           addToast({ ...TOAST.updated('Cierre de Actas'), message: `${result.frozenCount} evaluaciones congeladas` });
           fetchPractices();
-        } catch (error) {
-          addToast(TOAST.updateError('Cierre de Actas'));
+        } catch (error: any) {
+          addToast({ ...TOAST.updateError('Cierre de Actas'), message: error.message || 'Error al congelar' });
         } finally {
           setConfirmDialog(null);
         }

@@ -267,7 +267,7 @@ export const evaluationService = {
   getCommitteeAssignments: async (practiceId: number): Promise<CommitteeAssignment[]> => {
     try {
       const response = await apiClient.get<{ success: boolean; data: CommitteeAssignment[] }>(
-        `/committee/${practiceId}`
+        `/committee-assignments/${practiceId}`
       );
       return response.data.data || [];
     } catch (error) {
@@ -281,7 +281,7 @@ export const evaluationService = {
     members: { memberIndex: number; evaluatorName: string; evaluatorCi?: string }[]
   ): Promise<void> => {
     try {
-      await apiClient.post('/committee', { practiceId, members });
+      await apiClient.post('/committee-assignments', { practiceId, members });
     } catch (error) {
       console.error('[evaluationService] Error upserting committee assignments:', error);
       throw error;

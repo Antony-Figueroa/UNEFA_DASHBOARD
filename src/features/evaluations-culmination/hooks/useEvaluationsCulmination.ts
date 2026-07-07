@@ -564,6 +564,10 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
 
   const handleConfirmUnfreeze = useCallback(async () => {
     if (!unfreezeTarget || !unfreezeReason.trim()) return;
+    if (unfreezeReason.trim().length < 10) {
+      toast.error('El motivo debe tener al menos 10 caracteres');
+      return;
+    }
     try {
       await evaluationService.unfreezePractice(unfreezeTarget.practiceId, unfreezeReason.trim());
       addToast({ ...TOAST.updated('Descongelar'), message: 'Evaluación descongelada exitosamente' });

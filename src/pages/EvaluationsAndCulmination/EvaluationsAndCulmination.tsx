@@ -723,6 +723,35 @@ export default function EvaluationsAndCulminationPage() {
         </div>
       </UnifiedDialog>
 
+      {/* Unfreeze dialog */}
+      <UnifiedDialog
+        isOpen={!!hook.unfreezeTarget}
+        onClose={() => hook.setUnfreezeTarget(null)}
+        onConfirm={hook.handleConfirmUnfreeze}
+        title="Descongelar Evaluaciones"
+        message="Las celdas de evaluación volverán a ser editables."
+        confirmLabel="Descongelar"
+        variant="warning"
+      >
+        <div>
+          <label className="block text-sm font-medium text-text-primary dark:text-text-emphasis mb-1">
+            Motivo de la corrección *
+          </label>
+          <textarea
+            value={hook.unfreezeReason}
+            onChange={(e) => hook.setUnfreezeReason(e.target.value)}
+            placeholder="Ingrese el motivo de la corrección (mínimo 10 caracteres)..."
+            rows={3}
+            className="w-full px-3 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-brand-500"
+          />
+          {hook.unfreezeReason.trim().length > 0 && hook.unfreezeReason.trim().length < 10 && (
+            <p className="text-xs text-warning-600 dark:text-warning-400 mt-1">
+              Mínimo 10 caracteres requeridos
+            </p>
+          )}
+        </div>
+      </UnifiedDialog>
+
       {/* Bulk extension modal */}
       <BulkExtensionModal
         isOpen={hook.bulkExtensionOpen}

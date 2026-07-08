@@ -63,7 +63,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         )
       `)
       .eq('STATUS', 1)
-      .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO); // Solo inscritos (no pre-inscritos)
+      .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.REPROBADO]); // Inscritos + manual reprobados (no pre-inscritos)
 
     if (error) throw error;
 
@@ -196,7 +196,9 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
 
       // Determinar resultado usando la nota mínima de la carrera
       let practiceResult: 'approved' | 'failed' | 'pending' = 'pending';
-      if (finalGrade !== null) {
+      if (p.PRACTICES_STATUS === PRACTICES_STATUS.REPROBADO) {
+        practiceResult = 'failed'; // manual failure, regardless of evaluation completeness
+      } else if (finalGrade !== null) {
         practiceResult = finalGrade >= minimumGrade ? 'approved' : 'failed';
       }
 

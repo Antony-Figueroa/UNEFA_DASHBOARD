@@ -14,6 +14,7 @@ import {
   getPracticeEvaluationStatus,
   getPracticeTutorInfo,
   markPracticeAsFailed,
+  reverseFailedPractice,
   freezeEvaluations,
   unfreezeEvaluation,
   unfreezePracticeEvaluations,
@@ -21,7 +22,8 @@ import {
   revokeExtension,
   bulkGrantExtension,
   getPendingPracticesReport,
-  exportEvaluationsExcel
+  exportEvaluationsExcel,
+  getAuditHistory
 } from '../controllers/evaluation.controller.js';
 
 const router = Router();
@@ -44,7 +46,9 @@ router.post('/freeze', requirePermission('evaluations:freeze'), freezeEvaluation
 router.post('/bulk-grant-extension', requirePermission('evaluations:freeze'), bulkGrantExtension);
 router.post('/:id/unfreeze', requirePermission('evaluations:unfreeze'), unfreezeEvaluation);
 router.post('/:practiceId/mark-failed', requirePermission('evaluations:edit'), markPracticeAsFailed);
+router.post('/:practiceId/reverse-failed', requirePermission('evaluations:edit'), reverseFailedPractice);
 router.post('/:practiceId/grant-extension', requirePermission('evaluations:freeze'), grantExtension);
 router.post('/:practiceId/revoke-extension', requirePermission('evaluations:freeze'), revokeExtension);
+router.get('/audit/:practiceId', requirePermission('evaluations:view'), getAuditHistory);
 
 export default router;

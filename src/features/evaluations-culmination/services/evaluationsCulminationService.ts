@@ -154,6 +154,14 @@ export const evaluationsCulminationService = {
   getCertificate: async (practiceId: number): Promise<CertificateResponse> => {
     const response = await apiClient.get(`/culmination/${practiceId}/certificate`);
     return response.data;
+  },
+
+  /**
+   * Revierte una práctica marcada manualmente como reprobada (REPROBADO → INSCRITO)
+   */
+  reverseFailed: async (practiceId: number, reason: string, resolutionNumber: string): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.post(`/evaluations/${practiceId}/reverse-failed`, { reason, resolutionNumber });
+    return response.data;
   }
 };
 

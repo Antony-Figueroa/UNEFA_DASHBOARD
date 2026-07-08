@@ -1193,6 +1193,86 @@ export const markPracticeAsFailed = async (req: AuthRequest, res: Response) => {
 };
 
 /**
+ * POST /evaluations/:practiceId/reverse-failed
+ * Revierte una práctica marcada manualmente como REPROBADO → INSCRITO.
+ * Requiere motivo (mín. 10 chars) + número de resolución y permiso evaluations:edit.
+ * Bloquea CULMINADO/RETIRADO (estados terminales).
+ */
+export const reverseFailedPractice = async (req: AuthRequest, res: Response) => {
+  try {
+    const { practiceId } = req.params;
+    const { reason, resolutionNumber } = req.body;
+    const userId: number | undefined = (req as any).user?.userId;
+
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 10) {
+      res.status(400).json({
+        success: false,
+        message: 'El motivo de la reversión es obligatorio (mínimo 10 caracteres)'
+      });
+      return;
+    }
+
+    if (!resolutionNumber || typeof resolutionNumber !== 'string' || !resolutionNumber.trim()) {
+      res.status(400).json({
+        success: false,
+        message: 'El número de resolución administrativa es obligatorio'
+      });
+      return;
+    }
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Usuario no autenticado' });
+      return;
+    }
+
+    const supabase = dbManager.getConnection();
+
+    const { data: practice, error: practiceError } = await supabase
+      .from('t_professional_practices')
+      .select('PROFESSIONAL_PRACTICE_ID, PRACTICES_STATUS')
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .single();
+
+    if (practiceError || !practice) {
+      res.status(404).json({ success: false, message: 'Práctica no encontrada' });
+      return;
+    }
+
+    if (practice.PRACTICES_STATUS === PRACTICES_STATUS.CULMINADO) {
+      res.status(400).json({ success: false, message: 'No se puede revertir una práctica culminada' });
+      return;
+    }
+
+    if (practice.PRACTICES_STATUS === PRACTICES_STATUS.RETIRADO) {
+      res.status(400).json({ success: false, message: 'No se puede revertir una práctica retirada' });
+      return;
+    }
+
+    await supabase
+      .from('t_professional_practices')
+      .update({ PRACTICES_STATUS: PRACTICES_STATUS.INSCRITO })
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
+
+    await auditCreate(req, 't_professional_practices', {
+      ACTION: 'REVERSE_FAILED',
+      PROFESSIONAL_PRACTICE_ID: practiceId,
+      PRACTICES_STATUS: PRACTICES_STATUS.INSCRITO,
+      REASON: reason.trim(),
+      RESOLUTION_NUMBER: resolutionNumber.trim(),
+      USER_ID: userId
+    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'PRACTICES_STATUS', 'REASON', 'RESOLUTION_NUMBER', 'USER_ID']);
+
+    res.json({
+      success: true,
+      message: 'Práctica revertida exitosamente. El estudiante vuelve a estado Inscrito.'
+    });
+  } catch (error) {
+    console.error('[EvaluationController] Error reversing failed practice:', error);
+    res.status(500).json({ success: false, message: 'Error al revertir la práctica reprobada' });
+  }
+};
+
+/**
  * POST /api/practices/:practiceId/grant-extension
  * Concede carga extemporánea para una práctica en periodo cerrado.
  * Salta las validaciones de periodo y fecha en el middleware.
@@ -2440,6 +2520,135 @@ export const exportEvaluationsExcel = async (req: AuthRequest, res: Response) =>
     res.status(500).json({
       success: false,
       message: 'Error al exportar evaluaciones a Excel'
+    });
+  }
+};
+
+/**
+ * GET /api/evaluations/audit/:practiceId
+ * Obtiene el historial de auditoría completo de una práctica profesional.
+ * Consulta las tablas: t_professional_practices, t_evaluation, t_evaluation_detail, t_committee_assignment
+ */
+export const getAuditHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    const practiceId = Array.isArray(req.params.practiceId) ? req.params.practiceId[0] : req.params.practiceId;
+    const limit = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
+
+    if (!practiceId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Parámetro requerido: practiceId'
+      });
+    }
+
+    const supabase = dbManager.getConnection();
+    const parsedLimit = Math.min(parseInt(limit as string) || 100, 500);
+
+    // Tablas a auditar para una práctica
+    const tablesToAudit = [
+      { table: 't_professional_practices', label: 'Práctica Profesional' },
+      { table: 't_evaluation', label: 'Evaluación' },
+      { table: 't_evaluation_detail', label: 'Detalle de Evaluación' },
+      { table: 't_committee_assignment', label: 'Asignación de Comité' }
+    ];
+
+    // Obtener IDs de tablas en t_tables
+    const tableNames = tablesToAudit.map(t => t.table);
+    const { data: tableConfigs } = await supabase
+      .from('t_tables')
+      .select('TABLE_ID, PHYSICAL_NAME, NAME')
+      .in('PHYSICAL_NAME', tableNames)
+      .eq('STATUS', 1)
+      .eq('LOG', 1);
+
+    if (!tableConfigs || tableConfigs.length === 0) {
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
+
+    const tableIdMap = new Map<string, { id: number; label: string }>(tableConfigs.map(t => [t.PHYSICAL_NAME, { id: t.TABLE_ID, label: t.NAME }]));
+
+    // Obtener operaciones
+    const { data: operations } = await supabase
+      .from('t_operation')
+      .select('OPERATION_ID, ACTION')
+      .eq('STATUS', 1);
+
+    const opMap = new Map((operations || []).map(o => [o.OPERATION_ID, o.ACTION]));
+
+    // Obtener usuarios para nombres
+    const { data: users } = await supabase
+      .from('t_user')
+      .select('USER_ID, NAME, SURNAME');
+
+    const userMap = new Map((users || []).map(u => [u.USER_ID, `${u.NAME} ${u.SURNAME || ''}`.trim()]));
+
+    // Consultar t_change_log para cada tabla
+    const tableIds = Array.from(tableIdMap.values()).map(t => t.id);
+    
+    const { data: auditLogs, error } = await supabase
+      .from('t_change_log')
+      .select(`
+        CHANGE_LOG_ID,
+        DATE_TIME,
+        TABLE_ID,
+        COLUMN_ID,
+        OPERATION_ID,
+        USER_ID,
+        NEW_VALUE,
+        OLD_VALUE,
+        FORM_ID,
+        t_columns ( COLUMN_NAME ),
+        t_operation ( ACTION )
+      `)
+      .in('TABLE_ID', tableIds)
+      .eq('FORM_ID', parseInt(practiceId))
+      .order('DATE_TIME', { ascending: false })
+      .limit(parsedLimit);
+
+    if (error) throw error;
+
+    // Formatear resultados
+    const formattedData = (auditLogs || []).map(log => {
+      const tableInfo = tableConfigs.find(t => t.TABLE_ID === log.TABLE_ID);
+      const columnName = log.t_columns?.COLUMN_NAME || '';
+      const action = log.t_operation?.ACTION || '';
+      const userName = log.USER_ID ? userMap.get(log.USER_ID) || `Usuario ${log.USER_ID}` : 'Sistema';
+
+      // Mapear acciones a labels amigables
+      let friendlyAction = action;
+      if (columnName) {
+        friendlyAction = `${action} ${columnName}`;
+      }
+      
+      // Agregar label de tabla
+      const tableLabel = tableInfo?.NAME || tableInfo?.PHYSICAL_NAME || '';
+
+      return {
+        auditId: log.CHANGE_LOG_ID,
+        professionalPracticeId: parseInt(practiceId),
+        action: tableLabel ? `${tableLabel}: ${friendlyAction}` : friendlyAction,
+        user: userName,
+        userId: log.USER_ID,
+        timestamp: log.DATE_TIME,
+        oldValue: log.OLD_VALUE || undefined,
+        newValue: log.NEW_VALUE || undefined,
+        details: columnName ? `Campo: ${columnName}` : undefined
+      };
+    });
+
+    res.json({
+      success: true,
+      data: formattedData
+    });
+
+  } catch (error) {
+    console.error('[Evaluation] Error getting audit history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener historial de auditoría'
     });
   }
 };

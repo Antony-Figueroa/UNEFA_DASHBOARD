@@ -150,10 +150,10 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
       const culmination = culminationMap.get(p.PROFESSIONAL_PRACTICE_ID);
 
       // Construir estado de evaluaciones
-      const statusMap: Record<string, { completed: boolean; score: number; evaluatorName: string; evaluationId?: number }> = {
-        'INSTITUCIONAL': { completed: false, score: 0, evaluatorName: '' },
-        'ACADEMICO': { completed: false, score: 0, evaluatorName: '' },
-        'COMITE': { completed: false, score: 0, evaluatorName: '' }
+      const statusMap: Record<string, { completed: boolean; score: number; evaluatorName: string; evaluationId?: number; frozenAt?: string | null }> = {
+        'INSTITUCIONAL': { completed: false, score: 0, evaluatorName: '', frozenAt: null },
+        'ACADEMICO': { completed: false, score: 0, evaluatorName: '', frozenAt: null },
+        'COMITE': { completed: false, score: 0, evaluatorName: '', frozenAt: null }
       };
 
       evaluations.forEach(e => {

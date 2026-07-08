@@ -79,6 +79,9 @@ export default function SignInForm() {
 
       if (data.user) {
         await checkAuth();
+        // Limpiar tabs persistentes de sesiones anteriores para evitar que
+        // un usuario herede las tabs de otro (ej: estudiante hereda tabs de admin)
+        localStorage.removeItem('unefa:tabs');
         addToast({
           variant: "success",
           title: "Bienvenido",

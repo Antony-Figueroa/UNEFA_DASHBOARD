@@ -85,6 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const savedReason = reason || sessionStorage.getItem('auth_redirect_reason');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('auth_logout');
+      localStorage.removeItem('unefa:tabs');
       sessionStorage.clear();
 
       if (savedReason) {

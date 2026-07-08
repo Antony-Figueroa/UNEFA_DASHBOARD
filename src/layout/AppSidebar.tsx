@@ -28,6 +28,8 @@ type SubNavItem = {
   new?: boolean;
   /** Legacy: mostrar solo si el usuario tiene este rol */
   roles?: number[];
+  /** Excluir si el usuario tiene este rol (ej: estudiantes no ven admin) */
+  notRoles?: number[];
   /** Mostrar solo si el usuario tiene ALGUNO de estos permisos (reemplaza roles) */
   permissions?: string[];
   badge?: string | number;
@@ -41,6 +43,8 @@ type NavItem = {
   path?: string;
   /** Legacy: mostrar solo si el usuario tiene este rol */
   roles?: number[];
+  /** Excluir si el usuario tiene este rol (ej: estudiantes no ven admin) */
+  notRoles?: number[];
   /** Mostrar solo si el usuario tiene ALGUNO de estos permisos (reemplaza roles) */
   permissions?: string[];
   badge?: string | number;
@@ -167,16 +171,15 @@ const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, i
 };
 
 const navItems: NavItem[] = [
-  { icon: <GridIcon />, name: "Inicio", path: "/dashboard" },
+  { icon: <GridIcon />, name: "Inicio", path: "/dashboard", notRoles: [3], permissions: ['dashboard:view'] },
   {
     name: "Panel de Tutor", icon: <UserCircleIcon />, roles: [3],
     subItems: [
       { name: "Dashboard", path: "/tutor" },
       { name: "Mis Estudiantes", path: "/tutor/students" },
-      { name: "Seguimiento", path: "/tutor/tracking" },
       { name: "Cargar Notas", path: "/tutor/grades" },
-      { name: "Reportes", path: "/tutor/reports" },
       { name: "Bitácora", path: "/tutor/activity-logs" },
+      { name: "Seguimiento", path: "/tutor/tracking" },
       { name: "Mi Perfil", path: "/tutor/profile" },
     ],
   },
@@ -191,14 +194,14 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    name: "Gestión", icon: <TableIcon />,
+    name: "Gestión", icon: <TableIcon />, notRoles: [4],
     subItems: [
       { name: "Período", path: "/period", permissions: ['periods:view'] },
       { name: "Carreras", path: "/careers", permissions: ['careers:view'] },
     ],
   },
   {
-    name: "Registros", icon: <UserCircleIcon />,
+    name: "Registros", icon: <UserCircleIcon />, notRoles: [3, 4],
     subItems: [
       { name: "Estudiantes", path: "/students", permissions: ['students:view'] },
       { name: "Tutores", path: "/tutors", permissions: ['tutors:view'] },
@@ -206,18 +209,19 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    name: "Prácticas Profesionales", icon: <BoxCubeIcon />,
+    name: "Prácticas Profesionales", icon: <BoxCubeIcon />, notRoles: [4],
     subItems: [
-      { name: "Pre-Inscripción", path: "/pre-enrollment", permissions: ['enrollments:view'] },
-      { name: "Inscripción", path: "/enrollment", permissions: ['enrollments:view'] },
-      { name: "Seguimiento", path: "/tracking", permissions: ['tracking:view'] },
+      { name: "Pre-Inscripción", path: "/pre-enrollment", permissions: ['enrollments:view'], notRoles: [3] },
+      { name: "Inscripción", path: "/enrollment", permissions: ['enrollments:view'], notRoles: [3] },
+      { name: "Seguimiento", path: "/tracking", permissions: ['tracking:view'], notRoles: [3] },
       { name: "Evaluaciones", path: "/evaluations", permissions: ['evaluations:view'] },
     ],
   },
-  { name: "Solicitudes", icon: <DocsIcon />, path: "/admin/requests", permissions: ['requests:view'] },
-  { name: "Reportes", icon: <PieChartIcon />, path: "/reports", permissions: ['reports:view'] },
+  { name: "Solicitudes", icon: <DocsIcon />, path: "/admin/requests", permissions: ['requests:view'], notRoles: [3, 4] },
+  { name: "Reportes", icon: <PieChartIcon />, path: "/reports", permissions: ['reports:view'], notRoles: [3, 4] },
   {
     name: "Configuración", icon: <PlugInIcon />,
+    notRoles: [4],
     permissions: ['users:view', 'lists:view', 'activity-logs:view', 'roles:manage', 'config:view', 'backups:view', 'evaluations:view'],
     subItems: [
       // 👥 Administración
@@ -277,13 +281,34 @@ const AppSidebar: React.FC = () => {
    * - Si tiene `roles`: visible si el rol del usuario coincide
    * - Si no tiene ni permissions ni roles: visible para todos
    */
-  const isItemVisible = useCallback((item: { roles?: number[]; permissions?: string[] }): boolean => {
-    if (item.permissions && item.permissions.length > 0) {
-      return hasAnyPermission(...item.permissions);
+  const isItemVisible = useCallback((item: { roles?: number[]; notRoles?: number[]; permissions?: string[] }): boolean => {
+    // Exclusión por rol (prioritario): si el usuario está en notRoles, no se muestra
+    if (item.notRoles && item.notRoles.length > 0 && userRole !== undefined) {
+      if (item.notRoles.includes(userRole)) return false;
     }
-    if (item.roles && item.roles.length > 0) {
-      return userRole !== undefined && item.roles.includes(userRole);
+
+    const hasPermissions = item.permissions && item.permissions.length > 0;
+    const hasRoles = item.roles && item.roles.length > 0;
+
+    let permissionCheck = true;
+    let roleCheck = true;
+
+    if (hasPermissions) {
+      permissionCheck = hasAnyPermission(...(item.permissions!));
     }
+    if (hasRoles) {
+      roleCheck = userRole !== undefined && item.roles!.includes(userRole);
+    }
+
+    // Si tiene ambos, el usuario debe pasar AMBAS verificaciones
+    if (hasPermissions && hasRoles) {
+      return permissionCheck && roleCheck;
+    }
+
+    // Si solo tiene uno, verificar ese
+    if (hasPermissions) return permissionCheck;
+    if (hasRoles) return roleCheck;
+
     return true;
   }, [hasAnyPermission, userRole]);
 

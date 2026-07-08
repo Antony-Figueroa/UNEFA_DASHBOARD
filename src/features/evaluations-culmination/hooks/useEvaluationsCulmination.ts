@@ -111,6 +111,17 @@ export interface UseEvaluationsCulminationReturn {
   handleReclassifyWithdrawal: (practiceId: number, studentName: string) => void;
   handleMarkFailed: (practiceId: number, studentName: string) => void;
 
+  /** Reversión de reprobado manual */
+  reverseDialogOpen: boolean;
+  setReverseDialogOpen: (open: boolean) => void;
+  reverseTarget: { practiceId: number; studentName: string } | null;
+  reverseReason: string;
+  reverseResolutionNumber: string;
+  setReverseReason: (reason: string) => void;
+  setReverseResolutionNumber: (value: string) => void;
+  handleReverseFailed: (practiceId: number, studentName: string) => void;
+  handleConfirmReverseFailed: () => void;
+
   /** Descongelar */
   handleUnfreeze: (practiceId: number) => void;
   unfreezeTarget: { practiceId: number } | null;
@@ -235,6 +246,12 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     practice: PracticeWithEvaluations;
     reason: string;
   } | null>(null);
+
+  // ─── Reverse Failed (Reprobados tab) ──────────────────
+  const [reverseDialogOpen, setReverseDialogOpen] = useState(false);
+  const [reverseTarget, setReverseTarget] = useState<{ practiceId: number; studentName: string } | null>(null);
+  const [reverseReason, setReverseReason] = useState('');
+  const [reverseResolutionNumber, setReverseResolutionNumber] = useState('');
 
   // ─── Data Fetching ──────────────────────────────────────
   const fetchPractices = useCallback(async () => {
@@ -557,6 +574,37 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     });
   }, [fetchPractices]);
 
+  const handleReverseFailed = useCallback((practiceId: number, studentName: string) => {
+    setReverseTarget({ practiceId, studentName });
+    setReverseReason('');
+    setReverseResolutionNumber('');
+    setReverseDialogOpen(true);
+  }, []);
+
+  const handleConfirmReverseFailed = useCallback(async () => {
+    if (!reverseTarget || !reverseReason.trim() || !reverseResolutionNumber.trim()) return;
+    if (reverseReason.trim().length < 10) {
+      toast.error('El motivo debe tener al menos 10 caracteres');
+      return;
+    }
+    try {
+      await evaluationsCulminationService.reverseFailed(
+        reverseTarget.practiceId,
+        reverseReason.trim(),
+        reverseResolutionNumber.trim()
+      );
+      addToast({ ...TOAST.updated('Reversión'), message: `${reverseTarget.studentName} revertido a estado Inscrito` });
+      fetchPractices();
+    } catch (error) {
+      addToast(TOAST.updateError('Reversión'));
+    } finally {
+      setReverseDialogOpen(false);
+      setReverseTarget(null);
+      setReverseReason('');
+      setReverseResolutionNumber('');
+    }
+  }, [reverseTarget, reverseReason, reverseResolutionNumber, fetchPractices]);
+
   const handleUnfreeze = useCallback((practiceId: number) => {
     setUnfreezeTarget({ practiceId });
     setUnfreezeReason('');
@@ -781,6 +829,16 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     setWithdrawDialogOpen,
     handleReclassifyWithdrawal,
     handleMarkFailed,
+    // Reverse failed
+    reverseDialogOpen,
+    setReverseDialogOpen,
+    reverseTarget,
+    reverseReason,
+    reverseResolutionNumber,
+    setReverseReason,
+    setReverseResolutionNumber,
+    handleReverseFailed,
+    handleConfirmReverseFailed,
     // Unfreeze
     handleUnfreeze,
     unfreezeTarget,

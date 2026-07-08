@@ -44,6 +44,7 @@ import {
 const EVAL_TABS = [
   { id: 'evaluations', label: 'Evaluaciones' },
   { id: 'culmination', label: 'Culminación' },
+  { id: 'reprobados', label: 'Reprobados' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -495,6 +496,73 @@ export default function EvaluationsAndCulminationPage() {
     </>
   );
 
+  // ─── Render: Reprobados tab ────────────────────────────
+  const renderReprobadosTab = () => {
+    const failedPractices = hook.filteredPractices.filter(p => p.result === 'failed');
+
+    if (failedPractices.length === 0) {
+      return (
+        <EmptyState
+          title="No hay prácticas reprobadas"
+          description="No se encontraron prácticas con resultado Reprobado."
+        />
+      );
+    }
+
+    return (
+      <div className="hidden md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableCell isHeader>Estudiante</TableCell>
+              <TableCell isHeader>Carrera</TableCell>
+              <TableCell isHeader>Tipo</TableCell>
+              <TableCell isHeader>Origen / Estado</TableCell>
+              <TableCell isHeader className="text-center">Acciones</TableCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {failedPractices.map((practice) => (
+              <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
+                <TableCell>
+                  <div className="font-medium text-text-primary dark:text-text-emphasis">
+                    {practice.studentName}
+                  </div>
+                  <div className="text-xs text-text-tertiary">{practice.studentCi}</div>
+                </TableCell>
+                <TableCell className="text-sm text-text-secondary">{practice.careerName}</TableCell>
+                <TableCell className="text-sm text-text-secondary">{practice.practiceTypeName}</TableCell>
+                <TableCell className="text-sm text-text-secondary">
+                  {practice.finalGrade != null ? `Nota ${practice.finalGrade}` : 'Manual'}
+                  <span className="ml-2 text-xs text-text-tertiary">
+                    ({practice.practicesStatus})
+                  </span>
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    {!hook.isReadOnly && practice.practicesStatus === 'REPROBADO' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-error-600 dark:text-error-400"
+                        onClick={() => hook.handleReverseFailed(practice.practiceId, practice.studentName)}
+                      >
+                        Revertir
+                      </Button>
+                    )}
+                    <ActionDropdown actions={[
+                      { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                    ]} />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
   // ─── Tab content switch ─────────────────────────────────
   const renderTabContent = () => {
     if (hook.loading) {
@@ -513,6 +581,7 @@ export default function EvaluationsAndCulminationPage() {
     switch (tabsState.activeTab) {
       case 'evaluations': return renderEvaluationsTab();
       case 'culmination': return renderCulminationTab();
+      case 'reprobados': return renderReprobadosTab();
       default: return null;
     }
   };
@@ -580,7 +649,15 @@ export default function EvaluationsAndCulminationPage() {
             practiceTypeOptions={practiceTypeOptions}
             hasActiveFilters={hasActiveFilters}
             extraFilters={
-              tabsState.activeTab === 'culmination' ? (
+              tabsState.activeTab === 'evaluations' ? (
+                <CustomSelect
+                  options={RESULT_OPTIONS.filter(o => o.value !== 'all')}
+                  value={String(hook.filters.result || '')}
+                  onChange={(v) => hook.updateFilter('result', v as string)}
+                  placeholder="Resultado"
+                  className="w-full"
+                />
+              ) : tabsState.activeTab === 'culmination' ? (
                 <CustomSelect
                   options={CULMINATION_STATUS_OPTIONS.filter(o => o.value !== 'all').map(o => ({ value: o.value, label: o.label }))}
                   value={String(hook.filters.culminationStatus || '')}
@@ -605,6 +682,39 @@ export default function EvaluationsAndCulminationPage() {
         confirmLabel="Confirmar"
         variant="info"
       />
+
+      {/* Diálogo de reversión de reprobado */}
+      <UnifiedDialog
+        isOpen={hook.reverseDialogOpen}
+        onClose={() => hook.setReverseDialogOpen(false)}
+        title="Revertir Reprobado"
+        message={`¿Está seguro de revertir la práctica reprobada de ${hook.reverseTarget?.studentName || ''}? El estudiante volverá a estado Inscrito.`}
+        confirmLabel="Revertir"
+        variant="danger"
+      >
+        <div className="space-y-4 mt-2">
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Motivo (mín. 10 caracteres)</label>
+            <textarea
+              className="w-full rounded-lg border border-border-default dark:border-border-dark bg-bg-subtle dark:bg-bg-dark p-2 text-sm text-text-primary"
+              rows={3}
+              value={hook.reverseReason}
+              onChange={(e) => hook.setReverseReason(e.target.value)}
+              placeholder="Describa el motivo de la reversión"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Número de Resolución</label>
+            <input
+              type="text"
+              className="w-full rounded-lg border border-border-default dark:border-border-dark bg-bg-subtle dark:bg-bg-dark p-2 text-sm text-text-primary"
+              value={hook.reverseResolutionNumber}
+              onChange={(e) => hook.setReverseResolutionNumber(e.target.value)}
+              placeholder="Ej. RES-2026-001"
+            />
+          </div>
+        </div>
+      </UnifiedDialog>
 
       {hook.selectedPracticeForEval && (
         <EvaluationModal

@@ -348,18 +348,6 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     }),
   },
 
-  'student-quick-actions': {
-    key: 'student-quick-actions',
-    displayName: 'Acciones Rápidas',
-    description: 'Accesos directos a las funciones más usadas',
-    icon: 'zap',
-    size: 'sm',
-    module: 'general',
-    allowedRoles: [4],
-    component: lazy(() => import('../components/StudentQuickActionsWidget')),
-    getProps: () => ({}),
-  },
-
   'student-documents-status': {
     key: 'student-documents-status',
     displayName: 'Estado de Documentos',

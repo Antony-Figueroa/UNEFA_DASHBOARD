@@ -186,7 +186,6 @@ const navItems: NavItem[] = [
   {
     name: "Panel de Estudiante", icon: <UserCircleIcon />, roles: [4],
     subItems: [
-      { name: "Dashboard", path: "/student" },
       { name: "Mis Solicitudes", path: "/student/requests" },
       { name: "Mi Seguimiento", path: "/student/tracking" },
       { name: "Mis Evaluaciones", path: "/student/evaluations" },

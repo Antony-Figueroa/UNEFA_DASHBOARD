@@ -43,7 +43,6 @@ const TutorProfile = lazy(() => import("../pages/Tutor/TutorProfile"));
 const TutorActivityLogs = lazy(() => import("../pages/Tutor/TutorActivityLogs"));
 
 import StudentLayout from "../layout/StudentLayout";
-const StudentDashboard = lazy(() => import("../pages/Student/StudentDashboard"));
 const StudentRequests = lazy(() => import("../pages/Student/StudentRequests"));
 const StudentProfile = lazy(() => import("../pages/Student/StudentProfile"));
 const StudentActivityLogs = lazy(() => import("../pages/Student/StudentActivityLogs"));
@@ -280,9 +279,9 @@ export const AppRoutes = () => {
               }
             />
   
-            {/* Student Dashboard - wrapped in StudentLayout */}
+            {/* Student routes - wrapped in StudentLayout */}
             <Route element={<ProtectedRoute allowedRoles={[4]}><StudentLayout /></ProtectedRoute>}>
-              <Route index path="/student" element={<StudentDashboard />} />
+              <Route index path="/student" element={<Navigate to="/student/requests" replace />} />
               <Route path="/student/requests" element={<StudentRequests />} />
               <Route path="/student/profile" element={<StudentProfile />} />
               <Route path="/student/activity-logs/:practiceId" element={<StudentActivityLogs />} />

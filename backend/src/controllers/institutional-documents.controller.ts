@@ -557,27 +557,18 @@ export const getDataConstanciaTutorAcademico = async (req: Request, res: Respons
       return res.status(404).json({ success: false, message: 'Tutor no encontrado' });
     }
 
-    // Obtener horas desde t_practice_visits (t_tracking no existe)
+    // Obtener prácticas del tutor para período y estudiante
     const { data: tutorPractices } = await supabase
       .from('t_professional_practices_tutor')
       .select('PROFESSIONAL_PRACTICE_ID')
       .eq('TUTOR_ID', tutorId);
 
     const practiceIds = (tutorPractices || []).map((tp: any) => tp.PROFESSIONAL_PRACTICE_ID);
-    let totalHours = 0;
+    let totalHours = 480; // carreras cortas
     let activePeriodId: number | null = null;
     let estudianteData: any = null;
 
     if (practiceIds.length > 0) {
-      const { data: visits } = await supabase
-        .from('t_practice_visits')
-        .select('PROFESSIONAL_PRACTICE_ID, HOURS_WORKED')
-        .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
-
-      (visits || []).forEach((v: any) => {
-        totalHours += Number(v.HOURS_WORKED || 0);
-      });
-
       // Usar la práctica más reciente para obtener período y estudiante
       const { data: latest } = await supabase
         .from('t_professional_practices')
@@ -617,6 +608,29 @@ export const getDataConstanciaTutorAcademico = async (req: Request, res: Respons
 
     const persona = tutor.t_persons;
 
+    // Obtener abreviatura del título desde la lista de valores
+    let tituloAbrev = tutor.TITULO || '';
+    if (tutor.TITULO) {
+      const { data: titleList } = await supabase
+        .from('t_list')
+        .select('LIST_ID')
+        .eq('NAME', 'TÍTULO')
+        .single();
+      if (titleList) {
+        const { data: values } = await supabase
+          .from('t_value_list')
+          .select('NAME, ABBREVIATION')
+          .eq('LIST_ID', titleList.LIST_ID)
+          .eq('STATUS', 1);
+        const match = values?.find(
+          (v: any) => v.NAME.toLowerCase() === tutor.TITULO!.toLowerCase()
+        );
+        if (match?.ABBREVIATION) {
+          tituloAbrev = match.ABBREVIATION;
+        }
+      }
+    }
+
     res.json({
       success: true,
       data: {
@@ -631,6 +645,7 @@ export const getDataConstanciaTutorAcademico = async (req: Request, res: Respons
         tutor: {
           ci: persona?.ci || tutor.TUTOR_CI || '',
           titulo: tutor.TITULO,
+          tituloAbrev,
           primerNombre: persona?.first_name || '',
           segundoNombre: persona?.middle_name || '',
           primerApellido: persona?.last_name || '',
@@ -759,15 +774,36 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
 
     // Institución asociada al tutor institucional
     let institucionData = null;
+    let responsableData = null;
     const { data: ppt } = await supabase
       .from('t_professional_practices_tutor')
-      .select('PROFESSIONAL_PRACTICES!inner(PROFESSIONAL_PRACTICE_ID, t_institution(INSTITUTION_NAME))')
+      .select('PROFESSIONAL_PRACTICES!inner(PROFESSIONAL_PRACTICE_ID, MANAGER_ID, t_institution(INSTITUTION_NAME))')
       .eq('TUTOR_ID', tutorId)
       .eq('TUTOR_TYPE', 'INSTITUCIONAL')
       .limit(1);
 
     if (ppt?.[0]?.PROFESSIONAL_PRACTICES?.t_institution) {
       institucionData = ppt[0].PROFESSIONAL_PRACTICES.t_institution;
+    }
+
+    // Responsable de la institución (t_institution_manager → t_persons)
+    const managerId = ppt?.[0]?.PROFESSIONAL_PRACTICES?.MANAGER_ID;
+    if (managerId) {
+      const { data: manager } = await supabase
+        .from('t_institution_manager')
+        .select(`
+          MANAGER_ID, TITLE,
+          t_persons!inner(first_name, middle_name, last_name, second_last_name)
+        `)
+        .eq('MANAGER_ID', managerId)
+        .maybeSingle();
+      if (manager?.t_persons) {
+        const p = manager.t_persons;
+        responsableData = {
+          nombreCompleto: [p.first_name, p.middle_name, p.last_name, p.second_last_name].filter(Boolean).join(' ').toUpperCase(),
+          titulo: manager.TITLE || '',
+        };
+      }
     }
 
     res.json({
@@ -793,6 +829,7 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
           email: persona?.email || '',
         },
         institucion: institucionData ? { nombre: institucionData.INSTITUTION_NAME } : null,
+        responsable: responsableData,
         totalHours,
         hoursRequired,
         periodo: periodoData ? {
@@ -884,6 +921,26 @@ export const searchTutors = async (req: Request, res: Response) => {
       return res.json({ success: true, data: [] });
     }
 
+    // Solo tutores con prácticas activas
+    const { data: activeData, error: activeError } = await conn
+      .from('t_professional_practices_tutor')
+      .select(`
+        TUTOR_ID,
+        t_professional_practices!inner(PROFESSIONAL_PRACTICE_ID)
+      `)
+      .eq('ACTIVE', true)
+      .eq('t_professional_practices.STATUS', 1);
+
+    if (activeError) {
+      console.error('[institutional-documents] searchTutors active filter error:', activeError);
+      return res.status(500).json({ success: false, message: 'Error al filtrar tutores activos' });
+    }
+
+    const activeTutorIds = [...new Set((activeData || []).map((r: any) => r.TUTOR_ID))] as number[];
+    if (activeTutorIds.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
     const term = `%${q}%`;
     const { data, error } = await conn
       .from('t_tutors')
@@ -897,6 +954,7 @@ export const searchTutors = async (req: Request, res: Response) => {
           t_career(CAREER_NAME)
         )
       `)
+      .in('TUTOR_ID', activeTutorIds)
       .or(`t_persons.ci.ilike.${term},t_persons.first_name.ilike.${term},t_persons.last_name.ilike.${term}`)
       .limit(20);
 
@@ -1066,6 +1124,26 @@ export const listTutors = async (req: Request, res: Response) => {
     const from = page * limit;
     const to = from + limit - 1;
 
+    // Solo tutores con prácticas activas
+    const { data: activeData, error: activeError } = await conn
+      .from('t_professional_practices_tutor')
+      .select(`
+        TUTOR_ID,
+        t_professional_practices!inner(PROFESSIONAL_PRACTICE_ID)
+      `)
+      .eq('ACTIVE', true)
+      .eq('t_professional_practices.STATUS', 1);
+
+    if (activeError) {
+      console.error('[institutional-documents] listTutors active filter error:', activeError);
+      return res.status(500).json({ success: false, message: 'Error al filtrar tutores activos' });
+    }
+
+    const activeTutorIds = [...new Set((activeData || []).map((r: any) => r.TUTOR_ID))] as number[];
+    if (activeTutorIds.length === 0) {
+      return res.json({ success: true, data: [], meta: { total: 0, page, limit } });
+    }
+
     let query = conn
       .from('t_tutors')
       .select(`
@@ -1077,7 +1155,8 @@ export const listTutors = async (req: Request, res: Response) => {
         t_tutor_career(
           t_career(CAREER_NAME)
         )
-      `, { count: 'exact' });
+      `, { count: 'exact' })
+      .in('TUTOR_ID', activeTutorIds);
 
     if (term) {
       query = (query as any).or(`t_persons.ci.ilike.${term},t_persons.first_name.ilike.${term},t_persons.last_name.ilike.${term}`);
@@ -1123,5 +1202,131 @@ export const listTutors = async (req: Request, res: Response) => {
       ? 'Error de conexión con la base de datos. Verifique que Supabase esté accesible.'
       : 'Error al listar tutores';
     res.status(500).json({ success: false, message: dbError });
+  }
+};
+
+/**
+ * Obtiene datos consolidados de todas las evaluaciones de una práctica para el reporte unificado.
+ * GET /api/institutional-documents/evaluacion-consolidada/:practiceId
+ */
+export const getDataEvaluacionConsolidada = async (req: Request, res: Response) => {
+  try {
+    const supabase = dbManager.getConnection();
+    const practiceId = parseInt(String(req.params.practiceId));
+    const practice = await getPracticeBase(supabase, practiceId);
+    if (!practice) {
+      return res.status(404).json({ success: false, message: 'Práctica no encontrada' });
+    }
+
+    const estudiante: any = practice.t_students;
+    const carrera: any = practice.t_career;
+    const institucion: any = practice.t_institution;
+    const periodo: any = practice.t_internships_period;
+
+    const tutors = await getPracticeTutors(supabase, practiceId);
+    const tutorInst = tutors.find((t: any) => t.tutorType === 'INSTITUCIONAL');
+    const tutorAcad = tutors.find((t: any) => t.tutorType === 'ACADEMICO');
+
+    const evaluaciones = await getEvaluations(supabase, practiceId);
+    const evalInst = evaluaciones.find((e: any) => e.evaluatorType === 'INSTITUCIONAL');
+    const evalAcad = evaluaciones.find((e: any) => e.evaluatorType === 'ACADEMICO');
+    const evaluacionesComite = evaluaciones
+      .filter((e: any) => e.evaluatorType === 'COMITE')
+      .sort((a: any, b: any) => (a.comiteMemberIndex || 0) - (b.comiteMemberIndex || 0));
+
+    let comiteTotalScore = 0;
+    if (evaluacionesComite.length > 0) {
+      comiteTotalScore = parseFloat(
+        (evaluacionesComite.reduce((sum: number, e: any) => sum + e.totalScore, 0) / evaluacionesComite.length).toFixed(1)
+      );
+    }
+
+    // Coordinadores
+    const { data: coordinadores } = await supabase
+      .from('t_coordinadores')
+      .select(`
+        COORDINADOR_ID, TIPO, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME,
+        CI, CARGO, CAREER_ID,
+        t_career!left(CAREER_NAME)
+      `)
+      .eq('STATUS', 1);
+
+    const coordinadorPP = (coordinadores || []).find((c: any) => c.TIPO === 'PP');
+    const coordinadorCarrera = (coordinadores || []).find(
+      (c: any) => c.TIPO === 'CARRERA' && c.CAREER_ID === practice.CAREER_ID
+    );
+
+    const formatCoord = (c: any) => c ? {
+      nombreCompleto: getFullName(c),
+      ci: c.CI || '',
+      cargo: c.CARGO || '',
+    } : null;
+
+    const formatPersona = (p: any) => ({
+      ci: (p?.t_persons?.ci ?? p?.STUDENTS_CI) || '',
+      primerNombre: (p?.t_persons?.first_name ?? p?.NAME) || '',
+      segundoNombre: (p?.t_persons?.middle_name ?? p?.SECOND_NAME) || '',
+      primerApellido: (p?.t_persons?.last_name ?? p?.SURNAME) || '',
+      segundoApellido: (p?.t_persons?.second_last_name ?? p?.SECOND_SURNAME) || '',
+    });
+
+    res.json({
+      success: true,
+      data: {
+        practiceId,
+        estudiante: formatPersona(estudiante),
+        carrera: { nombre: carrera.CAREER_NAME },
+        institucion: institucion ? { nombre: institucion.INSTITUTION_NAME } : null,
+        periodo: periodo ? {
+          description: periodo.DESCRIPTION || '',
+          startDate: periodo.START_DATE || '',
+          endDate: periodo.END_DATE || '',
+        } : null,
+        tutorInstitucional: tutorInst ? {
+          ci: tutorInst.ci,
+          titulo: tutorInst.titulo,
+          primerNombre: tutorInst.primerNombre,
+          segundoNombre: tutorInst.segundoNombre,
+          primerApellido: tutorInst.primerApellido,
+          segundoApellido: tutorInst.segundoApellido,
+        } : null,
+        department: practice.DEPARTMENT || null,
+        tutorAcademico: tutorAcad ? {
+          ci: tutorAcad.ci,
+          titulo: tutorAcad.titulo,
+          primerNombre: tutorAcad.primerNombre,
+          segundoNombre: tutorAcad.segundoNombre,
+          primerApellido: tutorAcad.primerApellido,
+          segundoApellido: tutorAcad.segundoApellido,
+        } : null,
+        coordinadorPP: formatCoord(coordinadorPP),
+        coordinadorCarrera: formatCoord(coordinadorCarrera),
+        evaluacionTutorInstitucional: evalInst || null,
+        evaluacionTutorAcademico: evalAcad || null,
+        evaluacionesComite,
+        comiteTotalScore,
+        evaluacionFinal: {
+          weights: {
+            institucional: evaluationConfig.weights.INSTITUCIONAL,
+            academico: evaluationConfig.weights.ACADEMICO,
+            comite: evaluationConfig.weights.COMITE,
+          },
+          parciales: {
+            institucional: evalInst?.totalScore || null,
+            academico: evalAcad?.totalScore || null,
+            comite: comiteTotalScore || null,
+          },
+          notaFinal: practice.GRADE || 0,
+        },
+        practica: {
+          startDate: practice.START_DATE || '',
+          endDate: practice.END_DATE || '',
+          grade: practice.GRADE || 0,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('[institutional-documents] getDataEvaluacionConsolidada error:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener datos consolidados' });
   }
 };

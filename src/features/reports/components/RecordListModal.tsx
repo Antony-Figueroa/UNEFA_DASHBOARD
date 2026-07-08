@@ -228,7 +228,7 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, per
 
         {!loading && records.length > 0 && (
           <>
-            <div className="overflow-x-auto rounded-lg border border-border-default dark:border-border-dark">
+            <div className="overflow-x-auto overflow-y-auto max-h-80 rounded-lg border border-border-default dark:border-border-dark">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-white/5 border-b border-border-default dark:border-border-dark">

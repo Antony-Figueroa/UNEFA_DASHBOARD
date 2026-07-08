@@ -70,6 +70,7 @@ interface Props {
       primerApellido: string; segundoApellido?: string;
     };
     institucion: { nombre: string } | null;
+    responsable: { nombreCompleto: string; titulo: string } | null;
     hoursRequired: number;
     periodo: { description: string; startDate: string; endDate: string } | null;
   };
@@ -82,6 +83,10 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos }: Props) {
   const tutorName = formatNombreCompleto(data.tutor).toUpperCase();
   const tutorTitulo = (data.tutor.titulo || 'LCDO.').toUpperCase();
   const institucionNombre = (data.institucion?.nombre || '________________________').toUpperCase();
+  const responsableNombre = data.responsable?.nombreCompleto || institucionNombre;
+  const responsableTitulo = data.responsable?.titulo
+    ? data.responsable.titulo.toUpperCase()
+    : 'SR(A).';
 
   const hoursRequired = data.hoursRequired || 480;
   const periodoDesc = data.periodo?.description || '_________';
@@ -97,16 +102,17 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos }: Props) {
       {/* Fecha alineada a la derecha */}
       <Text style={styles.placeDate}>Guanare, {fechaHoy.dia} de {fechaHoy.mes} del {fechaHoy.anio}.</Text>
 
-      {/* Sección izquierda: Señor (a), Institución, Presente */}
+      {/* Sección izquierda: Señor (a), Responsable, Institución, Presente */}
       <View style={styles.leftSection}>
         <Text style={styles.labelText}>Señor (a):</Text>
+        <Text style={styles.labelText}>{responsableTitulo} {responsableNombre}</Text>
         <Text style={styles.labelText}>{institucionNombre}</Text>
         <Text style={styles.labelText}>Presente.</Text>
       </View>
 
-      {/* Sección derecha: Atnn. */}
+      {/* Sección derecha: Atnn. (editable desde textos) */}
       <View style={styles.rightSection}>
-        <Text style={styles.labelText}>Atnn. {tutorTitulo} {tutorName}.</Text>
+        <Text style={styles.labelText}>Atnn. {textos.atnn || `${tutorTitulo} ${tutorName}.`}</Text>
       </View>
 
       {/* Cuerpo del texto — primer párrafo */}

@@ -8,6 +8,7 @@ import {
   getDataEvaluacionTutorInstitucional,
   getDataEvaluacionTutorAcademico,
   getDataEvaluacionComite,
+  getDataEvaluacionConsolidada,
   getDataConstanciaTutorAcademico,
   getDataConstanciaTutorInstitucional,
   searchPractices,
@@ -27,6 +28,7 @@ router.get('/evaluacion-final/:practiceId', requirePermission('reports:view'), g
 router.get('/evaluacion-tutor-institucional/:practiceId', requirePermission('reports:view'), getDataEvaluacionTutorInstitucional);
 router.get('/evaluacion-tutor-academico/:practiceId', requirePermission('reports:view'), getDataEvaluacionTutorAcademico);
 router.get('/evaluacion-comite/:practiceId', requirePermission('reports:view'), getDataEvaluacionComite);
+router.get('/evaluacion-consolidada/:practiceId', requirePermission('reports:view'), getDataEvaluacionConsolidada);
 router.get('/constancia-tutor-academico/:tutorId', requirePermission('reports:view'), getDataConstanciaTutorAcademico);
 router.get('/constancia-tutor-institucional/:tutorId', requirePermission('reports:view'), getDataConstanciaTutorInstitucional);
 router.get('/search-practices', requirePermission('reports:view'), searchPractices);

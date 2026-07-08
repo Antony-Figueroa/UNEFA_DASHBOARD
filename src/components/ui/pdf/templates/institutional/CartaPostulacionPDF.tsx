@@ -4,45 +4,45 @@ import { formatNombreCompleto, formatCI, getFechaParts } from '@/features/report
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
-  paragraph: { marginBottom: 12, textAlign: 'justify', fontSize: 10, lineHeight: 1.5 },
+  paragraph: { marginBottom: 14, textAlign: 'justify', fontSize: 11, lineHeight: 1.8 },
   // Student info row: fields left, photo right
-  infoRow: { flexDirection: 'row', marginBottom: 10 },
+  infoRow: { flexDirection: 'row', marginBottom: 12 },
   infoFields: { flex: 1 },
-  fieldRow: { marginBottom: 2, fontSize: 9, lineHeight: 1.4 },
+  fieldRow: { marginBottom: 4, fontSize: 10, lineHeight: 1.7 },
   // Photo box on the right
   photoBox: {
-    width: 100,
-    height: 130,
+    width: 110,
+    height: 140,
     border: '2pt solid black',
-    marginLeft: 12,
+    marginLeft: 14,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 4,
+    padding: 6,
   },
   photoText: {
-    fontSize: 7,
+    fontSize: 8,
     fontWeight: 'bold',
     textAlign: 'center',
     textTransform: 'uppercase',
   },
   // Signature section
-  firmaContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 30 },
+  firmaContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 35 },
   firmaCol: { width: '45%', alignItems: 'center' },
-  firmaRaya: { fontSize: 10, marginBottom: 3 },
-  firmaLabel: { fontSize: 7, fontWeight: 'bold', textAlign: 'center', textTransform: 'uppercase' },
+  firmaRaya: { fontSize: 11, marginBottom: 4 },
+  firmaLabel: { fontSize: 8, fontWeight: 'bold', textAlign: 'center', textTransform: 'uppercase' },
   // Acta section
-  actaTitle: { textAlign: 'center', fontSize: 12, fontWeight: 'bold', marginBottom: 8, marginTop: 30 },
-  actaBody: { textAlign: 'justify', fontSize: 9, lineHeight: 1.5 },
+  actaTitle: { textAlign: 'center', fontSize: 13, fontWeight: 'bold', marginBottom: 10, marginTop: 35 },
+  actaBody: { textAlign: 'justify', fontSize: 10, lineHeight: 1.8 },
   // Acta signature table (3 cols × 4 rows)
-  actaTable: { marginTop: 15, border: '1pt solid black' },
+  actaTable: { marginTop: 18, border: '1pt solid black' },
   actaRow: { flexDirection: 'row', borderBottom: '1pt solid black' },
   actaRowLast: { flexDirection: 'row' },
-  actaCell: { flex: 1, padding: 4, borderRight: '1pt solid black' },
-  actaCellLast: { flex: 1, padding: 4 },
-  actaHeaderText: { fontSize: 8, fontWeight: 'bold', textAlign: 'center' },
-  actaCellText: { fontSize: 8, textAlign: 'center' },
-  actaFooter: { fontSize: 9, marginTop: 8 },
+  actaCell: { flex: 1, padding: 5, borderRight: '1pt solid black' },
+  actaCellLast: { flex: 1, padding: 5 },
+  actaHeaderText: { fontSize: 9, fontWeight: 'bold', textAlign: 'center' },
+  actaCellText: { fontSize: 9, textAlign: 'center' },
+  actaFooter: { fontSize: 10, marginTop: 10 },
 });
 
 interface Props {

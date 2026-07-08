@@ -1,11 +1,10 @@
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
-import { formatNombreCompleto, formatCI, formatFecha, getTutorTitle, getFechaParts } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatCI, formatFecha, getFechaParts } from '@/features/reports/utils/reportFormatters';
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
-  title: { textAlign: 'center', fontSize: 16, fontWeight: 'bold', marginBottom: 30, textDecoration: 'underline' },
-  paragraph: { marginBottom: 20, textAlign: 'justify', fontSize: 12, lineHeight: 1.5 },
+  paragraph: { marginBottom: 20, textAlign: 'justify', fontSize: 12, lineHeight: 2, marginLeft: 30, marginRight: 30, textIndent: 30 },
   firmaContainer: { marginTop: 60, alignItems: 'center' },
   firmaLine: { marginBottom: 5 },
   firmaNombre: { fontWeight: 'bold', fontSize: 11 },
@@ -19,7 +18,7 @@ interface Props {
       primerApellido: string; segundoApellido?: string;
     } | null;
     tutor: {
-      ci: string; titulo: string | null; primerNombre: string; segundoNombre?: string;
+      ci: string; titulo: string | null; tituloAbrev?: string; primerNombre: string; segundoNombre?: string;
       primerApellido: string; segundoApellido?: string;
       condicion: string; dedicacion: string;
     };
@@ -31,8 +30,9 @@ interface Props {
 
 export function ConstanciaTutorAcademicoPDF({ data, textos }: Props) {
   const fechaHoy = getFechaParts(null);
+  const tutorTitulo = (data.tutor.tituloAbrev || data.tutor.titulo || 'LICDO.').toUpperCase();
   const cuerpo = renderDocumentText(textos.cuerpo || '', {
-    tutorTitulo: getTutorTitle(data.tutor.titulo),
+    tutorTitulo,
     tutorNombreCompleto: formatNombreCompleto(data.tutor),
     tutorCi: formatCI(data.tutor.ci),
     tutorCondicion: data.tutor.condicion,
@@ -50,7 +50,6 @@ export function ConstanciaTutorAcademicoPDF({ data, textos }: Props) {
 
   return (
     <PDFLayout title="CONSTANCIA DE TUTOR ACADÉMICO">
-      <Text style={styles.title}>CONSTANCIA</Text>
       <Text style={styles.paragraph}>{cuerpo}</Text>
       <View style={styles.firmaContainer}>
         <Text style={styles.firmaLine}>___________________________________</Text>

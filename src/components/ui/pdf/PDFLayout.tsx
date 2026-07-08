@@ -12,6 +12,7 @@ interface PDFLayoutProps {
     subject?: string;
     keywords?: string;
   };
+  hideReportTitle?: boolean;
 }
 
 /**
@@ -23,7 +24,8 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
   subtitle, 
   children, 
   orientation = "portrait",
-  metadata 
+  metadata,
+  hideReportTitle = false
 }) => {
   const currentDate = new Date().toLocaleDateString("es-VE", {
     year: "numeric",
@@ -52,9 +54,9 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
             <Text style={pdfStyles.institutionalText}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
             <Text style={pdfStyles.institutionalText}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
             <Text style={pdfStyles.institutionalText}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
-            <Text style={pdfStyles.institutionalText}>VICERRECTORADO DE LA REGIÓN LOS LLANOS</Text>
+            <Text style={pdfStyles.institutionalText}>VICERRECTORADO REGIÓN LOS LLANOS</Text>
             <Text style={pdfStyles.institutionalText}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
-            <Text style={pdfStyles.institutionalText}>COORDINACIÓN DE PRÁCTICAS PROFESIONALES</Text>
+            <Text style={pdfStyles.institutionalText}>COORDINACIÓN DE PRÁCTICA PROFESIONAL</Text>
           </View>
           <Image 
             src="/pdfs-docs/logo.png" 
@@ -63,13 +65,15 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
         </View>
 
         {/* Título del Reporte */}
-        <View style={pdfStyles.reportTitleContainer}>
-          <Text style={pdfStyles.reportTitle}>{title}</Text>
-          {subtitle && <Text style={pdfStyles.reportSubtitle}>{subtitle}</Text>}
-          <Text style={[pdfStyles.reportSubtitle, { fontSize: 7, marginTop: 4 }]}>
-            Generado el: {currentDate}
-          </Text>
-        </View>
+        {!hideReportTitle && (
+          <View style={pdfStyles.reportTitleContainer}>
+            <Text style={pdfStyles.reportTitle}>{title}</Text>
+            {subtitle && <Text style={pdfStyles.reportSubtitle}>{subtitle}</Text>}
+            <Text style={[pdfStyles.reportSubtitle, { fontSize: 7, marginTop: 4 }]}>
+              Generado el: {currentDate}
+            </Text>
+          </View>
+        )}
 
         {/* Content */}
         <View style={{ flex: 1 }}>

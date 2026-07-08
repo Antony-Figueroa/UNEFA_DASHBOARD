@@ -264,23 +264,23 @@ export default function EvaluationsAndCulminationPage() {
             <div className="space-y-1 text-xs text-text-secondary mb-3">
               <p><span className="font-medium">Carrera:</span> {practice.careerName}</p>
               <p><span className="font-medium">Período:</span> {practice.periodName}</p>
-              <p><span className="font-medium">Tipo:</span> {practice.practiceType}</p>
+              <p><span className="font-medium">Tipo:</span> {practice.practiceTypeName}</p>
             </div>
             <div className="flex justify-between items-center mb-2 text-sm">
               <span className="text-text-secondary">Institucional:</span>
-              <span className={`font-medium ${getGradeColor(practice.institutionalScore ?? practice.grade)}`}>{practice.institutionalScore != null ? practice.institutionalScore.toFixed(1) : (practice.grade != null ? practice.grade.toFixed(1) : '—')}</span>
+              <span className={`font-medium ${getGradeColor(practice.evaluations.INSTITUCIONAL.score)}`}>{practice.evaluations.INSTITUCIONAL.score != null ? practice.evaluations.INSTITUCIONAL.score.toFixed(1) : '—'}</span>
             </div>
             <div className="flex justify-between items-center mb-2 text-sm">
               <span className="text-text-secondary">Académica:</span>
-              <span className={`font-medium ${getGradeColor(practice.academicScore)}`}>{practice.academicScore != null ? practice.academicScore.toFixed(1) : '—'}</span>
+              <span className={`font-medium ${getGradeColor(practice.evaluations.ACADEMICO.score)}`}>{practice.evaluations.ACADEMICO.score != null ? practice.evaluations.ACADEMICO.score.toFixed(1) : '—'}</span>
             </div>
             <div className="flex justify-between items-center mb-2 text-sm">
               <span className="text-text-secondary">Comité:</span>
-              <span className={`font-medium ${getGradeColor(practice.committeeScore)}`}>{practice.committeeScore != null ? practice.committeeScore.toFixed(1) : '—'}</span>
+              <span className={`font-medium ${getGradeColor(practice.evaluations.COMITE.score)}`}>{practice.evaluations.COMITE.score != null ? practice.evaluations.COMITE.score.toFixed(1) : '—'}</span>
             </div>
             <div className="flex justify-between items-center mb-3 text-sm">
               <span className="text-text-secondary font-medium">Promedio:</span>
-              <span className={`font-semibold ${getGradeColor(practice.weightedAverage)}`}>{practice.weightedAverage != null ? practice.weightedAverage.toFixed(1) : '—'}</span>
+              <span className={`font-semibold ${getGradeColor(practice.finalGrade)}`}>{practice.finalGrade != null ? practice.finalGrade.toFixed(1) : '—'}</span>
             </div>
             <div className="pt-3 border-t border-border-default dark:border-border-dark flex gap-2">
               <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)} className="flex-1">

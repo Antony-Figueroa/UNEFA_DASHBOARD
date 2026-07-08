@@ -6,6 +6,7 @@ import {
   getRequestTypes,
   getStudentRequests,
   getStudentTracking,
+  getAvailableOptions,
   createStudentRequest,
   updateStudentProfile
 } from '../controllers/student-dashboard.controller.js';
@@ -22,5 +23,6 @@ router.get('/request-types', getRequestTypes);
 router.get('/tracking', getStudentTracking);
 router.get('/requests', getStudentRequests);
 router.post('/requests', createStudentRequest);
+router.get('/available-options', getAvailableOptions);
 
 export default router;

@@ -2,10 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import Button from "../../components/ui/button/Button";
 import { useToast } from "../../context/toast";
 import { TOAST } from "../../components/ui/dialog/DialogConfig";
-import { getTutors } from "../../features/tutors/services/tutorsService";
-import { getInstitutions } from "../../features/institutions/services/institutionsService";
-import { getCareers } from "../../features/careers/services/careersService";
-
+import apiClient from "../../api/apiClient";
 import { useStudentRequests } from "../../features/student-requests/hooks/useStudentRequests";
 import { connectToNotificationStream } from "../../features/notifications/services/notificationService";
 import RequestsStatsCards from "../../features/student-requests/components/RequestsStatsCards";
@@ -118,25 +115,20 @@ export default function StudentRequests() {
 
   const loadOptions = async () => {
     try {
-      const [tutorsData, institutionsData, careersData] = await Promise.all([
-        getTutors(),
-        getInstitutions(),
-        getCareers()
-      ]);
+      const res = await apiClient.get("/student/available-options");
+      const { tutors, institutions, careers } = res.data?.data || {};
 
-      setTutors((tutorsData as any[] || []).map(t => ({
+      setTutors((tutors || []).map((t: any) => ({
         value: String(t.tutorId),
         label: `${t.name} ${t.surname}`
       })));
 
-      const instList = (institutionsData as any)?.data || (institutionsData as any[]) || [];
-      setInstitutions(instList.map((i: any) => ({
+      setInstitutions((institutions || []).map((i: any) => ({
         value: String(i.institutionId),
         label: i.institutionName
       })));
 
-      const careerList = (careersData as any)?.data || (careersData as any[]) || [];
-      setCareers(careerList.map((c: any) => ({
+      setCareers((careers || []).map((c: any) => ({
         value: String(c.careerId),
         label: c.careerName
       })));

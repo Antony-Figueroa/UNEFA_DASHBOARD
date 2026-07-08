@@ -718,6 +718,53 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getAvailableOptions = async (req: AuthRequest, res: Response) => {
+  try {
+    const supabase = dbManager.getConnection();
+
+    const [tutorsRaw, institutionsRaw, careersRaw] = await Promise.all([
+      supabase
+        .from('t_tutors')
+        .select('TUTOR_ID, t_persons!inner(first_name, last_name)')
+        .eq('STATUS', 1),
+      supabase
+        .from('t_institution')
+        .select('INSTITUTION_ID, INSTITUTION_NAME')
+        .eq('STATUS', 1)
+        .order('INSTITUTION_NAME'),
+      supabase
+        .from('t_career')
+        .select('CAREER_ID, CAREER_NAME')
+        .eq('STATUS', 1)
+        .order('CAREER_NAME'),
+    ]);
+
+    const tutors = (tutorsRaw.data || []).map((t: any) => ({
+      tutorId: t.TUTOR_ID,
+      name: t.t_persons?.first_name || '',
+      surname: t.t_persons?.last_name || '',
+    }));
+
+    const institutions = (institutionsRaw.data || []).map((i: any) => ({
+      institutionId: i.INSTITUTION_ID,
+      institutionName: i.INSTITUTION_NAME,
+    }));
+
+    const careers = (careersRaw.data || []).map((c: any) => ({
+      careerId: c.CAREER_ID,
+      careerName: c.CAREER_NAME,
+    }));
+
+    res.json({ success: true, data: { tutors, institutions, careers } });
+  } catch (error) {
+    console.error('[StudentDashboard] Error getting available options:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al cargar opciones disponibles',
+    });
+  }
+};
+
 export const createStudentRequest = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;

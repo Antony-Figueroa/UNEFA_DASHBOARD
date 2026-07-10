@@ -115,17 +115,9 @@ function enforceMaxTabs(tabs: Tab[]): Tab[] {
 // ─── Provider ───────────────────────────────────────────────────────────────
 
 export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [tabs, setTabs] = useState<Tab[]>(() => {
-    const stored = loadTabs();
-    if (stored) return stored.tabs;
-    return [createDefaultTab()];
-  });
-
-  const [activeTabId, setActiveTabId] = useState<string | null>(() => {
-    const stored = loadTabs();
-    if (stored && stored.activeTabId) return stored.activeTabId;
-    return "dashboard";
-  });
+  // ponytail: no restore tabs between sessions — always start at dashboard
+  const [tabs, setTabs] = useState<Tab[]>([createDefaultTab()]);
+  const [activeTabId, setActiveTabId] = useState<string | null>("dashboard");
 
   // ── Persist on every state change ──────────────────────────────────────
 

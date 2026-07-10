@@ -54,12 +54,11 @@ export const routeComponents: Record<
   "/tutor/grades": lazyPreload(() => import("../pages/Tutor/TutorGrades")),
   "/tutor/reports": lazyPreload(() => import("../pages/Tutor/TutorReports")),
   "/tutor/profile": lazyPreload(() => import("../pages/Tutor/TutorProfile")),
-  "/student": lazyPreload(() => import("../layout/StudentLayout")),
-  "/student/requests": lazyPreload(() => import("../layout/StudentLayout")),
-  "/student/profile": lazyPreload(() => import("../layout/StudentLayout")),
-  "/student/documents": lazyPreload(() => import("../layout/StudentLayout")),
-  "/student/evaluations": lazyPreload(() => import("../layout/StudentLayout")),
-  "/student/tracking": lazyPreload(() => import("../layout/StudentLayout")),
+  "/student/requests": lazyPreload(() => import("../pages/Student/StudentRequests")),
+  "/student/profile": lazyPreload(() => import("../pages/Student/StudentProfile")),
+  "/student/documents": lazyPreload(() => import("../pages/Student/StudentDocuments")),
+  "/student/evaluations": lazyPreload(() => import("../pages/Student/StudentEvaluations")),
+  "/student/tracking": lazyPreload(() => import("../pages/Student/StudentTracking")),
   "/form-elements": lazyPreload(() => import("../pages/Forms/FormElements")),
   "/basic-tables": lazyPreload(() => import("../pages/Tables/BasicTables")),
   "/alerts": lazyPreload(() => import("../pages/UiElements/Alerts")),
@@ -101,7 +100,7 @@ export const dynamicRoutePatterns: DynamicRoutePattern[] = [
   {
     pattern: /^\/student\/activity-logs\/(\d+)$/,
     key: "/student/activity-logs/:practiceId",
-    component: lazyPreload(() => import("../layout/StudentLayout")),
+    component: lazyPreload(() => import("../pages/Student/StudentActivityLogs")),
   },
 ];
 

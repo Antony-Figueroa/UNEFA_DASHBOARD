@@ -40,13 +40,13 @@ const SUBTOTAL_LABEL_STYLE = {
 const SUBTOTAL_VALUE_STYLE = {
   font: { ...DEFAULT_FONT, bold: true, size: 10 },
   alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
-  fill: GREEN_LIGHT_FILL,
+  fill: GREEN_DARK_FILL,
   border: THIN_BORDER,
 };
 const TOTAL_CARRERAS_STYLE = {
   font: { ...DEFAULT_FONT, bold: true, size: 7, color: { argb: 'FF000000' } },
   alignment: { horizontal: 'right' as const, vertical: 'middle' as const, wrapText: true },
-  fill: GREEN_DARK_FILL,
+  fill: GREEN_LIGHT_FILL,
   border: THIN_BORDER,
 };
 const TOTAL_CARRERAS_VALUE_STYLE = {
@@ -69,15 +69,15 @@ function applyInstitutionalHeader(worksheet: ExcelJS.Worksheet, totalCols: numbe
 
 async function addLogos(workbook: ExcelJS.Workbook, worksheet: ExcelJS.Worksheet) {
   try {
-    const responseLogo = await fetch('/logo-nuevo.png');
-    const bufferLogo = await responseLogo.arrayBuffer();
-    const imageIdLogo = workbook.addImage({ buffer: bufferLogo, extension: 'png' });
-    worksheet.addImage(imageIdLogo, { tl: { col: 1, row: 0.2 }, ext: { width: 85, height: 85 } });
-
     const responseEscudo = await fetch('/unefa-img/Escudo.png');
     const bufferEscudo = await responseEscudo.arrayBuffer();
     const imageIdEscudo = workbook.addImage({ buffer: bufferEscudo, extension: 'png' });
-    worksheet.addImage(imageIdEscudo, { tl: { col: 8.5, row: 0.2 }, ext: { width: 85, height: 85 } });
+    worksheet.addImage(imageIdEscudo, { tl: { col: 1, row: 0.2 }, ext: { width: 85, height: 85 } });
+
+    const responseLogo = await fetch('/logo-nuevo.png');
+    const bufferLogo = await responseLogo.arrayBuffer();
+    const imageIdLogo = workbook.addImage({ buffer: bufferLogo, extension: 'png' });
+    worksheet.addImage(imageIdLogo, { tl: { col: 8.5, row: 0.2 }, ext: { width: 85, height: 85 } });
   } catch {
     console.warn('No se pudo cargar las imágenes para el Excel');
   }
@@ -904,8 +904,9 @@ export async function generateProyeccionExcel(data: any, period: string, fileNam
   const periodDesc = data.periodDescription || period;
   tRow.getCell(1).value = {
     richText: [
-      { text: 'PROYECCIÓN PROSPECTIVA DE LAS PASANTÍAS PARA EL PERÍODO ACADÉMICO ', font: { ...DEFAULT_FONT, size: 11, bold: true } },
-      { text: periodDesc, font: { ...DEFAULT_FONT, size: 11, bold: true, color: { argb: 'FFFF0000' } } }
+      { text: 'PROYECCIÓN', font: { ...DEFAULT_FONT, size: 14, bold: true } },
+      { text: ' PROSPECTIVA DE LAS PASANTÍAS PARA EL PERÍODO ACADÉMICO ', font: { ...DEFAULT_FONT, size: 11, bold: true } },
+      { text: periodDesc, font: { ...DEFAULT_FONT, size: 11, bold: true } }
     ]
   };
   tRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };

@@ -138,6 +138,7 @@ vi.mock('@/components/ui/dialog/DialogConfig', () => ({
 
 const makePractice = (overrides: Partial<PracticeWithEvaluations> = {}): PracticeWithEvaluations => ({
   practiceId: 1,
+  minimumGrade: 10,
   studentName: 'Juan Perez',
   studentCi: 'V-12345678',
   careerName: 'Ing. Sistemas',

@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     marginBottom: 2, 
     fontWeight: 'bold', 
     fontSize: 11,
-    color: '#dc2626', // Rojo para la institución
+    color: '#000000',
   },
   paragraph: { 
     marginBottom: 10, 
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     lineHeight: 1.4,
   },
   textRed: {
-    color: '#dc2626',
+    color: '#000000',
     fontWeight: 'bold',
   },
   firmaContainer: { 

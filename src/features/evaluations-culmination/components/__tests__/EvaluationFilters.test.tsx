@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { EvaluationFilters } from '../EvaluationFilters';
+import type { CulminationStatus, PracticeResult } from '../../types';
 
 // --- Mocks ---
 
@@ -35,7 +36,7 @@ vi.mock('../../../../components/ui/button/Button', () => ({
 const defaultProps = {
   searchTerm: '',
   onSearchChange: vi.fn(),
-  filters: { periodId: '', careerId: '', practiceTypeId: '', result: '', culminationStatus: '' },
+  filters: { periodId: 0, careerId: 0, practiceTypeId: 0, result: '' as PracticeResult, culminationStatus: '' as CulminationStatus },
   onFilterChange: vi.fn(),
   onClear: vi.fn(),
   periodOptions: [],

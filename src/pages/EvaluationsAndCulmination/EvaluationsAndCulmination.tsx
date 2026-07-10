@@ -708,7 +708,7 @@ export default function EvaluationsAndCulminationPage() {
         title="Revertir Reprobado"
         message={`¿Está seguro de revertir la práctica reprobada de ${hook.reverseTarget?.studentName || ''}? El estudiante volverá a estado Inscrito.`}
         confirmLabel="Revertir"
-        variant="danger"
+        variant="error"
       >
         <div className="space-y-4 mt-2">
           <div>

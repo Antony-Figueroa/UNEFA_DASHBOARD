@@ -485,6 +485,7 @@ function PageTutorAcademico({ data, textos }: Props) {
             </View>
           </View>
 
+          <Text style={styles.finalCalcText}>Calificación final = (Subtotal / {TOTAL_ACADEMICO}):</Text>
         </View>
 
         <View style={styles.firmaContainer1}>
@@ -570,7 +571,9 @@ function PageTutorInstitucional({ data, textos }: Props) {
           <Text style={styles.subtotalLabel}>Subtotal ({TOTAL_INSTITUCIONAL})</Text>
           <Text style={styles.subtotalValue}>{subtotal.toFixed(2)}</Text>
         </View>
-      </View>
+        </View>
+
+        <Text style={styles.finalCalcText}>Calificación final = (Subtotal / {TOTAL_INSTITUCIONAL}):</Text>
 
       {/* Firmas pegadas a la tabla — espacio debajo para firma real */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 4 }}>
@@ -697,13 +700,13 @@ function PageEvaluacionFinal({ data, textos }: Props) {
         <View style={styles.firmaRowSplit}>
           <View style={styles.firmaBoxFinal}>
             <View style={styles.firmaLineFinal} />
-            <Text style={styles.firmaNameFinal}>{textos.firma2Nombre || ''}</Text>
-            <Text style={styles.firmaRoleFinal}>{textos.firma2Cargo || 'JEFE DEL ÁREA DE SECRETARIA'}</Text>
+            <Text style={styles.firmaNameFinal}>{textos.firma3Nombre || ''}</Text>
+            <Text style={styles.firmaRoleFinal}>{textos.firma3Cargo || 'JEFA DEL ÁREA ACADÉMICA'}</Text>
           </View>
           <View style={styles.firmaBoxFinal}>
             <View style={styles.firmaLineFinal} />
-            <Text style={styles.firmaNameFinal}>{textos.firma3Nombre || ''}</Text>
-            <Text style={styles.firmaRoleFinal}>{textos.firma3Cargo || 'JEFA DEL ÁREA ACADÉMICA'}</Text>
+            <Text style={styles.firmaNameFinal}>{textos.firma2Nombre || ''}</Text>
+            <Text style={styles.firmaRoleFinal}>{textos.firma2Cargo || 'JEFE DEL ÁREA DE SECRETARIA'}</Text>
           </View>
         </View>
 

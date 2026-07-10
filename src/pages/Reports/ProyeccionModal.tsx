@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import { useToast } from "../../context/toast";
 import { TOAST } from "../../components/ui/dialog/DialogConfig";
 import { Modal } from "../../components/ui/modal";
@@ -135,35 +135,6 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
   }, [selectedPeriodId, selectedCareers, proyectadosMap, periods]);
 
   // Preview table rows — one career per row, nucleus+extension in every row
-  const previewTableData = useMemo(() => {
-    const data = prepareExcelData();
-    if (!data) return [];
-
-    const rows: any[] = [];
-    data.nuclei.forEach((nucleus: any) => {
-      const careerRows: { shortName: string; shortCount: number | string; longName: string; longCount: number | string }[] = [];
-      (nucleus.shortCareers || []).forEach((c: any) =>
-        careerRows.push({ shortName: c.careerName, shortCount: c.proyectados, longName: "", longCount: "" })
-      );
-      (nucleus.longCareers || []).forEach((c: any) =>
-        careerRows.push({ shortName: "", shortCount: "", longName: c.careerName, longCount: c.proyectados })
-      );
-
-      careerRows.forEach((row, i) => {
-        rows.push({
-          region: i === 0 ? nucleus.region : "",
-          nucleus: nucleus.name,
-          extension: nucleus.extension,
-          shortCareerName: row.shortName,
-          shortCareerCount: row.shortCount,
-          longCareerName: row.longName,
-          longCareerCount: row.longCount
-        });
-      });
-    });
-
-    return rows;
-  }, [prepareExcelData]);
 
   // Handle export
   const handleExport = useCallback(async () => {
@@ -282,74 +253,151 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
             activeTab === "preview" ? "flex" : "hidden sm:flex"
           }`}>
             <div className="flex-1 overflow-auto p-2 sm:p-4">
-              <div className="min-w-full bg-white dark:bg-bg-primary shadow-xl rounded-lg overflow-hidden border border-border-light dark:border-white/10">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs sm:text-sm">
-                    <thead className="bg-bg-secondary dark:bg-white/5 sticky top-0 z-10">
-                      <tr>
-                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Región</th>
-                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Núcleo</th>
-                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Extensión</th>
-                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Carrera Corta</th>
-                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-center font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Cant. Proy.</th>
-                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Carrera Larga</th>
-                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-center font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Cant. Proy.</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border-light dark:divide-white/5">
-                      {!selectedPeriodId || selectedCareerIds.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="px-4 py-12 text-center text-text-tertiary">
-                            <div className="flex flex-col items-center gap-2">
-                              <svg className="w-12 h-12 text-text-tertiary/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                              <span className="font-medium">Configure el reporte para ver la vista previa</span>
-                              <span className="text-xs">Seleccione período + carreras + cantidades</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : (
-                        previewTableData.map((row, rowIdx) => (
-                          <tr key={rowIdx} className="hover:bg-bg-secondary/50 dark:hover:bg-white/5 transition-colors">
-                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.region}</td>
-                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.nucleus}</td>
-                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.extension}</td>
-                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.shortCareerName}</td>
-                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-center text-text-primary dark:text-text-emphasis font-bold">{row.shortCareerCount}</td>
-                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.longCareerName}</td>
-                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-center text-text-primary dark:text-text-emphasis font-bold">{row.longCareerCount}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Totals bar */}
-                {(selectedPeriodId && selectedCareerIds.length > 0) && (
-                  <div className="px-4 py-3 bg-brand-500/10 border-t border-border-light dark:border-white/5">
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs sm:text-sm">
-                      <div className="p-2 bg-bg-surface dark:bg-bg-dark-surface rounded-lg">
-                        <p className="text-text-tertiary">Carreras Cortas</p>
-                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData()?.totals?.totalShortCareers ?? 0}</p>
-                      </div>
-                      <div className="p-2 bg-bg-surface dark:bg-bg-dark-surface rounded-lg">
-                        <p className="text-text-tertiary">Carreras Largas</p>
-                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData()?.totals?.totalLongCareers ?? 0}</p>
-                      </div>
-                      <div className="p-2 bg-bg-surface dark:bg-bg-dark-surface rounded-lg">
-                        <p className="text-text-tertiary">Total Carreras</p>
-                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData()?.totals?.totalCareers ?? 0}</p>
-                      </div>
-                      <div className="p-2 bg-bg-surface dark:bg-bg-dark-surface rounded-lg">
-                        <p className="text-text-tertiary">Total Estudiantes</p>
-                        <p className="font-bold text-brand-600 dark:text-brand-400">{prepareExcelData()?.totals?.totalStudents ?? 0}</p>
-                      </div>
+              {!selectedPeriodId || selectedCareerIds.length === 0 ? (
+                <div className="min-w-full bg-white dark:bg-bg-primary shadow-xl rounded-lg overflow-hidden border border-border-light dark:border-white/10">
+                  <div className="px-4 py-12 text-center text-text-tertiary">
+                    <div className="flex flex-col items-center gap-2">
+                      <svg className="w-12 h-12 text-text-tertiary/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span className="font-medium">Configure el reporte para ver la vista previa</span>
+                      <span className="text-xs">Seleccione período + carreras + cantidades</span>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              ) : (() => {
+                const excelData = prepareExcelData();
+                if (!excelData) return null;
+                const period = excelData.periodDescription || '';
+                const nuclei = excelData.nuclei || [];
+                const borderTLR = 'border border-gray-400';
+
+                return (
+                  <div className="min-w-[920px] bg-white dark:bg-bg-primary shadow-xl rounded-lg overflow-hidden border border-border-light dark:border-white/10">
+                    <table className="w-full border-collapse text-[10px]">
+                      {/* Membrete institucional como fila de la tabla */}
+                      <tr>
+                        <td colSpan={7} className="p-4 sm:p-6 pb-0">
+                          <div className="flex justify-between items-start">
+                            <img src="/unefa-img/Escudo.png" alt="Escudo" className="w-14 h-14 object-contain shrink-0" />
+                            <div className="text-center px-2 min-w-0">
+                              <p className="text-[10px] font-bold leading-tight">REPÚBLICA BOLIVARIANA DE VENEZUELA</p>
+                              <p className="text-[10px] font-bold leading-tight">MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</p>
+                              <p className="text-[10px] font-bold leading-tight">UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</p>
+                              <p className="text-[10px] font-bold leading-tight">DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</p>
+                              <p className="text-[10px] font-bold leading-tight">VICERRECTORADO ACADÉMICO</p>
+                              <p className="text-[10px] font-bold leading-tight">COORDINACIÓN DE PLANIFICACIÓN ACADÉMICA</p>
+                            </div>
+                            <img src="/logo-nuevo.png" alt="Logo" className="w-14 h-14 object-contain shrink-0" />
+                          </div>
+                          {/* Título */}
+                          <p className="text-center font-bold text-[10px] mt-3 leading-tight">
+                            <span className="text-sm">PROYECCIÓN</span>
+                            {' '}PROSPECTIVA DE LAS PASANTÍAS PARA EL PERÍODO ACADÉMICO {period}
+                          </p>
+                          {/* Código */}
+                          <p className="text-[9px] font-bold mt-1 mb-3">Código: Form-002-2019 CPA-VAC_JP</p>
+                        </td>
+                      </tr>
+
+                      {/* Header de la tabla */}
+                      <thead>
+                        <tr className="bg-[#95B3D7]">
+                            <th rowSpan={2} className={`${borderTLR} p-1.5 text-center font-bold text-[10px]`}>REGIÓN</th>
+                            <th rowSpan={2} className={`${borderTLR} p-1.5 text-center font-bold text-[10px]`}>NÚCLEO</th>
+                            <th rowSpan={2} className={`${borderTLR} p-1.5 text-center font-bold text-[10px]`}>EXTENSIÓN</th>
+                            <th colSpan={4} className={`${borderTLR} p-1.5 text-center font-bold text-[10px]`}>CARRERAS</th>
+                          </tr>
+                          <tr className="bg-[#95B3D7]">
+                            <th className={`${borderTLR} p-1.5 text-center font-bold text-[10px]`}>REGISTRE NOMBRE DE LAS CARRERAS CORTAS</th>
+                            <th className={`${borderTLR} p-1.5 text-center font-bold text-[10px]`}>CANTIDAD DE ESTUDIANTES PROYECTADOS A PASANTÍAS {period}</th>
+                            <th className={`${borderTLR} p-1.5 text-center font-bold text-[10px]`}>REGISTRE NOMBRE DE LAS CARRERAS LARGAS</th>
+                            <th className={`${borderTLR} p-1.5 text-center font-bold text-[10px]`}>CANTIDAD DE ESTUDIANTES PROYECTADOS A PASANTÍAS {period}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {nuclei.map((nucleus: any, nIdx: number) => {
+                            const short = nucleus.shortCareers || [];
+                            const long = nucleus.longCareers || [];
+                            const careerRows: { sn: string; sc: number; ln: string; lc: number }[] = [];
+                            short.forEach((c: any) => careerRows.push({ sn: c.careerName, sc: c.proyectados, ln: '', lc: 0 }));
+                            long.forEach((c: any) => careerRows.push({ sn: '', sc: 0, ln: c.careerName, lc: c.proyectados }));
+                            const rows = careerRows.length || 1;
+                            const totalShort = short.length;
+                            const totalShortEst = short.reduce((s: number, c: any) => s + (c.proyectados || 0), 0);
+                            const totalLong = long.length;
+                            const totalLongEst = long.reduce((s: number, c: any) => s + (c.proyectados || 0), 0);
+                            const totalCareers = totalShort + totalLong;
+                            const totalStudents = totalShortEst + totalLongEst;
+
+                            return (
+                              <Fragment key={nIdx}>
+                                {/* Data rows */}
+                                {rows === 1 && careerRows.length === 0 ? (
+                                  <tr>
+                                    <td className={`${borderTLR} p-1.5 text-center align-middle`} rowSpan={6}>
+                                      {(nucleus.region || '').toUpperCase()}
+                                    </td>
+                                    <td className={`${borderTLR} p-1.5 text-center`}>{(nucleus.name || '').toUpperCase()}</td>
+                                    <td className={`${borderTLR} p-1.5 text-center`}>{(nucleus.extension || '').toUpperCase()}</td>
+                                    <td className={`${borderTLR} p-1.5`}></td>
+                                    <td className={`${borderTLR} p-1.5 text-center`}>0</td>
+                                    <td className={`${borderTLR} p-1.5`}></td>
+                                    <td className={`${borderTLR} p-1.5 text-center`}>0</td>
+                                  </tr>
+                                ) : (
+                                  careerRows.map((row, i) => (
+                                    <tr key={i}>
+                                      {i === 0 && (
+                                        <td className={`${borderTLR} p-1.5 text-center align-middle`} rowSpan={rows}>
+                                          {(nucleus.region || '').toUpperCase()}
+                                        </td>
+                                      )}
+                                      <td className={`${borderTLR} p-1.5 text-center`}>{(nucleus.name || '').toUpperCase()}</td>
+                                      <td className={`${borderTLR} p-1.5 text-center`}>{(nucleus.extension || '').toUpperCase()}</td>
+                                      <td className={`${borderTLR} p-1.5`}>{row.sn.toUpperCase()}</td>
+                                      <td className={`${borderTLR} p-1.5 text-center font-bold`}>{row.sc || ''}</td>
+                                      <td className={`${borderTLR} p-1.5`}>{row.ln.toUpperCase()}</td>
+                                      <td className={`${borderTLR} p-1.5 text-center font-bold`}>{row.lc || ''}</td>
+                                    </tr>
+                                  ))
+                                )}
+
+                                {/* SUB-TOTALES */}
+                                <tr className="bg-[#76923C] text-black">
+                                  <td colSpan={2} className={`${borderTLR} p-1.5 text-right font-bold text-[10px]`}>SUB-TOTALES</td>
+                                  <td className={`${borderTLR} p-1.5 text-center font-bold`}>{totalShort}</td>
+                                  <td className={`${borderTLR} p-1.5 text-center font-bold`}>{totalShortEst}</td>
+                                  <td className={`${borderTLR} p-1.5 text-center font-bold`}>{totalLong}</td>
+                                  <td className={`${borderTLR} p-1.5 text-center font-bold`}>{totalLongEst}</td>
+                                </tr>
+
+                                {/* TOTAL CARRERAS */}
+                                <tr className="bg-[#C2D69B]">
+                                  <td colSpan={2} className={`${borderTLR} p-1.5 text-right font-bold text-[10px]`}>TOTAL CARRERAS DEL NÚCLEO</td>
+                                  <td className={`${borderTLR} p-1.5 text-center font-bold`}>{totalCareers}</td>
+                                  <td colSpan={3} className={`${borderTLR} p-1.5`}></td>
+                                </tr>
+
+                                {/* TOTAL ESTUDIANTES */}
+                                <tr className="bg-[#C2D69B]">
+                                  <td colSpan={2} className={`${borderTLR} p-1.5 text-right font-bold text-[10px]`}>
+                                    TOTAL DE ESTUDIANTES PASANTES DEL NÚCLEO PROYECTADOS PARA EL {period}
+                                  </td>
+                                  <td className={`${borderTLR} p-1.5 text-center font-bold`}>{totalStudents}</td>
+                                  <td colSpan={3} className={`${borderTLR} p-1.5`}></td>
+                                </tr>
+
+                                {/* Espacio entre núcleos */}
+                                <tr className="h-3"><td colSpan={7}></td></tr>
+                              </Fragment>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                );
+              })()}
             </div>
 
             {isExporting && (

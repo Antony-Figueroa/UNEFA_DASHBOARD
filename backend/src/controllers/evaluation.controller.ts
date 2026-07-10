@@ -1262,7 +1262,7 @@ export const reverseFailedPractice = async (req: AuthRequest, res: Response) => 
       REASON: reason.trim(),
       RESOLUTION_NUMBER: resolutionNumber.trim(),
       USER_ID: userId
-    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'PRACTICES_STATUS', 'REASON', 'RESOLUTION_NUMBER', 'USER_ID'], practiceId);
+    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'PRACTICES_STATUS', 'REASON', 'RESOLUTION_NUMBER', 'USER_ID'], Number(practiceId));
 
     res.json({
       success: true,
@@ -1323,7 +1323,7 @@ export const grantExtension = async (req: AuthRequest, res: Response) => {
       ACTION: 'GRANT_EXTENSION',
       PROFESSIONAL_PRACTICE_ID: practiceId,
       REASON: reason.trim()
-    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON'], practiceId);
+    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON'], Number(practiceId));
 
     res.json({
       success: true,
@@ -1381,7 +1381,7 @@ export const revokeExtension = async (req: AuthRequest, res: Response) => {
       ACTION: 'REVOKE_EXTENSION',
       PROFESSIONAL_PRACTICE_ID: practiceId,
       REASON: reason.trim()
-    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON'], practiceId);
+    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON'], Number(practiceId));
 
     res.json({
       success: true,
@@ -1605,7 +1605,7 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
           PROFESSIONAL_PRACTICE_ID: pid,
           ACTION: 'FREEZE',
           FROZEN_AT: now
-        }, ['PROFESSIONAL_PRACTICE_ID', 'ACTION', 'FROZEN_AT'], pid);
+        }, ['PROFESSIONAL_PRACTICE_ID', 'ACTION', 'FROZEN_AT'], Number(pid));
       }
     } catch (auditError) {
       console.error('[Audit] Error auditing freeze:', auditError);

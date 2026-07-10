@@ -34,6 +34,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         START_DATE,
         END_DATE,
         GRADE,
+        MANAGER_ID,
         PRACTICES_STATUS,
         EVALUATION_STATUS,
         t_persons!inner (
@@ -136,7 +137,58 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
       hoursMap.set(t.PROFESSIONAL_PRACTICE_ID, current + (t.HOURS_WORKED || 0));
     });
 
-    // Procesar prácticas
+    // ─── Obtener tutores académicos y gerentes institucionales ──────────────
+    // Tutores académicos (t_professional_practices_tutor → t_tutors → t_persons)
+    const { data: tutorAssignments } = await supabase
+      .from('t_professional_practices_tutor')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        TUTOR_TYPE,
+        t_tutors!inner (
+          t_persons!inner (ci, first_name, middle_name, last_name, second_last_name)
+        )
+      `)
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+      .eq('ACTIVE', true);
+
+    // Gerentes institucionales (t_institution_manager → t_persons)
+    const managerIds = (practices as any[])
+      .filter((p: any) => p.MANAGER_ID != null)
+      .map((p: any) => p.MANAGER_ID)
+      .filter((id: number, idx: number, arr: number[]) => arr.indexOf(id) === idx);
+
+    const { data: managerInfos } = managerIds.length > 0
+      ? await supabase
+          .from('t_institution_manager')
+          .select('MANAGER_ID, t_persons!inner(ci, first_name, middle_name, last_name, second_last_name)')
+          .in('MANAGER_ID', managerIds)
+      : { data: [] };
+
+    // Maps para lookup rápido
+    const academicTutorMap = new Map<number, { name: string; ci: string }>();
+    const managerMap = new Map<number, { name: string; ci: string }>();
+
+    (tutorAssignments || [])
+      .filter((a: any) => a.TUTOR_TYPE === 'ACADEMICO')
+      .forEach((a: any) => {
+        const person = (a as any).t_tutors?.t_persons;
+        if (person) {
+          const name = [person.first_name, person.middle_name, person.last_name, person.second_last_name]
+            .filter(Boolean).join(' ').trim();
+          academicTutorMap.set(a.PROFESSIONAL_PRACTICE_ID, { name, ci: person.ci || '' });
+        }
+      });
+
+    (managerInfos || []).forEach((m: any) => {
+      const person = (m as any).t_persons;
+      if (person) {
+        const name = [person.first_name, person.middle_name, person.last_name, person.second_last_name]
+          .filter(Boolean).join(' ').trim();
+        managerMap.set(m.MANAGER_ID, { name, ci: person.ci || '' });
+      }
+    });
+
+    // ─── Procesar prácticas ───────────────────────────────────────────────
     const evalConfig = await getEvalConfig();
     const weights = evalConfig.weights;
 
@@ -149,10 +201,14 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
       const totalHours = hoursMap.get(p.PROFESSIONAL_PRACTICE_ID) || 0;
       const culmination = culminationMap.get(p.PROFESSIONAL_PRACTICE_ID);
 
+      // Pre-cargar nombres de tutores asignados (si no hay evaluación, se usa el tutor asignado)
+      const practiceManager = managerMap.get(p.MANAGER_ID);
+      const academicTutor = academicTutorMap.get(p.PROFESSIONAL_PRACTICE_ID);
+
       // Construir estado de evaluaciones
       const statusMap: Record<string, { completed: boolean; score: number; evaluatorName: string; evaluationId?: number; frozenAt?: string | null }> = {
-        'INSTITUCIONAL': { completed: false, score: 0, evaluatorName: '', frozenAt: null },
-        'ACADEMICO': { completed: false, score: 0, evaluatorName: '', frozenAt: null },
+        'INSTITUCIONAL': { completed: false, score: 0, evaluatorName: practiceManager?.name || '', frozenAt: null },
+        'ACADEMICO': { completed: false, score: 0, evaluatorName: academicTutor?.name || '', frozenAt: null },
         'COMITE': { completed: false, score: 0, evaluatorName: '', frozenAt: null }
       };
 

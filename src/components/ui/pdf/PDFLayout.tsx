@@ -13,6 +13,7 @@ interface PDFLayoutProps {
     keywords?: string;
   };
   hideReportTitle?: boolean;
+  verificationHash?: string;
 }
 
 /**
@@ -25,7 +26,8 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
   children, 
   orientation = "portrait",
   metadata,
-  hideReportTitle = false
+  hideReportTitle = false,
+  verificationHash
 }) => {
   const currentDate = new Date().toLocaleDateString("es-VE", {
     year: "numeric",
@@ -84,7 +86,7 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
         <View style={pdfStyles.footer} fixed>
           <View style={pdfStyles.footerLeft}>
             <Image 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://unefa.edu.ve/validar?doc=${encodeURIComponent(title)}`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://unefa.edu.ve/validar?hash=${verificationHash || encodeURIComponent(title)}`}
               style={pdfStyles.qrPlaceholder} 
             />
             <Text>Documento validado digitalmente por la Coordinación de Prácticas Profesionales</Text>

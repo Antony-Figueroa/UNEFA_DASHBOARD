@@ -1,9 +1,15 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Modal } from "../modal";
 import { DownloadIcon, FileIcon, EyeIcon, UserIcon } from "../../../icons";
 import { XIcon, ListIcon } from "../../../icons/actions";
 import { useSingleReport } from "../../../hooks/pdf/useSingleReport";
 import { PDFViewer, DocumentProps } from "@react-pdf/renderer";
+import { createVerification } from "../../../services/verificationService";
+
+export interface VerificationConfig {
+  docType: string;
+  metadata?: Record<string, unknown>;
+}
 
 interface SingleReportModalProps<T> {
   isOpen: boolean;
@@ -11,13 +17,14 @@ interface SingleReportModalProps<T> {
   title: string;
   subtitle?: string;
   data: T;
-  template: (data: T) => React.ReactElement<DocumentProps>;
+  template: (data: T, verificationHash?: string) => React.ReactElement<DocumentProps>;
   fileName: string;
   recordInfo?: {
     label: string;
     value: string;
   };
   extraSidebarContent?: React.ReactNode;
+  verificationConfig?: VerificationConfig;
 }
 
 export const SingleReportModal = <T,>({
@@ -30,11 +37,41 @@ export const SingleReportModal = <T,>({
   fileName,
   recordInfo,
   extraSidebarContent,
+  verificationConfig,
 }: SingleReportModalProps<T>) => {
   const { generatePDF, previewPDF, isGenerating } = useSingleReport({ fileName });
   const [activeTab, setActiveTab] = useState<"preview" | "info">("preview");
+  const [verificationHash, setVerificationHash] = useState<string>("");
 
-  const finalTemplate = useMemo(() => template(data), [template, data]);
+  // Fetch verification hash when modal opens
+  useEffect(() => {
+    if (!isOpen || !verificationConfig) {
+      setVerificationHash("");
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const hash = await createVerification(
+          verificationConfig.docType,
+          title,
+          verificationConfig.metadata
+        );
+        if (!cancelled) setVerificationHash(hash);
+      } catch {
+        console.warn("[Verify] No se pudo crear verificación, se usará fallback");
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [isOpen, verificationConfig?.docType]);
+
+  const finalTemplate = useMemo(
+    () => template(data, verificationHash || undefined),
+    [template, data, verificationHash]
+  );
 
   return (
     <Modal 

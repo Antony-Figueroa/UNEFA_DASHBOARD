@@ -59,6 +59,7 @@ import addressRoutes from './routes/address.routes.js';
 import systemInstitutionRoutes from './routes/system-institution.routes.js';
 import systemNucleusRoutes from './routes/system-nucleus.routes.js';
 import proyeccionRoutes from './routes/proyeccion.routes.js';
+import verifyRoutes from './routes/verify.routes.js';
 import bulkImportRoutes from './routes/bulk-import.routes.js';
 import { getSystemConfig, updateSystemConfig } from './controllers/evaluation.controller.js';
 import { subscribeToNotifications } from './services/sse.service.js';
@@ -246,8 +247,14 @@ app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
 app.get('/api/evaluations/system-config', getSystemConfig);
 app.use('/api/system-institution', systemInstitutionRoutes);
 
+// Public verification endpoint (GET only — anyone can verify a document)
+app.get('/api/verify/:hash', verifyRoutes);
+
 // Apply protection to all subsequent /api routes
 app.use('/api', authenticateToken, restrictAsistente);
+
+// Protected: authenticated users can create verification records when generating PDFs
+app.post('/api/verify', verifyRoutes);
 
 app.put('/api/evaluations/system-config', requirePermission('evaluations:edit'), updateSystemConfig);
 

@@ -38,7 +38,7 @@ const DOCUMENT_CONFIG: Record<string, {
   idLabel: string;
   idPlaceholder: string;
   getData: (id: number) => Promise<any>;
-  pdfTemplate: React.FC<{ data: any; textos: Record<string, string> }>;
+  pdfTemplate: React.FC<{ data: any; textos: Record<string, string>; verificationHash?: string }>;
 }> = {
   'aceptacion-tutor': {
     title: 'Carta de Aceptación del Tutor Académico',
@@ -217,11 +217,11 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
   };
 
   const renderTemplate = useCallback(
-    (data: any) => {
+    (data: any, verificationHash?: string) => {
       const Tpl = DOCUMENT_CONFIG[documentType]?.pdfTemplate;
       const dataToUse = editableData || data;
       const textosToUse = Object.keys(editableTextos).length > 0 ? editableTextos : textos;
-      return Tpl ? <Tpl key={renderKey} data={dataToUse} textos={textosToUse} /> : <></>;
+      return Tpl ? <Tpl key={renderKey} data={dataToUse} textos={textosToUse} verificationHash={verificationHash} /> : <></>;
     },
     [documentType, textos, editableTextos, editableData, renderKey]
   );
@@ -327,6 +327,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
           data={pdfData}
           template={renderTemplate}
           fileName={`${documentType}_${recordId}`}
+          verificationConfig={{ docType: documentType }}
           recordInfo={
             selectedRecord
               ? {

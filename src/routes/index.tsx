@@ -85,6 +85,7 @@ const NotFound = lazy(() => import("../pages/OtherPage/NotFound"));
 const NosotrosPage = lazy(() => import("../pages/Public/NosotrosPage"));
 const CarrerasPage = lazy(() => import("../pages/Public/CarrerasPage"));
 const PasantiasPage = lazy(() => import("../pages/Public/PasantiasPage"));
+const ValidarPage = lazy(() => import("../pages/Public/ValidarPage"));
 
 export const AppRoutes = () => {
   const isRender = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
@@ -102,6 +103,7 @@ export const AppRoutes = () => {
           <Route path="/nosotros" element={<NosotrosPage />} />
           <Route path="/carreras" element={<CarrerasPage />} />
           <Route path="/pasantias" element={<PasantiasPage />} />
+          <Route path="/validar" element={<ValidarPage />} />
 
           {/* Auth Routes (Public but restricted for logged-in users) */}
           <Route

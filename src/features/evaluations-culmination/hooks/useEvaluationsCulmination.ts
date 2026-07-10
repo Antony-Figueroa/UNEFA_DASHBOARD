@@ -730,7 +730,7 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Evaluaciones_${periodId}.xlsx`;
+      link.download = periodId === 'all' ? 'Evaluaciones_todos.xlsx' : `Evaluaciones_${periodId}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

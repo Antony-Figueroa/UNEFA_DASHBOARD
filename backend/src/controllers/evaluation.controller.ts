@@ -2260,24 +2260,29 @@ export const exportEvaluationsExcel = async (req: AuthRequest, res: Response) =>
     const supabase = dbManager.getConnection();
     const evalConfig = await getEvalConfig();
 
-    // 1. Obtener período
-    const { data: period, error: periodError } = await supabase
-      .from('t_internships_period')
-      .select('PERIOD_ID, DESCRIPTION')
-      .eq('PERIOD_ID', periodId)
-      .single();
+    // 1. Obtener período (o exportar todos los períodos si periodId === 'all')
+    const isAllPeriods = periodId === 'all';
+    let periodDesc = 'Todos los Períodos';
 
-    if (periodError || !period) {
-      return res.status(404).json({
-        success: false,
-        message: 'Período no encontrado'
-      });
+    if (!isAllPeriods) {
+      const { data: period, error: periodError } = await supabase
+        .from('t_internships_period')
+        .select('PERIOD_ID, DESCRIPTION')
+        .eq('PERIOD_ID', periodId)
+        .single();
+
+      if (periodError || !period) {
+        return res.status(404).json({
+          success: false,
+          message: 'Período no encontrado'
+        });
+      }
+
+      periodDesc = (period as any).DESCRIPTION || `Período ${periodId}`;
     }
 
-    const periodDesc = (period as any).DESCRIPTION || `Período ${periodId}`;
-
-    // 2. Obtener prácticas del período con datos de estudiante, institución, carrera
-    const { data: practices, error: practicesError } = await supabase
+    // 2. Obtener prácticas con datos de estudiante, institución, carrera
+    let practicesQuery = supabase
       .from('t_professional_practices')
       .select(`
         PROFESSIONAL_PRACTICE_ID,
@@ -2308,8 +2313,13 @@ export const exportEvaluationsExcel = async (req: AuthRequest, res: Response) =>
           EVALUATION_DATE
         )
       `)
-      .eq('PERIOD_ID', periodId)
       .eq('STATUS', 1);
+
+    if (!isAllPeriods) {
+      practicesQuery = practicesQuery.eq('PERIOD_ID', periodId);
+    }
+
+    const { data: practices, error: practicesError } = await practicesQuery;
 
     if (practicesError) throw practicesError;
 
@@ -2508,7 +2518,7 @@ export const exportEvaluationsExcel = async (req: AuthRequest, res: Response) =>
 
     // 5. Generar workbook y enviar
     const workbook = await generateWorkbook(sections);
-    const fileName = `evaluaciones-${periodId}.xlsx`;
+    const fileName = isAllPeriods ? 'evaluaciones-todos-los-periodos.xlsx' : `evaluaciones-${periodId}.xlsx`;
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
 

@@ -487,7 +487,7 @@ export const createEvaluation = async (req: AuthRequest, res: Response) => {
         EVALUATOR_TYPE: data.evaluatorType,
         EVALUATOR_NAME: data.evaluatorName,
         TOTAL_SCORE: totalScore
-      }, ['EVALUATOR_TYPE', 'EVALUATOR_NAME', 'TOTAL_SCORE', 'OBSERVATIONS']);
+      }, ['EVALUATOR_TYPE', 'EVALUATOR_NAME', 'TOTAL_SCORE', 'OBSERVATIONS'], data.professionalPracticeId);
 
       // Notificación a admins
       await notifyEvaluationCreated(data.evaluatorName, data.professionalPracticeId, studentName);
@@ -601,7 +601,8 @@ export const updateEvaluation = async (req: AuthRequest, res: Response) => {
       await auditUpdate(req, 't_evaluation',
         oldData as Record<string, any>,
         { ...req.body, TOTAL_SCORE: totalScore } as Record<string, any>,
-        ['EVALUATOR_NAME', 'EVALUATOR_CI', 'TOTAL_SCORE', 'OBSERVATIONS']
+        ['EVALUATOR_NAME', 'EVALUATOR_CI', 'TOTAL_SCORE', 'OBSERVATIONS'],
+        (existing as any).PROFESSIONAL_PRACTICE_ID
       );
     } catch (auditError) {
       console.error('[Audit] Error auditing evaluation update:', auditError);
@@ -683,7 +684,8 @@ export const deleteEvaluation = async (req: AuthRequest, res: Response) => {
     try {
       await auditDelete(req, 't_evaluation',
         existing as Record<string, any>,
-        ['EVALUATOR_TYPE', 'EVALUATOR_NAME', 'TOTAL_SCORE']
+        ['EVALUATOR_TYPE', 'EVALUATOR_NAME', 'TOTAL_SCORE'],
+        (existing as any).PROFESSIONAL_PRACTICE_ID
       );
     } catch (auditError) {
       console.error('[Audit] Error auditing evaluation deletion:', auditError);
@@ -1260,7 +1262,7 @@ export const reverseFailedPractice = async (req: AuthRequest, res: Response) => 
       REASON: reason.trim(),
       RESOLUTION_NUMBER: resolutionNumber.trim(),
       USER_ID: userId
-    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'PRACTICES_STATUS', 'REASON', 'RESOLUTION_NUMBER', 'USER_ID']);
+    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'PRACTICES_STATUS', 'REASON', 'RESOLUTION_NUMBER', 'USER_ID'], practiceId);
 
     res.json({
       success: true,
@@ -1321,7 +1323,7 @@ export const grantExtension = async (req: AuthRequest, res: Response) => {
       ACTION: 'GRANT_EXTENSION',
       PROFESSIONAL_PRACTICE_ID: practiceId,
       REASON: reason.trim()
-    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON']);
+    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON'], practiceId);
 
     res.json({
       success: true,
@@ -1379,7 +1381,7 @@ export const revokeExtension = async (req: AuthRequest, res: Response) => {
       ACTION: 'REVOKE_EXTENSION',
       PROFESSIONAL_PRACTICE_ID: practiceId,
       REASON: reason.trim()
-    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON']);
+    }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON'], practiceId);
 
     res.json({
       success: true,
@@ -1464,7 +1466,7 @@ export const bulkGrantExtension = async (req: AuthRequest, res: Response) => {
           ACTION: 'BULK_GRANT_EXTENSION',
           PROFESSIONAL_PRACTICE_ID: practiceId,
           REASON: reason.trim()
-        }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON']);
+        }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON'], practiceId);
 
         details.push({ practiceId: String(practiceId), success: true });
       } catch (itemError) {
@@ -1579,7 +1581,7 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
           PROFESSIONAL_PRACTICE_ID: pid,
           ACTION: 'FREEZE',
           FROZEN_AT: now
-        }, ['PROFESSIONAL_PRACTICE_ID', 'ACTION', 'FROZEN_AT']);
+        }, ['PROFESSIONAL_PRACTICE_ID', 'ACTION', 'FROZEN_AT'], pid);
       }
     } catch (auditError) {
       console.error('[Audit] Error auditing freeze:', auditError);
@@ -1620,7 +1622,7 @@ export const unfreezeEvaluation = async (req: AuthRequest, res: Response) => {
 
     const { data: evaluation, error: evalError } = await supabase
       .from('t_evaluation')
-      .select('EVALUATION_ID, FROZEN_AT, UNFROZEN_AT')
+      .select('EVALUATION_ID, FROZEN_AT, UNFROZEN_AT, PROFESSIONAL_PRACTICE_ID')
       .eq('EVALUATION_ID', id)
       .single();
 
@@ -1663,7 +1665,8 @@ export const unfreezeEvaluation = async (req: AuthRequest, res: Response) => {
       await auditUpdate(req, 't_evaluation',
         { FROZEN_AT: (evaluation as any).FROZEN_AT, UNFROZEN_AT: null },
         { UNFROZEN_AT: now, UNFREEZE_REASON: reason.trim(), UNFREEZE_AUTHORIZED_BY: userId },
-        ['UNFROZEN_AT', 'UNFREEZE_REASON', 'UNFREEZE_AUTHORIZED_BY']
+        ['UNFROZEN_AT', 'UNFREEZE_REASON', 'UNFREEZE_AUTHORIZED_BY'],
+        (evaluation as any).PROFESSIONAL_PRACTICE_ID
       );
     } catch (auditError) {
       console.error('[Audit] Error auditing unfreeze:', auditError);
@@ -1744,7 +1747,7 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
         ACTION: 'UNFREEZE_PRACTICE',
         PROFESSIONAL_PRACTICE_ID: normalizedPracticeId,
         REASON: reason.trim()
-      }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON']);
+      }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'REASON'], normalizedPracticeId);
     } catch (auditError) {
       console.error('[Audit] Error auditing unfreeze:', auditError);
     }
@@ -1945,7 +1948,7 @@ export const upsertCommitteeAssignment = async (req: AuthRequest, res: Response)
       await auditCreate(req, 't_committee_assignment', {
         PROFESSIONAL_PRACTICE_ID: practiceId,
         MEMBER_COUNT: members.length,
-      }, ['PROFESSIONAL_PRACTICE_ID', 'MEMBER_COUNT']);
+      }, ['PROFESSIONAL_PRACTICE_ID', 'MEMBER_COUNT'], practiceId);
     } catch (auditError) {
       console.error('[Audit] Error auditing committee assignment:', auditError);
     }

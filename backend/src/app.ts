@@ -247,14 +247,11 @@ app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
 app.get('/api/evaluations/system-config', getSystemConfig);
 app.use('/api/system-institution', systemInstitutionRoutes);
 
-// Public verification endpoint (GET only — anyone can verify a document)
-app.get('/api/verify/:hash', verifyRoutes);
+// Document verification (GET public, POST requires auth in the router)
+app.use('/api/verify', verifyRoutes);
 
 // Apply protection to all subsequent /api routes
 app.use('/api', authenticateToken, restrictAsistente);
-
-// Protected: authenticated users can create verification records when generating PDFs
-app.post('/api/verify', verifyRoutes);
 
 app.put('/api/evaluations/system-config', requirePermission('evaluations:edit'), updateSystemConfig);
 

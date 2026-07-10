@@ -666,93 +666,116 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
                 </div>
               )}
 
-              {/* Opciones editables para Evaluación Final */}
-              {documentType === 'evaluacion-final' && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-brand-500 mb-1">
-                    <h4 className="font-bold uppercase tracking-wider text-[10px] sm:text-xs">
-                      Firmas Editables
-                    </h4>
-                  </div>
-
-                  <CustomInput
-                    label="Firma 1 - Nombre"
-                    placeholder="Jefa del Equipo de Trabajo"
-                    value={editableTextos.firma1Nombre || ''}
-                    onChange={(e) => handleEditableTextChange('firma1Nombre', e.target.value)}
-                  />
-                  <CustomInput
-                    label="Firma 1 - Cargo"
-                    placeholder="de Prácticas Profesionales"
-                    value={editableTextos.firma1Cargo || ''}
-                    onChange={(e) => handleEditableTextChange('firma1Cargo', e.target.value)}
-                  />
-                  <CustomInput
-                    label="Firma 2 - Nombre"
-                    placeholder="Lcdo. Daniel José Álvarez Rivas"
-                    value={editableTextos.firma2Nombre || ''}
-                    onChange={(e) => handleEditableTextChange('firma2Nombre', e.target.value)}
-                  />
-                  <CustomInput
-                    label="Firma 2 - Cargo"
-                    placeholder="Jefe del Área de Secretaría"
-                    value={editableTextos.firma2Cargo || ''}
-                    onChange={(e) => handleEditableTextChange('firma2Cargo', e.target.value)}
-                  />
-                  <CustomInput
-                    label="Firma 3 - Nombre"
-                    placeholder="Dra. Carmen Magdalena Rangel de Rojas"
-                    value={editableTextos.firma3Nombre || ''}
-                    onChange={(e) => handleEditableTextChange('firma3Nombre', e.target.value)}
-                  />
-                  <CustomInput
-                    label="Firma 3 - Cargo"
-                    placeholder="Jefa del Área Académica"
-                    value={editableTextos.firma3Cargo || ''}
-                    onChange={(e) => handleEditableTextChange('firma3Cargo', e.target.value)}
-                  />
-                  <CustomInput
-                    label="Firma 4 - Nombre"
-                    placeholder="Dra. Milagros del Valle Daboín Villegas"
-                    value={editableTextos.firma4Nombre || ''}
-                    onChange={(e) => handleEditableTextChange('firma4Nombre', e.target.value)}
-                  />
-                  <CustomInput
-                    label="Firma 4 - Cargo"
-                    placeholder="Jefa de la Unidad de Gestión Educativa"
-                    value={editableTextos.firma4Cargo || ''}
-                    onChange={(e) => handleEditableTextChange('firma4Cargo', e.target.value)}
-                  />
-                  <CustomInput
-                    label="Firma 5 - Nombre"
-                    placeholder="MSc. Marbelys del Valle Rivero"
-                    value={editableTextos.firma5Nombre || ''}
-                    onChange={(e) => handleEditableTextChange('firma5Nombre', e.target.value)}
-                  />
-                  <CustomInput
-                    label="Firma 5 - Cargo"
-                    placeholder="Decana del Núcleo Portuguesa"
-                    value={editableTextos.firma5Cargo || ''}
-                    onChange={(e) => handleEditableTextChange('firma5Cargo', e.target.value)}
-                  />
-                  <CustomInput
-                    label="Firma 5 - Orden Administrativa"
-                    placeholder="Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022"
-                    value={editableTextos.firma5Orden || ''}
-                    onChange={(e) => handleEditableTextChange('firma5Orden', e.target.value)}
-                  />
-
-                  <div className="p-3 rounded-lg sm:rounded-xl bg-info-500/5 border border-info-500/10">
-                    <p className="text-[10px] sm:text-[11px] text-info-600 dark:text-info-400 leading-relaxed">
-                      <span className="font-bold">Nota:</span> Los cambios se reflejan automáticamente en la vista previa del documento.
-                    </p>
-                  </div>
-                </div>
-              )}
+              {/* Opciones editables para Evaluación Final — secciones colapsables */}
+              {documentType === 'evaluacion-final' && <EvaluacionFinalEditableFields
+                editableTextos={editableTextos}
+                textos={textos}
+                handleEditableTextChange={handleEditableTextChange}
+              />}
             </div>
           }
         />
       )}
     </>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Sección Colapsable + Componente de Firmas Editables
+   ───────────────────────────────────────────── */
+function CollapsibleSection({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border border-border-light dark:border-white/10 rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2.5 text-left bg-bg-secondary/50 dark:bg-white/5 hover:bg-bg-secondary dark:hover:bg-white/10 transition-colors"
+      >
+        <span className="text-xs font-bold uppercase tracking-wider text-text-primary dark:text-white/90">{title}</span>
+        <svg className={`w-4 h-4 text-text-tertiary transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && <div className="p-3 space-y-3 border-t border-border-light dark:border-white/10">{children}</div>}
+    </div>
+  );
+}
+
+function EvaluacionFinalEditableFields({
+  editableTextos,
+  textos,
+  handleEditableTextChange,
+}: {
+  editableTextos: Record<string, string>;
+  textos: Record<string, string>;
+  handleEditableTextChange: (key: string, value: string) => void;
+}) {
+  const FirmaField = ({ label, placeholder, textKey }: { label: string; placeholder: string; textKey: string }) => (
+    <CustomInput
+      label={label}
+      placeholder={placeholder}
+      value={editableTextos[textKey] || textos[textKey] || ''}
+      onChange={(e) => handleEditableTextChange(textKey, e.target.value)}
+    />
+  );
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-brand-500 mb-1">
+        <h4 className="font-bold uppercase tracking-wider text-[10px] sm:text-xs">
+          Datos Editables por Página
+        </h4>
+      </div>
+
+      {/* Página 1: Comité Evaluador */}
+      <CollapsibleSection title="Página 1 — Comité Evaluador">
+        <FirmaField label="Coordinador PP — Nombre" placeholder="Nombre y apellido" textKey="comiteFirma1Nombre" />
+        <FirmaField label="Coordinador PP — Cargo" placeholder="Cargo" textKey="comiteFirma1Cargo" />
+        <hr className="border-border-light dark:border-white/10" />
+        <FirmaField label="Coordinador Carrera — Nombre" placeholder="Nombre y apellido" textKey="comiteFirma2Nombre" />
+        <FirmaField label="Coordinador Carrera — Cargo" placeholder="Cargo" textKey="comiteFirma2Cargo" />
+        <hr className="border-border-light dark:border-white/10" />
+        <FirmaField label="Tutor Académico — Nombre" placeholder="Nombre y apellido" textKey="comiteFirma3Nombre" />
+        <FirmaField label="Tutor Académico — Cargo" placeholder="Cargo" textKey="comiteFirma3Cargo" />
+      </CollapsibleSection>
+
+      {/* Página 2: Tutor Académico */}
+      <CollapsibleSection title="Página 2 — Tutor Académico">
+        <FirmaField label="Tutor Académico — Nombre" placeholder="Nombre y apellido" textKey="academicoFirmaNombre" />
+        <FirmaField label="Tutor Académico — Cargo" placeholder="Cargo" textKey="academicoFirmaCargo" />
+      </CollapsibleSection>
+
+      {/* Página 3: Tutor Institucional */}
+      <CollapsibleSection title="Página 3 — Tutor Institucional">
+        <FirmaField label="Tutor(a) Institucional — Nombre" placeholder="Nombre y apellido" textKey="institucionalFirmaNombre" />
+        <FirmaField label="Tutor(a) Institucional — Cargo" placeholder="Cargo" textKey="institucionalFirmaCargo" />
+      </CollapsibleSection>
+
+      {/* Página 4: Evaluación Final */}
+      <CollapsibleSection title="Página 4 — Evaluación Final" defaultOpen={true}>
+        <FirmaField label="Firma 1 — Nombre" placeholder="Nombre de quien firma" textKey="firma1Nombre" />
+        <FirmaField label="Firma 1 — Cargo" placeholder="Jefa del Equipo de Trabajo de Prácticas Profesionales" textKey="firma1Cargo" />
+        <hr className="border-border-light dark:border-white/10" />
+        <FirmaField label="Firma 2 — Nombre" placeholder="Nombre" textKey="firma2Nombre" />
+        <FirmaField label="Firma 2 — Cargo" placeholder="Jefe del Área de Secretaría" textKey="firma2Cargo" />
+        <hr className="border-border-light dark:border-white/10" />
+        <FirmaField label="Firma 3 — Nombre" placeholder="Nombre" textKey="firma3Nombre" />
+        <FirmaField label="Firma 3 — Cargo" placeholder="Jefa del Área Académica" textKey="firma3Cargo" />
+        <hr className="border-border-light dark:border-white/10" />
+        <FirmaField label="Firma 4 — Nombre" placeholder="Nombre" textKey="firma4Nombre" />
+        <FirmaField label="Firma 4 — Cargo" placeholder="Jefa de la Unidad de Gestión Educativa" textKey="firma4Cargo" />
+        <hr className="border-border-light dark:border-white/10" />
+        <FirmaField label="Firma 5 — Nombre" placeholder="Nombre" textKey="firma5Nombre" />
+        <FirmaField label="Firma 5 — Cargo" placeholder="Decana del Núcleo" textKey="firma5Cargo" />
+        <FirmaField label="Firma 5 — Orden Administrativa" placeholder="Según Orden administrativa N° ..." textKey="firma5Orden" />
+      </CollapsibleSection>
+
+      <div className="p-3 rounded-lg sm:rounded-xl bg-info-500/5 border border-info-500/10">
+        <p className="text-[10px] sm:text-[11px] text-info-600 dark:text-info-400 leading-relaxed">
+          <span className="font-bold">Nota:</span> Los cambios se reflejan automáticamente en la vista previa del documento.
+        </p>
+      </div>
+    </div>
   );
 }

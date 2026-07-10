@@ -75,18 +75,35 @@ async function getPracticeTutors(supabase: any, practiceId: number) {
 }
 
 async function getEvaluations(supabase: any, practiceId: number) {
-  const { data } = await supabase
+  // 1. Obtener evaluaciones con sus detalles (scores)
+  const { data: evals } = await supabase
     .from('t_evaluation')
     .select(`
       EVALUATION_ID, EVALUATOR_TYPE, EVALUATOR_NAME, EVALUATOR_CI,
       TOTAL_SCORE, OBSERVATIONS, EVALUATION_DATE, COMITE_MEMBER_INDEX,
-      t_evaluation_detail(ITEM_NUMBER, SCORE),
-      t_evaluation_criteria(DESCRIPTION)
+      t_evaluation_detail(ITEM_NUMBER, SCORE)
     `)
     .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
 
-  if (!data) return [];
-  return data.map((e: any) => ({
+  if (!evals || evals.length === 0) return [];
+
+  // 2. Reunir tipos de evaluador únicos para buscar sus criterios
+  const evaluatorTypes = [...new Set(evals.map((e: any) => e.EVALUATOR_TYPE))];
+
+  const { data: allCriteria } = await supabase
+    .from('t_evaluation_criteria')
+    .select('ITEM_NUMBER, DESCRIPTION, EVALUATOR_TYPE')
+    .in('EVALUATOR_TYPE', evaluatorTypes)
+    .eq('STATUS', 1);
+
+  // 3. Indexar criterios por EVALUATOR_TYPE + ITEM_NUMBER
+  const criteriaByTypeItem = new Map<string, string>();
+  for (const c of allCriteria || []) {
+    criteriaByTypeItem.set(`${c.EVALUATOR_TYPE}:${c.ITEM_NUMBER}`, c.DESCRIPTION);
+  }
+
+  // 4. Armar respuesta con descripciones
+  return evals.map((e: any) => ({
     evaluationId: e.EVALUATION_ID,
     evaluatorType: e.EVALUATOR_TYPE,
     evaluatorName: e.EVALUATOR_NAME,
@@ -97,7 +114,7 @@ async function getEvaluations(supabase: any, practiceId: number) {
     comiteMemberIndex: e.COMITE_MEMBER_INDEX || null,
     criterios: (e.t_evaluation_detail || []).map((d: any) => ({
       itemNumber: d.ITEM_NUMBER,
-      description: '',
+      description: criteriaByTypeItem.get(`${e.EVALUATOR_TYPE}:${d.ITEM_NUMBER}`) || '',
       score: d.SCORE || 0,
     })),
   }));

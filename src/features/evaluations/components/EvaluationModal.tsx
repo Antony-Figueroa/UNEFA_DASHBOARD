@@ -15,6 +15,7 @@ import { useEvaluations } from '../hooks/useEvaluations';
 import { useSystemEvaluationConfig } from '../hooks/useSystemEvaluationConfig';
 import { evaluationService } from '../services/evaluationService';
 import { isSafeInput } from '../../../utils/inputValidation';
+import { searchPersons } from '../../persons/services/personService';
 import apiClient from '../../../api/apiClient';
 import { SearchIcon } from '../../../icons';
 
@@ -100,8 +101,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     if (q.length < 2) { setSearchResults([]); return; }
     setSearching(true);
     try {
-      const res = await apiClient.get('/api/persons/search', { params: { q } });
-      setSearchResults(res.data.data || []);
+      const results = await searchPersons(q);
+      setSearchResults(results);
     } catch { /* silent fail */ }
     setSearching(false);
   };

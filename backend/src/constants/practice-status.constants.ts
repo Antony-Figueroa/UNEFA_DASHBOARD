@@ -27,6 +27,15 @@ export const PERIOD_STATUS = {
   CULMINADO: '3',
 } as const;
 
+/** Códigos UPPERCASE para comparación programática (frontend, guards, etc.) */
+export const PRACTICES_STATUS_CODES: Record<number, string> = {
+  [PRACTICES_STATUS.RETIRADO]: 'RETIRADO',
+  [PRACTICES_STATUS.PRE_INSCRITO]: 'PRE_INSCRITO',
+  [PRACTICES_STATUS.INSCRITO]: 'INSCRITO',
+  [PRACTICES_STATUS.CULMINADO]: 'CULMINADO',
+  [PRACTICES_STATUS.REPROBADO]: 'REPROBADO',
+};
+
 /** Labels legibles para mensajes al usuario */
 export const PRACTICES_STATUS_LABELS: Record<number, string> = {
   [PRACTICES_STATUS.RETIRADO]: 'Retirado',

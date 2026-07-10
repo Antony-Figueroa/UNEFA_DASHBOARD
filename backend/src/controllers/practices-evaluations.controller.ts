@@ -7,7 +7,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 import { getEvalConfig, calculateWeightedGrade } from '../services/evaluation-config.service.js';
-import { PRACTICES_STATUS, PRACTICES_STATUS_LABELS } from '../constants/practice-status.constants.js';
+import { PRACTICES_STATUS, PRACTICES_STATUS_LABELS, PRACTICES_STATUS_CODES } from '../constants/practice-status.constants.js';
 
 /**
  * Obtiene todas las prácticas con información de evaluaciones y culminación
@@ -244,6 +244,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         finalGrade,
         result: practiceResult,
         practicesStatus: PRACTICES_STATUS_LABELS[p.PRACTICES_STATUS] || String(p.PRACTICES_STATUS),
+        practicesStatusCode: PRACTICES_STATUS_CODES[p.PRACTICES_STATUS] || String(p.PRACTICES_STATUS),
         culminationStatus: culminStatus,
         certificateNumber: culmination?.CERTIFICATE_NUMBER,
         certifiedAt: culmination?.CERTIFIED_AT

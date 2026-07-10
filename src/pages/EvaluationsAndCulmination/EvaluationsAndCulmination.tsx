@@ -119,9 +119,17 @@ export default function EvaluationsAndCulminationPage() {
     })),
   ], [hook.meta.practiceTypes]);
 
-  // Paginación computada
-  const totalPages = Math.ceil(hook.filteredPractices.length / hook.itemsPerPage);
-  const paginatedData = hook.filteredPractices.slice(
+  // Aislamiento de tabs: filtrar REPROBADO según pestaña activa
+  const activeList = useMemo(() => {
+    const base = hook.filteredPractices;
+    if (tabsState.activeTab === 'reprobados')
+      return base.filter(p => p.practicesStatusCode === 'REPROBADO');
+    return base.filter(p => p.practicesStatusCode !== 'REPROBADO');
+  }, [hook.filteredPractices, tabsState.activeTab]);
+
+  // Paginación computada (sobre activeList para paginación correcta por tab)
+  const totalPages = Math.ceil(activeList.length / hook.itemsPerPage);
+  const paginatedData = activeList.slice(
     (hook.currentPage - 1) * hook.itemsPerPage,
     hook.currentPage * hook.itemsPerPage
   );
@@ -210,26 +218,12 @@ export default function EvaluationsAndCulminationPage() {
                 {!hook.isReadOnly && (
                   <TableCell className="text-center">
                     <ActionDropdown actions={[
-                      // Retirar — solo si no está ya retirado/reprobado/culminado
-                      ...(practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'CULMINADO'
-                        ? [{ label: 'Retirar', onClick: () => hook.handleWithdraw(practice.practiceId, practice.studentName) }]
-                        : []),
-                      // Reclasificar Retiro — solo si está retirado
-                      ...(practice.practicesStatus === 'RETIRADO'
-                        ? [{ label: 'Reclasificar Retiro', onClick: () => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName) }]
-                        : []),
-                      // Marcar Reprobado — solo si no está ya reprobado/retirado/culminado
-                      ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
-                        ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
-                        : []),
-                      // Descongelar — solo si está congelado
-                      ...(practice.isFrozen
-                        ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
-                        : []),
                       // Culminar — solo si evaluaciones completas, aprobado, y pendiente de culminar
                       ...(practice.evaluationStatus === 'completed' && practice.result === 'approved' && practice.culminationStatus === 'pending'
                         ? [{ label: 'Culminar', onClick: () => hook.handleApprove(practice), className: 'text-success-600 dark:text-success-400' }]
                         : []),
+                      // Gestionar Comité — siempre visible
+                      { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
                       // Otorgar Extensión — solo si no tiene extensión
                       ...(!practice.extensionGranted
                         ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
@@ -238,11 +232,17 @@ export default function EvaluationsAndCulminationPage() {
                       ...(practice.extensionGranted
                         ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
                         : []),
-                      // Gestionar Comité — siempre visible
-                      { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
-                      { separator: true, label: '', onClick: () => {} },
                       // Ver Auditoría — siempre visible
                       { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                      { separator: true, label: '', onClick: () => {} },
+                      // Marcar Reprobado — aislado tras separador para evitar error de dedo
+                      ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
+                        ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
+                        : []),
+                      // Descongelar — solo si está congelado
+                      ...(practice.isFrozen
+                        ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
+                        : []),
                     ]} />
                   </TableCell>
                 )}
@@ -289,30 +289,24 @@ export default function EvaluationsAndCulminationPage() {
               </Button>
               {!hook.isReadOnly && (
                 <ActionDropdown actions={[
-                  ...(practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'CULMINADO'
-                    ? [{ label: 'Retirar', onClick: () => hook.handleWithdraw(practice.practiceId, practice.studentName) }]
-                    : []),
-                  ...(practice.practicesStatus === 'RETIRADO'
-                    ? [{ label: 'Reclasificar Retiro', onClick: () => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName) }]
-                    : []),
-                  ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
-                    ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
-                    : []),
-                  ...(practice.isFrozen
-                    ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
-                    : []),
                   ...(practice.evaluationStatus === 'completed' && practice.result === 'approved' && practice.culminationStatus === 'pending'
                     ? [{ label: 'Culminar', onClick: () => hook.handleApprove(practice), className: 'text-success-600 dark:text-success-400' }]
                     : []),
+                  { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
                   ...(!practice.extensionGranted
                     ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
                     : []),
                   ...(practice.extensionGranted
                     ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
                     : []),
-                  { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
-                  { separator: true, label: '', onClick: () => {} },
                   { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                  { separator: true, label: '', onClick: () => {} },
+                  ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
+                    ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
+                    : []),
+                  ...(practice.isFrozen
+                    ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
+                    : []),
                 ]} />
               )}
             </div>
@@ -324,7 +318,7 @@ export default function EvaluationsAndCulminationPage() {
         <Pagination
           currentPage={hook.currentPage}
           totalPages={totalPages}
-          totalItems={hook.filteredPractices.length}
+          totalItems={activeList.length}
           itemsPerPage={hook.itemsPerPage}
           onPageChange={hook.setCurrentPage}
           onItemsPerPageChange={(items) => { hook.setItemsPerPage(items); hook.setCurrentPage(1); }}
@@ -397,21 +391,21 @@ export default function EvaluationsAndCulminationPage() {
                     )}
                     {!hook.isReadOnly && (
                       <ActionDropdown actions={[
-                        ...(practice.practicesStatus === 'RETIRADO'
-                          ? [{ label: 'Reclasificar Retiro', onClick: () => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName) }]
-                          : []),
-                        ...(practice.isFrozen
-                          ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
-                          : []),
+                        { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
                         ...(!practice.extensionGranted
                           ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
                           : []),
                         ...(practice.extensionGranted
                           ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
                           : []),
-                        { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
-                        { separator: true, label: '', onClick: () => {} },
                         { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                        { separator: true, label: '', onClick: () => {} },
+                        ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
+                          ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
+                          : []),
+                        ...(practice.isFrozen
+                          ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
+                          : []),
                       ]} />
                     )}
                   </div>
@@ -457,24 +451,24 @@ export default function EvaluationsAndCulminationPage() {
               )}
               {!hook.isReadOnly && (
                 <ActionDropdown actions={[
-                  ...(practice.practicesStatus === 'RETIRADO'
-                    ? [{ label: 'Reclasificar Retiro', onClick: () => hook.handleReclassifyWithdrawal(practice.practiceId, practice.studentName) }]
-                    : []),
-                  ...(practice.isFrozen
-                    ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
-                    : []),
                   ...(practice.evaluationStatus === 'completed' && practice.result === 'approved' && practice.culminationStatus === 'pending'
                     ? [{ label: 'Culminar', onClick: () => hook.handleApprove(practice), className: 'text-success-600 dark:text-success-400' }]
                     : []),
+                  { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
                   ...(!practice.extensionGranted
                     ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
                     : []),
                   ...(practice.extensionGranted
                     ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
                     : []),
-                  { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
-                  { separator: true, label: '', onClick: () => {} },
                   { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                  { separator: true, label: '', onClick: () => {} },
+                  ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
+                    ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
+                    : []),
+                  ...(practice.isFrozen
+                    ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
+                    : []),
                 ]} />
               )}
             </div>
@@ -486,7 +480,7 @@ export default function EvaluationsAndCulminationPage() {
         <Pagination
           currentPage={hook.currentPage}
           totalPages={totalPages}
-          totalItems={hook.filteredPractices.length}
+          totalItems={activeList.length}
           itemsPerPage={hook.itemsPerPage}
           onPageChange={hook.setCurrentPage}
           onItemsPerPageChange={(items) => { hook.setItemsPerPage(items); hook.setCurrentPage(1); }}
@@ -498,9 +492,7 @@ export default function EvaluationsAndCulminationPage() {
 
   // ─── Render: Reprobados tab ────────────────────────────
   const renderReprobadosTab = () => {
-    const failedPractices = hook.filteredPractices.filter(p => p.result === 'failed');
-
-    if (failedPractices.length === 0) {
+    if (activeList.length === 0) {
       return (
         <EmptyState
           title="No hay prácticas reprobadas"
@@ -522,7 +514,7 @@ export default function EvaluationsAndCulminationPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {failedPractices.map((practice) => (
+            {activeList.map((practice) => (
               <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
                 <TableCell>
                   <div className="font-medium text-text-primary dark:text-text-emphasis">

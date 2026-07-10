@@ -71,6 +71,34 @@ function escCol(c: string): string {
   return `"${c.replace(/"/g, '""')}"`;
 }
 
+/**
+ * After a bulk insert-with-explicit-ID load, every SERIAL/IDENTITY sequence is
+ * left behind the real MAX(ID). This DO block re-anchors ALL of them to
+ * MAX(col)+1 so the next application insert (which relies on nextval) stops
+ * colliding with existing rows. Idempotent and safe to run any time.
+ */
+const RESYNC_SEQUENCES_SQL = `
+DO $$
+DECLARE
+  r record;
+  maxval bigint;
+  seqname text;
+BEGIN
+  FOR r IN
+    SELECT c.relname AS tbl, a.attname AS col, s.relname AS seq
+    FROM pg_class s
+    JOIN pg_depend d ON d.objid = s.oid AND d.deptype = 'a'
+    JOIN pg_class c ON d.refobjid = c.oid
+    JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = d.refobjsubid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE s.relkind = 'S' AND n.nspname = 'public'
+  LOOP
+    EXECUTE format('SELECT COALESCE(MAX(%I), 0) FROM %I', r.col, r.tbl) INTO maxval;
+    seqname := format('%I', r.seq);
+    EXECUTE format('SELECT setval(%L, %s + 1, false)', seqname, maxval);
+  END LOOP;
+END $$;`;
+
 function execPsql(sql: string): void {
   execSync(`docker exec -i supabase_db_UNEFA_DASHBOARD psql -U postgres -t -v ON_ERROR_STOP=1`, {
     input: sql,
@@ -166,6 +194,16 @@ async function main() {
     } catch (e: any) {
       console.error(`\n[sync] ❌ ${table}: ${e.message.slice(0, 200)}`);
     }
+  }
+
+  // Re-anchor every sequence after the explicit-ID bulk load (root-cause fix
+  // for "duplicate key violates unique constraint" on the next app insert).
+  try {
+    console.log(`\n[sync] 🔧 Resincronizando secuencias...`);
+    execPsql(RESYNC_SEQUENCES_SQL);
+    console.log(`[sync] ✅ Secuencias resincronizadas`);
+  } catch (e: any) {
+    console.error(`\n[sync] ⚠️ No se pudieron resincronizar las secuencias: ${e.message.slice(0, 200)}`);
   }
 
   console.log(`\n[sync] ✅ SYNC COMPLETADO`);

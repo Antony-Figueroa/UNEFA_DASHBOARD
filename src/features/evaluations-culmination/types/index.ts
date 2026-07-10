@@ -107,6 +107,9 @@ export interface PracticeWithEvaluations {
   /** Estado de la práctica en DB (INSCRITO, RETIRADO, REPROBADO, CULMINADO, etc.) */
   practicesStatus?: string;
   
+  /** Código UPPERCASE del estado para comparación programática (INSCRITO, REPROBADO, etc.) */
+  practicesStatusCode?: string;
+  
   /** Indica si la extensión está otorgada */
   extensionGranted?: boolean;
   

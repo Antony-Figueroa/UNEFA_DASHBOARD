@@ -1,7 +1,8 @@
 /**
- * @file EvaluationsAndCulmination.reprobados.test.tsx
- * @description Tests para la pestaña Reprobados en EvaluationsAndCulmination.
- * Verifica que se muestren prácticas reprobadas y el botón Revertir solo para REPROBADO.
+ * @file EvaluationsAndCulmination.activeList.test.tsx
+ * @description Tests para el aislamiento de tabs via activeList.
+ * Verifica que prácticas REPROBADO se excluyan de Evaluaciones/Culminación
+ * y se incluyan solo en la pestaña Reprobados.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -22,7 +23,7 @@ vi.mock('../../../components/ui/table', () => ({
   TableCell: ({ children, isHeader }: any) => isHeader ? <th>{children}</th> : <td>{children}</td>,
   TableHeader: ({ children }: any) => <thead>{children}</thead>,
   TableRow: ({ children, className }: any) => <tr className={className}>{children}</tr>,
-  Pagination: () => null,
+  Pagination: ({ totalItems }: any) => <div data-testid="pagination">{totalItems} items</div>,
 }));
 vi.mock('../../../components/ui/table/EmptyState', () => ({ EmptyState: ({ title, description }: any) => <div data-testid="empty-state"><h3>{title}</h3><p>{description}</p></div> }));
 vi.mock('../../../components/ui/skeleton', () => ({ TableSkeleton: () => <div data-testid="skeleton" /> }));
@@ -47,9 +48,6 @@ vi.mock('../../../features/evaluations/components/EvaluationModal', () => ({ Eva
 vi.mock('../../../features/evaluations/components/EvaluationDetailModal', () => ({ default: () => null }));
 
 // Mock del hook
-const mockHandleReverseFailed = vi.fn();
-const mockHandleViewAudit = vi.fn();
-
 const baseMockHook = {
   practices: [],
   filteredPractices: [],
@@ -59,15 +57,19 @@ const baseMockHook = {
   activeFiltersCount: 0,
   meta: { periods: [], careers: [], practiceTypes: [] },
   itemsPerPage: 25,
+  currentPage: 1,
+  setCurrentPage: vi.fn(),
+  setItemsPerPage: vi.fn(),
   reverseDialogOpen: false,
   reverseTarget: null,
   reverseReason: '',
   reverseResolutionNumber: '',
   setReverseReason: vi.fn(),
   setReverseResolutionNumber: vi.fn(),
-  handleReverseFailed: mockHandleReverseFailed,
+  handleReverseFailed: vi.fn(),
   handleConfirmReverseFailed: vi.fn(),
-  handleViewAudit: mockHandleViewAudit,
+  handleViewAudit: vi.fn(),
+  handleViewStudentDetail: vi.fn(),
   updateFilter: vi.fn(),
   clearFilters: vi.fn(),
   pagination: { page: 1, totalPages: 1, total: 0 },
@@ -112,14 +114,23 @@ const baseMockHook = {
   handleReclassifyWithdrawal: vi.fn(),
   handleMarkFailed: vi.fn(),
   setReverseDialogOpen: vi.fn(),
+  handleOpenEvaluation: vi.fn(),
+  handleViewEvaluationDetails: vi.fn(),
+  handleApprove: vi.fn(),
+  handleGrantExtension: vi.fn(),
+  handleRevokeExtension: vi.fn(),
+  handleOpenCommittee: vi.fn(),
   filters: { periodId: '', careerId: '', practiceTypeId: '', result: '', culminationStatus: '' },
+  culminationStats: { total: 0, pending: 0, approved: 0, certified: 0 },
 };
+
+let mockHookInstance: any;
+let mockActiveTab: string;
 
 vi.mock('../../../features/evaluations-culmination/hooks/useEvaluationsCulmination', () => ({
   useEvaluationsCulmination: () => mockHookInstance,
 }));
 
-// Mock useTabs
 vi.mock('../../../hooks/useTabs', () => ({
   useTabs: () => ({
     activeTab: mockActiveTab,
@@ -127,47 +138,96 @@ vi.mock('../../../hooks/useTabs', () => ({
   }),
 }));
 
-// Mock useSystemEvaluationConfig
 vi.mock('../../../features/evaluations/hooks/useSystemEvaluationConfig', () => ({
   useSystemEvaluationConfig: () => ({ config: { score: { displayScale: 10 } }, loading: false }),
 }));
 
-let mockHookInstance: any;
-let mockActiveTab: string;
+const SAMPLE_PRACTICES = [
+  {
+    practiceId: 1, studentName: 'Estudiante Inscrito', studentCi: 'V-1111',
+    careerName: 'Ing.', practiceTypeName: 'ORDINARIA', result: 'pending',
+    practicesStatus: 'Inscrito', practicesStatusCode: 'INSCRITO',
+    evaluationStatus: 'pending', culminationStatus: 'pending', finalGrade: null,
+    isFrozen: false, extensionGranted: false, totalHours: 300,
+    evaluations: { INSTITUCIONAL: { completed: false, score: 0 }, ACADEMICO: { completed: false, score: 0 }, COMITE: { completed: false, score: 0 } },
+  },
+  {
+    practiceId: 2, studentName: 'Estudiante Reprobado', studentCi: 'V-2222',
+    careerName: 'Lic.', practiceTypeName: 'ORDINARIA', result: 'failed',
+    practicesStatus: 'Reprobado', practicesStatusCode: 'REPROBADO',
+    evaluationStatus: 'completed', culminationStatus: 'pending', finalGrade: 4,
+    isFrozen: false, extensionGranted: false, totalHours: 360,
+    evaluations: { INSTITUCIONAL: { completed: true, score: 4 }, ACADEMICO: { completed: true, score: 4 }, COMITE: { completed: true, score: 4 } },
+  },
+  {
+    practiceId: 3, studentName: 'Estudiante Culminado', studentCi: 'V-3333',
+    careerName: 'Cont.', practiceTypeName: 'ORDINARIA', result: 'approved',
+    practicesStatus: 'Culminado', practicesStatusCode: 'CULMINADO',
+    evaluationStatus: 'completed', culminationStatus: 'approved', finalGrade: 18,
+    isFrozen: true, extensionGranted: false, totalHours: 360,
+    evaluations: { INSTITUCIONAL: { completed: true, score: 18 }, ACADEMICO: { completed: true, score: 17 }, COMITE: { completed: true, score: 19 } },
+  },
+];
 
-describe('EvaluationsAndCulmination — Reprobados tab', () => {
+describe('EvaluationsAndCulmination — activeList tab isolation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockActiveTab = 'evaluations';
-
     mockHookInstance = {
       ...baseMockHook,
-      filteredPractices: [],
+      filteredPractices: SAMPLE_PRACTICES,
       loading: false,
     };
   });
 
-  // Lazy import para que los mocks estén listos
   const getPage = async () => {
     const mod = await import('../EvaluationsAndCulmination');
     return mod.default;
   };
 
-  it('renders the Reprobados tab button in EVAL_TABS', async () => {
-    mockHookInstance.filteredPractices = [];
-    mockHookInstance.loading = false;
+  it('excludes REPROBADO from Evaluaciones tab pagination total', async () => {
+    mockActiveTab = 'evaluations';
+    mockHookInstance.filteredPractices = SAMPLE_PRACTICES;
+    mockHookInstance.itemsPerPage = 1; // force totalPages > 1 so <Pagination> renders
     const Page = await getPage();
     render(<Page />);
 
-    expect(screen.getByTestId('tab-reprobados')).toBeInTheDocument();
-    expect(screen.getByTestId('tab-reprobados')).toHaveTextContent('Reprobados');
+    // totalItems should reflect activeList.length (2 non-REPROBADO), not total (3)
+    const pagination = screen.getByTestId('pagination');
+    // activeList filters out practiceId=2 (REPROBADO), leaving 2 items
+    expect(pagination).toHaveTextContent('2 items');
   });
 
-  it('shows empty state when no failed practices on Reprobados tab', async () => {
+  it('excludes REPROBADO from Culminacion tab pagination total', async () => {
+    mockActiveTab = 'culmination';
+    mockHookInstance.filteredPractices = SAMPLE_PRACTICES;
+    mockHookInstance.itemsPerPage = 1; // force totalPages > 1 so <Pagination> renders
+    const Page = await getPage();
+    render(<Page />);
+
+    const pagination = screen.getByTestId('pagination');
+    // activeList filters out practiceId=2 (REPROBADO), leaving 2 items
+    expect(pagination).toHaveTextContent('2 items');
+  });
+
+  it('includes only REPROBADO in Reprobados tab', async () => {
     mockActiveTab = 'reprobados';
-    // Prácticas no vacías pero no hay ninguna result==='failed'
+    mockHookInstance.filteredPractices = SAMPLE_PRACTICES;
+    const Page = await getPage();
+    render(<Page />);
+
+    // On Reprobados tab, only the REPROBADO practice should render
+    expect(screen.getByText('Estudiante Reprobado')).toBeInTheDocument();
+    // Non-REPROBADO practices should not appear (considering they may still render via other tabs)
+    // But since we're on Reprobados tab, INSCRITO and CULMINADO should not render
+    expect(screen.queryByText('Estudiante Inscrito')).not.toBeInTheDocument();
+    expect(screen.queryByText('Estudiante Culminado')).not.toBeInTheDocument();
+  });
+
+  it('shows empty state on Reprobados tab when no practices are REPROBADO', async () => {
+    mockActiveTab = 'reprobados';
     mockHookInstance.filteredPractices = [
-      { practiceId: 1, studentName: 'Aprobado', studentCi: 'V-1111', careerName: 'Ing.', practiceTypeName: 'ORDINARIA', result: 'approved', practicesStatus: 'COMPLETADO', practicesStatusCode: 'COMPLETADO', finalGrade: 18 },
+      { ...SAMPLE_PRACTICES[0] }, // Only INSCRITO practice
     ];
     const Page = await getPage();
     render(<Page />);
@@ -175,64 +235,31 @@ describe('EvaluationsAndCulmination — Reprobados tab', () => {
     expect(screen.getByText('No hay prácticas reprobadas')).toBeInTheDocument();
   });
 
-  it('shows failed practices in Reprobados tab', async () => {
+  it('reflects correct totalItems count across tabs', async () => {
+    // Evaluaciones tab should show all non-REPROBADO (via pagination total)
+    mockActiveTab = 'evaluations';
+    mockHookInstance.filteredPractices = SAMPLE_PRACTICES;
+    mockHookInstance.itemsPerPage = 1; // force totalPages > 1 so <Pagination> renders
+    const Page = await getPage();
+    const { unmount } = render(<Page />);
+
+    const evalPagination = screen.getByTestId('pagination');
+    expect(evalPagination).toHaveTextContent('2 items');
+    unmount();
+
+    // Reprobados tab — only REPROBADO items render (no <Pagination> in this tab)
     mockActiveTab = 'reprobados';
     mockHookInstance.filteredPractices = [
-      { practiceId: 1, studentName: 'Maria Lopez', studentCi: 'V-12345678', careerName: 'Ing. Sistemas', practiceTypeName: 'ORDINARIA', result: 'failed', practicesStatus: 'REPROBADO', practicesStatusCode: 'REPROBADO', finalGrade: null },
-      { practiceId: 2, studentName: 'Carlos Ruiz', studentCi: 'V-87654321', careerName: 'Contaduría', practiceTypeName: 'ORDINARIA', result: 'failed', practicesStatus: 'REPROBADO', practicesStatusCode: 'REPROBADO', finalGrade: 8 },
+      SAMPLE_PRACTICES[1],
+      { ...SAMPLE_PRACTICES[1], practiceId: 4, studentName: 'Estudiante Reprobado 2', studentCi: 'V-5555' },
     ];
-    const Page = await getPage();
-    render(<Page />);
-
-    expect(screen.getByText('Maria Lopez')).toBeInTheDocument();
-    expect(screen.getByText('Carlos Ruiz')).toBeInTheDocument();
-    expect(screen.getByText('Ing. Sistemas')).toBeInTheDocument();
-    expect(screen.getByText('Contaduría')).toBeInTheDocument();
-  });
-
-  it('shows Revertir button only when practicesStatus is REPROBADO', async () => {
-    mockActiveTab = 'reprobados';
-    mockHookInstance.filteredPractices = [
-      { practiceId: 1, studentName: 'Reprobado Manual', studentCi: 'V-1111', careerName: 'Ing.', practiceTypeName: 'ORDINARIA', result: 'failed', practicesStatus: 'REPROBADO', practicesStatusCode: 'REPROBADO', finalGrade: null },
-      { practiceId: 2, studentName: 'Reprobado Automatico', studentCi: 'V-2222', careerName: 'Lic.', practiceTypeName: 'ORDINARIA', result: 'failed', practicesStatus: 'REPROBADO', practicesStatusCode: 'REPROBADO', finalGrade: 8 },
-    ];
-    const Page = await getPage();
-    render(<Page />);
-
-    // Ambos tienen practicesStatus REPROBADO
-    const revertButtons = screen.getAllByText('Revertir');
-    expect(revertButtons).toHaveLength(2);
-  });
-
-  it('does NOT show Revertir when practicesStatus is REPROBADO but practice has INSCRITO status', async () => {
-    mockActiveTab = 'reprobados';
-    // Mixed: the REPROBADO practice makes the table render, but INSCRITO should not appear
-    mockHookInstance.filteredPractices = [
-      { practiceId: 1, studentName: 'Reprobado', studentCi: 'V-1111', careerName: 'Ing.', practiceTypeName: 'ORDINARIA', result: 'failed', practicesStatus: 'REPROBADO', practicesStatusCode: 'REPROBADO', finalGrade: null },
-      { practiceId: 2, studentName: 'No Reversible', studentCi: 'V-2222', careerName: 'Lic.', practiceTypeName: 'ORDINARIA', result: 'failed', practicesStatus: 'INSCRITO', practicesStatusCode: 'INSCRITO', finalGrade: null },
-    ];
-    const Page = await getPage();
-    render(<Page />);
-
-    // activeList filters to only REPROBADO, so the table renders but only shows the REPROBADO item
-    expect(screen.getByText('Reprobado')).toBeInTheDocument();
-    // Non-REPROBADO filtered out by activeList, not rendered
-    expect(screen.queryByText('No Reversible')).not.toBeInTheDocument();
-    // Only the REPROBADO practice shows Revertir
-    const revertButtons = screen.getAllByText('Revertir');
-    expect(revertButtons).toHaveLength(1);
-  });
-
-  it('calls handleReverseFailed when Revertir is clicked', async () => {
-    const user = (await import('@testing-library/user-event')).default;
-    mockActiveTab = 'reprobados';
-    mockHookInstance.filteredPractices = [
-      { practiceId: 1, studentName: 'Maria Lopez', studentCi: 'V-1234', careerName: 'Ing.', practiceTypeName: 'ORDINARIA', result: 'failed', practicesStatus: 'REPROBADO', practicesStatusCode: 'REPROBADO', finalGrade: null },
-    ];
-    const Page = await getPage();
-    render(<Page />);
-
-    await user.click(screen.getByText('Revertir'));
-    expect(mockHandleReverseFailed).toHaveBeenCalledWith(1, 'Maria Lopez');
+    const { unmount: unmount2 } = render(<Page />);
+    // Verify both REPROBADO names render
+    expect(screen.getByText('Estudiante Reprobado')).toBeInTheDocument();
+    expect(screen.getByText('Estudiante Reprobado 2')).toBeInTheDocument();
+    // Non-REPROBADO should NOT appear
+    expect(screen.queryByText('Estudiante Inscrito')).not.toBeInTheDocument();
+    expect(screen.queryByText('Estudiante Culminado')).not.toBeInTheDocument();
+    unmount2();
   });
 });

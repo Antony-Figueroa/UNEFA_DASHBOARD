@@ -1502,6 +1502,25 @@ export const bulkGrantExtension = async (req: AuthRequest, res: Response) => {
  * POST /api/evaluations/freeze
  * Congela todas las evaluaciones de las prácticas indicadas (cierre de actas).
  */
+/**
+ * Verifica que una práctica esté en estado INSCRITO.
+ * Lanza error con status 400 si no lo está.
+ */
+const assertInscribed = async (supabase: any, practiceId: string | number) => {
+  const { data: practice, error } = await supabase
+    .from('t_professional_practices')
+    .select('PRACTICES_STATUS')
+    .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+    .single();
+  if (error || !practice) throw Object.assign(new Error('Práctica no encontrada'), { status: 404 });
+  if (practice.PRACTICES_STATUS !== PRACTICES_STATUS.INSCRITO)
+    throw Object.assign(
+      new Error('Solo se permite la operación sobre prácticas en estado Inscrito'),
+      { status: 400 }
+    );
+  return practice;
+};
+
 export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
   try {
     const { practiceIds } = req.body;
@@ -1528,6 +1547,11 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
         success: false,
         message: 'Prácticas no encontradas'
       });
+    }
+
+    // Assert each practice is INSCRITO before proceeding
+    for (const id of normalizedIds) {
+      await assertInscribed(supabase, id);
     }
 
     // Step 1: Fetch ALL evaluations for these practices, filter non-frozen in JS
@@ -1591,7 +1615,10 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
       data: { frozenCount }
     });
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.status === 400 || error.status === 404) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
     console.error('[Evaluation] Error freezing evaluations:', error);
     res.status(500).json({
       success: false,
@@ -1620,7 +1647,7 @@ export const unfreezeEvaluation = async (req: AuthRequest, res: Response) => {
 
     const { data: evaluation, error: evalError } = await supabase
       .from('t_evaluation')
-      .select('EVALUATION_ID, FROZEN_AT, UNFROZEN_AT')
+      .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID, FROZEN_AT, UNFROZEN_AT')
       .eq('EVALUATION_ID', id)
       .single();
 
@@ -1630,6 +1657,9 @@ export const unfreezeEvaluation = async (req: AuthRequest, res: Response) => {
         message: 'Evaluación no encontrada'
       });
     }
+
+    // Assert the practice is INSCRITO before allowing unfreeze
+    await assertInscribed(supabase, (evaluation as any).PROFESSIONAL_PRACTICE_ID);
 
     if (!(evaluation as any).FROZEN_AT) {
       return res.status(400).json({
@@ -1674,7 +1704,10 @@ export const unfreezeEvaluation = async (req: AuthRequest, res: Response) => {
       message: 'Evaluación descongelada para corrección'
     });
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.status === 400 || error.status === 404) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
     console.error('[Evaluation] Error unfreezing evaluation:', error);
     res.status(500).json({
       success: false,
@@ -1704,6 +1737,9 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
         message: 'El motivo de la corrección es requerido (mínimo 10 caracteres)'
       });
     }
+
+    // Assert the practice is INSCRITO before proceeding
+    await assertInscribed(supabase, normalizedPracticeId);
 
     // Step 1: Fetch ALL evaluations for this practice (avoid .not() filter issues)
     const { data: allEvals, error: findError } = await supabase
@@ -1754,7 +1790,10 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
       message: `${evalIds.length} evaluación(es) descongelada(s) para corrección`
     });
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.status === 400 || error.status === 404) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
     console.error('[Evaluation] Error unfreezing practice evaluations:', error);
     res.status(500).json({
       success: false,

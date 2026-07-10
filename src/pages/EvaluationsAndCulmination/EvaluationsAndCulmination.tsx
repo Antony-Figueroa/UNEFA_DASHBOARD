@@ -675,6 +675,32 @@ export default function EvaluationsAndCulminationPage() {
         variant="info"
       />
 
+      {/* Diálogo de override (déficit de horas) */}
+      <UnifiedDialog
+        isOpen={!!hook.overrideTarget}
+        onClose={() => hook.setOverrideTarget(null)}
+        onConfirm={hook.handleConfirmOverride}
+        title="Aprobar Culminación con Déficit de Horas"
+        message={`${hook.overrideTarget?.practice?.studentName || ''} tiene ${hook.overrideTarget?.practice?.totalHours || 0}h de ${hook.overrideTarget?.practice?.hoursRequired || 360}h requeridas. ¿Desea aprobar con déficit?`}
+        confirmLabel="Aprobar con Déficit"
+        variant="warning"
+      >
+        <div className="space-y-4 mt-2">
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">
+              Motivo del déficit *
+            </label>
+            <textarea
+              className="w-full rounded-lg border border-border-default dark:border-border-dark bg-bg-subtle dark:bg-bg-dark p-2 text-sm text-text-primary"
+              rows={3}
+              value={hook.overrideTarget?.reason || ''}
+              onChange={(e) => hook.setOverrideReason(e.target.value)}
+              placeholder="Describa el motivo del déficit de horas"
+            />
+          </div>
+        </div>
+      </UnifiedDialog>
+
       {/* Diálogo de reversión de reprobado */}
       <UnifiedDialog
         isOpen={hook.reverseDialogOpen}

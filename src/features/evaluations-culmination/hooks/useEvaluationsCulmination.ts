@@ -172,6 +172,7 @@ export interface UseEvaluationsCulminationReturn {
   /** Override de horas */
   overrideTarget: { practice: PracticeWithEvaluations; reason: string } | null;
   setOverrideTarget: (target: { practice: PracticeWithEvaluations; reason: string } | null) => void;
+  setOverrideReason: (reason: string) => void;
   handleConfirmOverride: () => void;
 }
 
@@ -246,6 +247,10 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     practice: PracticeWithEvaluations;
     reason: string;
   } | null>(null);
+
+  const setOverrideReason = useCallback((reason: string) => {
+    setOverrideTarget(prev => prev ? { ...prev, reason } : null);
+  }, []);
 
   // ─── Reverse Failed (Reprobados tab) ──────────────────
   const [reverseDialogOpen, setReverseDialogOpen] = useState(false);
@@ -882,6 +887,7 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     // Override
     overrideTarget,
     setOverrideTarget,
+    setOverrideReason,
     handleConfirmOverride,
   };
 };

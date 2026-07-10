@@ -28,7 +28,8 @@ export const auditCreate = async (
   req: AuthRequest,
   tableName: string,
   recordData: Record<string, any>,
-  columnsToLog: string[]
+  columnsToLog: string[],
+  recordId: number = 0
 ): Promise<void> => {
   const ctx = getAuditContext(req);
   
@@ -49,7 +50,8 @@ export const auditCreate = async (
       operation: 'INSERT',
       userId: ctx.userId,
       changes,
-      ipAddress: ctx.ipAddress
+      ipAddress: ctx.ipAddress,
+      formId: recordId
     });
   }
 };
@@ -62,7 +64,8 @@ export const auditUpdate = async (
   tableName: string,
   oldData: Record<string, any>,
   newData: Record<string, any>,
-  columnsToLog: string[]
+  columnsToLog: string[],
+  recordId: number = 0
 ): Promise<void> => {
   const ctx = getAuditContext(req);
   
@@ -87,7 +90,8 @@ export const auditUpdate = async (
       operation: 'UPDATE',
       userId: ctx.userId,
       changes,
-      ipAddress: ctx.ipAddress
+      ipAddress: ctx.ipAddress,
+      formId: recordId
     });
   }
 };
@@ -99,7 +103,8 @@ export const auditDelete = async (
   req: AuthRequest,
   tableName: string,
   deletedData: Record<string, any>,
-  columnsToLog: string[]
+  columnsToLog: string[],
+  recordId: number = 0
 ): Promise<void> => {
   const ctx = getAuditContext(req);
   
@@ -116,7 +121,8 @@ export const auditDelete = async (
       operation: 'DELETE',
       userId: ctx.userId,
       changes,
-      ipAddress: ctx.ipAddress
+      ipAddress: ctx.ipAddress,
+      formId: recordId
     });
   }
 };
@@ -140,6 +146,7 @@ export const auditStatusChange = async (
     userId: ctx.userId,
     oldValue: String(oldStatus),
     newValue: String(newStatus),
-    ipAddress: ctx.ipAddress
+    ipAddress: ctx.ipAddress,
+    formId: Number(recordId) || 0
   });
 };

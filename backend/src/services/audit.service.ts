@@ -122,6 +122,7 @@ class AuditService {
     oldValue?: string;
     newValue?: string;
     ipAddress?: string;
+    formId?: number;
   }): Promise<void> {
     try {
       const tableId = await this.getTableId(params.tableName);
@@ -152,7 +153,7 @@ class AuditService {
           NEW_VALUE: params.newValue || '',
           OLD_VALUE: params.oldValue || '',
           IP_ADDRESS: params.ipAddress || '',
-          FORM_ID: 0,
+          FORM_ID: params.formId ?? 0,
           PRINT_EMAIL: '',
           STATUS: 1
         });
@@ -176,6 +177,7 @@ class AuditService {
       newValue?: string;
     }>;
     ipAddress?: string;
+    formId?: number;
   }): Promise<void> {
     for (const change of params.changes) {
       await this.logChange({
@@ -185,7 +187,8 @@ class AuditService {
         userId: params.userId,
         oldValue: change.oldValue,
         newValue: change.newValue,
-        ipAddress: params.ipAddress
+        ipAddress: params.ipAddress,
+        formId: params.formId
       });
     }
   }

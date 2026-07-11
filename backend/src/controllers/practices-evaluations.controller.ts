@@ -63,7 +63,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         )
       `)
       .eq('STATUS', 1)
-      .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.REPROBADO]); // Inscritos + manual reprobados (no pre-inscritos)
+      .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO]); // Inscritos + culminados (activos + finalizados)
 
     if (error) throw error;
 

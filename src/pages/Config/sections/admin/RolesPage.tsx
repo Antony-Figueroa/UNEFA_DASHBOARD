@@ -11,7 +11,6 @@ import { permissionService, Permission, GroupedPermissions } from "@/features/pe
 import { usePermissions } from "@/features/permissions/hooks/usePermissions";
 import { useToast } from "@/context/toast";
 import { TOAST } from "@/components/ui/dialog/DialogConfig";
-import ConfigLayout from "../../ConfigLayout";
 import RoleListTable from "./components/RoleListTable";
 import PermissionMatrixModal from "./components/PermissionMatrixModal";
 
@@ -142,7 +141,7 @@ export default function RolesPermissionsPage() {
   };
 
   return (
-    <ConfigLayout>
+    <>
       <PageMeta title="Roles y Permisos" description="Configuración de roles y permisos del sistema" />
       <PageBreadcrumb pageTitle="Roles y Permisos" />
 
@@ -413,6 +412,6 @@ export default function RolesPermissionsPage() {
         </ModalFooter>
       </Modal>
 
-    </ConfigLayout>
+    </>
   );
 }

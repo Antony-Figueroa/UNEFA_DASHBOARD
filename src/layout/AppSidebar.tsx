@@ -213,14 +213,14 @@ const navItems: NavItem[] = [
       { name: "Pre-Inscripción", path: "/pre-enrollment", permissions: ['enrollments:view'], notRoles: [3] },
       { name: "Inscripción", path: "/enrollment", permissions: ['enrollments:view'], notRoles: [3] },
       { name: "Seguimiento", path: "/tracking", permissions: ['tracking:view'], notRoles: [3] },
-      { name: "Evaluaciones", path: "/evaluations", permissions: ['evaluations:view'] },
+      { name: "Evaluaciones", path: "/evaluations", permissions: ['evaluations:view'], notRoles: [3] },
     ],
   },
   { name: "Solicitudes", icon: <DocsIcon />, path: "/admin/requests", permissions: ['requests:view'], notRoles: [3, 4] },
   { name: "Reportes", icon: <PieChartIcon />, path: "/reports", permissions: ['reports:view'], notRoles: [3, 4] },
   {
     name: "Configuración", icon: <PlugInIcon />,
-    notRoles: [4],
+    notRoles: [3, 4],
     permissions: ['users:view', 'lists:view', 'activity-logs:view', 'roles:manage', 'config:view', 'backups:view', 'evaluations:view'],
     subItems: [
       // 👥 Administración
@@ -236,11 +236,9 @@ const navItems: NavItem[] = [
       { name: "Listas (Combos)", path: "/configure/lists", permissions: ['lists:view'] },
       { name: "Respaldos", path: "/configure/backups", permissions: ['backups:view'] },
       { name: "Mantenimiento", path: "/configure/maintenance", permissions: ['config:view'] },
-      { name: "Evaluación", path: "/configure/evaluacion", permissions: ['evaluations:view'] },
 
       // 🎨 Personalización
       { name: "PERSONALIZACIÓN", isHeader: true },
-      { name: "Landing Page", path: "/configure/landing", permissions: ['config:view'] },
       { name: "Dashboard", path: "/dashboard/configure", permissions: ['config:view'] },
       { name: "Recordatorios", path: "/configure/reminders", permissions: ['config:view'] },
     ],

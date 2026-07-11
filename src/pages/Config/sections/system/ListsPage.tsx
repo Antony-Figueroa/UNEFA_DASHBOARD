@@ -13,7 +13,6 @@ import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { useToast } from "@/context/toast";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 import { matchSearch } from "@/utils/searchNormalizer";
-import ConfigLayout from "../../ConfigLayout";
 import ListSelector from "./components/ListSelector";
 import ListValueEditor from "./components/ListValueEditor";
 
@@ -136,7 +135,7 @@ const ListsConfiguration = () => {
   ];
 
   return (
-    <ConfigLayout>
+    <>
       <PageMeta 
         title="Configuración de Combos | UNEFA" 
         description="Gestión de listas desplegables del sistema" 
@@ -240,7 +239,7 @@ const ListsConfiguration = () => {
         confirmLabel="Confirmar"
         variant={confirmDialog?.variant || "info"}
       />
-    </ConfigLayout>
+    </>
   );
 };
 

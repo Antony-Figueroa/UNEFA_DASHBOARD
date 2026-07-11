@@ -5,7 +5,6 @@ import { landingConfigService } from '@/features/landing-config/services/landing
 import { LandingConfig, LandingCareer, LandingFAQ } from '@/features/landing-config/types';
 import { useToast } from '@/context/toast';
 import { TOAST } from '@/components/ui/dialog/DialogConfig';
-import ConfigLayout from '../../ConfigLayout';
 import HeroSectionEditor from './components/HeroSectionEditor';
 import MissionVisionEditor from './components/MissionVisionEditor';
 import CareersEditor from './components/CareersEditor';
@@ -176,16 +175,14 @@ const LandingConfigPage: React.FC = () => {
 
   if (loading) {
     return (
-      <ConfigLayout>
         <div className="flex items-center justify-center h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-500 border-t-transparent" />
         </div>
-      </ConfigLayout>
     );
   }
 
   return (
-    <ConfigLayout>
+    <>
       <PageMeta title="Configuración de Landing Page" description="Administra el contenido de la página principal" />
       <PageBreadcrumb pageTitle="Configuración de Landing Page" />
 
@@ -242,7 +239,7 @@ const LandingConfigPage: React.FC = () => {
           saving={saving}
         />
       )}
-    </ConfigLayout>
+    </>
   );
 };
 

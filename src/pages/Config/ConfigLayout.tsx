@@ -1,8 +1,4 @@
-import { useLocation, Link } from "react-router";
-
-interface ConfigLayoutProps {
-  children: React.ReactNode;
-}
+import { useLocation, Link, Outlet, useSearchParams } from "react-router";
 
 // ponytail: inline SVG icons, no icon lib dependency
 const NAV_ITEMS = [
@@ -11,7 +7,6 @@ const NAV_ITEMS = [
     links: [
       { to: "/configure/settings", label: "Parámetros del Sistema", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
       { to: "/configure/organizacion", label: "Organización", icon: "M3 21h18M3 7v14M3 3l6 4-6 4V3zM21 7v14M21 3l-6 4 6 4V3zM9 21V11M15 21V11" },
-      { to: "/configure/evaluacion", label: "Evaluación", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" },
       { to: "/configure/lists", label: "Listas / Combos", icon: "M4 6h16M4 10h16M4 14h16M4 18h16" },
       { to: "/configure/maintenance", label: "Mantenimiento", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M9 12l2 2 4-4" },
       { to: "/configure/backups", label: "Respaldos", icon: "M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16M8 12h8" },
@@ -34,8 +29,18 @@ const NAV_ITEMS = [
   },
 ];
 
-export default function ConfigLayout({ children }: ConfigLayoutProps) {
+export default function ConfigLayout() {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  const isActive = (to: string) => {
+    // Match pathname + search params (for org?tab=evaluacion)
+    const [path, qs] = to.split("?");
+    if (qs) {
+      return location.pathname === path && searchParams.toString() === qs;
+    }
+    return location.pathname === to;
+  };
 
   return (
     <div className="flex gap-6 animate-fadeIn">
@@ -48,20 +53,20 @@ export default function ConfigLayout({ children }: ConfigLayoutProps) {
               </h3>
               <ul className="space-y-1">
                 {group.links.map((link) => {
-                  const isActive = location.pathname === link.to;
+                  const active = isActive(link.to);
                   return (
                     <li key={link.to}>
                       <Link
                         to={link.to}
                         className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          isActive
+                          active
                             ? "bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400"
                             : "text-text-secondary dark:text-text-tertiary hover:bg-gray-50 dark:hover:bg-white/5"
                         }`}
                       >
                         <svg
                           className={`w-4 h-4 shrink-0 ${
-                            isActive ? "text-brand-500" : "text-text-tertiary"
+                            active ? "text-brand-500" : "text-text-tertiary"
                           }`}
                           fill="none"
                           viewBox="0 0 24 24"
@@ -81,7 +86,7 @@ export default function ConfigLayout({ children }: ConfigLayoutProps) {
         </nav>
       </aside>
       <main className="flex-1 min-w-0">
-        {children}
+        <Outlet />
       </main>
     </div>
   );

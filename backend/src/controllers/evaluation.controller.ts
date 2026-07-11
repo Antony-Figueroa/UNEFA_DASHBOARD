@@ -175,6 +175,100 @@ export const updateCriteriaBatch = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/**
+ * POST /api/evaluations/criteria
+ * Crea un nuevo criterio de evaluación. Asigna el siguiente ITEM_NUMBER disponible para el tipo.
+ */
+export const createCriteria = async (req: AuthRequest, res: Response) => {
+  try {
+    const { description, evaluatorType } = req.body;
+    if (!description?.trim() || !evaluatorType) {
+      res.status(400).json({ success: false, message: 'Se requiere description y evaluatorType' });
+      return;
+    }
+    if (!['INSTITUCIONAL', 'ACADEMICO', 'COMITE'].includes(evaluatorType)) {
+      res.status(400).json({ success: false, message: 'evaluatorType debe ser INSTITUCIONAL, ACADEMICO o COMITE' });
+      return;
+    }
+
+    const supabase = dbManager.getConnection();
+
+    // Obtener el máximo ITEM_NUMBER para ese tipo
+    const { data: maxItem, error: maxError } = await supabase
+      .from('t_evaluation_criteria')
+      .select('ITEM_NUMBER')
+      .eq('EVALUATOR_TYPE', evaluatorType)
+      .eq('STATUS', 1)
+      .order('ITEM_NUMBER', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (maxError) throw maxError;
+    const nextItemNumber = (maxItem?.ITEM_NUMBER ?? 0) + 1;
+
+    const { data, error } = await supabase
+      .from('t_evaluation_criteria')
+      .insert({
+        DESCRIPTION: description.trim(),
+        EVALUATOR_TYPE: evaluatorType,
+        ITEM_NUMBER: nextItemNumber,
+        STATUS: 1,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.status(201).json({
+      success: true,
+      data: {
+        criteriaId: data.CRITERIA_ID,
+        itemNumber: data.ITEM_NUMBER,
+        description: data.DESCRIPTION,
+        evaluatorType: data.EVALUATOR_TYPE,
+      },
+    });
+  } catch (error) {
+    console.error('[Evaluation] Error creating criteria:', error);
+    res.status(500).json({ success: false, message: 'Error al crear criterio de evaluación' });
+  }
+};
+
+/**
+ * DELETE /api/evaluations/criteria/:id
+ * Soft-delete: setea STATUS=0 (no borra físicamente por integridad referencial).
+ */
+export const deleteCriteria = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const supabase = dbManager.getConnection();
+
+    const { data: existing, error: checkError } = await supabase
+      .from('t_evaluation_criteria')
+      .select('CRITERIA_ID')
+      .eq('CRITERIA_ID', id)
+      .eq('STATUS', 1)
+      .maybeSingle();
+
+    if (checkError || !existing) {
+      res.status(404).json({ success: false, message: 'Criterio no encontrado' });
+      return;
+    }
+
+    const { error } = await supabase
+      .from('t_evaluation_criteria')
+      .update({ STATUS: 0 })
+      .eq('CRITERIA_ID', id);
+
+    if (error) throw error;
+
+    res.json({ success: true, message: 'Criterio eliminado correctamente' });
+  } catch (error) {
+    console.error('[Evaluation] Error deleting criteria:', error);
+    res.status(500).json({ success: false, message: 'Error al eliminar criterio de evaluación' });
+  }
+};
+
 export const getEvaluations = async (req: AuthRequest, res: Response) => {
   try {
     const { practiceId, status } = req.query;

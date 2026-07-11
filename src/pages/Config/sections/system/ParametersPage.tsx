@@ -9,7 +9,7 @@ import { SkeletonLoader } from "../../../../components/ui/skeleton";
 import UnifiedDialog from "../../../../components/ui/dialog/UnifiedDialog";
 import { useSystemConfig } from "../../../../features/config/hooks/useSystemConfig";
 import type { ConfigItem } from "../../../../features/config/types";
-import ConfigLayout from "../../ConfigLayout";
+
 
 // ponytail: lookup table > icon lib import for 7 entries
 const CATEGORY_ICONS: Record<string, string> = {
@@ -80,7 +80,7 @@ export default function ParametersPage() {
   const activeCategoryItems = config.find((c) => c.category === activeCategory)?.items || [];
 
   return (
-    <ConfigLayout>
+    <>
       <PageMeta title="Parámetros del Sistema" description="Configuración general del sistema" />
       <PageBreadcrumb pageTitle="Parámetros del Sistema" />
 
@@ -240,6 +240,6 @@ export default function ParametersPage() {
         confirmLabel="Confirmar"
         variant={confirmDialog?.variant || "info"}
       />
-    </ConfigLayout>
+    </>
   );
 }

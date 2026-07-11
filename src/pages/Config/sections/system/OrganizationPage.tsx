@@ -1,15 +1,16 @@
 import { useSearchParams } from "react-router";
-import ConfigLayout from "../../ConfigLayout";
 import PageMeta from "@/components/common/PageMeta";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import InstitutionConfig from "./InstitutionConfig";
 import NucleiManager from "./NucleiManager";
 import GraceDefaultsSection from "@/features/academic-config/components/GraceDefaultsSection";
+import EvaluationConfigTab from "./EvaluationConfigTab";
 
 const TABS = [
   { id: "institution", label: "Institución" },
   { id: "nuclei", label: "Núcleos" },
   { id: "academic", label: "Académico" },
+  { id: "evaluacion", label: "Evaluación" },
 ];
 
 export default function OrganizationPage() {
@@ -21,8 +22,8 @@ export default function OrganizationPage() {
   };
 
   return (
-    <ConfigLayout>
-      <PageMeta title="Configuración de la Organización" description="Datos institucionales, núcleos y configuración académica" />
+    <>
+      <PageMeta title="Configuración de la Organización" description="Datos institucionales, núcleos, configuración académica y de evaluación" />
       <PageBreadcrumb pageTitle="Configuración de la Organización" />
 
       <div className="space-y-6 animate-fadeIn">
@@ -53,7 +54,8 @@ export default function OrganizationPage() {
             <GraceDefaultsSection />
           </div>
         )}
+        {activeTab === "evaluacion" && <EvaluationConfigTab />}
       </div>
-    </ConfigLayout>
+    </>
   );
 }

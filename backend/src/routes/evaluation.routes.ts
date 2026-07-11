@@ -3,6 +3,8 @@ import { requirePermission } from '../middlewares/auth.middleware.js';
 import { validateCreateEvaluationPeriod, validateUpdateEvaluationPeriod } from '../middlewares/period-validator.middleware.js';
 import {
   getCriteria,
+  createCriteria,
+  deleteCriteria,
   updateCriteria,
   updateCriteriaBatch,
   getEvaluations,
@@ -29,8 +31,10 @@ import {
 const router = Router();
 
 router.get('/criteria', requirePermission('evaluations:view'), getCriteria);
+router.post('/criteria', requirePermission('evaluations:edit'), createCriteria);
 router.put('/criteria', requirePermission('evaluations:edit'), updateCriteriaBatch);
 router.put('/criteria/:id', requirePermission('evaluations:edit'), updateCriteria);
+router.delete('/criteria/:id', requirePermission('evaluations:edit'), deleteCriteria);
 router.get('/practice/:practiceId/status', requirePermission('evaluations:view'), getPracticeEvaluationStatus);
 router.get('/practice/:practiceId/tutor-info', requirePermission('evaluations:view'), getPracticeTutorInfo);
 router.get('/batch-status', requirePermission('evaluations:view'), getBatchPracticeStatus);

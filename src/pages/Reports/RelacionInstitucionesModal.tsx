@@ -5,12 +5,12 @@ import { Modal } from "../../components/ui/modal";
 import { MODAL_CONFIG } from "../../components/ui/dialog/DialogConfig";
 import { FileIcon, ListIcon, DownloadIcon } from "../../icons";
 import CustomSelect from "../../components/form/CustomSelect";
+import MultiSelect from "../../components/form/MultiSelect";
 import { getPeriods } from "../../features/periods/services/periodService";
 import { getInstitutions, getInstitutionCareers } from "../../features/institutions/services/institutionsService";
 import { generateRelacionInstitucionesSolicitanExcel } from "../../utils/unefaExcelReports";
 import { XIcon } from "lucide-react";
 import apiClient from "../../api/apiClient";
-import { SearchableInput } from "../../features/reports/components/SearchableInput";
 
 interface Period {
   periodId: string;
@@ -23,6 +23,7 @@ interface Institution {
   rif: string;
   institutionType: string;
   phone: string;
+  status: boolean;
 }
 
 interface Career {
@@ -44,6 +45,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
   const [institutionCareers, setInstitutionCareers] = useState<Record<string, Career[]>>({});
   const [studentsMap, setStudentsMap] = useState<Record<string, number>>({});
   const [responsibleMap, setResponsibleMap] = useState<Record<string, string>>({});
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "config">("preview");
@@ -122,17 +124,25 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
     return allInstitutions.filter(inst => selectedInstIds.includes(inst.institutionId));
   }, [allInstitutions, selectedInstIds]);
 
-  const institutionOptions = allInstitutions.map(inst => ({
+  // Solo instituciones activas (status === true)
+  const activeInstitutions = useMemo(() => {
+    return allInstitutions.filter(inst => inst.status !== false);
+  }, [allInstitutions]);
+
+  const institutionOptions: { value: string; text: string }[] = activeInstitutions.map(inst => ({
     value: inst.institutionId,
     text: `${inst.name} (${inst.rif || 'S/RIF'})`
   }));
 
-  const renderInstitutionItem = (item: Institution) => (
-    <div>
-      <p className="text-sm font-medium text-text-primary dark:text-text-emphasis">{item.name}</p>
-      <p className="text-xs text-text-tertiary mt-0.5">RIF: {item.rif} · {item.institutionType || 'N/A'}</p>
-    </div>
-  );
+  // Options filtradas por búsqueda (para el MultiSelect)
+  const filteredInstOptions = useMemo(() => {
+    if (!searchTerm) return institutionOptions;
+    const q = searchTerm.toLowerCase();
+    return institutionOptions.filter(o =>
+      o.text.toLowerCase().includes(q) ||
+      activeInstitutions.find(i => i.institutionId === o.value)?.institutionType?.toLowerCase().includes(q)
+    );
+  }, [institutionOptions, searchTerm, activeInstitutions]);
 
   // Prepare data for Excel export
   const prepareExcelData = useCallback(() => {
@@ -196,6 +206,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
     setStudentsMap({});
     setResponsibleMap({});
     setInstitutionCareers({});
+    setSearchTerm("");
     setActiveTab("preview");
     onClose();
   }, [onClose]);
@@ -354,7 +365,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
           <div className={`w-full sm:max-w-sm bg-white dark:bg-bg-primary border-l border-border-light dark:border-white/5 flex flex-col shadow-xl z-10 ${
             activeTab === "config" ? "flex" : "hidden sm:flex"
           }`}>
-            {/* Non-scrollable top: period + search — no overflow to avoid clipping SearchableInput dropdown */}
+            {/* Non-scrollable top: period + multiselect */}
             <div className="shrink-0 p-4 sm:p-6 pb-2 sm:pb-2">
               <div className="flex items-center gap-2 text-brand-500 mb-4">
                 <ListIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -378,28 +389,40 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                   />
                 </div>
 
-                {/* Institution search — outside overflow container so dropdown won't clip */}
+                {/* Institution search + multiselect */}
                 <div className="space-y-1.5 sm:space-y-2">
                   <label className="text-[10px] sm:text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
                     Instituciones
                   </label>
-                  <SearchableInput
-                    placeholder="Buscar institución..."
-                    search={(q) => {
-                      const term = q.toLowerCase();
-                      return Promise.resolve(
-                        allInstitutions
-                          .filter(i => !selectedInstIds.includes(i.institutionId))
-                          .filter(i => i.name.toLowerCase().includes(term) || (i.rif || '').toLowerCase().includes(term))
-                          .slice(0, 20)
-                      );
+                  <input
+                    type="text"
+                    placeholder="Buscar instituciones..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full rounded-lg border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-text-tertiary"
+                  />
+                  <MultiSelect
+                    label=""
+                    options={filteredInstOptions}
+                    value={selectedInstIds}
+                    onChange={(ids) => {
+                      setSelectedInstIds(ids);
+                      // Inicializar responsable para las nuevas
+                      ids.forEach(id => {
+                        if (!(id in responsibleMap)) {
+                          setResponsibleMap(prev => ({ ...prev, [id]: '' }));
+                        }
+                      });
+                      // Limpiar responsables de las removidas
+                      setResponsibleMap(prev => {
+                        const next = { ...prev };
+                        Object.keys(next).forEach(k => {
+                          if (!ids.includes(k)) delete next[k];
+                        });
+                        return next;
+                      });
                     }}
-                    renderItem={(item: Institution) => renderInstitutionItem(item)}
-                    onSelect={(item) => {
-                      setSelectedInstIds(prev => [...prev, item.institutionId]);
-                      setResponsibleMap(prev => ({ ...prev, [item.institutionId]: '' }));
-                    }}
-                    getKey={(item: Institution) => item.institutionId}
+                    placeholder={selectedInstIds.length > 0 ? `${selectedInstIds.length} seleccionadas` : "Seleccione instituciones..."}
                   />
                 </div>
               </div>

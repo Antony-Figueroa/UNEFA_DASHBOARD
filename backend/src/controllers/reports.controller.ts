@@ -1659,7 +1659,8 @@ export const exportReportExcel = async (req: Request, res: Response) => {
               t_tutors(TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME)
             )
           `)
-          .eq('STATUS', 1);
+          .eq('STATUS', 1)
+          .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO]);
 
         if (periodId) actaQuery = actaQuery.eq('PERIOD_ID', Number(periodId));
         if (careerIds.length > 0) actaQuery = actaQuery.in('CAREER_ID', careerIds);
@@ -1720,7 +1721,8 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             t_institution(INSTITUTION_NAME, REGION, NUCLEUS, EXTENSION),
             t_evaluation(EVALUATOR_TYPE, TOTAL_SCORE)
           `)
-          .eq('STATUS', 1);
+          .eq('STATUS', 1)
+          .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO]);
 
         if (periodId) evalQuery = evalQuery.eq('PERIOD_ID', Number(periodId));
         if (careerIds.length > 0) evalQuery = evalQuery.in('CAREER_ID', careerIds);
@@ -2089,7 +2091,8 @@ export const getActaNotasFinalesReport = async (req: Request, res: Response) => 
           t_tutors(TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME)
         )
       `)
-      .eq('STATUS', 1);
+      .eq('STATUS', 1)
+      .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO]);
 
     if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
     if (careerId) query = query.eq('CAREER_ID', Number(careerId));
@@ -2162,7 +2165,8 @@ export const getEvaluacionesConsolidadasReport = async (req: Request, res: Respo
         t_institution(INSTITUTION_NAME, REGION, NUCLEUS, EXTENSION),
         t_evaluation(EVALUATOR_TYPE, TOTAL_SCORE)
       `)
-      .eq('STATUS', 1);
+      .eq('STATUS', 1)
+      .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO]);
 
     if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
     if (careerId) query = query.eq('CAREER_ID', Number(careerId));

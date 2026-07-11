@@ -5,22 +5,27 @@ import ComponentCard from "../../components/common/ComponentCard";
 import Button from "../../components/ui/button/Button";
 import { DynamicDashboard } from "../../features/dashboard/components/DynamicDashboard";
 import { useDashboardLayout } from "../../features/dashboard/hooks/useDashboardLayout";
-import tutorService, { TutorDashboardStats } from "../../features/tutor/services/tutorService";
+import tutorService, { TutorDashboardStats, TutorStudent } from "../../features/tutor/services/tutorService";
 import { EyeIcon, ClockIcon } from "../../icons/actions";
 
 export default function TutorDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<TutorDashboardStats | null>(null);
+  const [students, setStudents] = useState<TutorStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { widgets } = useDashboardLayout();
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await tutorService.getDashboard();
-        setStats(data);
+        const [statsData, studentsData] = await Promise.all([
+          tutorService.getDashboard(),
+          tutorService.getStudents().catch(() => []),
+        ]);
+        setStats(statsData);
+        setStudents(Array.isArray(studentsData) ? studentsData : []);
       } catch (err) {
         console.error("[TutorDashboard] Error:", err);
         setError("Error al cargar estadísticas");
@@ -28,7 +33,7 @@ export default function TutorDashboard() {
         setLoading(false);
       }
     };
-    fetchStats();
+    fetchData();
   }, []);
 
   return (
@@ -56,7 +61,7 @@ export default function TutorDashboard() {
 
         <DynamicDashboard
           widgets={widgets}
-          data={{ ...stats, loading }}
+          data={{ ...stats, students, loading }}
           loading={loading}
         />
 

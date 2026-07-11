@@ -508,7 +508,6 @@ export default function EnrollmentPage() {
                                 onView={setViewItem}
                                 onViewHistory={handleViewHistory}
                                 loading={loadingAction}
-                                periodOptions={periodOptions}
                                 practiceTypeOptions={practiceTypeOptions}
                             />
                         </SkeletonLoader>

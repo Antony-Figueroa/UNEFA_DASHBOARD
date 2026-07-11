@@ -10,7 +10,6 @@ import RestoreDialog from "@/components/ui/dialog/RestoreDialog";
 import { backupService, BackupRecord } from "@/features/backup/services/backupService";
 import { useToast } from "@/context/toast";
 import { TOAST, MODAL_CONFIG } from "@/components/ui/dialog/DialogConfig";
-import ConfigLayout from "../../ConfigLayout";
 
 export default function BackupsPage() {
   const { addToast } = useToast();
@@ -150,7 +149,7 @@ export default function BackupsPage() {
   };
 
   return (
-    <ConfigLayout>
+    <>
       <PageMeta 
         title="Respaldos" 
         description="Gestión de respaldos de la base de datos" 
@@ -386,6 +385,6 @@ export default function BackupsPage() {
         confirmLabel="Confirmar"
         variant={confirmDialog?.variant || "info"}
       />
-    </ConfigLayout>
+    </>
   );
 }

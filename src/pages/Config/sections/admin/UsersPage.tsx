@@ -20,7 +20,6 @@ import UserDetailModal from "@/features/users/components/UserDetailModal";
 import UnifiedDialog from "@/components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, DialogVariant } from "@/components/ui/dialog/DialogConfig";
 import { toTitleCase } from "@/utils/textFormat";
-import ConfigLayout from "../../ConfigLayout";
 
 /**
  * Página de Gestión de Usuarios.
@@ -259,7 +258,7 @@ const UserManagementPage = () => {
   };
 
   return (
-    <ConfigLayout>
+    <>
       <PageMeta 
         title="Gestión de Usuarios | UNEFA" 
         description="Administración de usuarios del panel de control" 
@@ -405,7 +404,7 @@ const UserManagementPage = () => {
         variant={confirmDialog?.variant || "info"}
         isLoading={loadingAction}
       />
-    </ConfigLayout>
+    </>
   );
 };
 

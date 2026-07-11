@@ -6,6 +6,7 @@ import ScrollToTop from "../components/common/ScrollToTop";
 import PageLoader from "../components/ui/loader";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import PublicRoute from "../components/auth/PublicRoute";
+import ConfigLayout from "../pages/Config/ConfigLayout";
 
 // Lazy loading components
 const Home = lazy(() => import("../pages/Dashboard/Home"));
@@ -24,8 +25,6 @@ const BackupsPage = lazy(() => import("../pages/Config/sections/system/BackupsPa
 const LandingConfigPage = lazy(() => import("../pages/Config/sections/customize/LandingConfigPage"));
 const RemindersPage = lazy(() => import("../pages/Config/sections/customize/RemindersPage"));
 const OrganizationPage = lazy(() => import("../pages/Config/sections/system/OrganizationPage"));
-const EvaluationConfigPage = lazy(() => import("../pages/Config/sections/system/EvaluationConfigPage"));
-
 const DashboardConfigurator = lazy(() => import("../pages/Config/sections/customize/DashboardPage"));
 const NotificationsPage = lazy(() => import("../pages/Notifications/NotificationsPage"));
 const Reports = lazy(() => import("../pages/Reports/Reports"));
@@ -302,95 +301,95 @@ export const AppRoutes = () => {
               }
             />
 
-            {/* Configuration — based on permissions */}
-            <Route
-              path="/configure/users"
-              element={
-                <ProtectedRoute requiredPermissions={['users:view']}>
-                  <UserManagementPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configure/lists"
-              element={
-                <ProtectedRoute requiredPermissions={['lists:view']}>
-                  <ListsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configure/auditoria"
-              element={
-                <ProtectedRoute requiredPermissions={['activity-logs:view']}>
-                  <AuditPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configure/roles"
-              element={
-                <ProtectedRoute requiredPermissions={['roles:manage']}>
-                  <RolesPermissionsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configure/settings"
-              element={
-                <ProtectedRoute requiredPermissions={['config:view']}>
-                  <ParametersPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configure/maintenance"
-              element={
-                <ProtectedRoute requiredPermissions={['config:view']}>
-                  <MaintenancePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configure/backups"
-              element={
-                <ProtectedRoute requiredPermissions={['backups:view']}>
-                  <BackupsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configure/landing"
-              element={
-                <ProtectedRoute requiredPermissions={['config:view']}>
-                  <LandingConfigPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configure/organizacion"
-              element={
-                <ProtectedRoute requiredPermissions={['config:view']}>
-                  <OrganizationPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configure/evaluacion"
-              element={
-                <ProtectedRoute requiredPermissions={['evaluations:view']}>
-                  <EvaluationConfigPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configure/reminders"
-              element={
-                <ProtectedRoute requiredPermissions={['config:view']}>
-                  <RemindersPage />
-                </ProtectedRoute>
-              }
-            />
+            {/* Configuration — nested under /configure with persistent ConfigLayout */}
+            <Route path="/configure" element={<ConfigLayout />}>
+              <Route index element={<Navigate to="settings" replace />} />
+              <Route
+                path="settings"
+                element={
+                  <ProtectedRoute requiredPermissions={['config:view']}>
+                    <ParametersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="organizacion"
+                element={
+                  <ProtectedRoute requiredPermissions={['config:view']}>
+                    <OrganizationPage />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Redirect legacy /configure/evaluacion to org tab */}
+              <Route
+                path="evaluacion"
+                element={<Navigate to="/configure/organizacion?tab=evaluacion" replace />}
+              />
+              <Route
+                path="lists"
+                element={
+                  <ProtectedRoute requiredPermissions={['lists:view']}>
+                    <ListsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="maintenance"
+                element={
+                  <ProtectedRoute requiredPermissions={['config:view']}>
+                    <MaintenancePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="backups"
+                element={
+                  <ProtectedRoute requiredPermissions={['backups:view']}>
+                    <BackupsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="users"
+                element={
+                  <ProtectedRoute requiredPermissions={['users:view']}>
+                    <UserManagementPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="roles"
+                element={
+                  <ProtectedRoute requiredPermissions={['roles:manage']}>
+                    <RolesPermissionsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="auditoria"
+                element={
+                  <ProtectedRoute requiredPermissions={['activity-logs:view']}>
+                    <AuditPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="landing"
+                element={
+                  <ProtectedRoute requiredPermissions={['config:view']}>
+                    <LandingConfigPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="reminders"
+                element={
+                  <ProtectedRoute requiredPermissions={['config:view']}>
+                    <RemindersPage />
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
             <Route
               path="/notifications"
               element={<NotificationsPage />}

@@ -7,7 +7,6 @@ import Button from "@/components/ui/button/Button";
 import UnifiedDialog from "@/components/ui/dialog/UnifiedDialog";
 import { BulkImportModal } from "@/features/bulk-import/components/BulkImportModal";
 import { useSystemHealth } from "@/features/config/hooks/useSystemHealth";
-import ConfigLayout from "@/pages/Config/ConfigLayout";
 
 export default function MaintenancePage() {
   const { health, checkHealth, clearOldLogs, syncData } = useSystemHealth();
@@ -111,7 +110,7 @@ export default function MaintenancePage() {
   ];
 
   return (
-    <ConfigLayout>
+    <>
       <PageMeta title="Mantenimiento" description="Acciones de mantenimiento del sistema" />
       <PageBreadcrumb pageTitle="Mantenimiento" />
 
@@ -209,6 +208,6 @@ export default function MaintenancePage() {
         isOpen={isBulkImportOpen}
         onClose={() => setIsBulkImportOpen(false)}
       />
-    </ConfigLayout>
+    </>
   );
 }

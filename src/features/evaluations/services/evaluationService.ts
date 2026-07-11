@@ -68,6 +68,25 @@ const fromApiWithDetails = (data: ApiEvaluation): EvaluationWithDetails => ({
 });
 
 export const evaluationService = {
+  createCriteria: async (data: { description: string; evaluatorType: string }): Promise<EvaluationCriteria> => {
+    try {
+      const response = await apiClient.post<{ success: boolean; data: EvaluationCriteria }>(`${API_URL}/criteria`, data);
+      return response.data.data;
+    } catch (error) {
+      console.error('[evaluationService] Error creating criteria:', error);
+      throw error;
+    }
+  },
+
+  deleteCriteria: async (id: number): Promise<void> => {
+    try {
+      await apiClient.delete(`${API_URL}/criteria/${id}`);
+    } catch (error) {
+      console.error('[evaluationService] Error deleting criteria:', error);
+      throw error;
+    }
+  },
+
   updateCriteria: async (criteria: { criteriaId: number; description: string }[]): Promise<void> => {
     try {
       await apiClient.put(`${API_URL}/criteria`, { criteria });

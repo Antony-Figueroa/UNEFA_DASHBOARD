@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "axios";
+import { normalizeForDisplay } from "../utils/textFormat";
 
 /**
  * @file apiClient.ts
@@ -7,6 +8,36 @@ import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "ax
  * 
  * @module core/api
  */
+
+// ─── Normalización de nombres para display ───────────────────────────────────
+// ponytail: interceptor único en lugar de `toTitleCase()` en 40+ features
+const NAME_FIELDS = new Set([
+  // Persona (español)
+  'firstName', 'middleName', 'lastName', 'secondLastName',
+  'fullName', 'fullNames', 'studentName',
+  'nombre', 'apellido', 'fullname',
+  // Entidades relacionadas
+  'careerName', 'tutorName', 'institutionName',
+  'tutorAcademicoNombre', 'tutorMetodologicoNombre', 'evaluadorNombre',
+  'region', 'nucleo', 'extension', 'empresa',
+]);
+
+/** Recorre recursivamente el response y aplica normalizeForDisplay a campos de nombre */
+function normalizeNameFields(data: unknown): void {
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      if (item && typeof item === 'object') normalizeNameFields(item);
+    }
+  } else if (data && typeof data === 'object') {
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      if (NAME_FIELDS.has(key) && typeof value === 'string' && value.length > 0) {
+        (data as Record<string, unknown>)[key] = normalizeForDisplay(value);
+      } else if (value && typeof value === 'object') {
+        normalizeNameFields(value);
+      }
+    }
+  }
+}
 
 /**
  * Configuración de reintentos para peticiones fallidas.
@@ -98,7 +129,11 @@ apiClient.interceptors.request.use(
  * Maneja la lógica de reintentos, expiración de sesión (401) y normalización de errores.
  */
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    // Ponytail: normalizar campos de nombres de personas en todas las respuestas
+    if (response.data) normalizeNameFields(response.data);
+    return response;
+  },
   async (error: AxiosError) => {
     const config = error.config as RetryConfig;
     

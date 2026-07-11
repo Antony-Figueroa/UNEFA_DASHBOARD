@@ -160,19 +160,19 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, per
     if (isStudent) {
       return (
         <>
-          <td className="px-4 py-3 text-text-primary uppercase">{item.firstName} {item.lastName}</td>
+          <td className="px-4 py-3 text-text-primary">{item.firstName} {item.lastName}</td>
           <td className="px-4 py-3 text-text-secondary uppercase">{item.identificationPrefix}-{item.identificationNumber}</td>
-          <td className="px-4 py-3 text-text-secondary uppercase">{item.careerName || '-'}</td>
-          <td className="px-4 py-3 text-text-secondary uppercase hidden md:table-cell">{item.email || '-'}</td>
+          <td className="px-4 py-3 text-text-secondary">{item.careerName || '-'}</td>
+          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.email || '-'}</td>
         </>
       );
     }
     return (
       <>
-        <td className="px-4 py-3 text-text-primary uppercase">{item.fullName}</td>
-        <td className="px-4 py-3 text-text-secondary uppercase">{item.ci}</td>
-        <td className="px-4 py-3 text-text-secondary uppercase">{item.email}</td>
-        <td className="px-4 py-3 text-text-secondary uppercase hidden md:table-cell">{item.careers || '-'}</td>
+        <td className="px-4 py-3 text-text-primary">{item.fullName}</td>
+        <td className="px-4 py-3 text-text-secondary">{item.ci}</td>
+        <td className="px-4 py-3 text-text-secondary">{item.email}</td>
+        <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.careers || '-'}</td>
       </>
     );
   };

@@ -60,8 +60,8 @@ describe('mergeTextData — merge FALLBACK_TEXTOS con API data', () => {
     expect(result.solicitud_institucion.cuerpo).toBe('API Cuerpo');
     // Fallback mantiene las claves que API no tocó
     expect(result.solicitud_institucion.cargo).toBe('Decana del Núcleo Portuguesa');
-    expect(result.solicitud_institucion.orden).toBe(
-      'Según Orden administrativa N° 0005 de fecha 18 de marzo de 2022'
+    expect(result.solicitud_institucion.firmaOrden).toBe(
+      'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022'
     );
     // Otras claves del fallback no deben modificarse
     expect(result.aceptacion_tutor.encabezado).toContain('por medio de la presente');

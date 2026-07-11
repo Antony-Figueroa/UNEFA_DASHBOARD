@@ -16,6 +16,7 @@ vi.mock('../../../../api/apiClient', () => ({
 describe('periodService — typeDates mapping', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
   });
 
   it('debería mapear typeDates desde la respuesta de getPeriods', async () => {

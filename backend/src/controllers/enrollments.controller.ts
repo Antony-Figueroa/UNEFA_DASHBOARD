@@ -364,6 +364,108 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         throw err;
       }
 
+      // ── 3.1: Sequential prerequisite — find HOSP practice and set PREVIOUS_PRACTICE_ID ──
+      // 3.2: Auto-resolve RETIRO_JUSTIFICADO if HOSP has pending withdrawal
+      let previousPracticeId: number | null = null;
+
+      const { data: internType } = await supabase
+        .from('t_internship_type')
+        .select('PRIORITY')
+        .eq('INTERNSHIP_TYPE_ID', preEnrollmentRow.INTERNSHIP_TYPE_ID)
+        .single();
+
+      if (internType && internType.PRIORITY > 0) {
+        // Get student's career
+        const { data: studentData } = await supabase
+          .from('t_students')
+          .select('CAREER_ID')
+          .eq('STUDENTS_ID', student.STUDENTS_ID)
+          .single();
+
+        if (studentData?.CAREER_ID) {
+          // Get minimum grade for the career
+          const { data: career } = await supabase
+            .from('t_career')
+            .select('MINIMUM_GRADE')
+            .eq('CAREER_ID', studentData.CAREER_ID)
+            .single();
+          const minimumGrade = career?.MINIMUM_GRADE ?? 10;
+
+          // Find higher-priority practice types from t_career_internship_type
+          const { data: careerTypes } = await supabase
+            .from('t_career_internship_type')
+            .select('INTERNSHIP_TYPE_ID')
+            .eq('CAREER_ID', studentData.CAREER_ID);
+
+          if (careerTypes && careerTypes.length > 1) {
+            const careerTypeIds = careerTypes.map((t: any) => t.INTERNSHIP_TYPE_ID);
+
+            const { data: typePriorities } = await supabase
+              .from('t_internship_type')
+              .select('INTERNSHIP_TYPE_ID, PRIORITY')
+              .in('INTERNSHIP_TYPE_ID', careerTypeIds);
+
+            if (typePriorities) {
+              const higherPriorityIds = (typePriorities as Array<{ INTERNSHIP_TYPE_ID: number; PRIORITY: number }>)
+                .filter((t: any) => t.PRIORITY > internType.PRIORITY)
+                .map((t: any) => t.INTERNSHIP_TYPE_ID);
+
+              if (higherPriorityIds.length > 0) {
+                // ── 3.2: Check for RETIRO_JUSTIFICADO on any higher-priority practice ──
+                const { data: retiroPractices } = await supabase
+                  .from(TABLE_NAME)
+                  .select('PROFESSIONAL_PRACTICE_ID')
+                  .eq('STUDENTS_ID', student.STUDENTS_ID)
+                  .eq('CAREER_ID', studentData.CAREER_ID)
+                  .in('INTERNSHIP_TYPE_ID', higherPriorityIds)
+                  .eq('PRACTICES_STATUS', PRACTICES_STATUS.RETIRO_JUSTIFICADO)
+                  .limit(1);
+
+                if (retiroPractices && retiroPractices.length > 0) {
+                  // Auto-resolve: set REPROBADO with reason
+                  const retiroPracticeId = retiroPractices[0].PROFESSIONAL_PRACTICE_ID;
+                  await supabase
+                    .from(TABLE_NAME)
+                    .update({
+                      PRACTICES_STATUS: PRACTICES_STATUS.REPROBADO,
+                      OBSERVATION: 'Reprobado por abandono (retiro justificado no renovado)'
+                    })
+                    .eq('PROFESSIONAL_PRACTICE_ID', retiroPracticeId);
+
+                  // Audit the auto-resolve
+                  await auditStatusChange(
+                    req, TABLE_NAME, retiroPracticeId,
+                    PRACTICES_STATUS.RETIRO_JUSTIFICADO, PRACTICES_STATUS.REPROBADO
+                  ).catch(() => {});
+
+                  const err = new Error('El estudiante tiene un retiro justificado sin resolver en una práctica previa. Se ha marcado como reprobado. Debe reinscribirse en la práctica anterior.');
+                  (err as any).status = 400;
+                  throw err;
+                }
+
+                // ── 3.1: Find the culminated+approved prerequisite practice ──
+                const { data: prerequisite } = await supabase
+                  .from(TABLE_NAME)
+                  .select('PROFESSIONAL_PRACTICE_ID')
+                  .eq('STUDENTS_ID', student.STUDENTS_ID)
+                  .eq('CAREER_ID', studentData.CAREER_ID)
+                  .in('INTERNSHIP_TYPE_ID', higherPriorityIds)
+                  .eq('PRACTICES_STATUS', PRACTICES_STATUS.CULMINADO)
+                  .gte('GRADE', minimumGrade)
+                  .eq('STATUS', 1)
+                  .order('PROFESSIONAL_PRACTICE_ID', { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+
+                if (prerequisite) {
+                  previousPracticeId = prerequisite.PROFESSIONAL_PRACTICE_ID;
+                }
+              }
+            }
+          }
+        }
+      }
+
       const updateData: Partial<ProfessionalPractice> & { ENROLLMENT?: string } = {
         REGISTRATION_DATE: now,
         PRACTICES_STATUS: PRACTICES_STATUS.INSCRITO,
@@ -372,6 +474,10 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         STATUS: 1,
         INTERNSHIP_STATUS: 1
       };
+
+      if (previousPracticeId) {
+        (updateData as any).PREVIOUS_PRACTICE_ID = previousPracticeId;
+      }
       
       const body: { enrollmentCode?: string } = req.body as { enrollmentCode?: string };
       if (body.enrollmentCode) {

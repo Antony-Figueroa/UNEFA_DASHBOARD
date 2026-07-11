@@ -112,10 +112,16 @@ export interface PracticeWithEvaluations {
   
   /** Indica si la extensión está otorgada */
   extensionGranted?: boolean;
-  
+
   /** Indica si las evaluaciones de esta práctica están congeladas (actas cerradas). Default: false */
   isFrozen?: boolean;
-  
+
+  /** ID de la práctica hermana (vía PREVIOUS_PRACTICE_ID, modelo Enfermería HOSP→COM) */
+  siblingPracticeId?: number;
+
+  /** Estado de la práctica hermana (código UPPERCASE) */
+  siblingPracticeStatus?: string;
+
   /** Información de certificado */
   certificateNumber?: string;
   certifiedAt?: string;

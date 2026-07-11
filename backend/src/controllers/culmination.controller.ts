@@ -289,32 +289,8 @@ export const approveCulmination = async (req: Request, res: Response) => {
       return;
     }
 
-    const hoursRequired = (practice as any).t_internship_type?.HOURS_REQUIRED ?? 360;
-
-    // 2. Calcular horas totales
-    const { data: visits } = await supabase
-      .from('t_practice_visits')
-      .select('HOURS_WORKED')
-      .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
-
-    const totalHours = (visits || []).reduce((sum: number, v: any) => sum + (v.HOURS_WORKED || 0), 0);
-
-    // 3. Validar horas mínimas (con opción de override)
-    if (totalHours < hoursRequired) {
-      if (!overrideHours || !overrideReason?.trim()) {
-        res.status(400).json({
-          message: `El estudiante no ha completado las horas requeridas (${totalHours}/${hoursRequired})`,
-          code: 'HOURS_INSUFFICIENT',
-          totalHours,
-          hoursRequired
-        });
-        return;
-      }
-      // Override approved — log the exception
-      console.log(`[Culmination] Hours override approved for practice ${practiceId}: ${totalHours}/${hoursRequired}. Reason: ${overrideReason.trim()}`);
-    }
-
-    // 4. Validar que las evaluaciones estén completas
+    // 2. Validar que las evaluaciones estén completas
+    //    NOTA: horas validation eliminada (spec culmination R2.1 — modelo Enfermería)
     if ((practice as any).EVALUATION_STATUS !== 'completed') {
       res.status(400).json({
         message: 'No se puede culminar la práctica: las evaluaciones no están completas.'
@@ -322,14 +298,14 @@ export const approveCulmination = async (req: Request, res: Response) => {
       return;
     }
 
-    // 4b. Validar prerrequisito secuencial (ej: HOSP debe estar culminado antes de culminar COM)
+    // 3. Validar prerrequisito secuencial (ej: HOSP debe estar culminado antes de culminar COM)
     const seqCheck = await checkSequentialPrerequisite(supabase, { practiceId: parseInt(practiceId) });
     if (!seqCheck.valid) {
       res.status(400).json({ message: seqCheck.message });
       return;
     }
 
-    // 5. Upsert en t_practice_culmination
+    // 4. Upsert en t_practice_culmination
     const { data: existing } = await supabase
       .from('t_practice_culmination')
       .select('PRACTICE_ID')
@@ -347,7 +323,7 @@ export const approveCulmination = async (req: Request, res: Response) => {
         .insert({ PRACTICE_ID: practiceId, STATUS: 1 });
     }
 
-    // 6. Actualizar PRACTICES_STATUS
+    // 5. Actualizar PRACTICES_STATUS
     await supabase
       .from('t_professional_practices')
       .update({ PRACTICES_STATUS: PRACTICES_STATUS.CULMINADO })
@@ -374,34 +350,18 @@ export const generateCertificate = async (req: Request, res: Response) => {
     const supabase = dbManager.getConnection();
     const { practiceId } = req.params;
 
-    // 1. Leer culminación
-    const { data: culm, error: culmError } = await supabase
-      .from('t_practice_culmination')
-      .select('PRACTICE_ID, STATUS')
-      .eq('PRACTICE_ID', practiceId)
-      .maybeSingle();
-
-    if (culmError || !culm) {
-      res.status(404).json({ message: 'Culminación no encontrada. Apruebe la práctica primero.' });
-      return;
-    }
-
-    // 2. Verificar STATUS=1 (approved)
-    if (culm.STATUS !== 1) {
-      res.status(409).json({
-        message: culm.STATUS === 2
-          ? 'El certificado ya fue generado previamente'
-          : 'La culminación debe estar aprobada antes de generar el certificado'
-      });
-      return;
-    }
-
-    // 3. Obtener datos del estudiante para el certificado
+    // ── 0. Get practice with internship type and PRIORITY ──
     const { data: practice } = await supabase
       .from('t_professional_practices')
       .select(`
         PROFESSIONAL_PRACTICE_ID,
         GRADE,
+        FROZEN_AT,
+        PREVIOUS_PRACTICE_ID,
+        STUDENTS_ID,
+        CAREER_ID,
+        INTERNSHIP_TYPE_ID,
+        t_internship_type ( PRIORITY ),
         t_persons!inner (
           ci,
           first_name,
@@ -421,26 +381,183 @@ export const generateCertificate = async (req: Request, res: Response) => {
       return;
     }
 
-    const studentName = getPersonFullName((practice as any).t_persons);
+    const priority = (practice as any).t_internship_type?.PRIORITY ?? 0;
 
-    // 4. Generar número de certificado
+    // ── ÚNICA guard (PRIORITY = 0) — single practice flow ──
+    if (priority === 0) {
+      // Read culmination for single practice
+      const { data: culm, error: culmError } = await supabase
+        .from('t_practice_culmination')
+        .select('PRACTICE_ID, STATUS')
+        .eq('PRACTICE_ID', practiceId)
+        .maybeSingle();
+
+      if (culmError || !culm) {
+        res.status(404).json({ message: 'Culminación no encontrada. Apruebe la práctica primero.' });
+        return;
+      }
+
+      if (culm.STATUS !== 1) {
+        res.status(409).json({
+          message: culm.STATUS === 2
+            ? 'El certificado ya fue generado previamente'
+            : 'La culminación debe estar aprobada antes de generar el certificado'
+        });
+        return;
+      }
+
+      const studentName = getPersonFullName((practice as any).t_persons);
+
+      // Generate certificate number
+      const year = new Date().getFullYear();
+      const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+      const certificateNumber = `CERT-${year}-${random}`;
+
+      await supabase
+        .from('t_practice_culmination')
+        .update({
+          STATUS: 2,
+          CERTIFICATE_NUMBER: certificateNumber,
+          CERTIFIED_AT: new Date().toISOString()
+        })
+        .eq('PRACTICE_ID', practiceId);
+
+      res.json({
+        success: true,
+        message: 'Certificado generado exitosamente',
+        certificate: {
+          number: certificateNumber,
+          studentName,
+          studentCi: getPersonField((practice as any).t_persons, 'ci') || '',
+          career: (practice as any).t_career?.CAREER_NAME || '',
+          institution: (practice as any).t_institution?.INSTITUTION_NAME || '',
+          period: (practice as any).t_internships_period?.DESCRIPTION || '',
+          grade: (practice as any).GRADE,
+          generatedAt: new Date().toISOString(),
+          isJoint: false,
+          practiceId: parseInt(practiceId),
+          practiceType: 'ÚNICA'
+        }
+      });
+      return;
+    }
+
+    // ── Sequential practices (PRIORITY > 0) — joint cert logic ──
+
+    // Find sibling practice:
+    // For COM → HOSP: follow PREVIOUS_PRACTICE_ID
+    // For HOSP → COM: find practice that has PREVIOUS_PRACTICE_ID pointing to this one
+    let siblingPracticeId: number | null = null;
+
+    if ((practice as any).PREVIOUS_PRACTICE_ID) {
+      // This is COM → HOSP
+      siblingPracticeId = (practice as any).PREVIOUS_PRACTICE_ID;
+    } else {
+      // This is HOSP or other — find COM that points to this
+      const { data: childPractice } = await supabase
+        .from('t_professional_practices')
+        .select('PROFESSIONAL_PRACTICE_ID')
+        .eq('PREVIOUS_PRACTICE_ID', parseInt(practiceId))
+        .eq('STUDENTS_ID', (practice as any).STUDENTS_ID)
+        .eq('STATUS', 1)
+        .limit(1)
+        .maybeSingle();
+
+      if (childPractice) {
+        siblingPracticeId = childPractice.PROFESSIONAL_PRACTICE_ID;
+      }
+    }
+
+    if (!siblingPracticeId) {
+      res.status(400).json({
+        message: 'No se encontró la práctica complementaria para el certificado conjunto. Verifique que PREVIOUS_PRACTICE_ID esté configurado.'
+      });
+      return;
+    }
+
+    // Read culminations for BOTH practices
+    const sourceCulmPromise = supabase
+      .from('t_practice_culmination')
+      .select('PRACTICE_ID, STATUS')
+      .eq('PRACTICE_ID', practiceId)
+      .maybeSingle();
+
+    const siblingCulmPromise = supabase
+      .from('t_practice_culmination')
+      .select('PRACTICE_ID, STATUS')
+      .eq('PRACTICE_ID', siblingPracticeId)
+      .maybeSingle();
+
+    const [sourceCulmResult, siblingCulmResult] = await Promise.all([sourceCulmPromise, siblingCulmPromise]);
+
+    const sourceCulm = sourceCulmResult.data;
+    const siblingCulm = siblingCulmResult.data;
+
+    if (!sourceCulm || !siblingCulm) {
+      res.status(400).json({
+        message: 'Ambas prácticas deben estar culminadas para generar el certificado conjunto.'
+      });
+      return;
+    }
+
+    if (sourceCulm.STATUS !== 1 || siblingCulm.STATUS !== 1) {
+      res.status(409).json({
+        message: sourceCulm.STATUS === 2 || siblingCulm.STATUS === 2
+          ? 'El certificado ya fue generado previamente para una de las prácticas'
+          : 'Ambas prácticas deben estar aprobadas y congeladas para generar el certificado'
+      });
+      return;
+    }
+
+    // Get sibling practice data for freeze check
+    const { data: siblingPractice } = await supabase
+      .from('t_professional_practices')
+      .select('FROZEN_AT, GRADE')
+      .eq('PROFESSIONAL_PRACTICE_ID', siblingPracticeId)
+      .single();
+
+    // Verify BOTH practices are frozen
+    if (!(practice as any).FROZEN_AT || !(siblingPractice as any)?.FROZEN_AT) {
+      const notFrozenId = !(practice as any).FROZEN_AT ? practiceId : siblingPracticeId;
+      res.status(400).json({
+        message: `La práctica ${notFrozenId} no está congelada. Ambas prácticas deben estar congeladas para generar el certificado conjunto.`,
+        code: 'PRACTICE_NOT_FROZEN'
+      });
+      return;
+    }
+
+    // Get sibling practice name for display
+    const { data: siblingType } = await supabase
+      .from('t_professional_practices')
+      .select('t_internship_type ( NAME )')
+      .eq('PROFESSIONAL_PRACTICE_ID', siblingPracticeId)
+      .single();
+
+    // Generate single certificate number for BOTH
     const year = new Date().getFullYear();
     const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
     const certificateNumber = `CERT-${year}-${random}`;
+    const now = new Date().toISOString();
 
-    // 5. Actualizar culminación
-    await supabase
-      .from('t_practice_culmination')
-      .update({
-        STATUS: 2,
-        CERTIFICATE_NUMBER: certificateNumber,
-        CERTIFIED_AT: new Date().toISOString()
-      })
-      .eq('PRACTICE_ID', practiceId);
+    // Update BOTH culmination records with the same certificate number
+    await Promise.all([
+      supabase
+        .from('t_practice_culmination')
+        .update({ STATUS: 2, CERTIFICATE_NUMBER: certificateNumber, CERTIFIED_AT: now })
+        .eq('PRACTICE_ID', practiceId),
+      supabase
+        .from('t_practice_culmination')
+        .update({ STATUS: 2, CERTIFICATE_NUMBER: certificateNumber, CERTIFIED_AT: now })
+        .eq('PRACTICE_ID', siblingPracticeId)
+    ]);
+
+    const studentName = getPersonFullName((practice as any).t_persons);
+    const sourceType = (practice as any).t_internship_type;
+    const siblingTypeName = (siblingType as any)?.t_internship_type?.NAME || '';
 
     res.json({
       success: true,
-      message: 'Certificado generado exitosamente',
+      message: 'Certificado conjunto generado exitosamente para ambas prácticas',
       certificate: {
         number: certificateNumber,
         studentName,
@@ -449,7 +566,11 @@ export const generateCertificate = async (req: Request, res: Response) => {
         institution: (practice as any).t_institution?.INSTITUTION_NAME || '',
         period: (practice as any).t_internships_period?.DESCRIPTION || '',
         grade: (practice as any).GRADE,
-        generatedAt: new Date().toISOString()
+        siblingGrade: (siblingPractice as any)?.GRADE,
+        generatedAt: now,
+        isJoint: true,
+        practiceIds: [parseInt(practiceId), siblingPracticeId],
+        practiceTypes: [sourceType?.NAME || '', siblingTypeName]
       }
     });
 

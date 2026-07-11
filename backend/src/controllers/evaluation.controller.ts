@@ -1691,9 +1691,21 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Step 3: Set FROZEN_AT a nivel de práctica (modelo Enfermería)
+    const practiceIdsSet = [...new Set((frozenResult || []).map((r: any) => r.PROFESSIONAL_PRACTICE_ID))];
+    for (const pid of practiceIdsSet) {
+      const { error: practiceFreezeError } = await supabase
+        .from('t_professional_practices')
+        .update({ FROZEN_AT: now })
+        .eq('PROFESSIONAL_PRACTICE_ID', pid);
+
+      if (practiceFreezeError) {
+        console.error(`[Evaluation] Error setting practice-level FROZEN_AT for practice ${pid}:`, practiceFreezeError);
+      }
+    }
+
     // Auditoría
     try {
-      const practiceIdsSet = [...new Set((frozenResult || []).map((r: any) => r.PROFESSIONAL_PRACTICE_ID))];
       for (const pid of practiceIdsSet) {
         await auditCreate(req, 't_evaluation', {
           PROFESSIONAL_PRACTICE_ID: pid,
@@ -1872,6 +1884,20 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
       .in('EVALUATION_ID', evalIds);
 
     if (updateError) throw updateError;
+
+    // Step 4: Set UNFROZEN_AT, UNFREEZE_REASON, UNFREEZE_AUTHORIZED_BY a nivel práctica
+    const { error: practiceUpdateError } = await supabase
+      .from('t_professional_practices')
+      .update({
+        UNFROZEN_AT: now,
+        UNFREEZE_REASON: reason.trim(),
+        UNFREEZE_AUTHORIZED_BY: userId
+      })
+      .eq('PROFESSIONAL_PRACTICE_ID', normalizedPracticeId);
+
+    if (practiceUpdateError) {
+      console.error(`[Evaluation] Error setting practice-level unfreeze columns for practice ${normalizedPracticeId}:`, practiceUpdateError);
+    }
 
     // Auditoría
     try {

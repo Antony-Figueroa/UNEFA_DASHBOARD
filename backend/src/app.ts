@@ -61,6 +61,7 @@ import systemNucleusRoutes from './routes/system-nucleus.routes.js';
 import proyeccionRoutes from './routes/proyeccion.routes.js';
 import verifyRoutes from './routes/verify.routes.js';
 import bulkImportRoutes from './routes/bulk-import.routes.js';
+import justifiedWithdrawalRoutes from './routes/justified-withdrawal.routes.js';
 import { getSystemConfig, updateSystemConfig } from './controllers/evaluation.controller.js';
 import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
@@ -299,6 +300,7 @@ app.use('/api/knowledge-base', knowledgeBaseRoutes);
 app.use('/api/address', addressRoutes);
 app.use('/api/proyeccion', proyeccionRoutes);
 app.use('/api/bulk-import', bulkImportRoutes);
+app.use('/api/justified-withdrawal', justifiedWithdrawalRoutes);
 
 // Servir archivos estáticos del frontend (Vite build)
 // Intentar encontrar la carpeta dist en lugares comunes

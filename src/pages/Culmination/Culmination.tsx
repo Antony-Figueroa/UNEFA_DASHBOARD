@@ -19,8 +19,9 @@ import { Modal, ModalBody, ModalHeader } from "../../components/ui/modal";
 import InputField from "../../components/form/input/InputField";
 import CustomSelect from "../../components/form/CustomSelect";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { DownloadIcon, CheckCircleIcon, EyeIcon, UserIcon, TimeIcon } from "../../icons";
+import { DownloadIcon, CheckCircleIcon, EyeIcon, UserIcon, TimeIcon, LockIcon } from "../../icons";
 import { culminationService, CulminationGroup, CulminationPractice, CulminationMeta } from "../../features/culmination/services/culminationService";
+import { evaluationsCulminationService } from "../../features/evaluations-culmination/services/evaluationsCulminationService";
 import Label from "../../components/form/Label";
 import { generateCertificatePDF } from "../../components/ui/pdf/templates/CertificatePDF";
 import { useToast } from "../../context/toast";
@@ -54,6 +55,8 @@ export default function CulminationPage() {
     message: string;
     onConfirm: () => void;
   } | null>(null);
+
+  const [jointCertLoading, setJointCertLoading] = useState<number | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -157,6 +160,47 @@ export default function CulminationPage() {
         }
       },
     });
+  };
+
+  const handleJointCertificate = async (practice: CulminationPractice) => {
+    setJointCertLoading(parseInt(practice.id));
+    try {
+      const response = await evaluationsCulminationService.generateCertificate(parseInt(practice.id));
+      if (response.success) {
+        addToast({ variant: "success", title: "Certificado Conjunto", message: `Certificado conjunto generado: ${response.certificate.number}` });
+        fetchData();
+      }
+    } catch (error: any) {
+      const serverMsg = error?.response?.data?.message;
+      addToast(serverMsg ? { variant: "error", title: "Error", message: serverMsg } : TOAST.createError('certificado conjunto'));
+    } finally {
+      setJointCertLoading(null);
+    }
+  };
+
+  /** Helper: detecta si un group tiene pares de prácticas hermanas (HOSP+COM) */
+  const hasSiblingPair = (group: CulminationGroup): boolean => {
+    const practices = group.practices;
+    return practices.some(p => p.siblingPracticeId != null);
+  };
+
+  /** Helper: encuentra la práctica hermana dentro del mismo grupo */
+  const findSibling = (practice: CulminationPractice, group: CulminationGroup): CulminationPractice | undefined => {
+    if (!practice.siblingPracticeId) return undefined;
+    return group.practices.find(p => parseInt(p.id) === practice.siblingPracticeId);
+  };
+
+  /** Helper: verifica si un par de hermanas están ambas aprobadas y congeladas */
+  const isPairReadyForJointCert = (practice: CulminationPractice, group: CulminationGroup): boolean => {
+    if (!practice.siblingPracticeId) return false;
+    const sibling = findSibling(practice, group);
+    if (!sibling) return false;
+    return (
+      practice.culminationStatus === 'approved' &&
+      sibling.culminationStatus === 'approved' &&
+      practice.isFrozen === true &&
+      sibling.isFrozen === true
+    );
   };
 
   const handleDownloadPdf = async (practice: CulminationPractice, group: CulminationGroup) => {
@@ -648,15 +692,41 @@ export default function CulminationPage() {
                           >
                             {resultConfig[p.result].label}
                           </Badge>
+                          {p.siblingPracticeId && (() => {
+                            const sibling = findSibling(p, selectedGroup);
+                            if (!sibling) return null;
+                            return (
+                              <div className="mt-1.5 text-[10px] text-text-tertiary leading-tight">
+                                <span className="font-medium">Hermana:</span>{' '}
+                                {sibling.practiceType} ({sibling.finalGrade ?? '—'} pts)
+                                <br />
+                                <span className={sibling.siblingPracticeStatus === 'CULMINADO' ? 'text-success-600' : 'text-warning-600'}>
+                                  {sibling.siblingPracticeStatus === 'CULMINADO' ? 'Aprobado' : sibling.siblingPracticeStatus || '—'}
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <Badge
-                            color={BADGE_COLORS[p.culminationStatus]}
-                            variant="light"
-                            size="sm"
-                          >
-                            {STATUS_LABELS[p.culminationStatus]}
-                          </Badge>
+                          <div className="flex flex-col items-center gap-1">
+                            <Badge
+                              color={BADGE_COLORS[p.culminationStatus]}
+                              variant="light"
+                              size="sm"
+                            >
+                              {STATUS_LABELS[p.culminationStatus]}
+                            </Badge>
+                            {p.isFrozen && (
+                              <Badge
+                                color="info"
+                                variant="light"
+                                size="sm"
+                                startIcon={<LockIcon className="w-3 h-3" />}
+                              >
+                                Congelado
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -713,6 +783,33 @@ export default function CulminationPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Joint certification section */}
+              {hasSiblingPair(selectedGroup) && selectedGroup.practices.some(p => isPairReadyForJointCert(p, selectedGroup)) && (
+                <div className="rounded-lg border border-brand-200 dark:border-brand-700 bg-brand-50/50 dark:bg-brand-950/30 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold text-brand-700 dark:text-brand-400">
+                        Certificación Conjunta
+                      </h4>
+                      <p className="text-xs text-text-tertiary mt-0.5">
+                        Ambas prácticas están culminadas y congeladas. Generá un único certificado para el par.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      loading={jointCertLoading !== null}
+                      onClick={() => {
+                        const firstPractice = selectedGroup.practices.find(p => p.siblingPracticeId);
+                        if (firstPractice) handleJointCertificate(firstPractice);
+                      }}
+                    >
+                      Generar Certificado Conjunto
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {/* Certificate numbers summary */}
               {selectedGroup.practices.some((p) => p.certificateNumber) && (

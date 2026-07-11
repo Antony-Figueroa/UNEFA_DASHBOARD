@@ -41,6 +41,14 @@ export interface CulminationPractice {
   certificateNumber?: string;
   certifiedAt?: string;
   reversal?: ReversalInfo;
+  /** Indica si la práctica está congelada (actas cerradas) */
+  isFrozen?: boolean;
+  /** ID de la práctica hermana (vía PREVIOUS_PRACTICE_ID, modelo Enfermería HOSP→COM) */
+  siblingPracticeId?: number;
+  /** Estado de la práctica hermana (código UPPERCASE) */
+  siblingPracticeStatus?: string;
+  /** Nota final de la práctica hermana */
+  siblingGrade?: number | null;
 }
 
 export interface CulminationGroup {

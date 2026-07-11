@@ -72,7 +72,7 @@ export default function EvaluationConfigTab() {
       title: "Eliminar criterio",
       message: `¿Eliminar el criterio "${description}"? Los criterios usados en evaluaciones existentes no se verán afectados.`,
       confirmLabel: "Eliminar",
-      variant: "danger",
+      variant: "error",
       onConfirm: async () => {
         try {
           await evaluationService.deleteCriteria(criteriaId);

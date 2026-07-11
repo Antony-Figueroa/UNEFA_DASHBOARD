@@ -11,7 +11,6 @@ import { useToast } from "@/context/toast";
 import { TOAST } from "@/components/ui/dialog/DialogConfig";
 import apiClient from "@/api/apiClient";
 import evaluationService from "@/features/evaluations/services/evaluationService";
-import ConfigLayout from "../../ConfigLayout";
 import type { SystemEvaluationConfig, EvaluationCriteria } from "@/features/evaluations/types";
 
 const WEIGHT_FIELDS = [
@@ -186,7 +185,7 @@ export default function EvaluationConfigPage() {
 
   if (loading) {
     return (
-      <ConfigLayout>
+      <>
         <PageMeta title="Configuración de Evaluación" description="Configuración del sistema de evaluación" />
         <PageBreadcrumb pageTitle="Configuración de Evaluación" />
         <div className="space-y-4 animate-fadeIn">
@@ -205,14 +204,14 @@ export default function EvaluationConfigPage() {
             </SkeletonLoader>
           </ComponentCard>
         </div>
-      </ConfigLayout>
+      </>
     );
   }
 
   if (!local) return null;
 
   return (
-    <ConfigLayout>
+    <>
       <PageMeta title="Configuración de Evaluación" description="Configuración del sistema de evaluación académica" />
       <PageBreadcrumb pageTitle="Configuración de Evaluación" />
 
@@ -471,7 +470,7 @@ export default function EvaluationConfigPage() {
         confirmLabel="Confirmar"
         variant={confirmDialog?.variant || "info"}
       />
-    </ConfigLayout>
+    </>
   );
 }
 

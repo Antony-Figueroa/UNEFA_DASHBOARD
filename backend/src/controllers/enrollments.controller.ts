@@ -3,7 +3,7 @@ import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
-import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
+import { PRACTICES_STATUS, PERIOD_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 import { checkSequentialPrerequisite } from '../utils/sequential-validation.js';
 import { sanitizeText } from '../utils/text-utils.js';
@@ -99,13 +99,49 @@ interface ProfessionalPractice {
 
 export const getEnrollments = async (req: Request, res: Response) => {
   const filterAll = req.query.filter === 'all';
-  const cacheKey = filterAll ? `${CACHE_PREFIX}list_all` : `${CACHE_PREFIX}list_active`;
-  const cachedData = cacheManager.get(cacheKey);
-  if (cachedData) {
-    return res.json(cachedData);
-  }
 
   try {
+    const supabase = dbManager.getConnection();
+
+    // ── Resolver período activo (EN_CURSO) o pendiente más cercano ──
+    let resolvedPeriodId: number | null = null;
+
+    const { data: activePeriod } = await supabase
+      .from('t_internships_period')
+      .select('PERIOD_ID')
+      .eq('PERIOD_STATUS', PERIOD_STATUS.EN_CURSO)
+      .eq('STATUS', 1)
+      .order('START_DATE', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (activePeriod) {
+      resolvedPeriodId = activePeriod.PERIOD_ID;
+    } else {
+      const { data: pendingPeriod } = await supabase
+        .from('t_internships_period')
+        .select('PERIOD_ID')
+        .eq('PERIOD_STATUS', PERIOD_STATUS.PENDIENTE)
+        .eq('STATUS', 1)
+        .order('START_DATE', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (pendingPeriod) {
+        resolvedPeriodId = pendingPeriod.PERIOD_ID;
+      }
+    }
+
+    if (!resolvedPeriodId) {
+      return res.json([]);
+    }
+
+    const cacheKey = `enrollments:period_${resolvedPeriodId}:${filterAll ? 'all' : 'active'}`;
+    const cachedData = cacheManager.get(cacheKey);
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+
     const data = await dbManager.withRetry(async (supabase) => {
       let query = supabase
         .from(TABLE_NAME)
@@ -142,7 +178,8 @@ export const getEnrollments = async (req: Request, res: Response) => {
               t_persons!inner (first_name, last_name, phone)
             )
           )
-        `);
+        `)
+        .eq('PERIOD_ID', resolvedPeriodId);
 
       if (filterAll) {
         // Incluye: activos (STATUS=1, PRACTICES_STATUS=INSCRITO),

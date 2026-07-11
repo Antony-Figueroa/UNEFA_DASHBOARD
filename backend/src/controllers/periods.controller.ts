@@ -4,6 +4,7 @@ import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { sanitizeText } from '../utils/text-utils.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
 import { periodNotificationService } from '../services/period-notification.service.js';
+import { cacheManager } from '../lib/cache-manager.js';
 import { PERIOD_STATUS, PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { isFeatureEnabled, getTypeDatesByPeriod } from '../services/period-type-dates.service.js';
 import { backupService } from '../services/backup.service.js';
@@ -450,6 +451,28 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
             });
           } catch (notifError) {
             console.error('[PeriodsController] Error en notificación (no crítico):', notifError);
+          }
+
+          // ── Batch: culminar todos los estudiantes INSCRITOS de este período ──
+          try {
+            const { data: culminados, error: culminateError } = await supabase
+              .from('t_professional_practices')
+              .update({ PRACTICES_STATUS: PRACTICES_STATUS.CULMINADO })
+              .eq('PERIOD_ID', parseInt(id))
+              .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
+              .eq('STATUS', 1)
+              .select('PROFESSIONAL_PRACTICE_ID');
+
+            if (culminateError) {
+              console.error('[PeriodsController] Error culminando inscripciones:', culminateError);
+            } else if (culminados && culminados.length > 0) {
+              console.log(`[PeriodsController] ${culminados.length} inscripción(es) culminada(s) para período ${id}`);
+            }
+
+            // Invalidar caché de inscripciones
+            cacheManager.deleteByPrefix('enrollments:');
+          } catch (batchErr) {
+            console.error('[PeriodsController] Error en batch culminación:', batchErr);
           }
         }
         

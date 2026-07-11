@@ -1165,7 +1165,7 @@ export default function EnrollmentModal({
                           }
                           onChange={field.onChange}
                           value={String(field.value || "")}
-                          disabled={!selectedInstitutionId || filteredResponsibles.length === 0}
+                          disabled={!selectedInstitutionId}
                           className="rounded-xl h-[48px]"
                           onAddNew={selectedInstitutionId ? () => {
                             const evt = new CustomEvent("enrollment:addResponsible", { detail: { institutionId: selectedInstitutionId } });

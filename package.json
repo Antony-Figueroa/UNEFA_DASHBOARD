@@ -113,6 +113,10 @@
     "vite-plugin-svgr": "^4.3.0",
     "vitest": "^4.0.16"
   },
+  "optionalDependencies": {
+    "@emnapi/core": "^1.8.1",
+    "@emnapi/runtime": "^1.8.1"
+  },
   "overrides": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

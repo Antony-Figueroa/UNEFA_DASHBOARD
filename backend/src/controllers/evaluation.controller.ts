@@ -1682,6 +1682,7 @@ export const unfreezeEvaluation = async (req: AuthRequest, res: Response) => {
     const { error: updateError } = await supabase
       .from('t_evaluation')
       .update({
+        FROZEN_AT: null,
         UNFROZEN_AT: now,
         UNFREEZE_REASON: reason.trim(),
         UNFREEZE_AUTHORIZED_BY: userId
@@ -1769,6 +1770,7 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
     const { error: updateError } = await supabase
       .from('t_evaluation')
       .update({
+        FROZEN_AT: null,
         UNFROZEN_AT: now,
         UNFREEZE_REASON: reason.trim(),
         UNFREEZE_AUTHORIZED_BY: userId

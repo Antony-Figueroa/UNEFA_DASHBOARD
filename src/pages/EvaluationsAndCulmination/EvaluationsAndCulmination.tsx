@@ -225,14 +225,16 @@ export default function EvaluationsAndCulminationPage() {
                       ...(practice.evaluationStatus === 'completed' && practice.result === 'approved' && practice.culminationStatus === 'pending'
                         ? [{ label: 'Culminar', onClick: () => hook.handleApprove(practice), className: 'text-success-600 dark:text-success-400' }]
                         : []),
-                      // Gestionar Comité — siempre visible
-                      { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
-                      // Otorgar Extensión — solo si no tiene extensión
-                      ...(!practice.extensionGranted
+                      // Gestionar Comité — oculto si culminada
+                      ...(practice.practicesStatusCode !== 'CULMINADO'
+                        ? [{ label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) }]
+                        : []),
+                      // Otorgar Extensión — solo si no tiene extensión y no está culminada
+                      ...(!practice.extensionGranted && practice.practicesStatusCode !== 'CULMINADO'
                         ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
                         : []),
-                      // Revocar Extensión — solo si tiene extensión
-                      ...(practice.extensionGranted
+                      // Revocar Extensión — solo si tiene extensión y no está culminada
+                      ...(practice.extensionGranted && practice.practicesStatusCode !== 'CULMINADO'
                         ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
                         : []),
                       // Ver Auditoría — siempre visible
@@ -394,14 +396,16 @@ export default function EvaluationsAndCulminationPage() {
                     )}
                     {!hook.isReadOnly && (
                       <ActionDropdown actions={[
-                        { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
-                        ...(!practice.extensionGranted
-                          ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
-                          : []),
-                        ...(practice.extensionGranted
-                          ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
-                          : []),
-                        { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
+                  ...(practice.practicesStatusCode !== 'CULMINADO'
+                    ? [{ label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) }]
+                    : []),
+                  ...(!practice.extensionGranted && practice.practicesStatusCode !== 'CULMINADO'
+                    ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
+                    : []),
+                  ...(practice.extensionGranted && practice.practicesStatusCode !== 'CULMINADO'
+                    ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
+                    : []),
+                  { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
                         { separator: true, label: '', onClick: () => {} },
                         ...(practice.practicesStatusCode !== 'REPROBADO' && practice.practicesStatusCode !== 'RETIRADO' && practice.practicesStatusCode !== 'CULMINADO'
                           ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]

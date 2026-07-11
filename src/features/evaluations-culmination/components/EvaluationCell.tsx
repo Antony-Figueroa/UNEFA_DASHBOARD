@@ -23,6 +23,8 @@ interface EvaluationCellProps {
   displayScale: number;
   /** Si la práctica completa está congelada (actas cerradas), solo permite ver detalles */
   isFrozen?: boolean;
+  /** Si la práctica está culminada, solo permite ver detalles (sin editar/crear) */
+  readOnly?: boolean;
 }
 
 export const EvaluationCell: React.FC<EvaluationCellProps> = ({
@@ -32,8 +34,12 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
   onViewDetails,
   displayScale,
   isFrozen = false,
+  readOnly = false,
 }) => {
-  // Congelada: solo permite ver detalles, no editar
+  // Modo solo lectura (culminada) o congelada: solo ver detalles
+  const isReadOnly = isFrozen || readOnly;
+
+  // Congelada: muestra badge con candado
   if (isFrozen && evaluation.completed) {
     return (
       <div className="flex items-center justify-center gap-1">
@@ -52,6 +58,36 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
           <span className="font-medium">{Math.round((evaluation.score / displayScale) * 100)}%</span>
         </span>
       </div>
+    );
+  }
+
+  // Culminada o congelada sin evaluaciones: mostrar puntaje sin editar
+  if (isReadOnly && evaluation.completed) {
+    return (
+      <div className="flex items-center justify-center gap-1">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            evaluation.evaluationId && onViewDetails(evaluation.evaluationId);
+          }}
+          className="flex items-center gap-1 px-2 py-1.5 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+          title="Ver detalles"
+        >
+          <EyeIcon className="w-4 h-4" />
+        </button>
+        <span className="inline-flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-green-700 dark:text-green-400">
+          {Math.round((evaluation.score / displayScale) * 100)}%
+        </span>
+      </div>
+    );
+  }
+
+  if (isReadOnly) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500">
+        <TimeIcon className="w-4 h-4" />
+        <span>Pendiente</span>
+      </span>
     );
   }
 

@@ -185,6 +185,7 @@ export default function EvaluationsAndCulminationPage() {
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
+                    readOnly={practice.practicesStatusCode === 'CULMINADO'}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -195,6 +196,7 @@ export default function EvaluationsAndCulminationPage() {
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
+                    readOnly={practice.practicesStatusCode === 'CULMINADO'}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -205,6 +207,7 @@ export default function EvaluationsAndCulminationPage() {
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
+                    readOnly={practice.practicesStatusCode === 'CULMINADO'}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -236,7 +239,7 @@ export default function EvaluationsAndCulminationPage() {
                       { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
                       { separator: true, label: '', onClick: () => {} },
                       // Marcar Reprobado — aislado tras separador para evitar error de dedo
-                      ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
+                      ...(practice.practicesStatusCode !== 'REPROBADO' && practice.practicesStatusCode !== 'RETIRADO' && practice.practicesStatusCode !== 'CULMINADO'
                         ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
                         : []),
                       // Descongelar — solo si está congelado
@@ -301,7 +304,7 @@ export default function EvaluationsAndCulminationPage() {
                     : []),
                   { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
                   { separator: true, label: '', onClick: () => {} },
-                  ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
+                  ...(practice.practicesStatusCode !== 'REPROBADO' && practice.practicesStatusCode !== 'RETIRADO' && practice.practicesStatusCode !== 'CULMINADO'
                     ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
                     : []),
                   ...(practice.isFrozen
@@ -400,7 +403,7 @@ export default function EvaluationsAndCulminationPage() {
                           : []),
                         { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
                         { separator: true, label: '', onClick: () => {} },
-                        ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
+                        ...(practice.practicesStatusCode !== 'REPROBADO' && practice.practicesStatusCode !== 'RETIRADO' && practice.practicesStatusCode !== 'CULMINADO'
                           ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
                           : []),
                         ...(practice.isFrozen
@@ -463,7 +466,7 @@ export default function EvaluationsAndCulminationPage() {
                     : []),
                   { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
                   { separator: true, label: '', onClick: () => {} },
-                  ...(practice.practicesStatus !== 'REPROBADO' && practice.practicesStatus !== 'RETIRADO' && practice.practicesStatus !== 'CULMINADO'
+                  ...(practice.practicesStatusCode !== 'REPROBADO' && practice.practicesStatusCode !== 'RETIRADO' && practice.practicesStatusCode !== 'CULMINADO'
                     ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
                     : []),
                   ...(practice.isFrozen

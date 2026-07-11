@@ -84,7 +84,12 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
     };
   }, []);
 
-  const colors = DIALOG_COLORS[variant];
+  const variantColors = DIALOG_COLORS?.[variant];
+  const colors = variantColors ?? DIALOG_COLORS?.info ?? {
+    bg: "bg-alert-info-bg",
+    icon: "text-alert-info-text",
+    button: "bg-blue-light-600 hover:bg-blue-light-700",
+  };
   const layout = DIALOG_LAYOUT;
 
   // Reset internal loading state when dialog opens/closes

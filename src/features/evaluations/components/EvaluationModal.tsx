@@ -142,26 +142,43 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
 
   // ── Inicializar comiteData al abrir el modal ──
   useEffect(() => {
-    if (!isOpen) return;
-    if (isComiteMode) {
-      const init: Record<number, ComiteMemberData> = {};
+    if (!isOpen || !isComiteMode || practiceId <= 0) return;
+
+    let cancelled = false;
+    const init = async () => {
+      // Obtener pre-asignaciones desde t_committee_assignment
+      let fetchedAssignments: { memberIndex: number; evaluatorName: string; evaluatorCi?: string }[] = [];
+      try {
+        fetchedAssignments = await evaluationService.getCommitteeAssignments(practiceId);
+      } catch {
+        // silencio
+      }
+
+      if (cancelled) return;
+
+      const initData: Record<number, ComiteMemberData> = {};
       for (const idx of [1, 2, 3] as const) {
         const existing = existingComiteMembers.find(m => m.memberIndex === idx);
         const assignment = committeeAssignments.find(a => a.memberIndex === idx);
-        init[idx] = {
+        const fetched = fetchedAssignments.find(a => a.memberIndex === idx);
+        const preFill = fetched || assignment; // API assignment gana sobre prop
+        initData[idx] = {
           evaluationId: existing?.evaluationId,
-          evaluatorName: existing?.evaluatorName || assignment?.evaluatorName || '',
-          evaluatorCi: assignment?.evaluatorCi || '',
+          evaluatorName: existing?.evaluatorName || preFill?.evaluatorName || '',
+          evaluatorCi: preFill?.evaluatorCi || '',
           observations: '',
           scores: {},
         };
       }
-      setComiteData(init);
+      setComiteData(initData);
       // Auto-seleccionar primer miembro vacío, o el 1 si todos están llenos
       const used = new Set(existingComiteMembers.map(m => m.memberIndex));
       const firstEmpty = ([1, 2, 3] as const).find(idx => !used.has(idx));
       setActiveMember(firstEmpty || 1);
-    }
+    };
+
+    init();
+    return () => { cancelled = true; };
   }, [isOpen]); // solo al abrir
 
   // ── Cuando cambia activeMember, cargar sus datos en el form ──
@@ -224,6 +241,27 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       fetchCriteria(evaluatorType);
     }
   }, [isOpen, evaluatorType, fetchCriteria]);
+
+  // Auto-cargar datos del evaluador (tutor institucional/académico)
+  useEffect(() => {
+    if (!isOpen || isComiteMode || isEditing || practiceId <= 0) return;
+
+    let cancelled = false;
+    const loadTutorInfo = async () => {
+      try {
+        const data = await evaluationService.getPracticeTutorInfo(practiceId, evaluatorType);
+        if (data && !cancelled) {
+          setValue('evaluatorName', data.name);
+          setValue('evaluatorCi', data.ci || '');
+        }
+      } catch {
+        // Ya hay console.error en el service
+      }
+    };
+
+    loadTutorInfo();
+    return () => { cancelled = true; };
+  }, [isOpen, isComiteMode, isEditing, practiceId, evaluatorType, setValue]);
 
   // Cargar evaluación existente (no comité)
   useEffect(() => {

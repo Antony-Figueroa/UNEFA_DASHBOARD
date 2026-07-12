@@ -5,11 +5,22 @@ import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import tutorService, { TutorStudent } from "../../features/tutor/services/tutorService";
 import Badge from "../../components/ui/badge/Badge";
-import { Search, Eye, Calendar, FileText, ClipboardCheck } from "lucide-react";
+import { Eye, Calendar, FileText, ClipboardCheck } from "lucide-react";
+import { Search } from "lucide-react";
 import { matchSearch } from "../../utils/searchNormalizer";
-import { Modal, ModalHeader, ModalBody } from "../../components/ui/modal";
 import StudentViewModal from "../../features/students/components/StudentViewModal";
 import { StudentRowData } from "../../features/students/types";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
+import { EmptyState } from "../../components/ui/table/EmptyState";
+import InputField from "../../components/form/input/InputField";
+import CustomSelect from "../../components/form/CustomSelect";
+import { AsyncActionButton } from "../../components/common/AsyncActionButton";
 
 const statusColors: Record<string, "success" | "warning" | "info" | "error" | "light"> = {
   "active": "success",
@@ -26,6 +37,14 @@ const statusLabels: Record<string, string> = {
   "suspended": "Suspendido",
   "unknown": "Desconocido"
 };
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "Todos los estados" },
+  { value: "active", label: "Activo" },
+  { value: "completed", label: "Completado" },
+  { value: "pre-enrolled", label: "Pre-inscrito" },
+  { value: "suspended", label: "Suspendido" },
+];
 
 export default function TutorStudents() {
   const navigate = useNavigate();
@@ -103,32 +122,25 @@ export default function TutorStudents() {
         <ComponentCard title="Filtros">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar por nombre, cédula o empresa..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
+              <InputField
+                placeholder="Buscar por nombre, cédula o empresa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                leftIcon={<Search className="w-4 h-4" />}
+              />
             </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500"
-            >
-              <option value="all">Todos los estados</option>
-              <option value="active">Activo</option>
-              <option value="completed">Completado</option>
-              <option value="pre-enrolled">Pre-inscrito</option>
-              <option value="suspended">Suspendido</option>
-            </select>
+            <div className="w-full sm:w-48">
+              <CustomSelect
+                options={STATUS_OPTIONS}
+                value={statusFilter}
+                onChange={(val) => setStatusFilter(val)}
+                placeholder="Filtrar por estado"
+              />
+            </div>
           </div>
         </ComponentCard>
 
-        <ComponentCard 
+        <ComponentCard
           title={`Estudiantes (${filteredStudents.length})`}
           className="overflow-hidden"
         >
@@ -143,93 +155,78 @@ export default function TutorStudents() {
               ))}
             </div>
           ) : filteredStudents.length === 0 ? (
-            <div className="text-center py-12 text-text-secondary dark:text-text-tertiary">
-              No se encontraron estudiantes con los filtros aplicados
-            </div>
+            <EmptyState
+              title={searchTerm || statusFilter !== "all" ? "No se encontraron estudiantes" : "No tienes estudiantes asignados"}
+              description={searchTerm || statusFilter !== "all" ? "Intenta ajustar los filtros para encontrar lo que buscas." : "Aún no tienes estudiantes asignados para este período."}
+            />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800/50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Estudiante
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Carrera
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Empresa
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Estado
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Nota
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-light dark:divide-border-dark">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableCell isHeader>Estudiante</TableCell>
+                    <TableCell isHeader>Carrera</TableCell>
+                    <TableCell isHeader>Empresa</TableCell>
+                    <TableCell isHeader>Estado</TableCell>
+                    <TableCell isHeader>Nota</TableCell>
+                    <TableCell isHeader className="text-right">Acciones</TableCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filteredStudents.map((student) => (
-                    <tr key={student.enrollmentId} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="px-4 py-4">
+                    <TableRow key={student.enrollmentId}>
+                      <TableCell>
                         <div>
                           <p className="font-medium text-text-emphasis">{student.studentName}</p>
                           <p className="text-sm text-text-secondary">{student.studentCi}</p>
                         </div>
-                      </td>
-                      <td className="px-4 py-4 text-text-secondary">
+                      </TableCell>
+                      <TableCell className="text-text-secondary">
                         {student.careerName}
-                      </td>
-                      <td className="px-4 py-4 text-text-secondary">
+                      </TableCell>
+                      <TableCell className="text-text-secondary">
                         {student.institutionName}
-                      </td>
-                      <td className="px-4 py-4">
+                      </TableCell>
+                      <TableCell>
                         <Badge color={statusColors[student.status]}>
                           {statusLabels[student.status]}
                         </Badge>
-                      </td>
-                      <td className="px-4 py-4 font-medium">
+                      </TableCell>
+                      <TableCell className="font-medium">
                         {student.grade > 0 ? student.grade.toFixed(1) : "-"}
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setSelectedStudent(student)}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                            title="Ver detalles"
-                          >
-                            <Eye className="w-4 h-4 text-text-secondary" />
-                          </button>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <AsyncActionButton
+                            onClick={async () => setSelectedStudent(student)}
+                            icon={<Eye className="w-4 h-4" />}
+                            tooltip="Ver detalles"
+                            variant="primary"
+                          />
                           {student.status === 'active' && (
                             <>
-                              <button
-                                onClick={() => openTab(`/visit-registration/${student.enrollmentId}`, `Visita #${student.enrollmentId}`)}
-                                className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                title="Registro de Visitas"
-                              >
-                                <Calendar className="w-4 h-4 text-blue-500" />
-                              </button>
-                              <button
-                                onClick={() => openTab(`/activity-logs/${student.enrollmentId}`, `Actividades #${student.enrollmentId}`)}
-                                className="p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
-                                title="Registro de Actividades"
-                              >
-                                <FileText className="w-4 h-4 text-orange-500" />
-                              </button>
+                              <AsyncActionButton
+                                onClick={async () => openTab(`/visit-registration/${student.enrollmentId}`, `Visita #${student.enrollmentId}`)}
+                                icon={<Calendar className="w-4 h-4" />}
+                                tooltip="Registro de Visitas"
+                                variant="info"
+                              />
+                              <AsyncActionButton
+                                onClick={async () => openTab(`/activity-logs/${student.enrollmentId}`, `Actividades #${student.enrollmentId}`)}
+                                icon={<FileText className="w-4 h-4" />}
+                                tooltip="Registro de Actividades"
+                                variant="warning"
+                              />
                               {student.tutorType === 'ACADEMICO' ? (
-                                <button
-                                  onClick={() => openTab(`/tutor/evaluations/${student.enrollmentId}`, `Evaluación #${student.enrollmentId}`)}
-                                  className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                                  title="Cargar Evaluación"
-                                >
-                                  <ClipboardCheck className="w-4 h-4 text-green-500" />
-                                </button>
+                                <AsyncActionButton
+                                  onClick={async () => openTab(`/tutor/evaluations/${student.enrollmentId}`, `Evaluación #${student.enrollmentId}`)}
+                                  icon={<ClipboardCheck className="w-4 h-4" />}
+                                  tooltip="Cargar Evaluación"
+                                  variant="success"
+                                />
                               ) : (
                                 <span
-                                  className="p-2 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed"
                                   title="Solo el tutor académico puede evaluar"
                                 >
                                   <ClipboardCheck className="w-4 h-4" />
@@ -238,11 +235,11 @@ export default function TutorStudents() {
                             </>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </ComponentCard>

@@ -8,6 +8,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/
 import { useToast } from "../../context/toast";
 import { TOAST } from "../../components/ui/dialog/DialogConfig";
 import { Table, TableHeader, TableBody, TableRow, TableCell, Pagination } from "../../components/ui/table";
+import InputField from "../../components/form/input/InputField";
 import { EmptyState } from "../../components/ui/table/EmptyState";
 
 export default function TutorGrades() {
@@ -164,28 +165,28 @@ export default function TutorGrades() {
               description="Todos los estudiantes activos ya tienen una nota asignada."
             />
           ) : (
-            <div className="max-w-full overflow-x-auto table-scrollbar">
-              <Table className="table-root">
-                <TableHeader className="table-header-row">
+            <div className="max-w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell isHeader className="table-header-cell">Estudiante</TableCell>
-                    <TableCell isHeader className="table-header-cell">Carrera</TableCell>
-                    <TableCell isHeader className="table-header-cell">Empresa</TableCell>
-                    <TableCell isHeader className="table-header-cell text-right">Acción</TableCell>
+                    <TableCell isHeader>Estudiante</TableCell>
+                    <TableCell isHeader>Carrera</TableCell>
+                    <TableCell isHeader>Empresa</TableCell>
+                    <TableCell isHeader className="text-right">Acción</TableCell>
                   </TableRow>
                 </TableHeader>
-                <TableBody className="divide-y divide-border-light dark:divide-border-dark">
+                <TableBody>
                   {pagedPendingStudents.map((student) => (
-                    <TableRow key={student.enrollmentId} className="table-row-hover">
-                      <TableCell className="table-cell">
+                    <TableRow key={student.enrollmentId}>
+                      <TableCell>
                         <div>
                           <p className="font-medium text-text-emphasis">{student.studentName}</p>
                           <p className="text-sm text-text-secondary">{student.studentCi}</p>
                         </div>
                       </TableCell>
-                      <TableCell className="table-cell text-text-secondary">{student.careerName}</TableCell>
-                      <TableCell className="table-cell text-text-secondary">{student.institutionName}</TableCell>
-                      <TableCell className="table-cell text-right">
+                      <TableCell className="text-text-secondary">{student.careerName}</TableCell>
+                      <TableCell className="text-text-secondary">{student.institutionName}</TableCell>
+                      <TableCell className="text-right">
                         <Button
                           size="sm"
                           variant="primary"
@@ -216,34 +217,34 @@ export default function TutorGrades() {
 
         {gradedStudents.length > 0 && (
           <ComponentCard title="Ya Calificados">
-            <div className="max-w-full overflow-x-auto table-scrollbar">
-              <Table className="table-root">
-                <TableHeader className="table-header-row">
+            <div className="max-w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell isHeader className="table-header-cell">Estudiante</TableCell>
-                    <TableCell isHeader className="table-header-cell">Carrera</TableCell>
-                    <TableCell isHeader className="table-header-cell">Empresa</TableCell>
-                    <TableCell isHeader className="table-header-cell">Nota</TableCell>
-                    <TableCell isHeader className="table-header-cell text-right">Acción</TableCell>
+                    <TableCell isHeader>Estudiante</TableCell>
+                    <TableCell isHeader>Carrera</TableCell>
+                    <TableCell isHeader>Empresa</TableCell>
+                    <TableCell isHeader>Nota</TableCell>
+                    <TableCell isHeader className="text-right">Acción</TableCell>
                   </TableRow>
                 </TableHeader>
-                <TableBody className="divide-y divide-border-light dark:divide-border-dark">
+                <TableBody>
                   {pagedGradedStudents.map((student) => (
-                    <TableRow key={student.enrollmentId} className="table-row-hover">
-                      <TableCell className="table-cell">
+                    <TableRow key={student.enrollmentId}>
+                      <TableCell>
                         <div>
                           <p className="font-medium text-text-emphasis">{student.studentName}</p>
                           <p className="text-sm text-text-secondary">{student.studentCi}</p>
                         </div>
                       </TableCell>
-                      <TableCell className="table-cell text-text-secondary">{student.careerName}</TableCell>
-                      <TableCell className="table-cell text-text-secondary">{student.institutionName}</TableCell>
-                      <TableCell className="table-cell">
+                      <TableCell className="text-text-secondary">{student.careerName}</TableCell>
+                      <TableCell className="text-text-secondary">{student.institutionName}</TableCell>
+                      <TableCell>
                         <Badge color={student.grade >= 10 ? "success" : "error"}>
                           {student.grade.toFixed(1)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="table-cell text-right">
+                      <TableCell className="text-right">
                         <Button
                           size="sm"
                           variant="outline"
@@ -289,14 +290,13 @@ export default function TutorGrades() {
                   <label className="block text-sm font-medium text-text-secondary mb-1">
                     Nota Final (0-20)
                   </label>
-                  <input
+                  <InputField
                     type="number"
                     min="0"
                     max="20"
                     step="0.1"
                     value={grade}
                     onChange={(e) => setGrade(e.target.value)}
-                    className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500"
                     placeholder="Ingrese la nota"
                   />
                 </div>

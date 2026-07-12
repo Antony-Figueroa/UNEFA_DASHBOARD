@@ -13,7 +13,6 @@ import { useEvaluations } from "../../../features/evaluations/hooks/useEvaluatio
 import { useSystemEvaluationConfig } from "../../../features/evaluations/hooks/useSystemEvaluationConfig";
 import { EvaluatorType, EVALUATOR_TYPE_LABELS } from "../../../features/evaluations/types";
 import { useAuth } from "../../../context/auth";
-import { useAuth } from "../../../context/auth";
 
 interface StudentInfo {
   studentName: string;

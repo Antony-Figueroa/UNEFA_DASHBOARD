@@ -817,12 +817,12 @@ const PeriodTable = ({
                                         </TableCell>
                                         <TableCell className="table-cell text-right">
                                             <ActionButtons
-                                                onEdit={onEdit ? () => onEdit(periodo) : undefined}
-                                                onCulminate={onCulminate ? () => onCulminate(periodo) : undefined}
-                                                onActivate={onActivate ? () => onActivate(periodo) : undefined}
+                                                onEdit={effectiveOnEdit ? () => effectiveOnEdit(periodo) : undefined}
+                                                onCulminate={effectiveOnCulminate ? () => effectiveOnCulminate(periodo) : undefined}
+                                                onActivate={effectiveOnActivate ? () => effectiveOnActivate(periodo) : undefined}
                                                 onView={onView ? () => onView(periodo) : undefined}
-                                                onDelete={onDelete ? () => onDelete(periodo) : undefined}
-                                                onRestore={onRestore ? () => onRestore(periodo) : undefined}
+                                                onDelete={effectiveOnDelete ? () => effectiveOnDelete(periodo) : undefined}
+                                                onRestore={effectiveOnRestore ? () => effectiveOnRestore(periodo) : undefined}
                                                 periodo={periodo}
                                                 canActivate={canActivate}
                                                 isDisabled={inUseIds.has(periodo.periodId)}

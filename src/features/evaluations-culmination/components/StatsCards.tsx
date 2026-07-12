@@ -1,6 +1,7 @@
 /**
  * @file StatsCards.tsx
- * @description Componente de tarjetas de estadísticas para evaluaciones y culminación
+ * @description Componente de tarjetas de estadísticas para evaluaciones y culminación.
+ * Admite tanto el modelo plano (stats[]) como el modelo agrupado (meta con student-level counts).
  */
 
 interface StatsCardProps {
@@ -8,6 +9,13 @@ interface StatsCardProps {
   value: number | string;
   subtitle?: string;
   color?: 'default' | 'warning' | 'success' | 'primary' | 'error';
+}
+
+/** Meta estadísticas a nivel de estudiante para el modelo agrupado */
+export interface GroupedMetaStats {
+  total: number;
+  completed: number;
+  inProgress: number;
 }
 
 const colorClasses: Record<string, string> = {
@@ -52,28 +60,41 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 );
 
 interface StatsCardsGridProps {
-  stats: {
+  /** Array de estadísticas para renderizar tarjetas */
+  stats?: {
     title: string;
     value: number | string;
     subtitle?: string;
     color?: StatsCardProps['color'];
   }[];
+  /** Meta estadísticas a nivel de estudiante (modelo agrupado).
+   *  Cuando se provee, genera automáticamente las tarjetas Total, Completados y En Progreso. */
+  meta?: GroupedMetaStats;
   columns?: number;
 }
 
 export const StatsCardsGrid: React.FC<StatsCardsGridProps> = ({
   stats,
+  meta,
   columns = 3,
 }) => {
+  const resolvedStats = meta
+    ? [
+        { title: 'Total Estudiantes', value: meta.total, color: 'default' as const },
+        { title: 'Completados', value: meta.completed, color: 'success' as const },
+        { title: 'En Progreso', value: meta.inProgress, color: 'warning' as const },
+      ]
+    : stats || [];
+
   const gridCols = {
     2: 'grid-cols-2',
     3: 'grid-cols-1 sm:grid-cols-3',
     4: 'grid-cols-2 sm:grid-cols-4',
-  }[columns] || 'grid-cols-1 sm:grid-cols-3';
+  }[meta ? 3 : columns] || 'grid-cols-1 sm:grid-cols-3';
 
   return (
     <div className={`grid ${gridCols} gap-4 mb-6`}>
-      {stats.map((stat, i) => (
+      {resolvedStats.map((stat, i) => (
         <StatsCard key={i} {...stat} />
       ))}
     </div>

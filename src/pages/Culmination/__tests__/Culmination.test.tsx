@@ -486,8 +486,9 @@ describe('CulminationPage — Phase 5 UX', () => {
       });
 
       await waitFor(() => {
-        // Sibling practice info should be displayed
-        expect(screen.getByText(/Hermana:/i)).toBeInTheDocument();
+        // Sibling practice info should be displayed for each practice in the dual group
+        const siblingLabels = screen.getAllByText(/Hermana:/i);
+        expect(siblingLabels.length).toBe(2);
       });
     });
   });

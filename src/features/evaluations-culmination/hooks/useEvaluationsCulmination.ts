@@ -3,6 +3,7 @@
  * @description Hook principal del módulo de Evaluaciones y Culminación.
  * Centraliza fetching, filtros, paginación, estadísticas y acciones.
  * Incluye acciones de administrador (retiro, extensión, congelar, etc.).
+ * Refactored to compose sub-hooks for grouped culmination view (PR 2b).
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -14,6 +15,7 @@ import {
   PracticeFilters,
   EvaluationStats,
   CulminationStats,
+  StudentCulminationRowData,
 } from '../types';
 import type { EvaluatorType } from '../../evaluations/types';
 import { evaluationsCulminationService } from '../services/evaluationsCulminationService';
@@ -22,6 +24,11 @@ import { withdrawPractice, reclassifyWithdrawal } from '../../enrollment/service
 import { useAuth } from '../../../context/auth';
 import { matchSearch } from '../../../utils/searchNormalizer';
 import { generateCertificatePDF } from '../../../components/ui/pdf/templates/CertificatePDF';
+// Sub-hooks for grouped culmination view
+import { useCulminationData } from './useCulminationData';
+import { useCulminationFilters } from './useCulminationFilters';
+import { useCulminationUI } from './useCulminationUI';
+import { useCulminationActions } from './useCulminationActions';
 
 const resourceName = 'Culminación';
 
@@ -174,6 +181,49 @@ export interface UseEvaluationsCulminationReturn {
   setOverrideTarget: (target: { practice: PracticeWithEvaluations; reason: string } | null) => void;
   setOverrideReason: (reason: string) => void;
   handleConfirmOverride: () => void;
+
+  // ── Grouped Culmination View (PR 2b sub-hooks) ──────────
+
+  /** Datos agrupados de culminación (useCulminationData) */
+  culminationGroups: StudentCulminationRowData[];
+  culminationGroupsLoading: boolean;
+  culminationGroupsError: string | null;
+  culminationGroupStats: CulminationStats;
+  culminationGroupsMeta: { total: number; completed: number; inProgress: number };
+  refetchCulminationGroups: () => Promise<void>;
+
+  /** Filtros de culminación agrupada (useCulminationFilters) */
+  culminationPeriodId: number | undefined;
+  culminationSearch: string;
+  culminationCareerId: number | undefined;
+  culminationPhaseFilter: 'all' | 'hospitalaria' | 'comunitaria';
+  setCulminationPeriodId: (id: number | undefined) => void;
+  setCulminationSearch: (search: string) => void;
+  setCulminationCareerId: (id: number | undefined) => void;
+  setCulminationPhaseFilter: (filter: 'all' | 'hospitalaria' | 'comunitaria') => void;
+  resetCulminationFilters: () => void;
+
+  /** UI de culminación agrupada (useCulminationUI) */
+  culminationExpandedStudentCi: string | null;
+  culminationActiveTab: 'evaluations' | 'culmination' | 'certification' | 'reprobados';
+  isCulminationModalOpen: boolean;
+  culminationModalType: string | null;
+  culminationSelectedPracticeId: number | null;
+  toggleCulminationRow: (studentCi: string) => void;
+  setCulminationActiveTab: (tab: 'evaluations' | 'culmination' | 'certification' | 'reprobados') => void;
+  openCulminationModal: (type: string, practiceId?: number) => void;
+  closeCulminationModal: () => void;
+
+  /** Acciones de culminación agrupada (useCulminationActions) */
+  approveCulminationGrouped: (practiceId: number) => Promise<boolean>;
+  certifyPracticeGrouped: (practiceId: number) => Promise<boolean>;
+  reverseCulminationGrouped: (practiceId: number, reason: string, resolutionNumber: string) => Promise<boolean>;
+  bulkExtendGrouped: (practiceIds: number[], days: number) => Promise<boolean>;
+  actionApproving: boolean;
+  actionCertifying: boolean;
+  actionReversing: boolean;
+  actionBulkExtending: boolean;
+  actionError: string | null;
 }
 
 export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => {
@@ -782,6 +832,16 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     }
   }, [overrideTarget, fetchPractices]);
 
+  // ─── Grouped Culmination Sub-Hooks (PR 2b) ──────────────
+  const culminationFilters = useCulminationFilters();
+  const culminationUI = useCulminationUI();
+  const culminationData = useCulminationData({
+    periodId: culminationFilters.periodId,
+    search: culminationFilters.search,
+    careerId: culminationFilters.careerId,
+  });
+  const culminationActions = useCulminationActions(fetchPractices);
+
   return {
     practices,
     meta,
@@ -889,6 +949,44 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     setOverrideTarget,
     setOverrideReason,
     handleConfirmOverride,
+    // ── Grouped Culmination View (PR 2b sub-hooks) ──────
+    // Data (useCulminationData)
+    culminationGroups: culminationData.groups,
+    culminationGroupsLoading: culminationData.loading,
+    culminationGroupsError: culminationData.error,
+    culminationGroupStats: culminationData.stats,
+    culminationGroupsMeta: culminationData.meta,
+    refetchCulminationGroups: culminationData.refetch,
+    // Filters (useCulminationFilters)
+    culminationPeriodId: culminationFilters.periodId,
+    culminationSearch: culminationFilters.search,
+    culminationCareerId: culminationFilters.careerId,
+    culminationPhaseFilter: culminationFilters.phaseFilter,
+    setCulminationPeriodId: culminationFilters.setPeriodId,
+    setCulminationSearch: culminationFilters.setSearch,
+    setCulminationCareerId: culminationFilters.setCareerId,
+    setCulminationPhaseFilter: culminationFilters.setPhaseFilter,
+    resetCulminationFilters: culminationFilters.resetFilters,
+    // UI (useCulminationUI)
+    culminationExpandedStudentCi: culminationUI.expandedStudentCi,
+    culminationActiveTab: culminationUI.activeTab,
+    isCulminationModalOpen: culminationUI.isModalOpen,
+    culminationModalType: culminationUI.modalType,
+    culminationSelectedPracticeId: culminationUI.selectedPracticeId,
+    toggleCulminationRow: culminationUI.toggleRow,
+    setCulminationActiveTab: culminationUI.setActiveTab,
+    openCulminationModal: culminationUI.openModal,
+    closeCulminationModal: culminationUI.closeModal,
+    // Actions (useCulminationActions)
+    approveCulminationGrouped: culminationActions.approveCulmination,
+    certifyPracticeGrouped: culminationActions.certifyPractice,
+    reverseCulminationGrouped: culminationActions.reverseCulmination,
+    bulkExtendGrouped: culminationActions.bulkExtend,
+    actionApproving: culminationActions.approving,
+    actionCertifying: culminationActions.certifying,
+    actionReversing: culminationActions.reversing,
+    actionBulkExtending: culminationActions.bulkExtending,
+    actionError: culminationActions.error,
   };
 };
 

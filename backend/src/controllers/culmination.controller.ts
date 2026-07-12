@@ -22,6 +22,7 @@ interface CulminationPractice {
   hoursRequired: number;
   evaluationStatus: string;
   finalGrade: number | null;
+  isFrozen: boolean;
   result: 'approved' | 'failed' | 'pending';
   culminationStatus: 'pending' | 'approved' | 'certified';
   certificateNumber?: string;
@@ -65,6 +66,7 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
         GRADE,
         PRACTICES_STATUS,
         EVALUATION_STATUS,
+        FROZEN_AT,
         PERIOD_ID,
         INSTITUTION_ID,
         STUDENTS_ID,
@@ -176,6 +178,7 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
         hoursRequired,
         evaluationStatus: p.EVALUATION_STATUS || '',
         finalGrade: grade,
+        isFrozen: !!p.FROZEN_AT,
         result,
         culminationStatus,
         certificateNumber: culm?.CERTIFICATE_NUMBER || undefined,

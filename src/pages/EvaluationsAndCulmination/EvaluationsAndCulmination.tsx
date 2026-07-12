@@ -25,6 +25,9 @@ import { EvaluationCell } from '../../features/evaluations-culmination/component
 import { useSystemEvaluationConfig } from '../../features/evaluations/hooks/useSystemEvaluationConfig';
 import { StatsCardsGrid } from '../../features/evaluations-culmination/components/StatsCards';
 import { EvaluationFilters } from '../../features/evaluations-culmination/components/EvaluationFilters';
+import { StudentCulminationRow } from '../../features/evaluations-culmination/components/StudentCulminationRow';
+import { CertificationView } from '../../features/evaluations-culmination/components/CertificationView';
+import { PhaseStatusBadge } from '../../features/evaluations-culmination/components/PhaseStatusBadge';
 import { EvaluationActions } from '../../features/evaluations-culmination/components/EvaluationActions';
 import { BulkExtensionModal } from '../../features/evaluations-culmination/components/BulkExtensionModal';
 import { AuditHistoryModal } from '../../features/evaluations-culmination/components/AuditHistoryModal';
@@ -44,6 +47,7 @@ import {
 const EVAL_TABS = [
   { id: 'evaluations', label: 'Evaluaciones' },
   { id: 'culmination', label: 'Culminación' },
+  { id: 'certification', label: 'Certificación' },
   { id: 'reprobados', label: 'Reprobados' },
 ];
 
@@ -333,168 +337,56 @@ export default function EvaluationsAndCulminationPage() {
     </>
   );
 
-  // ─── Render: Culmination tab ────────────────────────────
-  const renderCulminationTab = () => (
-    <>
-      <StatsCardsGrid
-        columns={4}
-        stats={[
-          { title: 'Total', value: hook.culminationStats.total },
-          { title: 'Pendientes', value: hook.culminationStats.pending, color: 'warning' },
-          { title: 'Aprobados', value: hook.culminationStats.approved, color: 'success' },
-          { title: 'Certificados', value: hook.culminationStats.certified, color: 'primary' },
-        ]}
-      />
+  // ─── Render: Culmination tab (redesign: grouped rows) ───
+  const renderCulminationTab = () => {
+    const groups = hook.culminationGroups;
+    const expandedCi = hook.culminationExpandedStudentCi;
+    const toggleRow = hook.toggleCulminationRow;
 
-      {/* Desktop table */}
-      <div className="hidden md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableCell isHeader>Estudiante</TableCell>
-              <TableCell isHeader>Carrera</TableCell>
-              <TableCell isHeader>Institución</TableCell>
-              <TableCell isHeader>Período</TableCell>
-              <TableCell isHeader className="text-center">Horas</TableCell>
-              <TableCell isHeader className="text-center">Estado</TableCell>
-              <TableCell isHeader className="text-center">Acciones</TableCell>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedData.map(practice => (
-              <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
-                <TableCell>
-                  <div className="font-medium text-text-primary dark:text-text-emphasis">
-                    {practice.studentName}
-                  </div>
-                  <div className="text-xs text-text-tertiary">{practice.studentCi}</div>
-                </TableCell>
-                <TableCell className="text-sm text-text-secondary">{practice.careerName}</TableCell>
-                <TableCell className="text-sm text-text-secondary">{practice.institutionName}</TableCell>
-                <TableCell className="text-sm text-text-secondary">{practice.periodName}</TableCell>
-                <TableCell className="text-center text-sm tabular-nums">{practice.totalHours}h</TableCell>
-                <TableCell className="text-center">{getCulminationBadge(practice.culminationStatus)}</TableCell>
-                <TableCell className="text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)}>
-                      <EyeIcon className="w-4 h-4" />
-                    </Button>
-                    {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
-                      <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>
-                        Aprobar
-                      </Button>
-                    )}
-                    {practice.culminationStatus === 'approved' && (
-                      <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)}>
-                        Certificar
-                      </Button>
-                    )}
-                    {practice.culminationStatus === 'certified' && (
-                      <Button size="sm" variant="outline" onClick={() => hook.handleDownloadPdf(practice)}>
-                        <DownloadIcon className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {!hook.isReadOnly && (
-                      <ActionDropdown actions={[
-                  ...(practice.practicesStatusCode !== 'CULMINADO'
-                    ? [{ label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) }]
-                    : []),
-                  ...(!practice.extensionGranted && practice.practicesStatusCode !== 'CULMINADO'
-                    ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
-                    : []),
-                  ...(practice.extensionGranted && practice.practicesStatusCode !== 'CULMINADO'
-                    ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
-                    : []),
-                  { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
-                        { separator: true, label: '', onClick: () => {} },
-                        ...(practice.practicesStatusCode !== 'REPROBADO' && practice.practicesStatusCode !== 'RETIRADO' && practice.practicesStatusCode !== 'CULMINADO'
-                          ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
-                          : []),
-                        ...(practice.isFrozen
-                          ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
-                          : []),
-                      ]} />
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+    if (hook.culminationGroupsLoading) {
+      return <TableSkeleton columns={1} rows={8} />;
+    }
 
-      {/* Mobile cards */}
-      <div className="md:hidden flex flex-col gap-4">
-        {paginatedData.map(practice => (
-          <div key={practice.practiceId} className="bg-white dark:bg-gray-800 rounded-lg border border-border-default dark:border-border-dark p-4">
-            <div className="flex justify-between items-start mb-3">
-              <div className="min-w-0">
-                <p className="font-medium text-text-primary dark:text-text-emphasis truncate">{practice.studentName}</p>
-                <p className="text-xs text-text-tertiary">{practice.studentCi}</p>
-              </div>
-              {getCulminationBadge(practice.culminationStatus)}
-            </div>
-            <div className="space-y-1 text-xs text-text-secondary mb-3">
-              <p><span className="font-medium">Carrera:</span> {practice.careerName}</p>
-              <p><span className="font-medium">Institución:</span> {practice.institutionName}</p>
-              <p><span className="font-medium">Horas:</span> {practice.totalHours}h</p>
-            </div>
-            {practice.certificateNumber && (
-              <p className="text-xs text-brand-600 dark:text-brand-400 mb-3">
-                Certificado: {practice.certificateNumber}
-              </p>
-            )}
-            <div className="pt-3 border-t border-border-default dark:border-border-dark flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)} className="flex-1">
-                <EyeIcon className="w-4 h-4" /> Ver
-              </Button>
-              {practice.culminationStatus === 'approved' && (
-                <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)} className="flex-1">Certificar</Button>
-              )}
-              {practice.culminationStatus === 'certified' && (
-                <Button size="sm" variant="outline" onClick={() => hook.handleDownloadPdf(practice)} className="flex-1">
-                  <DownloadIcon className="w-4 h-4" /> PDF
-                </Button>
-              )}
-              {!hook.isReadOnly && (
-                <ActionDropdown actions={[
-                  ...(practice.evaluationStatus === 'completed' && practice.result === 'approved' && practice.culminationStatus === 'pending'
-                    ? [{ label: 'Culminar', onClick: () => hook.handleApprove(practice), className: 'text-success-600 dark:text-success-400' }]
-                    : []),
-                  { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
-                  ...(!practice.extensionGranted
-                    ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
-                    : []),
-                  ...(practice.extensionGranted
-                    ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
-                    : []),
-                  { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
-                  { separator: true, label: '', onClick: () => {} },
-                  ...(practice.practicesStatusCode !== 'REPROBADO' && practice.practicesStatusCode !== 'RETIRADO' && practice.practicesStatusCode !== 'CULMINADO'
-                    ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
-                    : []),
-                  ...(practice.isFrozen
-                    ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
-                    : []),
-                ]} />
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={hook.currentPage}
-          totalPages={totalPages}
-          totalItems={activeList.length}
-          itemsPerPage={hook.itemsPerPage}
-          onPageChange={hook.setCurrentPage}
-          onItemsPerPageChange={(items) => { hook.setItemsPerPage(items); hook.setCurrentPage(1); }}
-          itemsPerPageOptions={[10, 25, 50]}
+    if (!groups || groups.length === 0) {
+      return (
+        <EmptyState
+          title="No se encontraron estudiantes"
+          description="No hay datos de culminación para los filtros seleccionados."
         />
-      )}
-    </>
+      );
+    }
+
+    return (
+      <>
+        <StatsCardsGrid
+          meta={hook.culminationGroupsMeta}
+        />
+
+        <div className="space-y-2">
+          {groups.map((row) => (
+            <StudentCulminationRow
+              key={row.studentCi}
+              row={row}
+              isExpanded={expandedCi === row.studentCi}
+              onToggle={() => toggleRow(row.studentCi)}
+              onApprove={hook.approveCulminationGrouped}
+              onCertify={hook.certifyPracticeGrouped}
+              onReverse={hook.reverseCulminationGrouped}
+              approving={hook.actionApproving}
+              certifying={hook.actionCertifying}
+            />
+          ))}
+        </div>
+      </>
+    );
+  };
+
+  // ─── Render: Certification tab ──────────────────────────
+  const renderCertificationTab = () => (
+    <CertificationView
+      groups={hook.culminationGroups}
+      loading={hook.culminationGroupsLoading}
+    />
   );
 
   // ─── Render: Reprobados tab ────────────────────────────
@@ -580,6 +472,7 @@ export default function EvaluationsAndCulminationPage() {
     switch (tabsState.activeTab) {
       case 'evaluations': return renderEvaluationsTab();
       case 'culmination': return renderCulminationTab();
+      case 'certification': return renderCertificationTab();
       case 'reprobados': return renderReprobadosTab();
       default: return null;
     }

@@ -105,6 +105,20 @@ vi.mock('../../../features/evaluations-culmination/components/EvaluationActions'
 vi.mock('../../../features/evaluations-culmination/components/BulkExtensionModal', () => ({ BulkExtensionModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/AuditHistoryModal', () => ({ AuditHistoryModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/CommitteeModal', () => ({ CommitteeModal: () => null }));
+vi.mock('../../../features/evaluations-culmination/components/CertificationView', () => ({ CertificationView: () => <div data-testid="certification-view" /> }));
+vi.mock('../../../features/evaluations-culmination/components/PhaseStatusBadge', () => ({ PhaseStatusBadge: () => <span data-testid="phase-status-badge" /> }));
+vi.mock('../../../features/evaluations-culmination/components/StudentCulminationRow', () => ({
+  StudentCulminationRow: ({ row, onApprove }: any) => (
+    <div data-testid="student-culmination-row">
+      <span>{row.studentName}</span>
+      {row.phases?.some((p: any) => p.status === 'approved') && (
+        <button onClick={() => onApprove(row.phases.find((p: any) => p.status === 'approved').practiceId)}>
+          Aprobar
+        </button>
+      )}
+    </div>
+  ),
+}));
 vi.mock('../../../features/student-detail/components/StudentDetailModal', () => ({ StudentDetailModal: () => null }));
 vi.mock('../../../features/evaluations/components/EvaluationModal', () => ({ EvaluationModal: () => null }));
 vi.mock('../../../features/evaluations/components/EvaluationDetailModal', () => ({ default: () => null }));
@@ -135,6 +149,37 @@ vi.mock('@/components/ui/dialog/DialogConfig', () => ({
 }));
 
 // ─── Helper ─────────────────────────────────────────────
+
+const makeCulminationGroup = (overrides: Record<string, any> = {}) => ({
+  studentCi: 'V-12345678',
+  studentName: 'Juan Perez',
+  careerName: 'Ing. Sistemas',
+  periodId: 1,
+  periodName: '1-2026',
+  phases: [
+    {
+      practiceId: 1,
+      practiceTypeId: 1,
+      practiceTypeName: 'HOSP',
+      priority: 1,
+      status: 'approved',
+      statusLabel: 'Aprobado',
+      grade: 16,
+      isFrozen: false,
+      evaluationStatus: 'completed',
+      institutionName: 'Hospital Central',
+      hoursCompleted: 400,
+    },
+  ],
+  finalStatus: 'pending',
+  finalStatusLabel: 'Pendiente',
+  canCertify: false,
+  certificateNumber: null,
+  certifiedAt: null,
+  totalPractices: 1,
+  completedPractices: 1,
+  ...overrides,
+});
 
 const makePractice = (overrides: Partial<PracticeWithEvaluations> = {}): PracticeWithEvaluations => ({
   practiceId: 1,
@@ -275,6 +320,24 @@ const baseMockHook = {
   setOverrideTarget: vi.fn(),
   handleConfirmOverride: vi.fn(),
   setOverrideReason: vi.fn(),
+  // Grouped culmination view
+  culminationGroups: [],
+  culminationGroupsLoading: false,
+  culminationGroupsError: null,
+  culminationGroupStats: { total: 0, pending: 0, approved: 0, certified: 0 },
+  culminationGroupsMeta: { total: 0, completed: 0, inProgress: 0 },
+  refetchCulminationGroups: vi.fn(),
+  culminationPeriodId: undefined,
+  culminationSearch: '',
+  culminationCareerId: undefined,
+  culminationPhaseFilter: 'all',
+  culminationExpandedStudentCi: null,
+  toggleCulminationRow: vi.fn(),
+  approveCulminationGrouped: vi.fn(),
+  certifyPracticeGrouped: vi.fn(),
+  reverseCulminationGrouped: vi.fn(),
+  actionApproving: false,
+  actionCertifying: false,
 };
 
 // Mock the hook
@@ -338,15 +401,16 @@ describe('EvaluationsAndCulmination — Culminate flow', () => {
     mockHookInstance = {
       ...mockHookInstance,
       filteredPractices: [makePractice({ culminationStatus: 'pending', result: 'approved' })],
+      culminationGroups: [makeCulminationGroup()],
     };
 
     const Page = await getPage();
     render(<Page />);
 
-    // Aprobar appears once (culmination tab renders it as a direct button, not in dropdown)
+    // Aprobar button rendered by StudentCulminationRow for approved phase
     const aprobarBtns = screen.getAllByText('Aprobar');
     expect(aprobarBtns.length).toBeGreaterThanOrEqual(1);
-    // Juan Perez appears in both desktop table and mobile cards
+    // Student name appears in the grouped row
     const nameElements = screen.getAllByText('Juan Perez');
     expect(nameElements.length).toBeGreaterThanOrEqual(1);
   });
@@ -505,21 +569,20 @@ describe('EvaluationsAndCulmination — Culminate flow', () => {
 
   it('calls handleApprove when "Aprobar" button is clicked', async () => {
     mockActiveTab = 'culmination';
-    const handleApproveMock = vi.fn();
+    const approveGroupedMock = vi.fn().mockResolvedValue(true);
     mockHookInstance = {
       ...mockHookInstance,
       filteredPractices: [makePractice({ culminationStatus: 'pending', result: 'approved' })],
-      handleApprove: handleApproveMock,
+      culminationGroups: [makeCulminationGroup()],
+      approveCulminationGrouped: approveGroupedMock,
     };
 
     const Page = await getPage();
     render(<Page />);
 
     fireEvent.click(screen.getByText('Aprobar'));
-    expect(handleApproveMock).toHaveBeenCalledTimes(1);
-    expect(handleApproveMock).toHaveBeenCalledWith(
-      expect.objectContaining({ practiceId: 1, studentName: 'Juan Perez' }),
-    );
+    expect(approveGroupedMock).toHaveBeenCalledTimes(1);
+    expect(approveGroupedMock).toHaveBeenCalledWith(1); // practiceId
   });
 
   it('calls handleApprove when "Culminar" is clicked in Evaluaciones tab', async () => {

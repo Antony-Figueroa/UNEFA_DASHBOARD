@@ -9,6 +9,7 @@ import {
   PracticeFilters,
   EvaluationStats,
   CulminationStats,
+  StudentCulminationRowData,
   CertificateData,
   EvaluationFormData
 } from '../types';
@@ -50,6 +51,21 @@ export interface CertificateResponse {
   certificate: CertificateData;
 }
 
+/** Filters for culmination groups endpoint */
+export interface CulminationGroupFilters {
+  periodId?: number;
+  careerId?: number;
+  search?: string;
+}
+
+/** Response from culmination groups endpoint */
+export interface CulminationGroupsResponse {
+  success?: boolean;
+  groups: StudentCulminationRowData[];
+  stats: CulminationStats;
+  meta: { total: number; completed: number; inProgress: number; };
+}
+
 /** Servicio unificado de Evaluaciones y Culminación */
 export const evaluationsCulminationService = {
   /**
@@ -67,6 +83,20 @@ export const evaluationsCulminationService = {
     if (filters?.search) queryParams.append('search', filters.search);
     
     const response = await apiClient.get(`/practices/evaluations?${queryParams.toString()}`);
+    return response.data;
+  },
+
+  /**
+   * Obtiene datos agrupados de culminación para la vista rediseñada
+   */
+  getCulminationGroups: async (filters?: CulminationGroupFilters): Promise<CulminationGroupsResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (filters?.periodId) queryParams.append('periodId', String(filters.periodId));
+    if (filters?.careerId) queryParams.append('careerId', String(filters.careerId));
+    if (filters?.search) queryParams.append('search', filters.search);
+
+    const response = await apiClient.get(`/culmination?${queryParams.toString()}`);
     return response.data;
   },
 

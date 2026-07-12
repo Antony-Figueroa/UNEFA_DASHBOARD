@@ -242,3 +242,44 @@ export const getResultLabel = (result: PracticeResult): string => {
     case 'pending': return 'Pendiente';
   }
 };
+
+// ── Culmination Redesign Types (PR 1) ────────────────────────────────────
+
+/** Phase status for each practice within a student group */
+export interface PhaseStatus {
+  practiceId: number;
+  practiceTypeId: number;
+  practiceTypeName: string;
+  priority: number;
+  status: 'pending' | 'approved' | 'certified' | 'failed' | 'withdrawn_justified';
+  statusLabel: string;
+  grade: number | null;
+  isFrozen: boolean;
+  evaluationStatus: string | null;
+  institutionName: string;
+  hoursCompleted: number;
+}
+
+/** One row in the grouped culmination table */
+export interface StudentCulminationRowData {
+  studentCi: string;
+  studentName: string;
+  careerName: string;
+  periodId: number;
+  periodName: string;
+  phases: PhaseStatus[];
+  finalStatus: 'approved' | 'pending' | 'failed' | 'partial';
+  finalStatusLabel: string;
+  canCertify: boolean;
+  certificateNumber: string | null;
+  certifiedAt: string | null;
+  totalPractices: number;
+  completedPractices: number;
+}
+
+/** API response shape for grouped culmination data */
+export interface CulminationGroupResponse {
+  groups: StudentCulminationRowData[];
+  stats: CulminationStats;
+  meta: { total: number; completed: number; inProgress: number; };
+}

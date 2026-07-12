@@ -367,10 +367,8 @@ export default function EvaluationsAndCulminationPage() {
               row={row}
               isExpanded={expandedCi === row.studentCi}
               onToggle={() => toggleRow(row.studentCi)}
-              onApprove={hook.approveCulminationGrouped}
               onCertify={hook.certifyPracticeGrouped}
               onReverse={hook.reverseCulminationGrouped}
-              approving={hook.actionApproving}
               certifying={hook.actionCertifying}
             />
           ))}

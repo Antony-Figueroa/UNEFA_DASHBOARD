@@ -135,7 +135,8 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
           second_last_name
         ),
         t_career (
-          CAREER_NAME
+          CAREER_NAME,
+          MINIMUM_GRADE
         ),
         t_institution (
           INSTITUTION_NAME
@@ -180,7 +181,22 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
       culmMap.set(c.PRACTICE_ID, c);
     });
 
-    // 2b. Obtener reversals activos
+    // 2b. Obtener evaluaciones para calcular nota ponderada en vivo
+    const { data: allEvaluations } = await supabase
+      .from('t_evaluation')
+      .select('PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, TOTAL_SCORE')
+      .eq('STATUS', 1)
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
+
+    const evalMap = new Map<number, Record<string, number>>();
+    (allEvaluations || []).forEach((e: any) => {
+      if (!evalMap.has(e.PROFESSIONAL_PRACTICE_ID)) {
+        evalMap.set(e.PROFESSIONAL_PRACTICE_ID, {});
+      }
+      evalMap.get(e.PROFESSIONAL_PRACTICE_ID)![e.EVALUATOR_TYPE] = e.TOTAL_SCORE || 0;
+    });
+
+    // 2c. Obtener reversals activos
     const { data: reversals } = await supabase
       .from('t_culmination_reversals')
       .select('PROFESSIONAL_PRACTICE_ID, REASON, RESOLUTION_NUMBER, CREATED_AT')
@@ -206,6 +222,8 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
 
     // 4. Armar grupos
     const groupsMap = new Map<string, CulminationGroup>();
+    const evalConfig = await getEvalConfig();
+    const weights = evalConfig.weights;
 
     practices.forEach((p: any) => {
       const practiceId = p.PROFESSIONAL_PRACTICE_ID;
@@ -215,11 +233,26 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
       const culm = culmMap.get(practiceId);
 
       const culminationStatus = getCulminationStatusLabel(culm?.STATUS ?? null);
-      const grade = p.GRADE;
+
+      // Calcular nota ponderada en vivo desde las evaluaciones
+      const evalScores = evalMap.get(practiceId) || {};
+      const hasAllEvals = ['INSTITUCIONAL', 'ACADEMICO', 'COMITE'].every(type => evalScores[type] !== undefined);
+      let computedGrade: number | null = null;
+      if (hasAllEvals) {
+        computedGrade = Object.entries(weights).reduce((sum, [type, weight]) => {
+          return sum + ((evalScores[type] || 0) * weight);
+        }, 0);
+        computedGrade = Math.round(computedGrade * 100) / 100;
+      }
+      const grade = computedGrade;
+
+      const careerMinGrade = p.t_career?.MINIMUM_GRADE ?? MINIMUM_GRADE;
 
       let result: 'approved' | 'failed' | 'pending' = 'pending';
-      if (p.EVALUATION_STATUS === 'completed' && grade != null) {
-        result = grade >= MINIMUM_GRADE ? 'approved' : 'failed';
+      if (p.PRACTICES_STATUS === PRACTICES_STATUS.REPROBADO) {
+        result = 'failed';
+      } else if (p.EVALUATION_STATUS === 'completed' && grade != null) {
+        result = grade >= careerMinGrade ? 'approved' : 'failed';
       }
 
       const rev = reversalMap.get(practiceId);

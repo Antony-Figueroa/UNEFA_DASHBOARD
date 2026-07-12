@@ -90,10 +90,8 @@ const defaultProps = {
   row: defaultRow,
   isExpanded: false,
   onToggle: vi.fn(),
-  onApprove: vi.fn().mockResolvedValue(true),
   onCertify: vi.fn().mockResolvedValue(true),
   onReverse: vi.fn().mockResolvedValue(true),
-  approving: false,
   certifying: false,
 };
 
@@ -204,19 +202,6 @@ describe('StudentCulminationRow', () => {
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onApprove with correct practiceId', async () => {
-    const onApprove = vi.fn().mockResolvedValue(true);
-    render(
-      <StudentCulminationRow {...defaultProps} onApprove={onApprove} isExpanded={true} />
-    );
-
-    const approveButtons = screen.getAllByRole('button', { name: /aprobar/i });
-    // Click the first approve button (for Hospitalaria)
-    fireEvent.click(approveButtons[0]);
-
-    expect(onApprove).toHaveBeenCalledWith(100);
-  });
-
   it('shows final status badge with correct color for pending', () => {
     render(<StudentCulminationRow {...defaultProps} />);
     const badge = screen.getAllByTestId('badge').find(
@@ -256,17 +241,6 @@ describe('StudentCulminationRow', () => {
     render(<StudentCulminationRow {...defaultProps} />);
     const badges = screen.getAllByTestId('phase-status-badge');
     expect(badges).toHaveLength(defaultProps.row.phases.length);
-  });
-
-  it('shows loading state when approving', () => {
-    render(
-      <StudentCulminationRow {...defaultProps} approving={true} isExpanded={true} />
-    );
-    // Approve buttons should be disabled during loading
-    const approveButtons = screen.getAllByText(/aprobando/i);
-    approveButtons.forEach(btn => {
-      expect(btn.closest('button')).toBeDisabled();
-    });
   });
 
   it('shows Descongelar button for frozen phase when onUnfreeze provided', () => {

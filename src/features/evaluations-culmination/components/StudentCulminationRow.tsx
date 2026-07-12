@@ -15,11 +15,9 @@ interface StudentCulminationRowProps {
   row: StudentCulminationRowData;
   isExpanded: boolean;
   onToggle: () => void;
-  onApprove: (practiceId: number) => Promise<boolean>;
   onCertify: (practiceId: number) => Promise<boolean>;
   onReverse: (practiceId: number, reason: string, resolutionNumber: string) => Promise<boolean>;
   onUnfreeze?: (practiceId: number) => void;
-  approving: boolean;
   certifying: boolean;
   /** When true, shows grace period badge and enables unfreeze for REPROBADO */
   isWithinGracePeriod?: boolean;
@@ -56,10 +54,8 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
   row,
   isExpanded,
   onToggle,
-  onApprove,
   onCertify,
   onUnfreeze,
-  approving,
   certifying,
   isWithinGracePeriod = false,
 }) => {
@@ -67,14 +63,6 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
   const isFirstApproved =
     row.phases.length > 0 &&
     (row.phases[0].status === 'approved' || row.phases[0].status === 'certified');
-
-  const handleApprove = useCallback(
-    (practiceId: number) => (e: React.MouseEvent) => {
-      e.stopPropagation();
-      onApprove(practiceId);
-    },
-    [onApprove]
-  );
 
   const handleCertify = useCallback(
     (e: React.MouseEvent) => {
@@ -231,13 +219,7 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
                           ) : (
                             <div className="flex items-center justify-center gap-2">
                               {phase.status === 'approved' && (
-                                <button
-                                  onClick={handleApprove(phase.practiceId)}
-                                  disabled={approving}
-                                  className="px-3 py-1 text-xs font-medium rounded-md bg-blue-50 hover:bg-blue-100 text-blue-600 disabled:opacity-50 transition-colors border border-blue-200"
-                                >
-                                  {approving ? 'Aprobando...' : 'Aprobar'}
-                                </button>
+                                <span className="text-xs text-green-600 font-medium">Aprobado</span>
                               )}
                               {phase.status === 'failed' && isWithinGracePeriod && onUnfreeze && (
                                 <button

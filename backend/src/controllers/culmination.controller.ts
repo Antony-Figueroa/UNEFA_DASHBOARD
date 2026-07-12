@@ -489,7 +489,7 @@ export const approveCulmination = async (req: Request, res: Response) => {
       return;
     }
 
-    // 3. Validar prerrequisito secuencial (ej: HOSP debe estar culminado antes de culminar COM)
+    // 3. Validar prerrequisito secuencial (ej: COM debe estar culminada antes de culminar HOSP)
     const seqCheck = await checkSequentialPrerequisite(supabase, { practiceId: parseInt(practiceId) });
     if (!seqCheck.valid) {
       res.status(400).json({ message: seqCheck.message });
@@ -645,122 +645,136 @@ export const generateCertificate = async (req: Request, res: Response) => {
       return;
     }
 
-    // ── Sequential practices (PRIORITY > 0) — joint cert logic ──
+    // ── Sequential practices (PRIORITY > 0) — COUNT-based joint cert ──
+    // Scalable: works for N sequential practice types per career.
 
-    // Find sibling practice:
-    // For COM → HOSP: follow PREVIOUS_PRACTICE_ID
-    // For HOSP → COM: find practice that has PREVIOUS_PRACTICE_ID pointing to this one
-    let siblingPracticeId: number | null = null;
+    // 1. Get ALL required sequential types for this career (PRIORITY > 0)
+    const { data: careerTypes } = await supabase
+      .from('t_career_internship_type')
+      .select('INTERNSHIP_TYPE_ID')
+      .eq('CAREER_ID', (practice as any).CAREER_ID);
 
-    if ((practice as any).PREVIOUS_PRACTICE_ID) {
-      // This is COM → HOSP
-      siblingPracticeId = (practice as any).PREVIOUS_PRACTICE_ID;
-    } else {
-      // This is HOSP or other — find COM that points to this
-      const { data: childPractice } = await supabase
-        .from('t_professional_practices')
-        .select('PROFESSIONAL_PRACTICE_ID')
-        .eq('PREVIOUS_PRACTICE_ID', parseInt(practiceId))
-        .eq('STUDENTS_ID', (practice as any).STUDENTS_ID)
-        .eq('STATUS', 1)
-        .limit(1)
-        .maybeSingle();
+    if (!careerTypes || careerTypes.length === 0) {
+      res.status(400).json({ message: 'No se encontraron tipos de práctica para esta carrera' });
+      return;
+    }
 
-      if (childPractice) {
-        siblingPracticeId = childPractice.PROFESSIONAL_PRACTICE_ID;
+    const allTypeIds = careerTypes.map((t: any) => t.INTERNSHIP_TYPE_ID);
+
+    const { data: typePriorities } = await supabase
+      .from('t_internship_type')
+      .select('INTERNSHIP_TYPE_ID, PRIORITY, NAME')
+      .in('INTERNSHIP_TYPE_ID', allTypeIds);
+
+    const sequentialTypes = (typePriorities || [])
+      .filter((t: any) => t.PRIORITY > 0)
+      .sort((a: any, b: any) => a.PRIORITY - b.PRIORITY);
+
+    if (sequentialTypes.length === 0) {
+      res.status(400).json({ message: 'Esta carrera no tiene prácticas secuenciales para certificar' });
+      return;
+    }
+
+    const sequentialTypeIds = sequentialTypes.map((t: any) => t.INTERNSHIP_TYPE_ID);
+
+    // 2. Get ALL practices for this student + career for sequential types
+    const { data: studentPractices } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        INTERNSHIP_TYPE_ID,
+        PRACTICES_STATUS,
+        GRADE,
+        FROZEN_AT,
+        t_practice_culmination ( STATUS, CERTIFICATE_NUMBER ),
+        t_internship_type ( NAME, PRIORITY )
+      `)
+      .eq('STUDENTS_ID', (practice as any).STUDENTS_ID)
+      .eq('CAREER_ID', (practice as any).CAREER_ID)
+      .in('INTERNSHIP_TYPE_ID', sequentialTypeIds)
+      .eq('STATUS', 1);
+
+    // 3. Check completion status: CULMINADO + culmination STATUS=1 (approved)
+    const completedTypes = new Set<number>();
+    const practiceMap = new Map<number, any>();
+
+    for (const p of studentPractices || []) {
+      const culm = (p as any).t_practice_culmination;
+      if (culm && culm.STATUS === 1 && (p as any).PRACTICES_STATUS === PRACTICES_STATUS.CULMINADO) {
+        completedTypes.add((p as any).INTERNSHIP_TYPE_ID);
+        practiceMap.set((p as any).INTERNSHIP_TYPE_ID, p);
       }
     }
 
-    if (!siblingPracticeId) {
+    // 4. Verify ALL required sequential types are CULMINADO
+    const missingTypes = sequentialTypes.filter((t: any) => !completedTypes.has(t.INTERNSHIP_TYPE_ID));
+
+    if (missingTypes.length > 0) {
+      const missingNames = missingTypes.map((t: any) => t.NAME).join(', ');
       res.status(400).json({
-        message: 'No se encontró la práctica complementaria para el certificado conjunto. Verifique que PREVIOUS_PRACTICE_ID esté configurado.'
+        message: `Faltan prácticas por culminar para generar el certificado: ${missingNames}`,
+        missing: missingTypes.map((t: any) => ({ id: t.INTERNSHIP_TYPE_ID, name: t.NAME }))
       });
       return;
     }
 
-    // Read culminations for BOTH practices
-    const sourceCulmPromise = supabase
-      .from('t_practice_culmination')
-      .select('PRACTICE_ID, STATUS')
-      .eq('PRACTICE_ID', practiceId)
-      .maybeSingle();
+    // 5. Verify ALL practices are frozen
+    const notFrozen = sequentialTypes.filter((t: any) => {
+      const p = practiceMap.get(t.INTERNSHIP_TYPE_ID);
+      return !p?.FROZEN_AT;
+    });
 
-    const siblingCulmPromise = supabase
-      .from('t_practice_culmination')
-      .select('PRACTICE_ID, STATUS')
-      .eq('PRACTICE_ID', siblingPracticeId)
-      .maybeSingle();
-
-    const [sourceCulmResult, siblingCulmResult] = await Promise.all([sourceCulmPromise, siblingCulmPromise]);
-
-    const sourceCulm = sourceCulmResult.data;
-    const siblingCulm = siblingCulmResult.data;
-
-    if (!sourceCulm || !siblingCulm) {
+    if (notFrozen.length > 0) {
+      const notFrozenNames = notFrozen.map((t: any) => t.NAME).join(', ');
       res.status(400).json({
-        message: 'Ambas prácticas deben estar culminadas para generar el certificado conjunto.'
-      });
-      return;
-    }
-
-    if (sourceCulm.STATUS !== 1 || siblingCulm.STATUS !== 1) {
-      res.status(409).json({
-        message: sourceCulm.STATUS === 2 || siblingCulm.STATUS === 2
-          ? 'El certificado ya fue generado previamente para una de las prácticas'
-          : 'Ambas prácticas deben estar aprobadas y congeladas para generar el certificado'
-      });
-      return;
-    }
-
-    // Get sibling practice data for freeze check
-    const { data: siblingPractice } = await supabase
-      .from('t_professional_practices')
-      .select('FROZEN_AT, GRADE')
-      .eq('PROFESSIONAL_PRACTICE_ID', siblingPracticeId)
-      .single();
-
-    // Verify BOTH practices are frozen
-    if (!(practice as any).FROZEN_AT || !(siblingPractice as any)?.FROZEN_AT) {
-      const notFrozenId = !(practice as any).FROZEN_AT ? practiceId : siblingPracticeId;
-      res.status(400).json({
-        message: `La práctica ${notFrozenId} no está congelada. Ambas prácticas deben estar congeladas para generar el certificado conjunto.`,
+        message: `Las siguientes prácticas no están congeladas: ${notFrozenNames}`,
         code: 'PRACTICE_NOT_FROZEN'
       });
       return;
     }
 
-    // Get sibling practice name for display
-    const { data: siblingType } = await supabase
-      .from('t_professional_practices')
-      .select('t_internship_type ( NAME )')
-      .eq('PROFESSIONAL_PRACTICE_ID', siblingPracticeId)
-      .single();
+    // 6. Check no existing certificate for any practice
+    const alreadyCertified = sequentialTypes.filter((t: any) => {
+      const p = practiceMap.get(t.INTERNSHIP_TYPE_ID);
+      const culm = (p as any).t_practice_culmination;
+      return culm?.STATUS === 2;
+    });
 
-    // Generate single certificate number for BOTH
-    const year = new Date().getFullYear();
-    const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-    const certificateNumber = `CERT-${year}-${random}`;
+    if (alreadyCertified.length > 0) {
+      const certifiedNames = alreadyCertified.map((t: any) => t.NAME).join(', ');
+      res.status(409).json({
+        message: `Ya existe certificado para: ${certifiedNames}`
+      });
+      return;
+    }
+
+    // 7. Generate single certificate number for ALL practices
+    const certYear = new Date().getFullYear();
+    const certRandom = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    const certificateNumber = `CERT-${certYear}-${certRandom}`;
     const now = new Date().toISOString();
 
-    // Update BOTH culmination records with the same certificate number
-    await Promise.all([
-      supabase
-        .from('t_practice_culmination')
-        .update({ STATUS: 2, CERTIFICATE_NUMBER: certificateNumber, CERTIFIED_AT: now })
-        .eq('PRACTICE_ID', practiceId),
-      supabase
-        .from('t_practice_culmination')
-        .update({ STATUS: 2, CERTIFICATE_NUMBER: certificateNumber, CERTIFIED_AT: now })
-        .eq('PRACTICE_ID', siblingPracticeId)
-    ]);
+    // 8. Update ALL culmination records with the same certificate number
+    await Promise.all(
+      sequentialTypes.map((t: any) => {
+        const p = practiceMap.get(t.INTERNSHIP_TYPE_ID);
+        return supabase
+          .from('t_practice_culmination')
+          .update({ STATUS: 2, CERTIFICATE_NUMBER: certificateNumber, CERTIFIED_AT: now })
+          .eq('PRACTICE_ID', p.PROFESSIONAL_PRACTICE_ID);
+      })
+    );
 
+    // 9. Build response (backward compatible + grades array for future use)
     const studentName = getPersonFullName((practice as any).t_persons);
-    const sourceType = (practice as any).t_internship_type;
-    const siblingTypeName = (siblingType as any)?.t_internship_type?.NAME || '';
+    const allGrades = sequentialTypes.map((t: any) => {
+      const p = practiceMap.get(t.INTERNSHIP_TYPE_ID);
+      return { type: t.NAME, grade: (p as any).GRADE };
+    });
 
     res.json({
       success: true,
-      message: 'Certificado conjunto generado exitosamente para ambas prácticas',
+      message: 'Certificado conjunto generado exitosamente para todas las prácticas',
       certificate: {
         number: certificateNumber,
         studentName,
@@ -768,12 +782,13 @@ export const generateCertificate = async (req: Request, res: Response) => {
         career: (practice as any).t_career?.CAREER_NAME || '',
         institution: (practice as any).t_institution?.INSTITUTION_NAME || '',
         period: (practice as any).t_internships_period?.DESCRIPTION || '',
-        grade: (practice as any).GRADE,
-        siblingGrade: (siblingPractice as any)?.GRADE,
+        grade: allGrades[0]?.grade,
+        siblingGrade: allGrades[1]?.grade,
+        grades: allGrades,
         generatedAt: now,
-        isJoint: true,
-        practiceIds: [parseInt(practiceId), siblingPracticeId],
-        practiceTypes: [sourceType?.NAME || '', siblingTypeName]
+        isJoint: sequentialTypes.length > 1,
+        practiceIds: sequentialTypes.map((t: any) => practiceMap.get(t.INTERNSHIP_TYPE_ID).PROFESSIONAL_PRACTICE_ID),
+        practiceTypes: sequentialTypes.map((t: any) => t.NAME)
       }
     });
 

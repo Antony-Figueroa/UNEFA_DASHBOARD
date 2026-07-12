@@ -1,9 +1,10 @@
 /**
  * @file Utilidad para validación secuencial de prácticas.
- * @description Verifica que las prácticas de mayor prioridad estén culminadas
- * antes de permitir evaluar o culminar prácticas de menor prioridad.
+ * @description Verifica que las prácticas con priority MENOR estén culminadas
+ * antes de permitir inscribir, evaluar o culminar prácticas de mayor priority.
  *
- * Ejemplo: HOSP (PRIORITY=2) debe estar CULMINADO antes de evaluar COM (PRIORITY=1).
+ * Convención: priority 1 = primera práctica, priority 2 = segunda, etc.
+ * Ejemplo: COM (PRIORITY=1) debe estar CULMINADA antes de inscribir HOSP (PRIORITY=2).
  */
 
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
@@ -21,8 +22,11 @@ type SeqCheckParams =
 /**
  * Verifica si una práctica tiene el prerrequisito secuencial cumplido.
  *
- * Para prácticas de tipo ÚNICA (PRIORITY=0) o cuando no hay tipos de mayor prioridad
- * en la misma carrera, siempre retorna { valid: true }.
+ * Para prácticas de tipo ÚNICA (PRIORITY=0) o como PRIMERA práctica (PRIORITY=1),
+ * no hay prerrequisitos secuenciales → retorna { valid: true }.
+ *
+ * Para prácticas con PRIORITY > 1, se verifica que al menos una práctica
+ * con priority MENOR (anterior en la secuencia) esté CULMINADA y APROBADA.
  *
  * @param supabase - Instancia del cliente Supabase
  * @param params - Practice ID (existente) O { studentsId, careerId, internshipTypeId } (pre-inscripción)
@@ -71,8 +75,8 @@ export async function checkSequentialPrerequisite(supabase: any, params: SeqChec
     return { valid: true };
   }
 
-  if (currentType.PRIORITY === 0) {
-    return { valid: true }; // PRIORITY 0 = standalone
+  if (currentType.PRIORITY <= 1) {
+    return { valid: true }; // PRIORITY 0 = standalone, PRIORITY 1 = primera práctica (sin prerrequisitos)
   }
 
   // 2. Obtener todos los tipos asignados a esta carrera
@@ -97,12 +101,12 @@ export async function checkSequentialPrerequisite(supabase: any, params: SeqChec
     return { valid: true };
   }
 
-  // 4. Tipos con PRIORIDAD ESTRICTAMENTE MAYOR
-  const higherPriorityIds = (typePriorities as Array<{ INTERNSHIP_TYPE_ID: number; PRIORITY: number }>)
-    .filter((t: any) => t.PRIORITY > currentType.PRIORITY)
+  // 4. Tipos con PRIORIDAD MENOR (anteriores en la secuencia, excluyendo standalone PRIORITY=0)
+  const prerequisiteIds = (typePriorities as Array<{ INTERNSHIP_TYPE_ID: number; PRIORITY: number }>)
+    .filter((t: any) => t.PRIORITY > 0 && t.PRIORITY < currentType.PRIORITY)
     .map((t: any) => t.INTERNSHIP_TYPE_ID);
 
-  if (higherPriorityIds.length === 0) {
+  if (prerequisiteIds.length === 0) {
     return { valid: true };
   }
 
@@ -114,7 +118,7 @@ export async function checkSequentialPrerequisite(supabase: any, params: SeqChec
     .single();
   const minimumGrade = career?.MINIMUM_GRADE ?? 10;
 
-  // 6. Verificar si el estudiante tiene ALGUNA práctica de mayor prioridad
+  // 6. Verificar si el estudiante tiene ALGUNA práctica anterior (priority menor)
   //    CULMINADA + APROBADA (GRADE >= minimum) y sin reversal activo
   const { data: completedPrerequisite } = await supabase
     .from('t_professional_practices')
@@ -127,7 +131,7 @@ export async function checkSequentialPrerequisite(supabase: any, params: SeqChec
     `)
     .eq('STUDENTS_ID', studentsId)
     .eq('CAREER_ID', careerId)
-    .in('INTERNSHIP_TYPE_ID', higherPriorityIds)
+    .in('INTERNSHIP_TYPE_ID', prerequisiteIds)
     .eq('PRACTICES_STATUS', PRACTICES_STATUS.CULMINADO)
     .eq('STATUS', 1);
 
@@ -141,16 +145,16 @@ export async function checkSequentialPrerequisite(supabase: any, params: SeqChec
   );
 
   if (validCulminations.length === 0) {
-    const higherTypeNames = (typePriorities as any[])
-      .filter((t: any) => higherPriorityIds.includes(t.INTERNSHIP_TYPE_ID))
-      .sort((a: any, b: any) => b.PRIORITY - a.PRIORITY);
+    const prerequisiteTypeNames = (typePriorities as any[])
+      .filter((t: any) => prerequisiteIds.includes(t.INTERNSHIP_TYPE_ID))
+      .sort((a: any, b: any) => a.PRIORITY - b.PRIORITY);
 
-    let typeName = 'práctica de mayor prioridad';
-    if (higherTypeNames.length > 0) {
+    let typeName = 'la práctica anterior';
+    if (prerequisiteTypeNames.length > 0) {
       const { data: typeInfo } = await supabase
         .from('t_internship_type')
         .select('NAME')
-        .eq('INTERNSHIP_TYPE_ID', higherTypeNames[0].INTERNSHIP_TYPE_ID)
+        .eq('INTERNSHIP_TYPE_ID', prerequisiteTypeNames[0].INTERNSHIP_TYPE_ID)
         .single();
       if (typeInfo) typeName = `la práctica ${typeInfo.NAME}`;
     }

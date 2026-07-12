@@ -517,7 +517,7 @@ export const createEvaluation = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Validar prerrequisito secuencial (ej: HOSP debe estar culminado antes de evaluar COM)
+    // Validar prerrequisito secuencial (ej: COM debe estar culminada antes de evaluar HOSP)
     const seqCheck = await checkSequentialPrerequisite(supabase, { practiceId: data.professionalPracticeId });
     if (!seqCheck.valid) {
       return res.status(400).json({ success: false, message: seqCheck.message });

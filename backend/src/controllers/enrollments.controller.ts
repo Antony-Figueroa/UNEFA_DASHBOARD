@@ -356,7 +356,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         throw err;
       }
 
-      // Validar prerrequisito secuencial (ej: HOSP debe estar culminado antes de inscribir COM)
+      // Validar prerrequisito secuencial (ej: COM debe estar culminada antes de inscribir HOSP)
       const seqCheck = await checkSequentialPrerequisite(supabase, { practiceId: preEnrollmentRow.PROFESSIONAL_PRACTICE_ID });
       if (!seqCheck.valid) {
         const err = new Error(seqCheck.message);
@@ -364,7 +364,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         throw err;
       }
 
-      // ── 3.1: Sequential prerequisite — find HOSP practice and set PREVIOUS_PRACTICE_ID ──
+      // ── 3.1: Sequential prerequisite — find prerequisite practice and set PREVIOUS_PRACTICE_ID ──
       // 3.2: Auto-resolve RETIRO_JUSTIFICADO if HOSP has pending withdrawal
       let previousPracticeId: number | null = null;
 
@@ -391,7 +391,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
             .single();
           const minimumGrade = career?.MINIMUM_GRADE ?? 10;
 
-          // Find higher-priority practice types from t_career_internship_type
+          // Find prerequisite practice types (lower priority, earlier in sequence)
           const { data: careerTypes } = await supabase
             .from('t_career_internship_type')
             .select('INTERNSHIP_TYPE_ID')
@@ -406,18 +406,18 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
               .in('INTERNSHIP_TYPE_ID', careerTypeIds);
 
             if (typePriorities) {
-              const higherPriorityIds = (typePriorities as Array<{ INTERNSHIP_TYPE_ID: number; PRIORITY: number }>)
-                .filter((t: any) => t.PRIORITY > internType.PRIORITY)
+              const prerequisiteIds = (typePriorities as Array<{ INTERNSHIP_TYPE_ID: number; PRIORITY: number }>)
+                .filter((t: any) => t.PRIORITY > 0 && t.PRIORITY < internType.PRIORITY)
                 .map((t: any) => t.INTERNSHIP_TYPE_ID);
 
-              if (higherPriorityIds.length > 0) {
-                // ── 3.2: Check for RETIRO_JUSTIFICADO on any higher-priority practice ──
+              if (prerequisiteIds.length > 0) {
+                // ── 3.2: Check for RETIRO_JUSTIFICADO on any prerequisite practice ──
                 const { data: retiroPractices } = await supabase
                   .from(TABLE_NAME)
                   .select('PROFESSIONAL_PRACTICE_ID')
                   .eq('STUDENTS_ID', student.STUDENTS_ID)
                   .eq('CAREER_ID', studentData.CAREER_ID)
-                  .in('INTERNSHIP_TYPE_ID', higherPriorityIds)
+                  .in('INTERNSHIP_TYPE_ID', prerequisiteIds)
                   .eq('PRACTICES_STATUS', PRACTICES_STATUS.RETIRO_JUSTIFICADO)
                   .limit(1);
 
@@ -449,7 +449,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
                   .select('PROFESSIONAL_PRACTICE_ID')
                   .eq('STUDENTS_ID', student.STUDENTS_ID)
                   .eq('CAREER_ID', studentData.CAREER_ID)
-                  .in('INTERNSHIP_TYPE_ID', higherPriorityIds)
+                  .in('INTERNSHIP_TYPE_ID', prerequisiteIds)
                   .eq('PRACTICES_STATUS', PRACTICES_STATUS.CULMINADO)
                   .gte('GRADE', minimumGrade)
                   .eq('STATUS', 1)

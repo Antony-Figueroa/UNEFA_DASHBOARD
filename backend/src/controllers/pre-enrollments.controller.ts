@@ -744,7 +744,7 @@ export const batchCreatePreEnrollment = async (req: Request, res: Response) => {
             continue;
           }
 
-          // f. Check sequential prerequisite (ej: HOSP must be culminated before COM)
+          // f. Check sequential prerequisite (ej: COM must be culminated before HOSP)
           const seqCheck = await checkSequentialPrerequisite(supabase, {
             studentsId: studentRecord.STUDENTS_ID,
             careerId: careerIdNumber ?? 0,

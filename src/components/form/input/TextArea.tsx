@@ -64,9 +64,11 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       const textarea = internalRef.current;
       if (textarea && autoResize) {
         textarea.style.height = "auto";
-        textarea.style.height = `${textarea.scrollHeight}px`;
+        // ponytail: min-height = rows * 24px (line-height) to prevent collapse on empty
+        const minPx = rows * 24;
+        textarea.style.height = `${Math.max(textarea.scrollHeight, minPx)}px`;
       }
-    }, [autoResize]);
+    }, [autoResize, rows]);
 
     // Efecto para ajustar altura inicial y cuando cambia el valor externamente
     useEffect(() => {

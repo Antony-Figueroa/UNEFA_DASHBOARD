@@ -5,7 +5,7 @@
  * Incluye acciones de administrador (retiro, extensión, congelar, auditoría).
  */
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
@@ -99,6 +99,13 @@ export default function EvaluationsAndCulminationPage() {
   const hook = useEvaluationsCulmination();
   const tabsState = useTabs({ defaultTab: 'evaluations' });
   const { config: evalConfig } = useSystemEvaluationConfig();
+
+  // Refrescar datos al volver a la pestaña de Evaluaciones
+  useEffect(() => {
+    if (tabsState.activeTab === 'evaluations') {
+      hook.refresh();
+    }
+  }, [tabsState.activeTab]);
 
   // Opciones para filtros (derivadas del meta del hook)
   const periodOptions = useMemo(() => [

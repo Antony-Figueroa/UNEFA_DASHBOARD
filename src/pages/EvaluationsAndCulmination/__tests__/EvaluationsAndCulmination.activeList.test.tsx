@@ -75,6 +75,7 @@ const baseMockHook = {
   clearFilters: vi.fn(),
   confirmDialog: null,
   closeConfirmDialog: vi.fn(),
+  refresh: vi.fn(),
   handleUnfreeze: vi.fn(),
   unfreezeTarget: null,
   unfreezeReason: '',

@@ -12,17 +12,90 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
--- Supabase extensions required by production schema
-CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+
+CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA "extensions";
 
 
-CREATE SCHEMA IF NOT EXISTS "public";
 
 
-ALTER SCHEMA "public" OWNER TO "pg_database_owner";
+
+
+
+
+ALTER SCHEMA "public" OWNER TO "postgres";
 
 
 COMMENT ON SCHEMA "public" IS 'standard public schema';
+
+
+
+CREATE EXTENSION IF NOT EXISTS "hypopg" WITH SCHEMA "extensions";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "index_advisor" WITH SCHEMA "extensions";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "pgmq";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA "public";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "wrappers" WITH SCHEMA "extensions";
+
+
+
 
 
 
@@ -383,7 +456,7 @@ $$;
 ALTER FUNCTION "public"."get_coincidence_stats"() OWNER TO "postgres";
 
 
-COMMENT ON FUNCTION "public"."get_coincidence_stats"() IS 'Calcula distribución de coincidencia geográfica en inscripciones activas';
+COMMENT ON FUNCTION "public"."get_coincidence_stats"() IS 'Calcula distribuci??n de coincidencia geogr??fica en inscripciones activas';
 
 
 
@@ -678,18 +751,21 @@ CREATE TABLE IF NOT EXISTS "public"."t_academic_config" (
     "UPDATED_AT" timestamp without time zone DEFAULT "now"() NOT NULL,
     "UPDATED_BY" integer,
     "allow_multiple_visits_per_day" boolean DEFAULT true,
-    "max_visits_per_day" integer
+    "max_visits_per_day" integer,
+    "ALLOW_MULTIPLE_VISITS_PER_DAY" boolean DEFAULT true,
+    "MAX_VISITS_PER_DAY" integer,
+    "LOCK_API_LOADED_FIELDS" boolean DEFAULT true NOT NULL
 );
 
 
 ALTER TABLE "public"."t_academic_config" OWNER TO "postgres";
 
 
-COMMENT ON COLUMN "public"."t_academic_config"."allow_multiple_visits_per_day" IS 'Permite múltiples visitas en la misma fecha para una misma práctica';
+COMMENT ON COLUMN "public"."t_academic_config"."allow_multiple_visits_per_day" IS 'Permite m??ltiples visitas en la misma fecha para una misma pr??ctica';
 
 
 
-COMMENT ON COLUMN "public"."t_academic_config"."max_visits_per_day" IS 'Máximo de visitas permitidas por día para una misma práctica (NULL = sin límite)';
+COMMENT ON COLUMN "public"."t_academic_config"."max_visits_per_day" IS 'M??ximo de visitas permitidas por d??a para una misma pr??ctica (NULL = sin l??mite)';
 
 
 
@@ -945,7 +1021,7 @@ ALTER TABLE "public"."t_chat_config" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."t_chat_sessions" (
     "SESSION_ID" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "USER_ID" integer NOT NULL,
-    "TITLE" character varying(100) DEFAULT 'Nueva conversación'::character varying NOT NULL,
+    "TITLE" character varying(100) DEFAULT 'Nueva conversaci??n'::character varying NOT NULL,
     "MESSAGES" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
     "CREATED_AT" timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "UPDATED_AT" timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -980,6 +1056,50 @@ ALTER SEQUENCE "public"."t_columns_COLUMN_ID_seq" OWNER TO "postgres";
 
 
 ALTER SEQUENCE "public"."t_columns_COLUMN_ID_seq" OWNED BY "public"."t_columns"."COLUMN_ID";
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."t_committee_assignment" (
+    "ASSIGNMENT_ID" integer NOT NULL,
+    "PROFESSIONAL_PRACTICE_ID" integer NOT NULL,
+    "COMITE_MEMBER_INDEX" integer NOT NULL,
+    "EVALUATOR_NAME" "text" NOT NULL,
+    "EVALUATOR_CI" "text",
+    "REGISTERED_BY" integer,
+    "CREATED_AT" timestamp with time zone DEFAULT "now"(),
+    "UPDATED_AT" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "t_committee_assignment_COMITE_MEMBER_INDEX_check" CHECK (("COMITE_MEMBER_INDEX" = ANY (ARRAY[1, 2, 3])))
+);
+
+
+ALTER TABLE "public"."t_committee_assignment" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."t_committee_assignment" IS 'Pre-asignaci??n de miembros del comit?? evaluador por pr??ctica';
+
+
+
+COMMENT ON COLUMN "public"."t_committee_assignment"."COMITE_MEMBER_INDEX" IS '1, 2 o 3 ??? identifica al miembro dentro del comit??';
+
+
+
+COMMENT ON COLUMN "public"."t_committee_assignment"."EVALUATOR_NAME" IS 'Nombre completo del miembro del comit??';
+
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."t_committee_assignment_ASSIGNMENT_ID_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."t_committee_assignment_ASSIGNMENT_ID_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."t_committee_assignment_ASSIGNMENT_ID_seq" OWNED BY "public"."t_committee_assignment"."ASSIGNMENT_ID";
 
 
 
@@ -1074,6 +1194,98 @@ ALTER SEQUENCE "public"."t_coordinadores_COORDINADOR_ID_seq" OWNED BY "public"."
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."t_credential_tokens" (
+    "id" integer NOT NULL,
+    "user_id" integer NOT NULL,
+    "token" "text" NOT NULL,
+    "temp_password" "text" NOT NULL,
+    "expires_at" timestamp with time zone NOT NULL,
+    "used_at" timestamp with time zone,
+    "created_by" integer NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."t_credential_tokens" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."t_credential_tokens_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."t_credential_tokens_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."t_credential_tokens_id_seq" OWNED BY "public"."t_credential_tokens"."id";
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."t_culmination_reversals" (
+    "REVERSAL_ID" integer NOT NULL,
+    "PRACTICE_ID" integer NOT NULL,
+    "REASON" "text" NOT NULL,
+    "RESOLUTION_NUMBER" character varying(100) NOT NULL,
+    "REVERSED_BY" integer NOT NULL,
+    "CREATED_AT" timestamp without time zone DEFAULT "now"(),
+    "UPDATED_AT" timestamp without time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."t_culmination_reversals" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."t_culmination_reversals_REVERSAL_ID_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."t_culmination_reversals_REVERSAL_ID_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."t_culmination_reversals_REVERSAL_ID_seq" OWNED BY "public"."t_culmination_reversals"."REVERSAL_ID";
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."t_document_verification" (
+    "id" integer NOT NULL,
+    "hash" "text" NOT NULL,
+    "doc_type" "text" NOT NULL,
+    "title" "text" NOT NULL,
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
+    "created_by" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "expires_at" timestamp with time zone DEFAULT ("now"() + '10 years'::interval)
+);
+
+
+ALTER TABLE "public"."t_document_verification" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."t_document_verification_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."t_document_verification_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."t_document_verification_id_seq" OWNED BY "public"."t_document_verification"."id";
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."t_email_templates" (
     "id" integer NOT NULL,
     "name" character varying(255) NOT NULL,
@@ -1105,6 +1317,36 @@ ALTER SEQUENCE "public"."t_email_templates_id_seq" OWNED BY "public"."t_email_te
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."t_enrollment_field_changes" (
+    "CHANGE_ID" integer NOT NULL,
+    "PROFESSIONAL_PRACTICE_ID" integer NOT NULL,
+    "FIELD_NAME" character varying(100) NOT NULL,
+    "OLD_VALUE" "text",
+    "NEW_VALUE" "text",
+    "CHANGED_BY" integer,
+    "CHANGED_AT" timestamp without time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."t_enrollment_field_changes" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."t_enrollment_field_changes_CHANGE_ID_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."t_enrollment_field_changes_CHANGE_ID_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."t_enrollment_field_changes_CHANGE_ID_seq" OWNED BY "public"."t_enrollment_field_changes"."CHANGE_ID";
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."t_estado" (
     "estado_id" integer NOT NULL,
     "iso_31662" character varying(6) NOT NULL,
@@ -1129,11 +1371,31 @@ CREATE TABLE IF NOT EXISTS "public"."t_evaluation" (
     "COMITE_MEMBER_INDEX" integer,
     "REGISTERED_BY" integer,
     "STATUS" smallint DEFAULT 1,
+    "FROZEN_AT" timestamp with time zone,
+    "UNFROZEN_AT" timestamp with time zone,
+    "UNFREEZE_REASON" "text",
+    "UNFREEZE_AUTHORIZED_BY" integer,
     CONSTRAINT "chk_comite_member_index" CHECK ((((("EVALUATOR_TYPE")::"text" = 'COMITE'::"text") AND (("COMITE_MEMBER_INDEX" >= 1) AND ("COMITE_MEMBER_INDEX" <= 3))) OR ((("EVALUATOR_TYPE")::"text" <> 'COMITE'::"text") AND ("COMITE_MEMBER_INDEX" IS NULL))))
 );
 
 
 ALTER TABLE "public"."t_evaluation" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."t_evaluation"."FROZEN_AT" IS 'Fecha de congelamiento (cierre de actas). NULL = no congelado.';
+
+
+
+COMMENT ON COLUMN "public"."t_evaluation"."UNFROZEN_AT" IS 'Fecha de descongelamiento para correcci??n. NULL = no descongelado.';
+
+
+
+COMMENT ON COLUMN "public"."t_evaluation"."UNFREEZE_REASON" IS 'Motivo de la correcci??n post-cierre.';
+
+
+
+COMMENT ON COLUMN "public"."t_evaluation"."UNFREEZE_AUTHORIZED_BY" IS 'Usuario que autoriz?? la correcci??n.';
+
 
 
 CREATE SEQUENCE IF NOT EXISTS "public"."t_evaluation_EVALUATION_ID_seq"
@@ -1187,7 +1449,7 @@ CREATE TABLE IF NOT EXISTS "public"."t_evaluation_detail" (
     "ITEM_NUMBER" integer NOT NULL,
     "SCORE" numeric(5,2) NOT NULL,
     "STATUS" smallint DEFAULT 1,
-    CONSTRAINT "chk_score_range" CHECK ((("SCORE" >= (1)::numeric) AND ("SCORE" <= (10)::numeric)))
+    CONSTRAINT "chk_score_range" CHECK ((("SCORE" >= (0)::numeric) AND ("SCORE" <= (100)::numeric)))
 );
 
 
@@ -1608,7 +1870,7 @@ CREATE TABLE IF NOT EXISTS "public"."t_notifications" (
     "READ_AT" timestamp without time zone,
     "DATA" "jsonb",
     "CREATED_AT" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "chk_notification_type" CHECK ((("TYPE")::"text" = ANY ((ARRAY['pre_enrollment'::character varying, 'enrollment'::character varying, 'tracking'::character varying, 'tracking_visit'::character varying, 'user_management'::character varying, 'reminder'::character varying, 'system'::character varying, 'approval'::character varying])::"text"[])))
+    CONSTRAINT "chk_notification_type" CHECK ((("TYPE")::"text" = ANY (ARRAY['pre_enrollment'::"text", 'enrollment'::"text", 'tracking'::"text", 'tracking_visit'::"text", 'user_management'::"text", 'reminder'::"text", 'system'::"text", 'approval'::"text", 'success'::"text", 'error'::"text", 'info'::"text", 'warning'::"text"])))
 );
 
 
@@ -1628,6 +1890,34 @@ ALTER SEQUENCE "public"."t_notifications_NOTIFICATION_ID_seq" OWNER TO "postgres
 
 
 ALTER SEQUENCE "public"."t_notifications_NOTIFICATION_ID_seq" OWNED BY "public"."t_notifications"."NOTIFICATION_ID";
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."t_nucleus_career" (
+    "nucleus_career_id" integer NOT NULL,
+    "nucleus_id" integer NOT NULL,
+    "career_id" integer NOT NULL,
+    "status" smallint DEFAULT 1 NOT NULL,
+    "created_at" timestamp without time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."t_nucleus_career" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."t_nucleus_career_nucleus_career_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."t_nucleus_career_nucleus_career_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."t_nucleus_career_nucleus_career_id_seq" OWNED BY "public"."t_nucleus_career"."nucleus_career_id";
 
 
 
@@ -1846,6 +2136,22 @@ ALTER SEQUENCE "public"."t_persons_person_id_seq" OWNED BY "public"."t_persons".
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."t_practice_culmination" (
+    "PRACTICE_ID" integer NOT NULL,
+    "STATUS" smallint DEFAULT 0 NOT NULL,
+    "CERTIFICATE_NUMBER" character varying(50),
+    "CERTIFIED_AT" timestamp without time zone,
+    "APPROVED_AT" timestamp without time zone DEFAULT "now"(),
+    "APPROVED_BY" integer,
+    "CREATED_AT" timestamp without time zone DEFAULT "now"(),
+    "UPDATED_AT" timestamp without time zone DEFAULT "now"(),
+    CONSTRAINT "chk_culmination_status" CHECK (("STATUS" = ANY (ARRAY[0, 1, 2])))
+);
+
+
+ALTER TABLE "public"."t_practice_culmination" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."t_practice_visits" (
     "VISIT_ID" integer NOT NULL,
     "PROFESSIONAL_PRACTICE_ID" integer NOT NULL,
@@ -1944,11 +2250,62 @@ CREATE TABLE IF NOT EXISTS "public"."t_professional_practices" (
     "CAREER_ID" integer NOT NULL,
     "student_person_id" integer,
     "DEPARTMENT" character varying(255) DEFAULT NULL::character varying,
-    CONSTRAINT "chk_practices_grade" CHECK (("GRADE" >= (0)::numeric))
+    "EXTENSION_GRANTED" boolean DEFAULT false,
+    "EXTENSION_REASON" "text",
+    "EXTENSION_GRANTED_BY" integer,
+    "EXTENSION_GRANTED_AT" timestamp with time zone,
+    "WITHDRAWAL_TYPE" character varying(20),
+    "FROZEN_AT" timestamp with time zone,
+    "UNFROZEN_AT" timestamp with time zone,
+    "UNFREEZE_REASON" "text",
+    "UNFREEZE_AUTHORIZED_BY" integer,
+    "PREVIOUS_PRACTICE_ID" integer,
+    CONSTRAINT "chk_practices_grade" CHECK (("GRADE" >= (0)::numeric)),
+    CONSTRAINT "chk_practices_status_range" CHECK ((("PRACTICES_STATUS" >= 0) AND ("PRACTICES_STATUS" <= 5)))
 );
 
 
 ALTER TABLE "public"."t_professional_practices" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."t_professional_practices"."EXTENSION_GRANTED" IS 'Indica si se autoriz?? carga extempor??nea de evaluaciones fuera del per??odo';
+
+
+
+COMMENT ON COLUMN "public"."t_professional_practices"."EXTENSION_REASON" IS 'Motivo de la autorizaci??n de carga extempor??nea';
+
+
+
+COMMENT ON COLUMN "public"."t_professional_practices"."EXTENSION_GRANTED_BY" IS 'Usuario que autoriz?? la extensi??n';
+
+
+
+COMMENT ON COLUMN "public"."t_professional_practices"."EXTENSION_GRANTED_AT" IS 'Fecha de autorizaci??n de la extensi??n';
+
+
+
+COMMENT ON COLUMN "public"."t_professional_practices"."WITHDRAWAL_TYPE" IS 'Tipo de retiro: justified (con justificativo) | unjustified (sin justificativo) | null (no retirado)';
+
+
+
+COMMENT ON COLUMN "public"."t_professional_practices"."FROZEN_AT" IS 'Fecha de congelamiento (cierre de actas a nivel pr??ctica). NULL = no congelado.';
+
+
+
+COMMENT ON COLUMN "public"."t_professional_practices"."UNFROZEN_AT" IS 'Fecha de descongelamiento. NULL = no descongelado.';
+
+
+
+COMMENT ON COLUMN "public"."t_professional_practices"."UNFREEZE_REASON" IS 'Motivo del descongelamiento. Requerido cuando UNFROZEN_AT se setea.';
+
+
+
+COMMENT ON COLUMN "public"."t_professional_practices"."UNFREEZE_AUTHORIZED_BY" IS 'Usuario que autoriz?? el descongelamiento. FK a t_user.';
+
+
+
+COMMENT ON COLUMN "public"."t_professional_practices"."PREVIOUS_PRACTICE_ID" IS 'Auto-referencia a la pr??ctica previa (ej: HOSP???COM). Seteada al inscribirse en COM.';
+
 
 
 CREATE SEQUENCE IF NOT EXISTS "public"."t_professional_practices_PROFESSIONAL_PRACTICE_ID_seq"
@@ -1973,9 +2330,9 @@ CREATE TABLE IF NOT EXISTS "public"."t_professional_practices_tutor" (
     "PROFESSIONAL_PRACTICE_ID" integer NOT NULL,
     "TUTOR_TYPE" character varying(45) NOT NULL,
     "tutor_person_id" integer,
-    "ACTIVE" boolean DEFAULT true NOT NULL,
-    "CREATED_AT" timestamp with time zone DEFAULT now() NOT NULL,
-    "UPDATED_AT" timestamp with time zone
+    "ACTIVE" boolean DEFAULT true,
+    "CREATED_AT" timestamp without time zone DEFAULT "now"(),
+    "UPDATED_AT" timestamp without time zone DEFAULT "now"()
 );
 
 
@@ -2493,6 +2850,42 @@ ALTER SEQUENCE "public"."t_system_institution_system_institution_id_seq" OWNED B
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."t_system_nucleus" (
+    "nucleus_id" integer NOT NULL,
+    "code" character varying(20) NOT NULL,
+    "name" character varying(255) NOT NULL,
+    "region" character varying(255) NOT NULL,
+    "nucleus_type" character varying(20) NOT NULL,
+    "phone" character varying(20),
+    "email" character varying(255),
+    "is_main" boolean DEFAULT false NOT NULL,
+    "status" smallint DEFAULT 1 NOT NULL,
+    "created_at" timestamp without time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp without time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "t_system_nucleus_nucleus_type_check" CHECK ((("nucleus_type")::"text" = ANY (ARRAY[('N??CLEO'::character varying)::"text", ('EXTENSI??N'::character varying)::"text"]))),
+    CONSTRAINT "t_system_nucleus_status_check" CHECK (("status" = ANY (ARRAY[0, 1])))
+);
+
+
+ALTER TABLE "public"."t_system_nucleus" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."t_system_nucleus_nucleus_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."t_system_nucleus_nucleus_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."t_system_nucleus_nucleus_id_seq" OWNED BY "public"."t_system_nucleus"."nucleus_id";
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."t_tables" (
     "TABLE_ID" integer NOT NULL,
     "NAME" character varying(25) NOT NULL,
@@ -2668,6 +3061,36 @@ ALTER SEQUENCE "public"."t_user_key_USER_KEY_ID_seq" OWNED BY "public"."t_user_k
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."t_user_notification_prefs" (
+    "ID" integer NOT NULL,
+    "USER_ID" integer NOT NULL,
+    "TYPE" character varying(30) NOT NULL,
+    "CHANNEL" character varying(10) NOT NULL,
+    "ENABLED" boolean DEFAULT true,
+    "CREATED_AT" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    "UPDATED_AT" timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE "public"."t_user_notification_prefs" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."t_user_notification_prefs_ID_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."t_user_notification_prefs_ID_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."t_user_notification_prefs_ID_seq" OWNED BY "public"."t_user_notification_prefs"."ID";
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."t_user_questions" (
     "USER_QUESTION_ID" integer NOT NULL,
     "USER_ID" integer NOT NULL,
@@ -2839,6 +3262,10 @@ ALTER TABLE ONLY "public"."t_columns" ALTER COLUMN "COLUMN_ID" SET DEFAULT "next
 
 
 
+ALTER TABLE ONLY "public"."t_committee_assignment" ALTER COLUMN "ASSIGNMENT_ID" SET DEFAULT "nextval"('"public"."t_committee_assignment_ASSIGNMENT_ID_seq"'::"regclass");
+
+
+
 ALTER TABLE ONLY "public"."t_config" ALTER COLUMN "CONFIG_ID" SET DEFAULT "nextval"('"public"."t_config_CONFIG_ID_seq"'::"regclass");
 
 
@@ -2847,7 +3274,23 @@ ALTER TABLE ONLY "public"."t_coordinadores" ALTER COLUMN "COORDINADOR_ID" SET DE
 
 
 
+ALTER TABLE ONLY "public"."t_credential_tokens" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."t_credential_tokens_id_seq"'::"regclass");
+
+
+
+ALTER TABLE ONLY "public"."t_culmination_reversals" ALTER COLUMN "REVERSAL_ID" SET DEFAULT "nextval"('"public"."t_culmination_reversals_REVERSAL_ID_seq"'::"regclass");
+
+
+
+ALTER TABLE ONLY "public"."t_document_verification" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."t_document_verification_id_seq"'::"regclass");
+
+
+
 ALTER TABLE ONLY "public"."t_email_templates" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."t_email_templates_id_seq"'::"regclass");
+
+
+
+ALTER TABLE ONLY "public"."t_enrollment_field_changes" ALTER COLUMN "CHANGE_ID" SET DEFAULT "nextval"('"public"."t_enrollment_field_changes_CHANGE_ID_seq"'::"regclass");
 
 
 
@@ -2908,6 +3351,10 @@ ALTER TABLE ONLY "public"."t_municipio" ALTER COLUMN "municipio_id" SET DEFAULT 
 
 
 ALTER TABLE ONLY "public"."t_notifications" ALTER COLUMN "NOTIFICATION_ID" SET DEFAULT "nextval"('"public"."t_notifications_NOTIFICATION_ID_seq"'::"regclass");
+
+
+
+ALTER TABLE ONLY "public"."t_nucleus_career" ALTER COLUMN "nucleus_career_id" SET DEFAULT "nextval"('"public"."t_nucleus_career_nucleus_career_id_seq"'::"regclass");
 
 
 
@@ -3011,6 +3458,10 @@ ALTER TABLE ONLY "public"."t_system_institution" ALTER COLUMN "system_institutio
 
 
 
+ALTER TABLE ONLY "public"."t_system_nucleus" ALTER COLUMN "nucleus_id" SET DEFAULT "nextval"('"public"."t_system_nucleus_nucleus_id_seq"'::"regclass");
+
+
+
 ALTER TABLE ONLY "public"."t_tables" ALTER COLUMN "TABLE_ID" SET DEFAULT "nextval"('"public"."t_tables_TABLE_ID_seq"'::"regclass");
 
 
@@ -3031,6 +3482,10 @@ ALTER TABLE ONLY "public"."t_user_key" ALTER COLUMN "USER_KEY_ID" SET DEFAULT "n
 
 
 
+ALTER TABLE ONLY "public"."t_user_notification_prefs" ALTER COLUMN "ID" SET DEFAULT "nextval"('"public"."t_user_notification_prefs_ID_seq"'::"regclass");
+
+
+
 ALTER TABLE ONLY "public"."t_user_questions" ALTER COLUMN "USER_QUESTION_ID" SET DEFAULT "nextval"('"public"."t_user_questions_USER_QUESTION_ID_seq"'::"regclass");
 
 
@@ -3044,6 +3499,11 @@ ALTER TABLE ONLY "public"."t_value_list" ALTER COLUMN "VALUE_LIST_ID" SET DEFAUL
 
 
 ALTER TABLE ONLY "public"."t_visit" ALTER COLUMN "VISIT_ID" SET DEFAULT "nextval"('"public"."t_visit_VISIT_ID_seq"'::"regclass");
+
+
+
+ALTER TABLE ONLY "public"."t_enrollment_field_changes"
+    ADD CONSTRAINT "pk_enrollment_field_changes" PRIMARY KEY ("CHANGE_ID");
 
 
 
@@ -3122,6 +3582,16 @@ ALTER TABLE ONLY "public"."t_columns"
 
 
 
+ALTER TABLE ONLY "public"."t_committee_assignment"
+    ADD CONSTRAINT "t_committee_assignment_PROFESSIONAL_PRACTICE_ID_COMITE_MEMB_key" UNIQUE ("PROFESSIONAL_PRACTICE_ID", "COMITE_MEMBER_INDEX");
+
+
+
+ALTER TABLE ONLY "public"."t_committee_assignment"
+    ADD CONSTRAINT "t_committee_assignment_pkey" PRIMARY KEY ("ASSIGNMENT_ID");
+
+
+
 ALTER TABLE ONLY "public"."t_config"
     ADD CONSTRAINT "t_config_pkey" PRIMARY KEY ("CONFIG_ID");
 
@@ -3129,6 +3599,31 @@ ALTER TABLE ONLY "public"."t_config"
 
 ALTER TABLE ONLY "public"."t_coordinadores"
     ADD CONSTRAINT "t_coordinadores_pkey" PRIMARY KEY ("COORDINADOR_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_credential_tokens"
+    ADD CONSTRAINT "t_credential_tokens_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."t_credential_tokens"
+    ADD CONSTRAINT "t_credential_tokens_token_key" UNIQUE ("token");
+
+
+
+ALTER TABLE ONLY "public"."t_culmination_reversals"
+    ADD CONSTRAINT "t_culmination_reversals_pkey" PRIMARY KEY ("REVERSAL_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_document_verification"
+    ADD CONSTRAINT "t_document_verification_hash_key" UNIQUE ("hash");
+
+
+
+ALTER TABLE ONLY "public"."t_document_verification"
+    ADD CONSTRAINT "t_document_verification_pkey" PRIMARY KEY ("id");
 
 
 
@@ -3247,6 +3742,16 @@ ALTER TABLE ONLY "public"."t_notifications"
 
 
 
+ALTER TABLE ONLY "public"."t_nucleus_career"
+    ADD CONSTRAINT "t_nucleus_career_nucleus_id_career_id_key" UNIQUE ("nucleus_id", "career_id");
+
+
+
+ALTER TABLE ONLY "public"."t_nucleus_career"
+    ADD CONSTRAINT "t_nucleus_career_pkey" PRIMARY KEY ("nucleus_career_id");
+
+
+
 ALTER TABLE ONLY "public"."t_operation"
     ADD CONSTRAINT "t_operation_pkey" PRIMARY KEY ("OPERATION_ID");
 
@@ -3289,6 +3794,11 @@ ALTER TABLE ONLY "public"."t_persons"
 
 ALTER TABLE ONLY "public"."t_persons"
     ADD CONSTRAINT "t_persons_pkey" PRIMARY KEY ("person_id");
+
+
+
+ALTER TABLE ONLY "public"."t_practice_culmination"
+    ADD CONSTRAINT "t_practice_culmination_pkey" PRIMARY KEY ("PRACTICE_ID");
 
 
 
@@ -3397,6 +3907,16 @@ ALTER TABLE ONLY "public"."t_system_institution"
 
 
 
+ALTER TABLE ONLY "public"."t_system_nucleus"
+    ADD CONSTRAINT "t_system_nucleus_code_key" UNIQUE ("code");
+
+
+
+ALTER TABLE ONLY "public"."t_system_nucleus"
+    ADD CONSTRAINT "t_system_nucleus_pkey" PRIMARY KEY ("nucleus_id");
+
+
+
 ALTER TABLE ONLY "public"."t_tables"
     ADD CONSTRAINT "t_tables_pkey" PRIMARY KEY ("TABLE_ID");
 
@@ -3419,6 +3939,16 @@ ALTER TABLE ONLY "public"."t_user"
 
 ALTER TABLE ONLY "public"."t_user_key"
     ADD CONSTRAINT "t_user_key_pkey" PRIMARY KEY ("USER_KEY_ID", "USER_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_user_notification_prefs"
+    ADD CONSTRAINT "t_user_notification_prefs_USER_ID_TYPE_CHANNEL_key" UNIQUE ("USER_ID", "TYPE", "CHANNEL");
+
+
+
+ALTER TABLE ONLY "public"."t_user_notification_prefs"
+    ADD CONSTRAINT "t_user_notification_prefs_pkey" PRIMARY KEY ("ID");
 
 
 
@@ -3518,7 +4048,31 @@ CREATE INDEX "idx_chat_sessions_user" ON "public"."t_chat_sessions" USING "btree
 
 
 
+CREATE INDEX "idx_credential_tokens_token" ON "public"."t_credential_tokens" USING "btree" ("token");
+
+
+
+CREATE INDEX "idx_credential_tokens_user" ON "public"."t_credential_tokens" USING "btree" ("user_id");
+
+
+
 CREATE INDEX "idx_criteria_type" ON "public"."t_evaluation_criteria" USING "btree" ("EVALUATOR_TYPE");
+
+
+
+CREATE INDEX "idx_culmination_certificate" ON "public"."t_practice_culmination" USING "btree" ("CERTIFICATE_NUMBER");
+
+
+
+CREATE UNIQUE INDEX "idx_culmination_reversals_practice" ON "public"."t_culmination_reversals" USING "btree" ("PRACTICE_ID");
+
+
+
+CREATE INDEX "idx_culmination_status" ON "public"."t_practice_culmination" USING "btree" ("STATUS");
+
+
+
+CREATE INDEX "idx_doc_verification_hash" ON "public"."t_document_verification" USING "btree" ("hash");
 
 
 
@@ -3531,6 +4085,14 @@ CREATE INDEX "idx_documents_student" ON "public"."t_student_documents" USING "bt
 
 
 CREATE INDEX "idx_documents_type" ON "public"."t_student_documents" USING "btree" ("DOCUMENT_TYPE");
+
+
+
+CREATE INDEX "idx_efc_changed_at" ON "public"."t_enrollment_field_changes" USING "btree" ("CHANGED_AT");
+
+
+
+CREATE INDEX "idx_efc_practice_id" ON "public"."t_enrollment_field_changes" USING "btree" ("PROFESSIONAL_PRACTICE_ID");
 
 
 
@@ -3606,6 +4168,14 @@ CREATE INDEX "idx_notifications_user" ON "public"."t_notifications" USING "btree
 
 
 
+CREATE INDEX "idx_nucleus_career_career" ON "public"."t_nucleus_career" USING "btree" ("career_id");
+
+
+
+CREATE INDEX "idx_nucleus_career_nucleus" ON "public"."t_nucleus_career" USING "btree" ("nucleus_id");
+
+
+
 CREATE INDEX "idx_persons_ci" ON "public"."t_persons" USING "btree" ("ci");
 
 
@@ -3639,6 +4209,10 @@ CREATE INDEX "idx_practice_visits_tutor_person_id" ON "public"."t_practice_visit
 
 
 CREATE INDEX "idx_practices_institution_id" ON "public"."t_professional_practices" USING "btree" ("INSTITUTION_ID");
+
+
+
+CREATE INDEX "idx_practices_previous_practice_id" ON "public"."t_professional_practices" USING "btree" ("PREVIOUS_PRACTICE_ID");
 
 
 
@@ -3858,6 +4432,26 @@ ALTER TABLE ONLY "public"."t_coordinadores"
 
 
 
+ALTER TABLE ONLY "public"."t_credential_tokens"
+    ADD CONSTRAINT "fk_credential_tokens_created_by" FOREIGN KEY ("created_by") REFERENCES "public"."t_user"("USER_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_credential_tokens"
+    ADD CONSTRAINT "fk_credential_tokens_user" FOREIGN KEY ("user_id") REFERENCES "public"."t_user"("USER_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_practice_culmination"
+    ADD CONSTRAINT "fk_culmination_approved_by" FOREIGN KEY ("APPROVED_BY") REFERENCES "public"."t_user"("USER_ID") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."t_practice_culmination"
+    ADD CONSTRAINT "fk_culmination_practice" FOREIGN KEY ("PRACTICE_ID") REFERENCES "public"."t_professional_practices"("PROFESSIONAL_PRACTICE_ID") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."t_student_documents"
     ADD CONSTRAINT "fk_document_reviewer" FOREIGN KEY ("REVIEWED_BY") REFERENCES "public"."t_user"("USER_ID") ON DELETE SET NULL;
 
@@ -3865,6 +4459,11 @@ ALTER TABLE ONLY "public"."t_student_documents"
 
 ALTER TABLE ONLY "public"."t_student_documents"
     ADD CONSTRAINT "fk_document_student" FOREIGN KEY ("STUDENT_ID") REFERENCES "public"."t_students"("STUDENTS_ID") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."t_enrollment_field_changes"
+    ADD CONSTRAINT "fk_efc_practice" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES "public"."t_professional_practices"("PROFESSIONAL_PRACTICE_ID");
 
 
 
@@ -4053,6 +4652,11 @@ ALTER TABLE ONLY "public"."t_practice_visits"
 
 
 
+ALTER TABLE ONLY "public"."t_professional_practices"
+    ADD CONSTRAINT "fk_previous_practice" FOREIGN KEY ("PREVIOUS_PRACTICE_ID") REFERENCES "public"."t_professional_practices"("PROFESSIONAL_PRACTICE_ID") ON DELETE RESTRICT;
+
+
+
 ALTER TABLE ONLY "public"."t_prospect_list_items"
     ADD CONSTRAINT "fk_prospect_items_list" FOREIGN KEY ("LIST_ID") REFERENCES "public"."t_prospect_lists"("LIST_ID") ON DELETE CASCADE;
 
@@ -4218,10 +4822,419 @@ ALTER TABLE ONLY "public"."t_visit"
 
 
 
-GRANT USAGE ON SCHEMA "public" TO "postgres";
-GRANT USAGE ON SCHEMA "public" TO "anon";
-GRANT USAGE ON SCHEMA "public" TO "authenticated";
-GRANT USAGE ON SCHEMA "public" TO "service_role";
+ALTER TABLE ONLY "public"."t_committee_assignment"
+    ADD CONSTRAINT "t_committee_assignment_PROFESSIONAL_PRACTICE_ID_fkey" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES "public"."t_professional_practices"("PROFESSIONAL_PRACTICE_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_committee_assignment"
+    ADD CONSTRAINT "t_committee_assignment_REGISTERED_BY_fkey" FOREIGN KEY ("REGISTERED_BY") REFERENCES "public"."t_user"("USER_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_culmination_reversals"
+    ADD CONSTRAINT "t_culmination_reversals_PRACTICE_ID_fkey" FOREIGN KEY ("PRACTICE_ID") REFERENCES "public"."t_professional_practices"("PROFESSIONAL_PRACTICE_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_culmination_reversals"
+    ADD CONSTRAINT "t_culmination_reversals_REVERSED_BY_fkey" FOREIGN KEY ("REVERSED_BY") REFERENCES "public"."t_user"("USER_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_evaluation"
+    ADD CONSTRAINT "t_evaluation_unfreeze_authorized_by_fkey" FOREIGN KEY ("UNFREEZE_AUTHORIZED_BY") REFERENCES "public"."t_user"("USER_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_nucleus_career"
+    ADD CONSTRAINT "t_nucleus_career_career_id_fkey" FOREIGN KEY ("career_id") REFERENCES "public"."t_career"("CAREER_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_nucleus_career"
+    ADD CONSTRAINT "t_nucleus_career_nucleus_id_fkey" FOREIGN KEY ("nucleus_id") REFERENCES "public"."t_system_nucleus"("nucleus_id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."t_professional_practices"
+    ADD CONSTRAINT "t_professional_practices_extension_granted_by_fkey" FOREIGN KEY ("EXTENSION_GRANTED_BY") REFERENCES "public"."t_user"("USER_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_professional_practices"
+    ADD CONSTRAINT "t_professional_practices_unfreeze_authorized_by_fkey" FOREIGN KEY ("UNFREEZE_AUTHORIZED_BY") REFERENCES "public"."t_user"("USER_ID");
+
+
+
+ALTER TABLE ONLY "public"."t_user_notification_prefs"
+    ADD CONSTRAINT "t_user_notification_prefs_USER_ID_fkey" FOREIGN KEY ("USER_ID") REFERENCES "public"."t_user"("USER_ID");
+
+
+
+
+
+ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
+
+
+
+
+
+REVOKE USAGE ON SCHEMA "public" FROM PUBLIC;
+GRANT ALL ON SCHEMA "public" TO "anon";
+GRANT ALL ON SCHEMA "public" TO "authenticated";
+GRANT ALL ON SCHEMA "public" TO "service_role";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4324,6 +5337,30 @@ GRANT ALL ON FUNCTION "public"."trg_set_tutor_person_id"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."update_kb_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_kb_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_kb_updated_at"() TO "service_role";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4441,6 +5478,18 @@ GRANT ALL ON SEQUENCE "public"."t_columns_COLUMN_ID_seq" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."t_committee_assignment" TO "anon";
+GRANT ALL ON TABLE "public"."t_committee_assignment" TO "authenticated";
+GRANT ALL ON TABLE "public"."t_committee_assignment" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."t_committee_assignment_ASSIGNMENT_ID_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."t_committee_assignment_ASSIGNMENT_ID_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."t_committee_assignment_ASSIGNMENT_ID_seq" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."t_config" TO "anon";
 GRANT ALL ON TABLE "public"."t_config" TO "authenticated";
 GRANT ALL ON TABLE "public"."t_config" TO "service_role";
@@ -4465,6 +5514,42 @@ GRANT ALL ON SEQUENCE "public"."t_coordinadores_COORDINADOR_ID_seq" TO "service_
 
 
 
+GRANT ALL ON TABLE "public"."t_credential_tokens" TO "anon";
+GRANT ALL ON TABLE "public"."t_credential_tokens" TO "authenticated";
+GRANT ALL ON TABLE "public"."t_credential_tokens" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."t_credential_tokens_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."t_credential_tokens_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."t_credential_tokens_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."t_culmination_reversals" TO "anon";
+GRANT ALL ON TABLE "public"."t_culmination_reversals" TO "authenticated";
+GRANT ALL ON TABLE "public"."t_culmination_reversals" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."t_culmination_reversals_REVERSAL_ID_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."t_culmination_reversals_REVERSAL_ID_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."t_culmination_reversals_REVERSAL_ID_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."t_document_verification" TO "anon";
+GRANT ALL ON TABLE "public"."t_document_verification" TO "authenticated";
+GRANT ALL ON TABLE "public"."t_document_verification" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."t_document_verification_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."t_document_verification_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."t_document_verification_id_seq" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."t_email_templates" TO "anon";
 GRANT ALL ON TABLE "public"."t_email_templates" TO "authenticated";
 GRANT ALL ON TABLE "public"."t_email_templates" TO "service_role";
@@ -4474,6 +5559,18 @@ GRANT ALL ON TABLE "public"."t_email_templates" TO "service_role";
 GRANT ALL ON SEQUENCE "public"."t_email_templates_id_seq" TO "anon";
 GRANT ALL ON SEQUENCE "public"."t_email_templates_id_seq" TO "authenticated";
 GRANT ALL ON SEQUENCE "public"."t_email_templates_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."t_enrollment_field_changes" TO "anon";
+GRANT ALL ON TABLE "public"."t_enrollment_field_changes" TO "authenticated";
+GRANT ALL ON TABLE "public"."t_enrollment_field_changes" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."t_enrollment_field_changes_CHANGE_ID_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."t_enrollment_field_changes_CHANGE_ID_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."t_enrollment_field_changes_CHANGE_ID_seq" TO "service_role";
 
 
 
@@ -4687,6 +5784,18 @@ GRANT ALL ON SEQUENCE "public"."t_notifications_NOTIFICATION_ID_seq" TO "service
 
 
 
+GRANT ALL ON TABLE "public"."t_nucleus_career" TO "anon";
+GRANT ALL ON TABLE "public"."t_nucleus_career" TO "authenticated";
+GRANT ALL ON TABLE "public"."t_nucleus_career" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."t_nucleus_career_nucleus_career_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."t_nucleus_career_nucleus_career_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."t_nucleus_career_nucleus_career_id_seq" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."t_operation" TO "anon";
 GRANT ALL ON TABLE "public"."t_operation" TO "authenticated";
 GRANT ALL ON TABLE "public"."t_operation" TO "service_role";
@@ -4768,6 +5877,12 @@ GRANT ALL ON TABLE "public"."t_persons" TO "service_role";
 GRANT ALL ON SEQUENCE "public"."t_persons_person_id_seq" TO "anon";
 GRANT ALL ON SEQUENCE "public"."t_persons_person_id_seq" TO "authenticated";
 GRANT ALL ON SEQUENCE "public"."t_persons_person_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."t_practice_culmination" TO "anon";
+GRANT ALL ON TABLE "public"."t_practice_culmination" TO "authenticated";
+GRANT ALL ON TABLE "public"."t_practice_culmination" TO "service_role";
 
 
 
@@ -4993,6 +6108,18 @@ GRANT ALL ON SEQUENCE "public"."t_system_institution_system_institution_id_seq" 
 
 
 
+GRANT ALL ON TABLE "public"."t_system_nucleus" TO "anon";
+GRANT ALL ON TABLE "public"."t_system_nucleus" TO "authenticated";
+GRANT ALL ON TABLE "public"."t_system_nucleus" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."t_system_nucleus_nucleus_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."t_system_nucleus_nucleus_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."t_system_nucleus_nucleus_id_seq" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."t_tables" TO "anon";
 GRANT ALL ON TABLE "public"."t_tables" TO "authenticated";
 GRANT ALL ON TABLE "public"."t_tables" TO "service_role";
@@ -5053,6 +6180,18 @@ GRANT ALL ON SEQUENCE "public"."t_user_key_USER_KEY_ID_seq" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."t_user_notification_prefs" TO "anon";
+GRANT ALL ON TABLE "public"."t_user_notification_prefs" TO "authenticated";
+GRANT ALL ON TABLE "public"."t_user_notification_prefs" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."t_user_notification_prefs_ID_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."t_user_notification_prefs_ID_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."t_user_notification_prefs_ID_seq" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."t_user_questions" TO "anon";
 GRANT ALL ON TABLE "public"."t_user_questions" TO "authenticated";
 GRANT ALL ON TABLE "public"."t_user_questions" TO "service_role";
@@ -5107,13 +6246,16 @@ GRANT ALL ON SEQUENCE "public"."t_visit_VISIT_ID_seq" TO "service_role";
 
 
 
+
+
+
+
+
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
-
-
-
 
 
 
@@ -5124,13 +6266,31 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUN
 
 
 
-
-
-
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

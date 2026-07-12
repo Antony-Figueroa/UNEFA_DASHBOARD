@@ -15,6 +15,7 @@ import { CONFIRM_MESSAGES, MODAL_CONFIG, DialogVariant } from "../../components/
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
+import RetiroDashboard from "../../features/justified-withdrawal/components/RetiroDashboard";
 import { FileText } from "lucide-react";
 
 import EnrollmentTable from "../../features/enrollment/components/EnrollmentTable";
@@ -512,6 +513,11 @@ export default function EnrollmentPage() {
                             />
                         </SkeletonLoader>
                     </ComponentCard>
+
+                    {/* Retiros Justificados Pendientes */}
+                    <div className="mt-6">
+                      <RetiroDashboard />
+                    </div>
 
                     <EnrollmentModal
                         isOpen={isModalOpen}

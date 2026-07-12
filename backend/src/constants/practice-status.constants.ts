@@ -19,6 +19,7 @@ export const PRACTICES_STATUS = {
   INSCRITO: 2,
   CULMINADO: 3,
   REPROBADO: 4,
+  RETIRO_JUSTIFICADO: 5,
 } as const;
 
 export const PERIOD_STATUS = {
@@ -34,6 +35,7 @@ export const PRACTICES_STATUS_CODES: Record<number, string> = {
   [PRACTICES_STATUS.INSCRITO]: 'INSCRITO',
   [PRACTICES_STATUS.CULMINADO]: 'CULMINADO',
   [PRACTICES_STATUS.REPROBADO]: 'REPROBADO',
+  [PRACTICES_STATUS.RETIRO_JUSTIFICADO]: 'RETIRO_JUSTIFICADO',
 };
 
 /** Labels legibles para mensajes al usuario */
@@ -43,6 +45,7 @@ export const PRACTICES_STATUS_LABELS: Record<number, string> = {
   [PRACTICES_STATUS.INSCRITO]: 'Inscrito',
   [PRACTICES_STATUS.CULMINADO]: 'Culminado',
   [PRACTICES_STATUS.REPROBADO]: 'Reprobado',
+  [PRACTICES_STATUS.RETIRO_JUSTIFICADO]: 'Retiro Justificado',
 };
 
 export const PERIOD_STATUS_LABELS: Record<string, string> = {

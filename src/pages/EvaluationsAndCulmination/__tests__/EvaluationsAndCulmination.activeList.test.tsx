@@ -37,12 +37,21 @@ vi.mock('../../../features/evaluations-culmination/components/ActionDropdown', (
   ActionDropdown: ({ actions }: any) => <div data-testid="action-dropdown">{actions?.length} acciones</div>,
 }));
 vi.mock('../../../features/evaluations-culmination/components/EvaluationCell', () => ({ EvaluationCell: () => <td>Eval</td> }));
-vi.mock('../../../features/evaluations-culmination/components/StatsCards', () => ({ StatsCardsGrid: () => <div data-testid="stats-cards" /> }));
+vi.mock('../../../features/evaluations-culmination/components/StatsCards', () => ({ StatsCardsGrid: ({ meta }: any) => <div data-testid="stats-cards">{meta?.total ?? 0} students</div> }));
 vi.mock('../../../features/evaluations-culmination/components/EvaluationFilters', () => ({ EvaluationFilters: () => <div data-testid="eval-filters" /> }));
 vi.mock('../../../features/evaluations-culmination/components/EvaluationActions', () => ({ EvaluationActions: () => <div data-testid="eval-actions" /> }));
 vi.mock('../../../features/evaluations-culmination/components/BulkExtensionModal', () => ({ BulkExtensionModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/AuditHistoryModal', () => ({ AuditHistoryModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/CommitteeModal', () => ({ CommitteeModal: () => null }));
+vi.mock('../../../features/evaluations-culmination/components/CertificationView', () => ({ CertificationView: () => <div data-testid="certification-view" /> }));
+vi.mock('../../../features/evaluations-culmination/components/PhaseStatusBadge', () => ({ PhaseStatusBadge: () => <span data-testid="phase-status-badge" /> }));
+vi.mock('../../../features/evaluations-culmination/components/StudentCulminationRow', () => ({
+  StudentCulminationRow: ({ row }: any) => (
+    <div data-testid="student-culmination-row">
+      <span>{row.studentName}</span>
+    </div>
+  ),
+}));
 vi.mock('../../../features/student-detail/components/StudentDetailModal', () => ({ StudentDetailModal: () => null }));
 vi.mock('../../../features/evaluations/components/EvaluationModal', () => ({ EvaluationModal: () => null }));
 vi.mock('../../../features/evaluations/components/EvaluationDetailModal', () => ({ default: () => null }));
@@ -60,39 +69,12 @@ const baseMockHook = {
   currentPage: 1,
   setCurrentPage: vi.fn(),
   setItemsPerPage: vi.fn(),
-  reverseDialogOpen: false,
-  reverseTarget: null,
-  reverseReason: '',
-  reverseResolutionNumber: '',
-  setReverseReason: vi.fn(),
-  setReverseResolutionNumber: vi.fn(),
-  handleReverseFailed: vi.fn(),
-  handleConfirmReverseFailed: vi.fn(),
   handleViewAudit: vi.fn(),
   handleViewStudentDetail: vi.fn(),
   updateFilter: vi.fn(),
   clearFilters: vi.fn(),
-  pagination: { page: 1, totalPages: 1, total: 0 },
-  setPage: vi.fn(),
-  startDate: '',
-  setStartDate: vi.fn(),
-  endDate: '',
-  setEndDate: vi.fn(),
-  committeeOpen: false,
-  setCommitteeOpen: vi.fn(),
-  handleCommitteeUpdate: vi.fn(),
-  auditOpen: false,
-  auditPracticeId: null,
-  closeAudit: vi.fn(),
-  bulkExtensionOpen: false,
-  setBulkExtensionOpen: vi.fn(),
-  selectedPracticeIds: [],
-  toggleSelectPractice: vi.fn(),
-  selectAll: vi.fn(),
-  deselectAll: vi.fn(),
   confirmDialog: null,
   closeConfirmDialog: vi.fn(),
-  freezeTarget: null,
   handleUnfreeze: vi.fn(),
   unfreezeTarget: null,
   unfreezeReason: '',
@@ -112,8 +94,6 @@ const baseMockHook = {
   handleConfirmWithdraw: vi.fn(),
   setWithdrawDialogOpen: vi.fn(),
   handleReclassifyWithdrawal: vi.fn(),
-  handleMarkFailed: vi.fn(),
-  setReverseDialogOpen: vi.fn(),
   handleOpenEvaluation: vi.fn(),
   handleViewEvaluationDetails: vi.fn(),
   handleApprove: vi.fn(),
@@ -122,6 +102,24 @@ const baseMockHook = {
   handleOpenCommittee: vi.fn(),
   filters: { periodId: '', careerId: '', practiceTypeId: '', result: '', culminationStatus: '' },
   culminationStats: { total: 0, pending: 0, approved: 0, certified: 0 },
+  // Grouped culmination view
+  culminationGroups: [],
+  culminationGroupsLoading: false,
+  culminationGroupsError: null,
+  culminationGroupStats: { total: 0, pending: 0, approved: 0, certified: 0 },
+  culminationGroupsMeta: { total: 0, completed: 0, inProgress: 0 },
+  refetchCulminationGroups: vi.fn(),
+  culminationPeriodId: undefined,
+  culminationSearch: '',
+  culminationCareerId: undefined,
+  culminationPhaseFilter: 'all',
+  culminationExpandedStudentCi: null,
+  toggleCulminationRow: vi.fn(),
+  approveCulminationGrouped: vi.fn(),
+  certifyPracticeGrouped: vi.fn(),
+  reverseCulminationGrouped: vi.fn(),
+  actionApproving: false,
+  actionCertifying: false,
 };
 
 let mockHookInstance: any;
@@ -185,58 +183,37 @@ describe('EvaluationsAndCulmination — activeList tab isolation', () => {
     return mod.default;
   };
 
-  it('excludes REPROBADO from Evaluaciones tab pagination total', async () => {
+  it('shows all practices in Evaluaciones tab (no REPROBADO filtering)', async () => {
     mockActiveTab = 'evaluations';
     mockHookInstance.filteredPractices = SAMPLE_PRACTICES;
     mockHookInstance.itemsPerPage = 1; // force totalPages > 1 so <Pagination> renders
     const Page = await getPage();
     render(<Page />);
 
-    // totalItems should reflect activeList.length (2 non-REPROBADO), not total (3)
+    // activeList now returns all filteredPractices directly (no tab filtering)
     const pagination = screen.getByTestId('pagination');
-    // activeList filters out practiceId=2 (REPROBADO), leaving 2 items
-    expect(pagination).toHaveTextContent('2 items');
+    expect(pagination).toHaveTextContent('3 items');
   });
 
-  it('excludes REPROBADO from Culminacion tab pagination total', async () => {
+  it('shows all practices in Culminacion tab', async () => {
     mockActiveTab = 'culmination';
     mockHookInstance.filteredPractices = SAMPLE_PRACTICES;
-    mockHookInstance.itemsPerPage = 1; // force totalPages > 1 so <Pagination> renders
-    const Page = await getPage();
-    render(<Page />);
-
-    const pagination = screen.getByTestId('pagination');
-    // activeList filters out practiceId=2 (REPROBADO), leaving 2 items
-    expect(pagination).toHaveTextContent('2 items');
-  });
-
-  it('includes only REPROBADO in Reprobados tab', async () => {
-    mockActiveTab = 'reprobados';
-    mockHookInstance.filteredPractices = SAMPLE_PRACTICES;
-    const Page = await getPage();
-    render(<Page />);
-
-    // On Reprobados tab, only the REPROBADO practice should render
-    expect(screen.getByText('Estudiante Reprobado')).toBeInTheDocument();
-    // Non-REPROBADO practices should not appear (considering they may still render via other tabs)
-    // But since we're on Reprobados tab, INSCRITO and CULMINADO should not render
-    expect(screen.queryByText('Estudiante Inscrito')).not.toBeInTheDocument();
-    expect(screen.queryByText('Estudiante Culminado')).not.toBeInTheDocument();
-  });
-
-  it('shows empty state on Reprobados tab when no practices are REPROBADO', async () => {
-    mockActiveTab = 'reprobados';
-    mockHookInstance.filteredPractices = [
-      { ...SAMPLE_PRACTICES[0] }, // Only INSCRITO practice
+    mockHookInstance.culminationGroups = [
+      { studentCi: 'V-1111', studentName: 'Estudiante Inscrito', careerName: 'Ing.', periodId: 1, periodName: '1-2026', phases: [], finalStatus: 'pending', finalStatusLabel: 'Pendiente', canCertify: false, certificateNumber: null, certifiedAt: null, totalPractices: 1, completedPractices: 0 },
+      { studentCi: 'V-2222', studentName: 'Estudiante Reprobado', careerName: 'Lic.', periodId: 1, periodName: '1-2026', phases: [], finalStatus: 'failed', finalStatusLabel: 'Reprobado', canCertify: false, certificateNumber: null, certifiedAt: null, totalPractices: 1, completedPractices: 0 },
+      { studentCi: 'V-3333', studentName: 'Estudiante Culminado', careerName: 'Cont.', periodId: 1, periodName: '1-2026', phases: [], finalStatus: 'approved', finalStatusLabel: 'Aprobado', canCertify: false, certificateNumber: null, certifiedAt: null, totalPractices: 1, completedPractices: 1 },
     ];
+    mockHookInstance.culminationGroupsMeta = { total: 3, completed: 1, inProgress: 2 };
     const Page = await getPage();
     render(<Page />);
 
-    expect(screen.getByText('No hay prácticas reprobadas')).toBeInTheDocument();
+    // Stats cards show all 3 students
+    const stats = screen.getByTestId('stats-cards');
+    expect(stats).toHaveTextContent('3');
   });
 
   it('reflects correct totalItems count across tabs', async () => {
-    // Evaluaciones tab should show all non-REPROBADO (via pagination total)
+    // Evaluaciones tab should show all practices
     mockActiveTab = 'evaluations';
     mockHookInstance.filteredPractices = SAMPLE_PRACTICES;
     mockHookInstance.itemsPerPage = 1; // force totalPages > 1 so <Pagination> renders
@@ -244,22 +221,7 @@ describe('EvaluationsAndCulmination — activeList tab isolation', () => {
     const { unmount } = render(<Page />);
 
     const evalPagination = screen.getByTestId('pagination');
-    expect(evalPagination).toHaveTextContent('2 items');
+    expect(evalPagination).toHaveTextContent('3 items');
     unmount();
-
-    // Reprobados tab — only REPROBADO items render (no <Pagination> in this tab)
-    mockActiveTab = 'reprobados';
-    mockHookInstance.filteredPractices = [
-      SAMPLE_PRACTICES[1],
-      { ...SAMPLE_PRACTICES[1], practiceId: 4, studentName: 'Estudiante Reprobado 2', studentCi: 'V-5555' },
-    ];
-    const { unmount: unmount2 } = render(<Page />);
-    // Verify both REPROBADO names render
-    expect(screen.getByText('Estudiante Reprobado')).toBeInTheDocument();
-    expect(screen.getByText('Estudiante Reprobado 2')).toBeInTheDocument();
-    // Non-REPROBADO should NOT appear
-    expect(screen.queryByText('Estudiante Inscrito')).not.toBeInTheDocument();
-    expect(screen.queryByText('Estudiante Culminado')).not.toBeInTheDocument();
-    unmount2();
   });
 });

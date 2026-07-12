@@ -823,6 +823,10 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
     let canEvaluate = true;
     let periodMessage = '';
 
+    // REQ-EV-005: Grace period fields for the frontend
+    let graceDeadline: string | null = null;
+    let isWithinGracePeriod = false;
+
     try {
       const { data: period } = await supabase
         .from('t_internships_period')
@@ -835,6 +839,11 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
         const startDate = new Date(period.START_DATE);
         const effectiveEndDate = new Date(period.END_DATE);
         effectiveEndDate.setDate(effectiveEndDate.getDate() + evalConfig.evaluationWindowDays);
+
+        // REQ-EV-005: Calculate grace deadline (period END_DATE + evaluationWindowDays)
+        const graceDeadlineMs = new Date(period.END_DATE).getTime() + evalConfig.evaluationWindowDays * 24 * 60 * 60 * 1000;
+        graceDeadline = new Date(graceDeadlineMs).toISOString();
+        isWithinGracePeriod = Date.now() < graceDeadlineMs;
 
         if ((practice as any).PRACTICES_STATUS !== 2) {
           canEvaluate = false;
@@ -930,7 +939,9 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
         finalGrade: finalGrade.toFixed(1),
         completedCount,
         canEvaluate,
-        periodMessage
+        periodMessage,
+        graceDeadline,
+        isWithinGracePeriod,
       }
     });
 
@@ -1017,11 +1028,20 @@ export const getBatchPracticeStatus = async (req: AuthRequest, res: Response) =>
       let canEvaluate = true;
       let periodMessage = '';
 
+      // REQ-EV-005: Grace period fields (default: null/false when period not available)
+      let graceDeadline: string | null = null;
+      let isWithinGracePeriod = false;
+
       if (period) {
         const now = new Date();
         const startDate = new Date(period.START_DATE);
         const effectiveEndDate = new Date(period.END_DATE);
         effectiveEndDate.setDate(effectiveEndDate.getDate() + batchEvalConfig.evaluationWindowDays);
+
+        // REQ-EV-005: Calculate grace deadline (period END_DATE + evaluationWindowDays)
+        const graceDeadlineMs = new Date(period.END_DATE).getTime() + batchEvalConfig.evaluationWindowDays * 24 * 60 * 60 * 1000;
+        graceDeadline = new Date(graceDeadlineMs).toISOString();
+        isWithinGracePeriod = Date.now() < graceDeadlineMs;
 
         if (practice.PRACTICES_STATUS !== 2) {
           canEvaluate = false;
@@ -1130,7 +1150,9 @@ export const getBatchPracticeStatus = async (req: AuthRequest, res: Response) =>
         practicesStatus: practice.PRACTICES_STATUS,
         sequentialBlocked,
         extensionGranted: practice.EXTENSION_GRANTED || false,
-        periodMessage: sequentialBlocked ? sequentialBlockedReason : periodMessage
+        periodMessage: sequentialBlocked ? sequentialBlockedReason : periodMessage,
+        graceDeadline,
+        isWithinGracePeriod,
       };
     }
 
@@ -1599,8 +1621,63 @@ export const bulkGrantExtension = async (req: AuthRequest, res: Response) => {
  * Congela todas las evaluaciones de las prácticas indicadas (cierre de actas).
  */
 /**
+ * Verifica que la práctica esté dentro del período de gracia para correcciones.
+ * Reemplaza a assertInscribed: permite cualquier estado (INSCRITO, REPROBADO)
+ * siempre que no se haya vencido la ventana de corrección ni se haya certificado.
+ *
+ * @param blockIfCertified - Si true, bloquea si la culminación tiene STATUS=2 (certified)
+ */
+const assertGracePeriod = async (
+  supabase: any,
+  practiceId: string | number,
+  options?: { blockIfCertified?: boolean }
+) => {
+  const { data: practice, error: practiceError } = await supabase
+    .from('t_professional_practices')
+    .select('PROFESSIONAL_PRACTICE_ID, PERIOD_ID, PRACTICES_STATUS')
+    .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+    .single();
+  if (practiceError || !practice) throw Object.assign(new Error('Práctica no encontrada'), { status: 404 });
+
+  const { data: period, error: periodError } = await supabase
+    .from('t_internships_period')
+    .select('END_DATE')
+    .eq('PERIOD_ID', practice.PERIOD_ID)
+    .single();
+  if (periodError || !period) throw Object.assign(new Error('Período no encontrado'), { status: 404 });
+
+  const evalConfig = await getEvalConfig();
+  const graceDeadline = new Date(period.END_DATE);
+  graceDeadline.setDate(graceDeadline.getDate() + evalConfig.evaluationWindowDays);
+
+  if (new Date() > graceDeadline) {
+    throw Object.assign(
+      new Error(`Período de corrección vencido el ${graceDeadline.toLocaleDateString('es-VE')}`),
+      { status: 403 }
+    );
+  }
+
+  if (options?.blockIfCertified) {
+    const { data: culmination } = await supabase
+      .from('t_practice_culmination')
+      .select('STATUS')
+      .eq('PRACTICE_ID', practiceId)
+      .maybeSingle();
+    if (culmination?.STATUS === 2) {
+      throw Object.assign(
+        new Error('Certificado generado — no se puede modificar'),
+        { status: 403 }
+      );
+    }
+  }
+
+  return { practice, graceDeadline };
+};
+
+/**
  * Verifica que una práctica esté en estado INSCRITO.
  * Lanza error con status 400 si no lo está.
+ * Usado por freezeEvaluations — la congelación solo aplica a prácticas activas.
  */
 const assertInscribed = async (supabase: any, practiceId: string | number) => {
   const { data: practice, error } = await supabase
@@ -1691,9 +1768,21 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Step 3: Set FROZEN_AT a nivel de práctica (modelo Enfermería)
+    const practiceIdsSet = [...new Set((frozenResult || []).map((r: any) => r.PROFESSIONAL_PRACTICE_ID))];
+    for (const pid of practiceIdsSet) {
+      const { error: practiceFreezeError } = await supabase
+        .from('t_professional_practices')
+        .update({ FROZEN_AT: now })
+        .eq('PROFESSIONAL_PRACTICE_ID', pid);
+
+      if (practiceFreezeError) {
+        console.error(`[Evaluation] Error setting practice-level FROZEN_AT for practice ${pid}:`, practiceFreezeError);
+      }
+    }
+
     // Auditoría
     try {
-      const practiceIdsSet = [...new Set((frozenResult || []).map((r: any) => r.PROFESSIONAL_PRACTICE_ID))];
       for (const pid of practiceIdsSet) {
         await auditCreate(req, 't_evaluation', {
           PROFESSIONAL_PRACTICE_ID: pid,
@@ -1720,6 +1809,315 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
       success: false,
       message: 'Error al congelar evaluaciones'
     });
+  }
+};
+
+/**
+ * POST /api/evaluations/close-actas/preview
+ * Vista previa de cierre de actas — calcula notas proyectadas sin modificar estado.
+ */
+export const closeActasPreview = async (req: AuthRequest, res: Response) => {
+  try {
+    const { practiceIds } = req.body;
+    if (!practiceIds || !Array.isArray(practiceIds) || practiceIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Se requiere un array de practiceIds' });
+    }
+
+    const normalizedIds = practiceIds.map((id: any) => Number(id)).filter((id: any) => !isNaN(id));
+    if (normalizedIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'IDs de práctica inválidos' });
+    }
+
+    const supabase = dbManager.getConnection();
+    const evalConfig = await getEvalConfig();
+
+    // Fetch all practices
+    const { data: practices, error: practicesError } = await supabase
+      .from('t_professional_practices')
+      .select('PROFESSIONAL_PRACTICE_ID, GRADE, PRACTICES_STATUS, FROZEN_AT, CAREER_ID')
+      .in('PROFESSIONAL_PRACTICE_ID', normalizedIds);
+
+    if (practicesError) throw practicesError;
+    if (!practices || practices.length === 0) {
+      return res.status(404).json({ success: false, message: 'Prácticas no encontradas' });
+    }
+
+    // Fetch minimum grade per career
+    const careerIds = [...new Set((practices as any[]).map(p => p.CAREER_ID).filter(Boolean))];
+    const minimumGradeMap = new Map<number, number>();
+    if (careerIds.length > 0) {
+      const { data: careers } = await supabase
+        .from('t_career')
+        .select('CAREER_ID, MINIMUM_GRADE')
+        .in('CAREER_ID', careerIds);
+      (careers || []).forEach((c: any) => {
+        minimumGradeMap.set(c.CAREER_ID, c.MINIMUM_GRADE ?? 10);
+      });
+    }
+
+    const evaluatorTypes = Object.keys(evalConfig.weights);
+
+    const results = await Promise.all(
+      (practices as any[]).map(async (practice) => {
+        const minimumGrade = minimumGradeMap.get(practice.CAREER_ID) ?? 10;
+
+        // Fetch evaluations for this practice
+        const { data: evaluations } = await supabase
+          .from('t_evaluation')
+          .select('EVALUATOR_TYPE, TOTAL_SCORE, COMITE_MEMBER_INDEX, FROZEN_AT')
+          .eq('PROFESSIONAL_PRACTICE_ID', practice.PROFESSIONAL_PRACTICE_ID)
+          .eq('STATUS', 1);
+
+        const committeeMin = evalConfig.committeeMinMembers ?? 3;
+        const typeScores: Record<string, number> = {};
+        const missingTypes: string[] = [];
+
+        evaluatorTypes.forEach(type => {
+          if (type === 'COMITE') {
+            const comiteEvals = (evaluations || []).filter((e: any) => e.EVALUATOR_TYPE === 'COMITE');
+            if (comiteEvals.length >= committeeMin) {
+              typeScores['COMITE'] = parseFloat(
+                (comiteEvals.reduce((sum: number, e: any) => sum + e.TOTAL_SCORE, 0) / comiteEvals.length).toFixed(1)
+              );
+            } else {
+              missingTypes.push(`COMITE (${comiteEvals.length}/${committeeMin})`);
+            }
+          } else {
+            const eval_ = (evaluations || []).find((e: any) => e.EVALUATOR_TYPE === type);
+            if (eval_?.TOTAL_SCORE != null) {
+              typeScores[type] = eval_.TOTAL_SCORE;
+            } else {
+              missingTypes.push(type);
+            }
+          }
+        });
+
+        const hasAllEvaluations = missingTypes.length === 0;
+        let projectedGrade: number | null = null;
+        let projectedStatus: 'culminated' | 'failed' | 'incomplete' = 'incomplete';
+
+        if (hasAllEvaluations) {
+          projectedGrade = await calculateWeightedGrade(typeScores);
+          projectedStatus = projectedGrade >= minimumGrade ? 'culminated' : 'failed';
+        }
+
+        return {
+          practiceId: practice.PROFESSIONAL_PRACTICE_ID,
+          currentGrade: practice.GRADE,
+          projectedGrade,
+          projectedStatus,
+          minimumGrade,
+          isFrozen: practice.FROZEN_AT != null,
+          hasAllEvaluations,
+          missingTypes: hasAllEvaluations ? undefined : missingTypes,
+        };
+      })
+    );
+
+    res.json({ success: true, data: results });
+  } catch (error) {
+    console.error('[Evaluation] Error in closeActasPreview:', error);
+    res.status(500).json({ success: false, message: 'Error al generar vista previa de cierre de actas' });
+  }
+};
+
+/**
+ * POST /api/evaluations/close-actas
+ * Cierra actas: congela evaluaciones, recalcula nota, actualiza estado y crea culminación.
+ */
+export const closeActas = async (req: AuthRequest, res: Response) => {
+  try {
+    const { practiceIds } = req.body;
+    if (!practiceIds || !Array.isArray(practiceIds) || practiceIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Se requiere un array de practiceIds' });
+    }
+
+    const normalizedIds = practiceIds.map((id: any) => Number(id)).filter((id: any) => !isNaN(id));
+    if (normalizedIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'IDs de práctica inválidos' });
+    }
+
+    const supabase = dbManager.getConnection();
+    const evalConfig = await getEvalConfig();
+    const now = new Date().toISOString();
+
+    // Fetch all practices
+    const { data: practices, error: practicesError } = await supabase
+      .from('t_professional_practices')
+      .select('PROFESSIONAL_PRACTICE_ID, GRADE, PRACTICES_STATUS, FROZEN_AT, CAREER_ID')
+      .in('PROFESSIONAL_PRACTICE_ID', normalizedIds);
+
+    if (practicesError) throw practicesError;
+    if (!practices || practices.length === 0) {
+      return res.status(404).json({ success: false, message: 'Prácticas no encontradas' });
+    }
+
+    // Fetch minimum grades
+    const careerIds = [...new Set((practices as any[]).map(p => p.CAREER_ID).filter(Boolean))];
+    const minimumGradeMap = new Map<number, number>();
+    if (careerIds.length > 0) {
+      const { data: careers } = await supabase
+        .from('t_career')
+        .select('CAREER_ID, MINIMUM_GRADE')
+        .in('CAREER_ID', careerIds);
+      (careers || []).forEach((c: any) => {
+        minimumGradeMap.set(c.CAREER_ID, c.MINIMUM_GRADE ?? 10);
+      });
+    }
+
+    const evaluatorTypes = Object.keys(evalConfig.weights);
+    const results: Array<{
+      practiceId: number;
+      previousStatus: number;
+      newStatus: number;
+      grade: number;
+      action: 'culminated' | 'failed' | 'skipped';
+      error?: string;
+    }> = [];
+
+    for (const practice of practices as any[]) {
+      const practiceId = practice.PROFESSIONAL_PRACTICE_ID;
+      const previousStatus = practice.PRACTICES_STATUS;
+      const minimumGrade = minimumGradeMap.get(practice.CAREER_ID) ?? 10;
+
+      try {
+        // 1. Fetch evaluations
+        const { data: evaluations } = await supabase
+          .from('t_evaluation')
+          .select('EVALUATION_ID, EVALUATOR_TYPE, TOTAL_SCORE, COMITE_MEMBER_INDEX, FROZEN_AT')
+          .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+          .eq('STATUS', 1);
+
+        // 2. Check all types present
+        const committeeMin = evalConfig.committeeMinMembers ?? 3;
+        const typeScores: Record<string, number> = {};
+        let allPresent = true;
+
+        for (const type of evaluatorTypes) {
+          if (type === 'COMITE') {
+            const comiteEvals = (evaluations || []).filter((e: any) => e.EVALUATOR_TYPE === 'COMITE');
+            if (comiteEvals.length >= committeeMin) {
+              typeScores['COMITE'] = parseFloat(
+                (comiteEvals.reduce((sum: number, e: any) => sum + e.TOTAL_SCORE, 0) / comiteEvals.length).toFixed(1)
+              );
+            } else {
+              allPresent = false;
+            }
+          } else {
+            const eval_ = (evaluations || []).find((e: any) => e.EVALUATOR_TYPE === type);
+            if (eval_?.TOTAL_SCORE != null) {
+              typeScores[type] = eval_.TOTAL_SCORE;
+            } else {
+              allPresent = false;
+            }
+          }
+        }
+
+        if (!allPresent) {
+          results.push({
+            practiceId,
+            previousStatus,
+            newStatus: previousStatus,
+            grade: practice.GRADE ?? 0,
+            action: 'skipped',
+            error: 'Evaluaciones incompletas — no se puede cerrar actas',
+          });
+          continue;
+        }
+
+        // 3. Calculate weighted grade
+        const grade = await calculateWeightedGrade(typeScores);
+
+        // 4. Freeze evaluations (set FROZEN_AT, clear UNFROZEN_AT)
+        const evalIds = (evaluations || []).map((e: any) => e.EVALUATION_ID);
+        if (evalIds.length > 0) {
+          await supabase
+            .from('t_evaluation')
+            .update({ FROZEN_AT: now, UNFROZEN_AT: null, UNFREEZE_REASON: null, UNFREEZE_AUTHORIZED_BY: null })
+            .in('EVALUATION_ID', evalIds);
+        }
+
+        // 5. Set practice FROZEN_AT
+        await supabase
+          .from('t_professional_practices')
+          .update({ FROZEN_AT: now })
+          .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
+
+        // 6. Update GRADE + PRACTICES_STATUS
+        const isCulminated = grade >= minimumGrade;
+        const newStatus = isCulminated ? PRACTICES_STATUS.CULMINADO : PRACTICES_STATUS.REPROBADO;
+
+        await supabase
+          .from('t_professional_practices')
+          .update({
+            GRADE: grade,
+            PRACTICES_STATUS: newStatus,
+            EVALUATION_STATUS: 'completed',
+          })
+          .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
+
+        // 7. Upsert culmination if grade >= minimum
+        if (isCulminated) {
+          const { data: existingCulm } = await supabase
+            .from('t_practice_culmination')
+            .select('PRACTICE_ID')
+            .eq('PRACTICE_ID', practiceId)
+            .maybeSingle();
+
+          if (existingCulm) {
+            await supabase
+              .from('t_practice_culmination')
+              .update({ STATUS: 1 })
+              .eq('PRACTICE_ID', practiceId);
+          } else {
+            await supabase
+              .from('t_practice_culmination')
+              .insert({ PRACTICE_ID: practiceId, STATUS: 1 });
+          }
+        }
+
+        // 8. Audit log
+        try {
+          await auditCreate(req, 't_evaluation', {
+            PROFESSIONAL_PRACTICE_ID: practiceId,
+            ACTION: 'CLOSE_ACTAS',
+            GRADE: grade,
+            FROZEN_AT: now,
+          }, ['PROFESSIONAL_PRACTICE_ID', 'ACTION', 'GRADE', 'FROZEN_AT'], practiceId);
+        } catch (auditError) {
+          console.error('[Audit] Error auditing close-actas:', auditError);
+        }
+
+        results.push({
+          practiceId,
+          previousStatus,
+          newStatus,
+          grade,
+          action: isCulminated ? 'culminated' : 'failed',
+        });
+      } catch (itemError) {
+        results.push({
+          practiceId,
+          previousStatus,
+          newStatus: previousStatus,
+          grade: practice.GRADE ?? 0,
+          action: 'skipped',
+          error: itemError instanceof Error ? itemError.message : 'Error desconocido',
+        });
+      }
+    }
+
+    const summary = {
+      total: results.length,
+      culminated: results.filter(r => r.action === 'culminated').length,
+      failed: results.filter(r => r.action === 'failed').length,
+      skipped: results.filter(r => r.action === 'skipped').length,
+    };
+
+    res.json({ success: true, data: { results, summary } });
+  } catch (error) {
+    console.error('[Evaluation] Error in closeActas:', error);
+    res.status(500).json({ success: false, message: 'Error al cerrar actas' });
   }
 };
 
@@ -1754,20 +2152,13 @@ export const unfreezeEvaluation = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Assert the practice is INSCRITO before allowing unfreeze
-    await assertInscribed(supabase, (evaluation as any).PROFESSIONAL_PRACTICE_ID);
+    // Assert grace period (allows INSCRITO and REPROBADO within deadline)
+    await assertGracePeriod(supabase, (evaluation as any).PROFESSIONAL_PRACTICE_ID, { blockIfCertified: true });
 
     if (!(evaluation as any).FROZEN_AT) {
       return res.status(400).json({
         success: false,
         message: 'La evaluación no está congelada. No es necesario descongelarla.'
-      });
-    }
-
-    if ((evaluation as any).UNFROZEN_AT) {
-      return res.status(400).json({
-        success: false,
-        message: 'La evaluación ya fue descongelada previamente. No se permite doble descongelamiento.'
       });
     }
 
@@ -1785,13 +2176,24 @@ export const unfreezeEvaluation = async (req: AuthRequest, res: Response) => {
 
     if (updateError) throw updateError;
 
+    // Restore practice to INSCRITO so evaluations can be edited
+    const practiceId = (evaluation as any).PROFESSIONAL_PRACTICE_ID;
+    const { error: practiceUpdateError } = await supabase
+      .from('t_professional_practices')
+      .update({ PRACTICES_STATUS: PRACTICES_STATUS.INSCRITO })
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
+
+    if (practiceUpdateError) {
+      console.error(`[Evaluation] Error restoring practice ${practiceId} to INSCRITO:`, practiceUpdateError);
+    }
+
     // Auditoría
     try {
       await auditUpdate(req, 't_evaluation',
         { FROZEN_AT: (evaluation as any).FROZEN_AT, UNFROZEN_AT: null },
         { UNFROZEN_AT: now, UNFREEZE_REASON: reason.trim(), UNFREEZE_AUTHORIZED_BY: userId },
         ['UNFROZEN_AT', 'UNFREEZE_REASON', 'UNFREEZE_AUTHORIZED_BY'],
-        (evaluation as any).PROFESSIONAL_PRACTICE_ID
+        practiceId
       );
     } catch (auditError) {
       console.error('[Audit] Error auditing unfreeze:', auditError);
@@ -1836,8 +2238,8 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
       });
     }
 
-    // Assert the practice is INSCRITO before proceeding
-    await assertInscribed(supabase, normalizedPracticeId);
+    // Assert grace period (allows INSCRITO and REPROBADO within deadline)
+    await assertGracePeriod(supabase, normalizedPracticeId, { blockIfCertified: true });
 
     // Step 1: Fetch ALL evaluations for this practice (avoid .not() filter issues)
     const { data: allEvals, error: findError } = await supabase
@@ -1872,6 +2274,21 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
       .in('EVALUATION_ID', evalIds);
 
     if (updateError) throw updateError;
+
+    // Step 4: Restore practice to INSCRITO + set unfreeze metadata
+    const { error: practiceUpdateError } = await supabase
+      .from('t_professional_practices')
+      .update({
+        PRACTICES_STATUS: PRACTICES_STATUS.INSCRITO,
+        UNFROZEN_AT: now,
+        UNFREEZE_REASON: reason.trim(),
+        UNFREEZE_AUTHORIZED_BY: userId
+      })
+      .eq('PROFESSIONAL_PRACTICE_ID', normalizedPracticeId);
+
+    if (practiceUpdateError) {
+      console.error(`[Evaluation] Error setting practice-level unfreeze columns for practice ${normalizedPracticeId}:`, practiceUpdateError);
+    }
 
     // Auditoría
     try {
@@ -1972,8 +2389,14 @@ async function updatePracticeGrade(practiceId: number): Promise<void> {
     // Auto-marcar como REPROBADO si no alcanza la nota mínima
     // Solo si la práctica está en INSCRITO o ya REPROBADO (nunca si CULMINADO o RETIRADO)
     const currentStatus = practice?.PRACTICES_STATUS;
+
     if (isFailed && (currentStatus === PRACTICES_STATUS.INSCRITO || currentStatus === PRACTICES_STATUS.REPROBADO)) {
       updateFields.PRACTICES_STATUS = PRACTICES_STATUS.REPROBADO;
+    } else if (!isFailed && currentStatus === PRACTICES_STATUS.REPROBADO) {
+      // REQ-EV-004: Promote REPROBADO → CULMINADO when corrected grade ≥ minimum.
+      // The caller (grace period endpoint) already validated the practice is unfrozen
+      // and within grace period before triggering re-evaluation.
+      updateFields.PRACTICES_STATUS = PRACTICES_STATUS.CULMINADO;
     }
 
     await supabase

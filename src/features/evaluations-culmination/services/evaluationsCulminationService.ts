@@ -9,6 +9,7 @@ import {
   PracticeFilters,
   EvaluationStats,
   CulminationStats,
+  StudentCulminationRowData,
   CertificateData,
   EvaluationFormData
 } from '../types';
@@ -50,6 +51,43 @@ export interface CertificateResponse {
   certificate: CertificateData;
 }
 
+/** Resultado individual de close-actas preview */
+export interface CloseActasPreviewItem {
+  practiceId: number;
+  currentGrade: number | null;
+  projectedGrade: number | null;
+  projectedStatus: 'culminated' | 'failed' | 'incomplete';
+  minimumGrade: number;
+  isFrozen: boolean;
+  hasAllEvaluations: boolean;
+  missingTypes?: string[];
+}
+
+/** Resultado individual de close-actas */
+export interface CloseActasResult {
+  practiceId: number;
+  previousStatus: number;
+  newStatus: number;
+  grade: number;
+  action: 'culminated' | 'failed' | 'skipped';
+  error?: string;
+}
+
+/** Filters for culmination groups endpoint */
+export interface CulminationGroupFilters {
+  periodId?: number;
+  careerId?: number;
+  search?: string;
+}
+
+/** Response from culmination groups endpoint */
+export interface CulminationGroupsResponse {
+  success?: boolean;
+  groups: StudentCulminationRowData[];
+  stats: CulminationStats;
+  meta: { total: number; completed: number; inProgress: number; };
+}
+
 /** Servicio unificado de Evaluaciones y Culminación */
 export const evaluationsCulminationService = {
   /**
@@ -67,6 +105,20 @@ export const evaluationsCulminationService = {
     if (filters?.search) queryParams.append('search', filters.search);
     
     const response = await apiClient.get(`/practices/evaluations?${queryParams.toString()}`);
+    return response.data;
+  },
+
+  /**
+   * Obtiene datos agrupados de culminación para la vista rediseñada
+   */
+  getCulminationGroups: async (filters?: CulminationGroupFilters): Promise<CulminationGroupsResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (filters?.periodId) queryParams.append('periodId', String(filters.periodId));
+    if (filters?.careerId) queryParams.append('careerId', String(filters.careerId));
+    if (filters?.search) queryParams.append('search', filters.search);
+
+    const response = await apiClient.get(`/culmination?${queryParams.toString()}`);
     return response.data;
   },
 
@@ -162,7 +214,32 @@ export const evaluationsCulminationService = {
   reverseFailed: async (practiceId: number, reason: string, resolutionNumber: string): Promise<{ success: boolean; message: string }> => {
     const response = await apiClient.post(`/evaluations/${practiceId}/reverse-failed`, { reason, resolutionNumber });
     return response.data;
-  }
+  },
+
+  /**
+   * Vista previa de cierre de actas — calcula notas proyectadas sin modificar estado
+   */
+  closeActasPreview: async (practiceIds: number[]): Promise<{
+    success: boolean;
+    data: CloseActasPreviewItem[];
+  }> => {
+    const response = await apiClient.post('/evaluations/close-actas/preview', { practiceIds });
+    return response.data;
+  },
+
+  /**
+   * Cierra actas: congela evaluaciones, recalcula nota, actualiza estado y crea culminación
+   */
+  closeActas: async (practiceIds: number[]): Promise<{
+    success: boolean;
+    data: {
+      results: CloseActasResult[];
+      summary: { total: number; culminated: number; failed: number; skipped: number };
+    };
+  }> => {
+    const response = await apiClient.post('/evaluations/close-actas', { practiceIds });
+    return response.data;
+  },
 };
 
 export default evaluationsCulminationService;

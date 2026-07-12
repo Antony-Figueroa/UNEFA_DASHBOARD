@@ -78,9 +78,6 @@ describe('useCulminationUI', () => {
 
     act(() => { result.current.setActiveTab('certification'); });
     expect(result.current.activeTab).toBe('certification');
-
-    act(() => { result.current.setActiveTab('reprobados'); });
-    expect(result.current.activeTab).toBe('reprobados');
   });
 
   it('openModal sets modalType without practiceId when not provided', () => {

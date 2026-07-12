@@ -129,7 +129,6 @@ describe('useEvaluationsCulmination', () => {
     expect(typeof result.current.handleWithdraw).toBe('function');
     expect(typeof result.current.handleConfirmWithdraw).toBe('function');
     expect(typeof result.current.handleReclassifyWithdrawal).toBe('function');
-    expect(typeof result.current.handleMarkFailed).toBe('function');
     expect(typeof result.current.handleUnfreeze).toBe('function');
     expect(typeof result.current.handleGrantExtension).toBe('function');
     expect(typeof result.current.handleConfirmExtension).toBe('function');

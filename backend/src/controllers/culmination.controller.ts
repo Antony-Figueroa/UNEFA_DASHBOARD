@@ -95,7 +95,7 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
         )
       `)
       .eq('STATUS', 1)
-      .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO]);
+      .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO, PRACTICES_STATUS.REPROBADO]);
 
     if (practicesError) {
       console.error('[Culmination] Error fetching practices:', practicesError);

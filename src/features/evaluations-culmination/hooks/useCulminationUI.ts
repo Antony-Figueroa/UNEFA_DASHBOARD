@@ -8,12 +8,12 @@ import { useState, useCallback } from 'react';
 
 export interface UseCulminationUIReturn {
   expandedStudentCi: string | null;
-  activeTab: 'evaluations' | 'culmination' | 'certification' | 'reprobados';
+  activeTab: 'evaluations' | 'culmination' | 'certification';
   isModalOpen: boolean;
   modalType: string | null;
   selectedPracticeId: number | null;
   toggleRow: (studentCi: string) => void;
-  setActiveTab: (tab: 'evaluations' | 'culmination' | 'certification' | 'reprobados') => void;
+  setActiveTab: (tab: 'evaluations' | 'culmination' | 'certification') => void;
   openModal: (type: string, practiceId?: number) => void;
   closeModal: () => void;
 }
@@ -25,7 +25,7 @@ export interface UseCulminationUIReturn {
  */
 export const useCulminationUI = (): UseCulminationUIReturn => {
   const [expandedStudentCi, setExpandedStudentCi] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'evaluations' | 'culmination' | 'certification' | 'reprobados'>('evaluations');
+  const [activeTab, setActiveTab] = useState<'evaluations' | 'culmination' | 'certification'>('evaluations');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<string | null>(null);
   const [selectedPracticeId, setSelectedPracticeId] = useState<number | null>(null);

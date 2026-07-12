@@ -18,6 +18,7 @@ interface StudentCulminationRowProps {
   onApprove: (practiceId: number) => Promise<boolean>;
   onCertify: (practiceId: number) => Promise<boolean>;
   onReverse: (practiceId: number) => Promise<boolean>;
+  onUnfreeze?: (practiceId: number) => void;
   approving: boolean;
   certifying: boolean;
 }
@@ -55,6 +56,7 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
   onToggle,
   onApprove,
   onCertify,
+  onUnfreeze,
   approving,
   certifying,
 }) => {
@@ -232,6 +234,14 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
                               )}
                               {phase.status === 'certified' && (
                                 <span className="text-xs text-green-600">Certificado</span>
+                              )}
+                              {phase.isFrozen && onUnfreeze && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onUnfreeze(phase.practiceId); }}
+                                  className="px-3 py-1 text-xs font-medium rounded-md bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors border border-amber-200"
+                                >
+                                  Descongelar
+                                </button>
                               )}
                             </div>
                           )}

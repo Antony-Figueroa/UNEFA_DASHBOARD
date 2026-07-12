@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import React from 'react';
 import { CertificationView } from '../CertificationView';
 import type { StudentCulminationRowData } from '../../types';
@@ -176,7 +176,7 @@ describe('CertificationView', () => {
     render(<CertificationView groups={[]} loading={false} />);
 
     expect(screen.getByTestId('empty-state')).toBeInTheDocument();
-    expect(screen.getByText('No hay estudiantes certificados aún')).toBeInTheDocument();
+    expect(screen.getByText('No hay registros de certificación ni cierres de acta aún')).toBeInTheDocument();
   });
 
   it('shows empty state when all rows have null certificateNumber', () => {
@@ -241,5 +241,45 @@ describe('CertificationView', () => {
   it('renders student name in the table', () => {
     render(<CertificationView groups={[certifiedRow1]} loading={false} />);
     expect(screen.getByText('Juan Pérez')).toBeInTheDocument();
+  });
+
+  it('shows reprobados (finalStatus=failed) with Cierre badge and no certificate number', () => {
+    const reprobadoRow: StudentCulminationRowData = {
+      ...nonCertifiedRow,
+      studentName: 'Estudiante Reprobado',
+      studentCi: 'V-9999',
+      finalStatus: 'failed',
+      finalStatusLabel: 'Reprobado',
+      certificateNumber: null,
+    };
+    render(<CertificationView groups={[reprobadoRow]} loading={false} />);
+
+    expect(screen.getByText('Estudiante Reprobado')).toBeInTheDocument();
+    expect(screen.getByText('Cierre')).toBeInTheDocument();
+    // Multiple dashes exist per row (institution, hours, cert), so verify absence of actual cert number
+    expect(screen.queryByText('CERT-001')).not.toBeInTheDocument();
+    expect(screen.queryByText('CERT-002')).not.toBeInTheDocument();
+  });
+
+  it('shows certified and reprobados together, certified first', () => {
+    const reprobadoRow: StudentCulminationRowData = {
+      ...nonCertifiedRow,
+      studentName: 'Estudiante Reprobado',
+      studentCi: 'V-9999',
+      finalStatus: 'failed',
+      finalStatusLabel: 'Reprobado',
+      certificateNumber: null,
+    };
+    render(<CertificationView groups={[reprobadoRow, certifiedRow1]} loading={false} />);
+
+    expect(screen.getByText('Juan Pérez')).toBeInTheDocument();
+    expect(screen.getByText('Estudiante Reprobado')).toBeInTheDocument();
+    expect(screen.getByText('Certificado')).toBeInTheDocument();
+    expect(screen.getByText('Cierre')).toBeInTheDocument();
+  });
+
+  it('shows updated empty state text', () => {
+    render(<CertificationView groups={[]} loading={false} />);
+    expect(screen.getByText('No hay registros de certificación ni cierres de acta aún')).toBeInTheDocument();
   });
 });

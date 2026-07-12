@@ -268,4 +268,109 @@ describe('StudentCulminationRow', () => {
       expect(btn.closest('button')).toBeDisabled();
     });
   });
+
+  it('shows Descongelar button for frozen phase when onUnfreeze provided', () => {
+    const frozenRow = createBaseRow({
+      phases: [
+        {
+          practiceId: 100,
+          practiceTypeId: 1,
+          practiceTypeName: 'Hospitalaria',
+          priority: 1,
+          status: 'approved',
+          statusLabel: 'Aprobada',
+          grade: 16,
+          isFrozen: true,
+          evaluationStatus: 'completed',
+          institutionName: 'Hospital Central',
+          hoursCompleted: 360,
+        },
+      ],
+    });
+    const onUnfreeze = vi.fn();
+    render(
+      <StudentCulminationRow {...defaultProps} row={frozenRow} isExpanded={true} onUnfreeze={onUnfreeze} />
+    );
+
+    const unfreezeBtn = screen.getByText('Descongelar');
+    expect(unfreezeBtn).toBeInTheDocument();
+    expect(unfreezeBtn.closest('button')).not.toBeDisabled();
+  });
+
+  it('hides Descongelar button when onUnfreeze not provided', () => {
+    const frozenRow = createBaseRow({
+      phases: [
+        {
+          practiceId: 100,
+          practiceTypeId: 1,
+          practiceTypeName: 'Hospitalaria',
+          priority: 1,
+          status: 'approved',
+          statusLabel: 'Aprobada',
+          grade: 16,
+          isFrozen: true,
+          evaluationStatus: 'completed',
+          institutionName: 'Hospital Central',
+          hoursCompleted: 360,
+        },
+      ],
+    });
+    render(
+      <StudentCulminationRow {...defaultProps} row={frozenRow} isExpanded={true} />
+    );
+
+    expect(screen.queryByText('Descongelar')).not.toBeInTheDocument();
+  });
+
+  it('calls onUnfreeze with practiceId when Descongelar clicked', () => {
+    const frozenRow = createBaseRow({
+      phases: [
+        {
+          practiceId: 100,
+          practiceTypeId: 1,
+          practiceTypeName: 'Hospitalaria',
+          priority: 1,
+          status: 'approved',
+          statusLabel: 'Aprobada',
+          grade: 16,
+          isFrozen: true,
+          evaluationStatus: 'completed',
+          institutionName: 'Hospital Central',
+          hoursCompleted: 360,
+        },
+      ],
+    });
+    const onUnfreeze = vi.fn();
+    render(
+      <StudentCulminationRow {...defaultProps} row={frozenRow} isExpanded={true} onUnfreeze={onUnfreeze} />
+    );
+
+    fireEvent.click(screen.getByText('Descongelar'));
+    expect(onUnfreeze).toHaveBeenCalledWith(100);
+  });
+
+  it('hides Descongelar button when phase is not frozen', () => {
+    const unfrozenRow = createBaseRow({
+      phases: [
+        {
+          practiceId: 100,
+          practiceTypeId: 1,
+          practiceTypeName: 'Hospitalaria',
+          priority: 1,
+          status: 'approved',
+          statusLabel: 'Aprobada',
+          grade: 16,
+          isFrozen: false,
+          evaluationStatus: 'completed',
+          institutionName: 'Hospital Central',
+          hoursCompleted: 360,
+        },
+      ],
+    });
+    render(
+      <StudentCulminationRow {...defaultProps} row={unfrozenRow} isExpanded={true} onUnfreeze={vi.fn()} />
+    );
+
+    expect(screen.queryByText('Descongelar')).not.toBeInTheDocument();
+  });
 });

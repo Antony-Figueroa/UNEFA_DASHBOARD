@@ -50,19 +50,24 @@ export const CertificationView: React.FC<CertificationViewProps> = ({
     );
   }
 
-  const certified = groups.filter((g) => g.certificateNumber != null);
+  const displayGroups = groups.filter((g) => g.certificateNumber != null || g.finalStatus === 'failed');
 
-  if (certified.length === 0) {
+  if (displayGroups.length === 0) {
     return (
       <EmptyState
-        title="No hay estudiantes certificados aún"
-        description="Los estudiantes certificados aparecerán aquí una vez que se haya generado su certificado."
+        title="No hay registros de certificación ni cierres de acta aún"
+        description="Los registros certificados y cierres de acta aparecerán aquí."
       />
     );
   }
 
-  // Sort by certification date descending (newest first)
-  const sorted = [...certified].sort((a, b) => {
+  // Sort: certified first, then reprobados; within each group by date descending
+  const sorted = [...displayGroups].sort((a, b) => {
+    // Certified (certificateNumber != null) come first
+    const aHasCert = a.certificateNumber != null ? 0 : 1;
+    const bHasCert = b.certificateNumber != null ? 0 : 1;
+    if (aHasCert !== bHasCert) return aHasCert - bHasCert;
+    // Within same group, sort by date descending
     const dateA = a.certifiedAt ? new Date(a.certifiedAt).getTime() : 0;
     const dateB = b.certifiedAt ? new Date(b.certifiedAt).getTime() : 0;
     return dateB - dateA;
@@ -82,6 +87,9 @@ export const CertificationView: React.FC<CertificationViewProps> = ({
               </th>
               <th className="text-left px-4 py-3 font-medium text-text-tertiary text-xs uppercase tracking-wider">
                 Cédula
+              </th>
+              <th className="text-left px-4 py-3 font-medium text-text-tertiary text-xs uppercase tracking-wider">
+                Tipo
               </th>
               {/* Phase grade columns */}
               {sorted[0]?.phases.map((phase) => (
@@ -126,6 +134,17 @@ export const CertificationView: React.FC<CertificationViewProps> = ({
                 <td className="px-4 py-3 text-text-secondary tabular-nums">
                   {student.studentCi}
                 </td>
+                <td className="px-4 py-3">
+                  {student.certificateNumber != null ? (
+                    <span className="inline-flex items-center rounded-full font-medium text-xs px-2.5 py-1 bg-green-100 text-green-700">
+                      Certificado
+                    </span>
+                  ) : student.finalStatus === 'failed' ? (
+                    <span className="inline-flex items-center rounded-full font-medium text-xs px-2.5 py-1 bg-red-100 text-red-700">
+                      Cierre
+                    </span>
+                  ) : null}
+                </td>
                 {/* Phase grades */}
                 {student.phases.map((phase) => (
                   <td
@@ -146,7 +165,7 @@ export const CertificationView: React.FC<CertificationViewProps> = ({
                 ))}
                 <td className="px-4 py-3">
                   <span className="text-sm font-mono text-brand-600 dark:text-brand-400">
-                    {student.certificateNumber}
+                    {student.certificateNumber || '—'}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-text-secondary">

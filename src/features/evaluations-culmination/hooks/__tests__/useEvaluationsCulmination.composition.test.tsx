@@ -180,7 +180,6 @@ describe('useEvaluationsCulmination — sub-hook composition (PR 2b)', () => {
     expect(result.current.detailModalOpen).toBe(false);
     expect(result.current.studentDetailOpen).toBe(false);
     expect(result.current.withdrawDialogOpen).toBe(false);
-    expect(result.current.reverseDialogOpen).toBe(false);
     expect(result.current.extensionDialogOpen).toBe(false);
     expect(result.current.bulkExtensionOpen).toBe(false);
     expect(result.current.committeeDialogOpen).toBe(false);

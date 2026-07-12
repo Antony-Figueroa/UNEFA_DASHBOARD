@@ -48,7 +48,6 @@ const EVAL_TABS = [
   { id: 'evaluations', label: 'Evaluaciones' },
   { id: 'culmination', label: 'Culminación' },
   { id: 'certification', label: 'Certificación' },
-  { id: 'reprobados', label: 'Reprobados' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -123,13 +122,8 @@ export default function EvaluationsAndCulminationPage() {
     })),
   ], [hook.meta.practiceTypes]);
 
-  // Aislamiento de tabs: filtrar REPROBADO según pestaña activa
-  const activeList = useMemo(() => {
-    const base = hook.filteredPractices;
-    if (tabsState.activeTab === 'reprobados')
-      return base.filter(p => p.practicesStatusCode === 'REPROBADO');
-    return base.filter(p => p.practicesStatusCode !== 'REPROBADO');
-  }, [hook.filteredPractices, tabsState.activeTab]);
+  // Lista activa según pestaña seleccionada
+  const activeList = useMemo(() => hook.filteredPractices, [hook.filteredPractices]);
 
   // Paginación computada (sobre activeList para paginación correcta por tab)
   const totalPages = Math.ceil(activeList.length / hook.itemsPerPage);
@@ -243,11 +237,6 @@ export default function EvaluationsAndCulminationPage() {
                         : []),
                       // Ver Auditoría — siempre visible
                       { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
-                      { separator: true, label: '', onClick: () => {} },
-                      // Marcar Reprobado — aislado tras separador para evitar error de dedo
-                      ...(practice.practicesStatusCode !== 'REPROBADO' && practice.practicesStatusCode !== 'RETIRADO' && practice.practicesStatusCode !== 'CULMINADO'
-                        ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
-                        : []),
                       // Descongelar — solo si está congelado
                       ...(practice.isFrozen
                         ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
@@ -309,10 +298,6 @@ export default function EvaluationsAndCulminationPage() {
                     ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
                     : []),
                   { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
-                  { separator: true, label: '', onClick: () => {} },
-                  ...(practice.practicesStatusCode !== 'REPROBADO' && practice.practicesStatusCode !== 'RETIRADO' && practice.practicesStatusCode !== 'CULMINADO'
-                    ? [{ label: 'Marcar Reprobado', onClick: () => hook.handleMarkFailed(practice.practiceId, practice.studentName), className: 'text-error-600 dark:text-error-400' }]
-                    : []),
                   ...(practice.isFrozen
                     ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
                     : []),
@@ -389,71 +374,6 @@ export default function EvaluationsAndCulminationPage() {
     />
   );
 
-  // ─── Render: Reprobados tab ────────────────────────────
-  const renderReprobadosTab = () => {
-    if (activeList.length === 0) {
-      return (
-        <EmptyState
-          title="No hay prácticas reprobadas"
-          description="No se encontraron prácticas con resultado Reprobado."
-        />
-      );
-    }
-
-    return (
-      <div className="hidden md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableCell isHeader>Estudiante</TableCell>
-              <TableCell isHeader>Carrera</TableCell>
-              <TableCell isHeader>Tipo</TableCell>
-              <TableCell isHeader>Origen / Estado</TableCell>
-              <TableCell isHeader className="text-center">Acciones</TableCell>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {activeList.map((practice) => (
-              <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
-                <TableCell>
-                  <div className="font-medium text-text-primary dark:text-text-emphasis">
-                    {practice.studentName}
-                  </div>
-                  <div className="text-xs text-text-tertiary">{practice.studentCi}</div>
-                </TableCell>
-                <TableCell className="text-sm text-text-secondary">{practice.careerName}</TableCell>
-                <TableCell className="text-sm text-text-secondary">{practice.practiceTypeName}</TableCell>
-                <TableCell className="text-sm text-text-secondary">
-                  {practice.finalGrade != null ? `Nota ${practice.finalGrade}` : 'Manual'}
-                  <span className="ml-2 text-xs text-text-tertiary">
-                    ({practice.practicesStatus})
-                  </span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    {!hook.isReadOnly && practice.practicesStatus === 'REPROBADO' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-error-600 dark:text-error-400"
-                        onClick={() => hook.handleReverseFailed(practice.practiceId, practice.studentName)}
-                      >
-                        Revertir
-                      </Button>
-                    )}
-                    <ActionDropdown actions={[
-                      { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
-                    ]} />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
-  };
-
   // ─── Tab content switch ─────────────────────────────────
   const renderTabContent = () => {
     if (hook.loading) {
@@ -473,7 +393,6 @@ export default function EvaluationsAndCulminationPage() {
       case 'evaluations': return renderEvaluationsTab();
       case 'culmination': return renderCulminationTab();
       case 'certification': return renderCertificationTab();
-      case 'reprobados': return renderReprobadosTab();
       default: return null;
     }
   };
@@ -596,39 +515,6 @@ export default function EvaluationsAndCulminationPage() {
               value={hook.overrideTarget?.reason || ''}
               onChange={(e) => hook.setOverrideReason(e.target.value)}
               placeholder="Describa el motivo del déficit de horas"
-            />
-          </div>
-        </div>
-      </UnifiedDialog>
-
-      {/* Diálogo de reversión de reprobado */}
-      <UnifiedDialog
-        isOpen={hook.reverseDialogOpen}
-        onClose={() => hook.setReverseDialogOpen(false)}
-        title="Revertir Reprobado"
-        message={`¿Está seguro de revertir la práctica reprobada de ${hook.reverseTarget?.studentName || ''}? El estudiante volverá a estado Inscrito.`}
-        confirmLabel="Revertir"
-        variant="error"
-      >
-        <div className="space-y-4 mt-2">
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Motivo (mín. 10 caracteres)</label>
-            <textarea
-              className="w-full rounded-lg border border-border-default dark:border-border-dark bg-bg-subtle dark:bg-bg-dark p-2 text-sm text-text-primary"
-              rows={3}
-              value={hook.reverseReason}
-              onChange={(e) => hook.setReverseReason(e.target.value)}
-              placeholder="Describa el motivo de la reversión"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Número de Resolución</label>
-            <input
-              type="text"
-              className="w-full rounded-lg border border-border-default dark:border-border-dark bg-bg-subtle dark:bg-bg-dark p-2 text-sm text-text-primary"
-              value={hook.reverseResolutionNumber}
-              onChange={(e) => hook.setReverseResolutionNumber(e.target.value)}
-              placeholder="Ej. RES-2026-001"
             />
           </div>
         </div>

@@ -12,6 +12,8 @@ import apiClient from "../../../api/apiClient";
 import { useEvaluations } from "../../../features/evaluations/hooks/useEvaluations";
 import { useSystemEvaluationConfig } from "../../../features/evaluations/hooks/useSystemEvaluationConfig";
 import { EvaluatorType, EVALUATOR_TYPE_LABELS } from "../../../features/evaluations/types";
+import { useAuth } from "../../../context/auth";
+import { useAuth } from "../../../context/auth";
 
 interface StudentInfo {
   studentName: string;
@@ -34,6 +36,7 @@ interface ExistingEvaluation {
 
 export default function TutorEvaluation() {
   const { addToast } = useToast();
+  const { user } = useAuth();
   const routeParams = useRouteParams();
   const { enrollmentId: paramsEnrollmentId } = useParams<{ enrollmentId: string }>();
   const enrollmentId = paramsEnrollmentId ?? routeParams.enrollmentId;
@@ -43,12 +46,15 @@ export default function TutorEvaluation() {
   const scoreRange = { min: config.score.min, max: config.score.max };
   const midpoint = scoreRange.min + Math.floor((scoreRange.max - scoreRange.min) / 2);
 
+  // Nombre del tutor desde autenticación (solo lectura)
+  const tutorName = user?.name || user?.fullName || "";
+
   const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   const [existingEvaluation, setExistingEvaluation] = useState<ExistingEvaluation | null>(null);
   const [itemScores, setItemScores] = useState<Record<number, number>>({});
-  const [evaluatorName, setEvaluatorName] = useState("");
+  const [evaluatorName, setEvaluatorName] = useState(tutorName);
   const [observations, setObservations] = useState("");
 
   useEffect(() => {
@@ -133,8 +139,9 @@ export default function TutorEvaluation() {
 
   const handleSubmit = async () => {
     if (!enrollmentId) return;
-    if (!evaluatorName.trim()) {
-      addToast({ variant: "error", title: "Dato requerido", message: "El nombre del evaluador es requerido" });
+    // evaluatorName ya no se valida: se usa tutorName auto-completado
+    if (!tutorName.trim()) {
+      addToast({ variant: "error", title: "Dato requerido", message: "No se pudo obtener el nombre del tutor" });
       return;
     }
 
@@ -149,7 +156,7 @@ export default function TutorEvaluation() {
 
       if (existingEvaluation) {
         await updateEvaluation(existingEvaluation.evaluationId, {
-          evaluatorName,
+          evaluatorName: tutorName,
           observations,
           items
         });
@@ -158,7 +165,7 @@ export default function TutorEvaluation() {
         await createEvaluation({
           professionalPracticeId: parseInt(enrollmentId),
           evaluatorType: "ACADEMICO" as EvaluatorType,
-          evaluatorName,
+          evaluatorName: tutorName,
           observations,
           items
         });
@@ -244,13 +251,10 @@ export default function TutorEvaluation() {
             <label className="block text-sm font-medium text-text-primary dark:text-white mb-1">
               Nombre del Evaluador *
             </label>
-            <input
-              type="text"
-              value={evaluatorName}
-              onChange={(e) => setEvaluatorName(e.target.value)}
-              className="w-full px-4 py-2 border border-border-light dark:border-white/10 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500"
-              placeholder="Su nombre completo"
-            />
+            <div className="w-full px-4 py-2 border border-border-light dark:border-white/10 rounded-lg bg-gray-100 dark:bg-gray-800 text-text-primary dark:text-white">
+              {tutorName || "Cargando..."}
+            </div>
+            <p className="text-xs text-text-tertiary dark:text-text-tertiary mt-1">Auto-completado desde tu sesión</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-text-primary dark:text-white mb-1">

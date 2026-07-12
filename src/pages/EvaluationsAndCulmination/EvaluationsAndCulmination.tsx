@@ -164,7 +164,9 @@ export default function EvaluationsAndCulminationPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.map(practice => (
+            {paginatedData.map(practice => {
+              const isTerminal = practice.practicesStatusCode === 'CULMINADO' || practice.practicesStatusCode === 'REPROBADO';
+              return (
               <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
                 <TableCell>
                   <div className="font-medium text-text-primary dark:text-text-emphasis">
@@ -183,7 +185,8 @@ export default function EvaluationsAndCulminationPage() {
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
-                    readOnly={practice.practicesStatusCode === 'CULMINADO'}
+                    readOnly={isTerminal}
+                    practiceStatusCode={practice.practicesStatusCode}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -194,7 +197,8 @@ export default function EvaluationsAndCulminationPage() {
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
-                    readOnly={practice.practicesStatusCode === 'CULMINADO'}
+                    readOnly={isTerminal}
+                    practiceStatusCode={practice.practicesStatusCode}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -205,7 +209,8 @@ export default function EvaluationsAndCulminationPage() {
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
-                    readOnly={practice.practicesStatusCode === 'CULMINADO'}
+                    readOnly={isTerminal}
+                    practiceStatusCode={practice.practicesStatusCode}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -245,7 +250,8 @@ export default function EvaluationsAndCulminationPage() {
                   </TableCell>
                 )}
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>

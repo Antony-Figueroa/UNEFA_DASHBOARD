@@ -23,8 +23,10 @@ interface EvaluationCellProps {
   displayScale: number;
   /** Si la práctica completa está congelada (actas cerradas), solo permite ver detalles */
   isFrozen?: boolean;
-  /** Si la práctica está culminada, solo permite ver detalles (sin editar/crear) */
+  /** Si la práctica está culminada o reprobada, solo permite ver detalles (sin editar/crear) */
   readOnly?: boolean;
+  /** Código de estado de la práctica para mostrar badge informativo */
+  practiceStatusCode?: string;
 }
 
 export const EvaluationCell: React.FC<EvaluationCellProps> = ({
@@ -35,9 +37,11 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
   displayScale,
   isFrozen = false,
   readOnly = false,
+  practiceStatusCode,
 }) => {
-  // Modo solo lectura (culminada) o congelada: solo ver detalles
+  // Modo solo lectura (culminada, reprobada) o congelada: solo ver detalles
   const isReadOnly = isFrozen || readOnly;
+  const isReprobada = practiceStatusCode === 'REPROBADO';
 
   // Congelada: muestra badge con candado
   if (isFrozen && evaluation.completed) {
@@ -56,6 +60,37 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
         <span className="flex items-center gap-1 px-2 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-lg" title="Actas cerradas — evaluación congelada">
           <LockIcon className="w-3.5 h-3.5" />
           <span className="font-medium">{Math.round((evaluation.score / displayScale) * 100)}%</span>
+        </span>
+      </div>
+    );
+  }
+
+  // Reprobada: muestra badge rojo con lock — resultado no definitivo hasta cierre
+  if (isReprobada) {
+    return (
+      <div className="flex items-center justify-center gap-1">
+        {evaluation.completed && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              evaluation.evaluationId && onViewDetails(evaluation.evaluationId);
+            }}
+            className="flex items-center gap-1 px-2 py-1.5 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+            title="Ver detalles"
+          >
+            <EyeIcon className="w-4 h-4" />
+          </button>
+        )}
+        <span
+          className="flex items-center gap-1 px-2 py-1.5 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg"
+          title="Práctica reprobada — sin resultado definitivo hasta cierre del período"
+        >
+          <LockIcon className="w-3.5 h-3.5" />
+          <span className="font-medium">
+            {evaluation.completed
+              ? `${Math.round((evaluation.score / displayScale) * 100)}%`
+              : 'Reprobada'}
+          </span>
         </span>
       </div>
     );

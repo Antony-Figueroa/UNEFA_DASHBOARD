@@ -25,7 +25,9 @@ import {
   bulkGrantExtension,
   getPendingPracticesReport,
   exportEvaluationsExcel,
-  getAuditHistory
+  getAuditHistory,
+  closeActasPreview,
+  closeActas,
 } from '../controllers/evaluation.controller.js';
 
 const router = Router();
@@ -47,6 +49,8 @@ router.put('/:id', requirePermission('evaluations:edit'), validateUpdateEvaluati
 router.delete('/:id', requirePermission('evaluations:delete'), deleteEvaluation);
 router.post('/unfreeze-practice', requirePermission('evaluations:unfreeze'), unfreezePracticeEvaluations);
 router.post('/freeze', requirePermission('evaluations:freeze'), freezeEvaluations);
+router.post('/close-actas/preview', requirePermission('evaluations:freeze'), closeActasPreview);
+router.post('/close-actas', requirePermission('evaluations:freeze'), closeActas);
 router.post('/bulk-grant-extension', requirePermission('evaluations:freeze'), bulkGrantExtension);
 router.post('/:id/unfreeze', requirePermission('evaluations:unfreeze'), unfreezeEvaluation);
 router.post('/:practiceId/mark-failed', requirePermission('evaluations:edit'), markPracticeAsFailed);

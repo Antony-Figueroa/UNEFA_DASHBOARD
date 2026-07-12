@@ -4,6 +4,8 @@ import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 import { checkSequentialPrerequisite } from '../utils/sequential-validation.js';
+import { getEvalConfig, calculateWeightedGrade } from '../services/evaluation-config.service.js';
+import { auditCreate } from '../utils/audit-helpers.js';
 
 // ── Tipos ─────────────────────────────────────────────────────────────────
 
@@ -48,6 +50,58 @@ const getCulminationStatusLabel = (status: number | null): 'pending' | 'approved
 };
 
 const MINIMUM_GRADE = 10; // nota mínima para aprobar
+
+/**
+ * Verifica que la práctica esté dentro del período de gracia para correcciones.
+ * Permite cualquier estado (INSCRITO, REPROBADO) siempre que no se haya vencido
+ * la ventana de corrección ni se haya certificado.
+ */
+const assertGracePeriod = async (
+  supabase: any,
+  practiceId: number | string,
+  options?: { blockIfCertified?: boolean }
+) => {
+  const { data: practice, error: practiceError } = await supabase
+    .from('t_professional_practices')
+    .select('PROFESSIONAL_PRACTICE_ID, PERIOD_ID, PRACTICES_STATUS')
+    .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+    .single();
+  if (practiceError || !practice) throw Object.assign(new Error('Práctica no encontrada'), { status: 404 });
+
+  const { data: period, error: periodError } = await supabase
+    .from('t_internships_period')
+    .select('END_DATE')
+    .eq('PERIOD_ID', practice.PERIOD_ID)
+    .single();
+  if (periodError || !period) throw Object.assign(new Error('Período no encontrado'), { status: 404 });
+
+  const evalConfig = await getEvalConfig();
+  const graceDeadline = new Date(period.END_DATE);
+  graceDeadline.setDate(graceDeadline.getDate() + evalConfig.evaluationWindowDays);
+
+  if (new Date() > graceDeadline) {
+    throw Object.assign(
+      new Error(`Período de corrección vencido el ${graceDeadline.toLocaleDateString('es-VE')}`),
+      { status: 403 }
+    );
+  }
+
+  if (options?.blockIfCertified) {
+    const { data: culmination } = await supabase
+      .from('t_practice_culmination')
+      .select('STATUS')
+      .eq('PRACTICE_ID', practiceId)
+      .maybeSingle();
+    if (culmination?.STATUS === 2) {
+      throw Object.assign(
+        new Error('Certificado generado — no se puede modificar'),
+        { status: 403 }
+      );
+    }
+  }
+
+  return { practice, graceDeadline };
+};
 
 // ── GET /api/culmination ──────────────────────────────────────────────────
 
@@ -272,6 +326,7 @@ export const approveCulmination = async (req: Request, res: Response) => {
         INTERNSHIP_TYPE_ID,
         PRACTICES_STATUS,
         EVALUATION_STATUS,
+        GRADE,
         t_internship_type (
           HOURS_REQUIRED
         )
@@ -284,19 +339,55 @@ export const approveCulmination = async (req: Request, res: Response) => {
       return;
     }
 
-    // Solo se puede culminar una práctica en estado INSCRITO
-    if ((practice as any).PRACTICES_STATUS !== PRACTICES_STATUS.INSCRITO) {
+    // Allow INSCRITO and REPROBADO within grace period (not just INSCRITO)
+    const allowedStatuses = [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.REPROBADO];
+    if (!allowedStatuses.includes((practice as any).PRACTICES_STATUS)) {
       res.status(400).json({
-        message: 'Solo se pueden culminar prácticas en estado INSCRITO.'
+        message: 'Solo se pueden culminar prácticas en estado INSCRITO o REPROBADO.'
       });
       return;
     }
 
+    // Grace period check — blocks past deadline or certified
+    try {
+      await assertGracePeriod(supabase, practiceId, { blockIfCertified: true });
+    } catch (err: any) {
+      const status = err.status || 500;
+      res.status(status).json({ success: false, message: err.message });
+      return;
+    }
+
     // 2. Validar que las evaluaciones estén completas
-    //    NOTA: horas validation eliminada (spec culmination R2.1 — modelo Enfermería)
     if ((practice as any).EVALUATION_STATUS !== 'completed') {
       res.status(400).json({
         message: 'No se puede culminar la práctica: las evaluaciones no están completas.'
+      });
+      return;
+    }
+
+    // Grade validation — must meet minimum
+    const grade = (practice as any).GRADE;
+    if (grade == null) {
+      res.status(400).json({
+        message: 'No se puede culminar la práctica: no tiene calificación registrada.'
+      });
+      return;
+    }
+
+    // Fetch career minimum grade
+    let minimumGrade = MINIMUM_GRADE;
+    if ((practice as any).CAREER_ID) {
+      const { data: career } = await supabase
+        .from('t_career')
+        .select('MINIMUM_GRADE')
+        .eq('CAREER_ID', (practice as any).CAREER_ID)
+        .single();
+      minimumGrade = career?.MINIMUM_GRADE ?? MINIMUM_GRADE;
+    }
+
+    if (grade < minimumGrade) {
+      res.status(400).json({
+        message: `No se puede culminar la práctica: la calificación (${grade}) no alcanza el mínimo requerido (${minimumGrade}).`
       });
       return;
     }
@@ -331,6 +422,18 @@ export const approveCulmination = async (req: Request, res: Response) => {
       .from('t_professional_practices')
       .update({ PRACTICES_STATUS: PRACTICES_STATUS.CULMINADO })
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
+
+    // 6. Audit log
+    try {
+      await auditCreate(req, 't_professional_practices', {
+        ACTION: 'APPROVE_CULMINATION',
+        PROFESSIONAL_PRACTICE_ID: parseInt(practiceId),
+        PRACTICES_STATUS: PRACTICES_STATUS.CULMINADO,
+        GRADE: grade,
+      }, ['ACTION', 'PROFESSIONAL_PRACTICE_ID', 'PRACTICES_STATUS', 'GRADE'], Number(practiceId));
+    } catch (auditError) {
+      console.error('[Audit] Error auditing culmination approval:', auditError);
+    }
 
     res.json({
       success: true,

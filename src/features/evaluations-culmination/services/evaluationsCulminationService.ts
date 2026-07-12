@@ -51,6 +51,28 @@ export interface CertificateResponse {
   certificate: CertificateData;
 }
 
+/** Resultado individual de close-actas preview */
+export interface CloseActasPreviewItem {
+  practiceId: number;
+  currentGrade: number | null;
+  projectedGrade: number | null;
+  projectedStatus: 'culminated' | 'failed' | 'incomplete';
+  minimumGrade: number;
+  isFrozen: boolean;
+  hasAllEvaluations: boolean;
+  missingTypes?: string[];
+}
+
+/** Resultado individual de close-actas */
+export interface CloseActasResult {
+  practiceId: number;
+  previousStatus: number;
+  newStatus: number;
+  grade: number;
+  action: 'culminated' | 'failed' | 'skipped';
+  error?: string;
+}
+
 /** Filters for culmination groups endpoint */
 export interface CulminationGroupFilters {
   periodId?: number;
@@ -192,7 +214,32 @@ export const evaluationsCulminationService = {
   reverseFailed: async (practiceId: number, reason: string, resolutionNumber: string): Promise<{ success: boolean; message: string }> => {
     const response = await apiClient.post(`/evaluations/${practiceId}/reverse-failed`, { reason, resolutionNumber });
     return response.data;
-  }
+  },
+
+  /**
+   * Vista previa de cierre de actas — calcula notas proyectadas sin modificar estado
+   */
+  closeActasPreview: async (practiceIds: number[]): Promise<{
+    success: boolean;
+    data: CloseActasPreviewItem[];
+  }> => {
+    const response = await apiClient.post('/evaluations/close-actas/preview', { practiceIds });
+    return response.data;
+  },
+
+  /**
+   * Cierra actas: congela evaluaciones, recalcula nota, actualiza estado y crea culminación
+   */
+  closeActas: async (practiceIds: number[]): Promise<{
+    success: boolean;
+    data: {
+      results: CloseActasResult[];
+      summary: { total: number; culminated: number; failed: number; skipped: number };
+    };
+  }> => {
+    const response = await apiClient.post('/evaluations/close-actas', { practiceIds });
+    return response.data;
+  },
 };
 
 export default evaluationsCulminationService;

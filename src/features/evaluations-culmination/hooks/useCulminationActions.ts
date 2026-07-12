@@ -16,6 +16,10 @@ export interface UseCulminationActionsReturn {
   certifyPractice: (practiceId: number) => Promise<boolean>;
   reverseCulmination: (practiceId: number, reason: string, resolutionNumber: string) => Promise<boolean>;
 
+  // Close actas actions
+  closeActas: (practiceIds: number[]) => Promise<boolean>;
+  previewCloseActas: (practiceIds: number[]) => Promise<boolean>;
+
   // Bulk actions
   bulkExtend: (practiceIds: number[], days: number) => Promise<boolean>;
 
@@ -23,6 +27,8 @@ export interface UseCulminationActionsReturn {
   approving: boolean;
   certifying: boolean;
   reversing: boolean;
+  closingActas: boolean;
+  previewingCloseActas: boolean;
   bulkExtending: boolean;
 
   // Error state
@@ -39,6 +45,8 @@ export const useCulminationActions = (
   const [approving, setApproving] = useState(false);
   const [certifying, setCertifying] = useState(false);
   const [reversing, setReversing] = useState(false);
+  const [closingActas, setClosingActas] = useState(false);
+  const [previewingCloseActas, setPreviewingCloseActas] = useState(false);
   const [bulkExtending, setBulkExtending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,6 +111,49 @@ export const useCulminationActions = (
     [onSuccess]
   );
 
+  const closeActas = useCallback(
+    async (practiceIds: number[]): Promise<boolean> => {
+      setClosingActas(true);
+      setError(null);
+      try {
+        const response = await evaluationsCulminationService.closeActas(practiceIds);
+        const { summary } = response.data;
+        toast.success(
+          `${summary.culminated} culminado(s), ${summary.failed} reprobado(s), ${summary.skipped} omitido(s)`
+        );
+        onSuccess?.();
+        return true;
+      } catch (err: any) {
+        const message = err?.message || 'Error al cerrar actas';
+        setError(message);
+        toast.error(message);
+        return false;
+      } finally {
+        setClosingActas(false);
+      }
+    },
+    [onSuccess]
+  );
+
+  const previewCloseActas = useCallback(
+    async (practiceIds: number[]): Promise<boolean> => {
+      setPreviewingCloseActas(true);
+      setError(null);
+      try {
+        await evaluationsCulminationService.closeActasPreview(practiceIds);
+        return true;
+      } catch (err: any) {
+        const message = err?.message || 'Error al generar vista previa';
+        setError(message);
+        toast.error(message);
+        return false;
+      } finally {
+        setPreviewingCloseActas(false);
+      }
+    },
+    []
+  );
+
   const bulkExtend = useCallback(
     async (practiceIds: number[], days: number): Promise<boolean> => {
       setBulkExtending(true);
@@ -131,10 +182,14 @@ export const useCulminationActions = (
     approveCulmination,
     certifyPractice,
     reverseCulmination,
+    closeActas,
+    previewCloseActas,
     bulkExtend,
     approving,
     certifying,
     reversing,
+    closingActas,
+    previewingCloseActas,
     bulkExtending,
     error,
   };

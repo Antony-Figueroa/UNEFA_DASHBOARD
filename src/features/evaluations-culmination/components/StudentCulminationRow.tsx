@@ -21,6 +21,8 @@ interface StudentCulminationRowProps {
   onUnfreeze?: (practiceId: number) => void;
   approving: boolean;
   certifying: boolean;
+  /** When true, shows grace period badge and enables unfreeze for REPROBADO */
+  isWithinGracePeriod?: boolean;
 }
 
 const FINAL_STATUS_COLORS: Record<string, string> = {
@@ -59,6 +61,7 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
   onUnfreeze,
   approving,
   certifying,
+  isWithinGracePeriod = false,
 }) => {
   const numPhases = row.phases.length;
   const isFirstApproved =
@@ -134,6 +137,13 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
               />
             ))}
           </div>
+
+          {/* Grace period badge */}
+          {isWithinGracePeriod && (
+            <span className="inline-flex items-center rounded-full text-xs px-2 py-0.5 font-medium bg-amber-50 text-amber-600 border border-amber-200 ml-2">
+              Período de gracia
+            </span>
+          )}
         </div>
 
         {/* Right side: final status and action */}
@@ -229,13 +239,21 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
                                   {approving ? 'Aprobando...' : 'Aprobar'}
                                 </button>
                               )}
+                              {phase.status === 'failed' && isWithinGracePeriod && onUnfreeze && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onUnfreeze(phase.practiceId); }}
+                                  className="px-3 py-1 text-xs font-medium rounded-md bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors border border-amber-200"
+                                >
+                                  Descongelar
+                                </button>
+                              )}
                               {phase.status === 'pending' && (
                                 <span className="text-xs text-text-tertiary italic">En progreso</span>
                               )}
                               {phase.status === 'certified' && (
                                 <span className="text-xs text-green-600">Certificado</span>
                               )}
-                              {phase.isFrozen && onUnfreeze && (
+                              {phase.isFrozen && onUnfreeze && phase.status !== 'failed' && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); onUnfreeze(phase.practiceId); }}
                                   className="px-3 py-1 text-xs font-medium rounded-md bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors border border-amber-200"

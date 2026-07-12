@@ -17,6 +17,7 @@ import { Loader } from "../components/ui/loader";
 import { TourButton } from "../features/tour/components/TourButton";
 import { getTourForPath } from "../features/tour/data/tourRoutes";
 import { useMemo } from "react";
+import { RouteParamsProvider } from "../context/RouteParamsContext";
 
 /**
  * Memoized wrapper for a single tab's content.
@@ -39,16 +40,18 @@ const TabContent = memo(function TabContent({
 }) {
   const resolved = resolveComponent(path);
   if (!resolved) return null;
-  const { component: Component } = resolved;
+  const { component: Component, params } = resolved;
 
   return (
     <div
       className={`h-full transition-opacity duration-100 ${isActive ? "opacity-100" : "opacity-0 invisible absolute inset-0 overflow-hidden"}`}
     >
       {isMounted && (
-        <Suspense fallback={<div className="flex items-center justify-center size-full"><Loader /></div>}>
-          <Component />
-        </Suspense>
+        <RouteParamsProvider params={params ?? {}}>
+          <Suspense fallback={<div className="flex items-center justify-center size-full"><Loader /></div>}>
+            <Component />
+          </Suspense>
+        </RouteParamsProvider>
       )}
     </div>
   );

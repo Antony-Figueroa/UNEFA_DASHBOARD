@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
+import { useRouteParams } from "../../../context/RouteParamsContext";
 import PageMeta from "../../../components/common/PageMeta";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import ComponentCard from "../../../components/common/ComponentCard";
@@ -33,7 +34,9 @@ interface ExistingEvaluation {
 
 export default function TutorEvaluation() {
   const { addToast } = useToast();
-  const { enrollmentId } = useParams<{ enrollmentId: string }>();
+  const routeParams = useRouteParams();
+  const { enrollmentId: paramsEnrollmentId } = useParams<{ enrollmentId: string }>();
+  const enrollmentId = paramsEnrollmentId ?? routeParams.enrollmentId;
   const navigate = useNavigate();
   const { criteria, fetchCriteria, createEvaluation, updateEvaluation, loading: evalLoading } = useEvaluations();
   const { config } = useSystemEvaluationConfig();

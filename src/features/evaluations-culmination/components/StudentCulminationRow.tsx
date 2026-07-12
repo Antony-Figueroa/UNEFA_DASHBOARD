@@ -17,7 +17,7 @@ interface StudentCulminationRowProps {
   onToggle: () => void;
   onApprove: (practiceId: number) => Promise<boolean>;
   onCertify: (practiceId: number) => Promise<boolean>;
-  onReverse: (practiceId: number) => Promise<boolean>;
+  onReverse: (practiceId: number, reason: string, resolutionNumber: string) => Promise<boolean>;
   onUnfreeze?: (practiceId: number) => void;
   approving: boolean;
   certifying: boolean;

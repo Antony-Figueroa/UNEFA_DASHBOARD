@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 import * as listsService from '../services/lists.service.js';
+import * as personService from '../services/person.service.js';
 import {
   parseExcelFile,
   generateTemplate,
@@ -14,6 +15,8 @@ import {
 } from '../services/excel-parser.service.js';
 import { supabase } from '../lib/supabase.js';
 import { cacheManager } from '../lib/cache-manager.js';
+import { sanitizeText } from '../utils/text-utils.js';
+import { auditCreate } from '../utils/audit-helpers.js';
 
 const TABLE_NAME = 't_students';
 const CACHE_PREFIX = 'students:';
@@ -241,6 +244,14 @@ export const validateImport = async (req: AuthRequest, res: Response) => {
 /**
  * Controlador: Ejecuta la importación
  */
+const STUDENT_COLUMNS_TO_AUDIT = [
+  'STUDENT_TYPE', 'MILITARY_RANK', 'EMPLOYMENT', 'STATUS'
+];
+
+const PERSON_COLUMNS_TO_AUDIT = [
+  'ci', 'first_name', 'last_name', 'email', 'phone', 'gender', 'birthdate'
+];
+
 export const executeImport = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.file) {
@@ -286,7 +297,7 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
       
       const result = validateRowFn(row, config, existingStudents);
       
-      // Si hay errores, no importer esa fila
+      // Si hay errores, no importar esa fila
       if (result.status === 'error') {
         validationResults.push(result);
         continue;
@@ -298,15 +309,37 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
         continue;
       }
       
-      // Determinar si crear o actualizar
       const fullCedula = `${row.cedulaPrefix}-${row.cedulaNumber}`;
       const existing = existingStudents.get(fullCedula);
+      const phone = row.phonePrefix && row.phoneNumber
+        ? `${row.phonePrefix}-${row.phoneNumber}`
+        : null;
+      
+      // Validar email único (contra toda t_persons, no solo estudiantes)
+      if (row.email) {
+        const existingPersonCi = existing
+          ? await personService.getPersonByCi(fullCedula)
+          : null;
+        const emailCheck = await personService.validateUniqueEmail(
+          row.email,
+          existingPersonCi?.personId
+        );
+        if (!emailCheck.available) {
+          validationResults.push({
+            rowNumber: row.rowNumber,
+            status: 'error',
+            cedula: fullCedula,
+            fullName: `${row.firstName} ${row.lastName}`,
+            messages: [`El correo ${row.email} ya está registrado por otra persona`]
+          });
+          continue;
+        }
+      }
       
       if (existing) {
-        // Actualizar estudiante existente
+        // ── Actualizar estudiante existente ──
         const dbData = mapToDbRecord(row, config);
 
-        // Actualizar datos de persona en t_persons
         const { data: studentRecord } = await supabase
           .from(TABLE_NAME)
           .select('person_id')
@@ -314,13 +347,13 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
           .single();
 
         if (studentRecord?.person_id) {
-          const phone = row.phonePrefix && row.phoneNumber
-            ? `${row.phonePrefix}-${row.phoneNumber}`
-            : null;
-
           await supabase
             .from('t_persons')
             .update({
+              first_name: sanitizeText(row.firstName) ?? '',
+              middle_name: sanitizeText(row.middleName) || null,
+              last_name: sanitizeText(row.lastName) ?? '',
+              second_last_name: sanitizeText(row.secondLastName) || null,
               email: row.email,
               phone: phone,
               gender: row.sex,
@@ -349,6 +382,11 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
             messages: ['Error al actualizar: ' + updateError.message]
           });
         } else {
+          // Audit
+          try {
+            await auditCreate(req, 't_students', { ...dbData, ci: fullCedula }, STUDENT_COLUMNS_TO_AUDIT, existing.studentId);
+          } catch { /* silent */ }
+
           validationResults.push({
             rowNumber: row.rowNumber,
             status: 'valid',
@@ -359,53 +397,58 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
           });
         }
       } else {
-        // Crear nuevo estudiante
+        // ── Crear nuevo estudiante ──
         const dbData = mapToDbRecord(row, config);
         
-        // Crear registro en t_persons primero
-        const phone = row.phonePrefix && row.phoneNumber 
-          ? `${row.phonePrefix}-${row.phoneNumber}` 
-          : null;
-        
-        const { data: person, error: personError } = await supabase
-          .from('t_persons')
-          .insert([{
-            ci: fullCedula,
-            first_name: row.firstName,
-            middle_name: row.middleName || null,
-            last_name: row.lastName,
-            second_last_name: row.secondLastName || null,
-            email: row.email,
-            phone: phone,
-            gender: row.sex,
-            birthdate: row.birthDate,
-            address: row.address || null,
-            status: 1
-          }])
-          .select('person_id')
-          .single();
-        
-        if (personError) {
-          validationResults.push({
-            rowNumber: row.rowNumber,
-            status: 'error',
-            cedula: fullCedula,
-            fullName: `${row.firstName} ${row.lastName}`,
-            messages: ['Error al crear registro de persona: ' + personError.message]
-          });
+        // Usar findOrCreatePerson para evitar duplicados de CI en t_persons
+        const personData = {
+          ci: fullCedula,
+          firstName: sanitizeText(row.firstName) ?? '',
+          middleName: sanitizeText(row.middleName) || null,
+          lastName: sanitizeText(row.lastName) ?? '',
+          secondLastName: sanitizeText(row.secondLastName) || null,
+          email: row.email,
+          phone: phone,
+          gender: row.sex,
+          birthDate: row.birthDate,
+          address: row.address || null,
+          maritalStatus: row.civilStatus || null,
+          status: 1
+        };
+
+        let personId: number;
+        try {
+          const person = await personService.findOrCreatePerson(personData);
+          personId = person.personId;
+        } catch (pError: any) {
+          // Si falló por email duplicado que se creó entre la validación y acá
+          if (pError?.code === '23505' || (pError?.message && pError.message.includes('email'))) {
+            validationResults.push({
+              rowNumber: row.rowNumber,
+              status: 'error',
+              cedula: fullCedula,
+              fullName: `${row.firstName} ${row.lastName}`,
+              messages: ['El correo ya está registrado. Intentá de nuevo.']
+            });
+          } else {
+            validationResults.push({
+              rowNumber: row.rowNumber,
+              status: 'error',
+              cedula: fullCedula,
+              fullName: `${row.firstName} ${row.lastName}`,
+              messages: ['Error al crear registro de persona: ' + (pError?.message || 'Error desconocido')]
+            });
+          }
           continue;
         }
         
         const { data: insertData, error: insertError } = await supabase
           .from(TABLE_NAME)
           .insert([{
-            person_id: person.person_id,
-            STUDENT_TYPE: dbData.STUDENT_TYPE,
-            MILITARY_RANK: dbData.MILITARY_RANK,
-            EMPLOYMENT: dbData.EMPLOYMENT,
-            STATUS: dbData.STATUS
+            person_id: personId,
+            ...dbData
           }])
-          .select();
+          .select('STUDENTS_ID');
         
         if (insertError) {
           validationResults.push({
@@ -416,6 +459,13 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
             messages: ['Error al crear: ' + insertError.message]
           });
         } else {
+          const newStudentId = (insertData?.[0] as any)?.STUDENTS_ID;
+          
+          // Audit
+          try {
+            await auditCreate(req, 't_students', { ...dbData, ci: fullCedula }, STUDENT_COLUMNS_TO_AUDIT, newStudentId);
+          } catch { /* silent */ }
+
           validationResults.push({
             rowNumber: row.rowNumber,
             status: 'valid',

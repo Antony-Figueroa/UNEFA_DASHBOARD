@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { useTabs } from "../../hooks/useTabs";
 import { useParams, useNavigate, useLocation } from 'react-router';
+import { useRouteParams } from "../../context/RouteParamsContext";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
@@ -27,7 +28,9 @@ const parseApiDate = (dateStr: string): Date => {
 };
 
 export default function VisitRegistration() {
-  const { id } = useParams<{ id: string }>();
+  const { id: paramsId } = useParams<{ id: string }>();
+  const routeParams = useRouteParams();
+  const id = paramsId ?? routeParams.id;
   const navigate = useNavigate();
   const location = useLocation();
   const tutorMode = location.pathname.startsWith('/tutor/visits/');

@@ -8,6 +8,8 @@ import Badge from "../../components/ui/badge/Badge";
 import { Search, Eye, Calendar, FileText, ClipboardCheck } from "lucide-react";
 import { matchSearch } from "../../utils/searchNormalizer";
 import { Modal, ModalHeader, ModalBody } from "../../components/ui/modal";
+import StudentViewModal from "../../features/students/components/StudentViewModal";
+import { StudentRowData } from "../../features/students/types";
 
 const statusColors: Record<string, "success" | "warning" | "info" | "error" | "light"> = {
   "active": "success",
@@ -237,71 +239,14 @@ export default function TutorStudents() {
         </ComponentCard>
       </div>
 
-      <Modal isOpen={!!selectedStudent} onClose={() => setSelectedStudent(null)} size="lg">
-        <ModalHeader>
-          Detalles del Estudiante
-        </ModalHeader>
-        <ModalBody>
-          {selectedStudent && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-text-secondary">Nombre</p>
-                  <p className="font-medium">{selectedStudent.studentName}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Cédula</p>
-                  <p className="font-medium">{selectedStudent.studentCi}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Email</p>
-                  <p className="font-medium">{selectedStudent.studentEmail}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Teléfono</p>
-                  <p className="font-medium">{selectedStudent.studentPhone}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Carrera</p>
-                  <p className="font-medium">{selectedStudent.careerName}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Empresa</p>
-                  <p className="font-medium">{selectedStudent.institutionName}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Período</p>
-                  <p className="font-medium">{selectedStudent.period}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Tipo de Práctica</p>
-                  <p className="font-medium">{selectedStudent.practiceType}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Fecha de Inicio</p>
-                  <p className="font-medium">{selectedStudent.startDate || "No definida"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Fecha de Fin</p>
-                  <p className="font-medium">{selectedStudent.endDate || "No definida"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Estado</p>
-                  <Badge color={statusColors[selectedStudent.status]}>
-                    {statusLabels[selectedStudent.status]}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Nota Final</p>
-                  <p className="font-medium text-lg">
-                    {selectedStudent.grade > 0 ? selectedStudent.grade.toFixed(1) : "Sin asignar"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </ModalBody>
-      </Modal>
+      {selectedStudent && (
+        <StudentViewModal
+          isOpen={true}
+          onClose={() => setSelectedStudent(null)}
+          student={selectedStudent as unknown as StudentRowData}
+          onEdit={() => {}}
+        />
+      )}
     </>
   );
 }

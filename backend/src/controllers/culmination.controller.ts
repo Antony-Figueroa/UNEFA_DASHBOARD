@@ -624,7 +624,7 @@ export const generateCertificate = async (req: Request, res: Response) => {
       // Read culmination for single practice
       const { data: culm, error: culmError } = await supabase
         .from('t_practice_culmination')
-        .select('PRACTICE_ID, STATUS')
+        .select('PRACTICE_ID, STATUS, CERTIFICATE_NUMBER, CERTIFIED_AT')
         .eq('PRACTICE_ID', practiceId)
         .maybeSingle();
 
@@ -634,10 +634,30 @@ export const generateCertificate = async (req: Request, res: Response) => {
       }
 
       if (culm.STATUS !== 1) {
+        // Idempotent: if already certified, return existing certificate data
+        if (culm.STATUS === 2) {
+          const studentName = getPersonFullName((practice as any).t_persons);
+          res.json({
+            success: true,
+            message: 'El certificado ya fue generado previamente',
+            certificate: {
+              number: culm.CERTIFICATE_NUMBER,
+              studentName,
+              studentCi: getPersonField((practice as any).t_persons, 'ci') || '',
+              career: (practice as any).t_career?.CAREER_NAME || '',
+              institution: (practice as any).t_institution?.INSTITUTION_NAME || '',
+              period: (practice as any).t_internships_period?.DESCRIPTION || '',
+              grade: (practice as any).GRADE,
+              generatedAt: culm.CERTIFIED_AT,
+              isJoint: false,
+              practiceId: parseInt(practiceId),
+              practiceType: 'ÚNICA'
+            }
+          });
+          return;
+        }
         res.status(409).json({
-          message: culm.STATUS === 2
-            ? 'El certificado ya fue generado previamente'
-            : 'La culminación debe estar aprobada antes de generar el certificado'
+          message: 'La culminación debe estar aprobada antes de generar el certificado'
         });
         return;
       }
@@ -733,9 +753,12 @@ export const generateCertificate = async (req: Request, res: Response) => {
 
     for (const p of studentPractices || []) {
       const culm = (p as any).t_practice_culmination;
-      if (culm && culm.STATUS === 1 && (p as any).PRACTICES_STATUS === PRACTICES_STATUS.CULMINADO) {
-        completedTypes.add((p as any).INTERNSHIP_TYPE_ID);
+      // Populate practiceMap for ALL CULMINADO practices (needed for step 6 already-certified check)
+      if (culm && (p as any).PRACTICES_STATUS === PRACTICES_STATUS.CULMINADO) {
         practiceMap.set((p as any).INTERNSHIP_TYPE_ID, p);
+        if (culm.STATUS === 1) {
+          completedTypes.add((p as any).INTERNSHIP_TYPE_ID);
+        }
       }
     }
 
@@ -766,7 +789,7 @@ export const generateCertificate = async (req: Request, res: Response) => {
       return;
     }
 
-    // 6. Check no existing certificate for any practice
+    // 6. Check no existing certificate for any practice (idempotent: return existing if all certified)
     const alreadyCertified = sequentialTypes.filter((t: any) => {
       const p = practiceMap.get(t.INTERNSHIP_TYPE_ID);
       const culm = (p as any).t_practice_culmination;
@@ -774,6 +797,37 @@ export const generateCertificate = async (req: Request, res: Response) => {
     });
 
     if (alreadyCertified.length > 0) {
+      // If ALL sequential types are already certified, return the existing joint certificate (idempotent)
+      if (alreadyCertified.length === sequentialTypes.length) {
+        const existingCert = practiceMap.get(alreadyCertified[0].INTERNSHIP_TYPE_ID);
+        const existingCulm = (existingCert as any)?.t_practice_culmination;
+        const studentName = getPersonFullName((practice as any).t_persons);
+        const allGrades = sequentialTypes.map((t: any) => {
+          const p = practiceMap.get(t.INTERNSHIP_TYPE_ID);
+          return { type: t.NAME, grade: (p as any).GRADE };
+        });
+        res.json({
+          success: true,
+          message: 'El certificado conjunto ya fue generado previamente',
+          certificate: {
+            number: existingCulm?.CERTIFICATE_NUMBER,
+            studentName,
+            studentCi: getPersonField((practice as any).t_persons, 'ci') || '',
+            career: (practice as any).t_career?.CAREER_NAME || '',
+            institution: (practice as any).t_institution?.INSTITUTION_NAME || '',
+            period: (practice as any).t_internships_period?.DESCRIPTION || '',
+            grade: allGrades[0]?.grade,
+            siblingGrade: allGrades[1]?.grade,
+            grades: allGrades,
+            generatedAt: existingCulm?.CERTIFIED_AT,
+            isJoint: sequentialTypes.length > 1,
+            practiceIds: sequentialTypes.map((t: any) => practiceMap.get(t.INTERNSHIP_TYPE_ID).PROFESSIONAL_PRACTICE_ID),
+            practiceTypes: sequentialTypes.map((t: any) => t.NAME)
+          }
+        });
+        return;
+      }
+      // Partial certification: some but not all — this is an error state
       const certifiedNames = alreadyCertified.map((t: any) => t.NAME).join(', ');
       res.status(409).json({
         message: `Ya existe certificado para: ${certifiedNames}`

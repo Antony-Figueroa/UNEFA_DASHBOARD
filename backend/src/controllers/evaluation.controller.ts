@@ -1768,9 +1768,37 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Step 3: Set FROZEN_AT a nivel de práctica (modelo Enfermería)
+    // Step 3: Set FROZEN_AT a nivel de práctica + calculate grade + mark evaluation completed + create culmination
     const practiceIdsSet = [...new Set((frozenResult || []).map((r: any) => r.PROFESSIONAL_PRACTICE_ID))];
+    const evalConfig = await getEvalConfig();
+    const evaluatorTypes = Object.keys(evalConfig.weights);
+
+    // Fetch CAREER_ID for each practice (needed for minimum grade check in culmination upsert)
+    const { data: practiceCareerRows } = await supabase
+      .from('t_professional_practices')
+      .select('PROFESSIONAL_PRACTICE_ID, CAREER_ID')
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIdsSet);
+
+    const careerIdMap = new Map<number, number | null>();
+    (practiceCareerRows || []).forEach((p: any) => {
+      careerIdMap.set(p.PROFESSIONAL_PRACTICE_ID, p.CAREER_ID);
+    });
+
+    // Fetch minimum grades for relevant careers
+    const careerIds = [...new Set([...careerIdMap.values()].filter(Boolean))] as number[];
+    const minimumGradeMap = new Map<number, number>();
+    if (careerIds.length > 0) {
+      const { data: careers } = await supabase
+        .from('t_career')
+        .select('CAREER_ID, MINIMUM_GRADE')
+        .in('CAREER_ID', careerIds);
+      (careers || []).forEach((c: any) => {
+        minimumGradeMap.set(c.CAREER_ID, c.MINIMUM_GRADE ?? 10);
+      });
+    }
+
     for (const pid of practiceIdsSet) {
+      // 3a. Set practice-level FROZEN_AT
       const { error: practiceFreezeError } = await supabase
         .from('t_professional_practices')
         .update({ FROZEN_AT: now })
@@ -1778,6 +1806,87 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
 
       if (practiceFreezeError) {
         console.error(`[Evaluation] Error setting practice-level FROZEN_AT for practice ${pid}:`, practiceFreezeError);
+      }
+
+      // 3b. Fetch ALL evaluations for this practice (frozen + existing) to calculate grade
+      const { data: practiceEvals } = await supabase
+        .from('t_evaluation')
+        .select('EVALUATOR_TYPE, TOTAL_SCORE, COMITE_MEMBER_INDEX')
+        .eq('PROFESSIONAL_PRACTICE_ID', pid)
+        .eq('STATUS', 1);
+
+      // 3c. Build type scores (COMITE = average of members)
+      const typeScores: Record<string, number> = {};
+      const committeeMin = evalConfig.committeeMinMembers ?? 3;
+
+      for (const type of evaluatorTypes) {
+        if (type === 'COMITE') {
+          const comiteEvals = (practiceEvals || []).filter((e: any) => e.EVALUATOR_TYPE === 'COMITE');
+          if (comiteEvals.length >= committeeMin) {
+            typeScores['COMITE'] = parseFloat(
+              (comiteEvals.reduce((sum: number, e: any) => sum + (e.TOTAL_SCORE || 0), 0) / comiteEvals.length).toFixed(1)
+            );
+          }
+        } else {
+          const eval_ = (practiceEvals || []).find((e: any) => e.EVALUATOR_TYPE === type);
+          if (eval_?.TOTAL_SCORE != null) {
+            typeScores[type] = eval_.TOTAL_SCORE;
+          }
+        }
+      }
+
+      // 3d. If all evaluator types present, calculate grade + mark completed + upsert culmination
+      const allPresent = evaluatorTypes.every(type => typeScores[type] !== undefined);
+      if (allPresent) {
+        const grade = await calculateWeightedGrade(typeScores);
+        const { error: gradeError } = await supabase
+          .from('t_professional_practices')
+          .update({ GRADE: grade, EVALUATION_STATUS: 'completed' })
+          .eq('PROFESSIONAL_PRACTICE_ID', pid);
+
+        if (gradeError) {
+          console.error(`[Evaluation] Error setting GRADE/EVALUATION_STATUS for practice ${pid}:`, gradeError);
+        }
+
+        // 3e. Upsert culmination record if grade meets minimum (mirrors closeActas step 7)
+        const practiceCareerId = careerIdMap.get(pid);
+        const minimumGrade = practiceCareerId ? (minimumGradeMap.get(practiceCareerId) ?? 10) : 10;
+        if (grade >= minimumGrade) {
+          try {
+            const { data: existingCulm } = await supabase
+              .from('t_practice_culmination')
+              .select('PRACTICE_ID, STATUS')
+              .eq('PRACTICE_ID', pid)
+              .maybeSingle();
+
+            // Guard: skip if already certified (STATUS=2) — don't overwrite certificates
+            if (existingCulm && existingCulm.STATUS === 2) {
+              // Already certified, do nothing
+            } else if (existingCulm) {
+              await supabase
+                .from('t_practice_culmination')
+                .update({ STATUS: 1 })
+                .eq('PRACTICE_ID', pid);
+            } else {
+              await supabase
+                .from('t_practice_culmination')
+                .insert({ PRACTICE_ID: pid, STATUS: 1 });
+            }
+          } catch (culmError) {
+            console.error(`[Evaluation] Error upserting culmination for practice ${pid}:`, culmError);
+          }
+        }
+      } else {
+        // Even if not all types present, mark evaluation_status so culmination can proceed
+        // with whatever evaluations exist (partial freeze scenario)
+        const { error: statusError } = await supabase
+          .from('t_professional_practices')
+          .update({ EVALUATION_STATUS: 'completed' })
+          .eq('PROFESSIONAL_PRACTICE_ID', pid);
+
+        if (statusError) {
+          console.error(`[Evaluation] Error setting EVALUATION_STATUS for practice ${pid}:`, statusError);
+        }
       }
     }
 
@@ -2060,9 +2169,21 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
         if (isCulminated) {
           const { data: existingCulm } = await supabase
             .from('t_practice_culmination')
-            .select('PRACTICE_ID')
+            .select('PRACTICE_ID, STATUS')
             .eq('PRACTICE_ID', practiceId)
             .maybeSingle();
+
+          // Guard: skip upsert if already certified (STATUS=2) — don't overwrite certificates
+          if (existingCulm?.STATUS === 2) {
+            results.push({
+              practiceId,
+              previousStatus,
+              newStatus,
+              grade,
+              action: 'culminated',
+            });
+            continue;
+          }
 
           if (existingCulm) {
             await supabase

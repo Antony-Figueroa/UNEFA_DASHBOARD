@@ -18,6 +18,7 @@ import { isSafeInput } from '../../../utils/inputValidation';
 import { searchPersons } from '../../persons/services/personService';
 import apiClient from '../../../api/apiClient';
 import { SearchIcon } from '../../../icons';
+import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 
 const schema = z.object({
   evaluatorName: z.string()
@@ -95,6 +96,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ personId: number; firstName: string; lastName: string; ci: string }[]>([]);
   const [searching, setSearching] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completionReason, setCompletionReason] = useState<'committee' | 'all'>('committee');
 
   const handleSearchInput = async (q: string) => {
     setSearchQuery(q);
@@ -390,11 +393,6 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       if (isComiteMode) {
         const savedEvalId = (result && typeof result !== 'boolean' ? result.evaluationId : undefined) || comiteData[activeMember]?.evaluationId;
 
-        // Buscar próximo miembro sin evaluación (usando comiteData actual)
-        const nextIdx = ([1, 2, 3] as const).find(
-          idx => idx !== activeMember && !comiteData[idx]?.evaluationId
-        );
-
         setComiteData(prev => ({
           ...prev,
           [activeMember]: {
@@ -409,18 +407,37 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
 
         setConfirmed(false);
 
+        // Check if there are more committee members to evaluate
+        const nextIdx = ([1, 2, 3] as const).find(
+          idx => idx !== activeMember && !comiteData[idx]?.evaluationId
+        );
+
         if (nextIdx) {
-          // Avanzar al siguiente miembro (modal se cierra, al abrir ya carga el próximo vacío con onSuccess)
+          // More committee members to evaluate — close modal, refresh list
           onSuccess();
-        } else {
-          handleClose();
-          onSuccess();
+          return;
         }
-      } else {
+        // All 3 committee members done — fall through to completion check below
+      }
+
+      // After any save (all committee members done OR non-committee create/edit),
+      // check if ALL evaluation types are now complete
+      try {
+        const status = await evaluationService.getDetailedPracticeStatus(practiceId);
+        if (status.evaluationStatus === 'completed') {
+          setCompletionReason(isComiteMode ? 'committee' : 'all');
+          setShowCompletionModal(true);
+        } else {
+          // Not all evaluations complete — close modal and refresh list
+          reset();
+          setConfirmed(false);
+          onClose();
+        }
+      } catch {
+        // On error, just close and refresh
         reset();
         setConfirmed(false);
         onClose();
-        onSuccess();
       }
     }
   };
@@ -797,6 +814,31 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
         </div>
       </ModalBody>
     </Modal>
+
+    {/* Completion modal — all evaluation types complete */}
+    <UnifiedDialog
+      isOpen={showCompletionModal}
+      onClose={() => {
+        // "Continuar Editando" — close modal, refresh list, NO freeze
+        setShowCompletionModal(false);
+        handleClose();
+      }}
+      onConfirm={async () => {
+        // "Finalizar y Congelar" — freeze practice, then close and refresh
+        setShowCompletionModal(false);
+        try { await evaluationService.freezeBatch([practiceId]); } catch { /* silent */ }
+        handleClose();
+      }}
+      title={completionReason === 'committee' ? 'Comité Evaluador — Completo' : 'Evaluaciones — Completas'}
+      message={
+        completionReason === 'committee'
+          ? 'Los 3 miembros del comité han sido evaluados y todas las evaluaciones están completas. ¿Desea finalizar (congelar actas) o continuar editando?'
+          : 'Todas las evaluaciones han sido completadas. ¿Desea finalizar (congelar actas) o continuar editando?'
+      }
+      confirmLabel="Finalizar y Congelar"
+      cancelLabel="Continuar Editando"
+      variant="success"
+    />
     </>
   );
 };

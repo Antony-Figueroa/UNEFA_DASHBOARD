@@ -105,10 +105,10 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
     // Obtener IDs de prácticas
     const practiceIds = (practices as any[]).map(p => p.PROFESSIONAL_PRACTICE_ID);
 
-    // Obtener evaluaciones de todas las prácticas
+    // Obtener evaluaciones de todas las prácticas (incluye COMITE_MEMBER_INDEX para comité)
     const { data: allEvaluations } = await supabase
       .from('t_evaluation')
-      .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME, STATUS, FROZEN_AT, UNFROZEN_AT')
+      .select('EVALUATION_ID, PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, COMITE_MEMBER_INDEX, TOTAL_SCORE, EVALUATOR_NAME, STATUS, FROZEN_AT, UNFROZEN_AT')
       .eq('STATUS', 1)
       .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
 
@@ -156,7 +156,11 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         'COMITE': { completed: false, score: 0, evaluatorName: '', frozenAt: null }
       };
 
+      // Collect COMITE evaluations separately for averaging
+      const comiteEvals = evaluations.filter(e => e.EVALUATOR_TYPE === 'COMITE');
+
       evaluations.forEach(e => {
+        if (e.EVALUATOR_TYPE === 'COMITE') return; // handled below
         if (statusMap[e.EVALUATOR_TYPE]) {
           statusMap[e.EVALUATOR_TYPE] = {
             completed: true,
@@ -167,6 +171,26 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
           };
         }
       });
+
+      // COMITE: aggregate all members → average score
+      if (comiteEvals.length > 0) {
+        const members = comiteEvals.map(ce => ({
+          memberIndex: ce.COMITE_MEMBER_INDEX || 0,
+          score: ce.TOTAL_SCORE || 0,
+          evaluatorName: ce.EVALUATOR_NAME || '',
+          evaluationId: ce.EVALUATION_ID,
+        }));
+        const avgScore = members.reduce((s, m) => s + m.score, 0) / members.length;
+        statusMap['COMITE'] = {
+          completed: true,
+          score: Math.round(avgScore * 100) / 100,
+          evaluatorName: members.map(m => m.evaluatorName).filter(Boolean).join(', '),
+          evaluationId: comiteEvals[comiteEvals.length - 1].EVALUATION_ID,
+          frozenAt: comiteEvals.find(ce => ce.FROZEN_AT != null)?.FROZEN_AT || null,
+        };
+        (statusMap['COMITE'] as any).members = members;
+        (statusMap['COMITE'] as any).completedCount = `${comiteEvals.length}/3`;
+      }
 
       // Calcular estado de evaluación
       const completedCount = Object.values(statusMap).filter(s => s.completed).length;

@@ -564,10 +564,7 @@ export default function PersonFormFields({
             <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Estado Civil <span className="text-red-500">*</span>
             </label>
-            {makeControllerSelect("civilStatus", "Seleccionar", "Registro Civil", viewOnlyMode, {
-              listName: "Registro Civil",
-              title: "Agregar Estado Civil",
-            })}
+            {makeControllerSelect("civilStatus", "Seleccionar", "Registro Civil", viewOnlyMode)}
             {errors.civilStatus && (
               <p className="mt-1 text-xs text-red-500">{errors.civilStatus.message as string}</p>
             )}

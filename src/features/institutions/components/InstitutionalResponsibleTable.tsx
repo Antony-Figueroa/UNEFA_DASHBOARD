@@ -523,11 +523,14 @@ export default function InstitutionalResponsibleTable({
                     {item.title || "-"}
                   </TableCell>
                   <TableCell className="text-center text-text-secondary dark:text-text-tertiary whitespace-nowrap text-sm">
-                    {new Date(item.registrationDate).toLocaleDateString('es-VE', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit'
-                    })}
+                    {(() => {
+                      const d = new Date(item.registrationDate);
+                      return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-VE', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                      });
+                    })()}
                   </TableCell>
                   <TableCell className="table-cell text-right">
                     <ActionButtons
@@ -631,11 +634,14 @@ export default function InstitutionalResponsibleTable({
                           Fecha de Registro
                         </p>
                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">
-                          {new Date(item.registrationDate).toLocaleDateString('es-VE', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit'
-                          })}
+                          {(() => {
+                            const d = new Date(item.registrationDate);
+                            return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-VE', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit'
+                            });
+                          })()}
                         </p>
                       </div>
                     </div>

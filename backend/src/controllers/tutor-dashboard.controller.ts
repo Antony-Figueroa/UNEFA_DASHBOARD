@@ -7,6 +7,7 @@ import { sanitizeText } from '../utils/text-utils.js';
 
 interface TutorStudent {
   enrollmentId: string;
+  tutorType: string;
   studentId: string;
   studentCi: string;
   studentName: string;
@@ -317,6 +318,7 @@ export const getTutorStudents = async (req: AuthRequest, res: Response) => {
 
       students.push({
         enrollmentId: String(practice.PROFESSIONAL_PRACTICE_ID),
+        tutorType: p.TUTOR_TYPE || '',
         studentId: String(practice.STUDENTS_ID || ''),
         studentCi: person?.ci || '',
         studentName: `${person?.first_name || ''} ${person?.last_name || ''}`.trim(),

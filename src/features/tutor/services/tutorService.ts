@@ -2,6 +2,7 @@ import apiClient from "../../../api/apiClient";
 
 export interface TutorStudent {
   enrollmentId: string;
+  tutorType: string;
   studentId: string;
   studentCi: string;
   studentName: string;

@@ -219,13 +219,22 @@ export default function TutorStudents() {
                               >
                                 <FileText className="w-4 h-4 text-orange-500" />
                               </button>
-                              <button
-                                onClick={() => openTab(`/tutor/evaluations/${student.enrollmentId}`, `Evaluación #${student.enrollmentId}`)}
-                                className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                                title="Cargar Evaluación"
-                              >
-                                <ClipboardCheck className="w-4 h-4 text-green-500" />
-                              </button>
+                              {student.tutorType === 'ACADEMICO' ? (
+                                <button
+                                  onClick={() => openTab(`/tutor/evaluations/${student.enrollmentId}`, `Evaluación #${student.enrollmentId}`)}
+                                  className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                                  title="Cargar Evaluación"
+                                >
+                                  <ClipboardCheck className="w-4 h-4 text-green-500" />
+                                </button>
+                              ) : (
+                                <span
+                                  className="p-2 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                                  title="Solo el tutor académico puede evaluar"
+                                >
+                                  <ClipboardCheck className="w-4 h-4" />
+                                </span>
+                              )}
                             </>
                           )}
                         </div>

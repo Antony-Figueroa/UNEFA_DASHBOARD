@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { useTabs } from "../../context/tab";
+import { useAuth } from "../../context/auth";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import tutorService, { TutorStudent } from "../../features/tutor/services/tutorService";
 import Badge from "../../components/ui/badge/Badge";
-import { Search, Eye, Calendar, FileText, X } from "lucide-react";
+import { Search, Eye, Calendar, FileText, X, Upload } from "lucide-react";
 import { matchSearch } from "../../utils/searchNormalizer";
 import { Table, TableHeader, TableBody, TableRow, TableCell, Pagination } from "../../components/ui/table";
 import { EmptyState } from "../../components/ui/table/EmptyState";
@@ -136,12 +137,15 @@ export default function TutorTracking() {
   };
 
   const openActivities = (enrollmentId: string) => {
-    openTab(`/tutor/activity-logs/${enrollmentId}`, `Actividades #${enrollmentId}`);
+      openTab(`/tutor/activity-logs/${enrollmentId}`, `Actividades #${enrollmentId}`);
   };
 
   const openEvaluation = (enrollmentId: string) => {
     openTab(`/tutor/evaluations/${enrollmentId}`, `Evaluación #${enrollmentId}`);
   };
+
+  const { user } = useAuth();
+  const canEditStudent = user?.role === 1;  // 1 = Admin (según AuthContext)
 
   const status = loading ? "loading" : "success";
 
@@ -351,6 +355,21 @@ export default function TutorTracking() {
               <FileText className="w-4 h-4" />
               Registro de Actividades
             </Button>
+            {canEditStudent && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  // TODO: Implementar edición de información del estudiante
+                  // Por ahora, utilizamos un placeholder para garantizar
+                  // el correcto funcionamiento del botón al navegar con los otros botones
+                  setSelectedStudent(null);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                Editar Información
+              </Button>
+            )}
           </div>
         </Modal>
       )}

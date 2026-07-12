@@ -65,6 +65,10 @@ vi.mock('../../../context/tab', () => ({
   useTabs: () => ({ openTab: mockOpenTab }),
 }));
 
+vi.mock('../../../context/auth', () => ({
+  useAuth: () => ({ user: { name: 'Dr. Juan Pérez', role: 2 } }), // 2 = non-admin role
+}));
+
 vi.mock('../../../features/tutor/services/tutorService', () => ({
   default: {
     getStudents: (...args: any[]) => mockGetStudents(...args),

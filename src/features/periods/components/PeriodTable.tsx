@@ -198,6 +198,8 @@ interface PeriodTableProps {
     externalLoading?: boolean;
     /** Callback que notifica si hay filas seleccionadas (para bloquear botonera externa) */
     onSelectionChange?: (selecting: boolean) => void;
+    /** Modo solo lectura: oculta edición, culminación, activación, eliminación y selección masiva */
+    readOnly?: boolean;
 }
 
 /**
@@ -220,7 +222,14 @@ const PeriodTable = ({
     onBulkRestore,
     onSelectionChange,
     externalLoading = false,
+    readOnly = false,
 }: PeriodTableProps) => {
+    // En modo solo lectura solo se permite la acción de ver detalles.
+    const effectiveOnEdit = readOnly ? undefined : onEdit;
+    const effectiveOnCulminate = readOnly ? undefined : onCulminate;
+    const effectiveOnActivate = readOnly ? undefined : onActivate;
+    const effectiveOnDelete = readOnly ? undefined : onDelete;
+    const effectiveOnRestore = readOnly ? undefined : onRestore;
     // ============================================
     // STATE
     // ============================================
@@ -529,9 +538,9 @@ const PeriodTable = ({
             {currentPeriod && (
                 <CurrentPeriodCard 
                     period={currentPeriod}
-                    onEdit={onEdit ? () => onEdit(currentPeriod) : undefined}
+                    onEdit={effectiveOnEdit ? () => effectiveOnEdit(currentPeriod) : undefined}
                     onView={onView ? () => onView(currentPeriod) : undefined}
-                    onCulminate={onCulminate ? () => onCulminate(currentPeriod) : undefined}
+                    onCulminate={effectiveOnCulminate ? () => effectiveOnCulminate(currentPeriod) : undefined}
                 />
             )}
 
@@ -674,6 +683,7 @@ const PeriodTable = ({
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            {!readOnly && (
                             <TableCell isHeader className="w-10">
                                 <input
                                     type="checkbox"
@@ -685,6 +695,7 @@ const PeriodTable = ({
                                     className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                                 />
                             </TableCell>
+                            )}
                             <TableCell isHeader onClick={() => handleSort("description")} className="cursor-pointer hover:bg-bg-subtle dark:hover:bg-bg-dark-subtle transition-colors">
                                 <div className="flex items-center gap-2">
                                     Lapso
@@ -738,6 +749,7 @@ const PeriodTable = ({
 
                                 return (
                                     <TableRow key={periodo.periodId} className="hover:bg-bg-subtle/50 dark:hover:bg-bg-dark-subtle/50 transition-colors">
+                                        {!readOnly && (
                                         <TableCell>
                                             <input
                                                 type="checkbox"
@@ -764,6 +776,7 @@ const PeriodTable = ({
                                                 }
                                             />
                                         </TableCell>
+                                        )}
                                         <TableCell className="font-medium text-text-primary dark:text-text-emphasis">
                                             <DisplayText>{periodo.description}</DisplayText>
                                         </TableCell>
@@ -898,12 +911,12 @@ const PeriodTable = ({
                                     
                                     {expandedRows.has(periodo.periodId) && (
                                         <ActionButtons
-                                            onEdit={onEdit ? () => onEdit(periodo) : undefined}
-                                            onCulminate={onCulminate ? () => onCulminate(periodo) : undefined}
-                                            onActivate={onActivate ? () => onActivate(periodo) : undefined}
+                                            onEdit={effectiveOnEdit ? () => effectiveOnEdit(periodo) : undefined}
+                                            onCulminate={effectiveOnCulminate ? () => effectiveOnCulminate(periodo) : undefined}
+                                            onActivate={effectiveOnActivate ? () => effectiveOnActivate(periodo) : undefined}
                                             onView={onView ? () => onView(periodo) : undefined}
-                                            onDelete={onDelete ? () => onDelete(periodo) : undefined}
-                                            onRestore={onRestore ? () => onRestore(periodo) : undefined}
+                                            onDelete={effectiveOnDelete ? () => effectiveOnDelete(periodo) : undefined}
+                                            onRestore={effectiveOnRestore ? () => effectiveOnRestore(periodo) : undefined}
                                             periodo={periodo}
                                             canActivate={canActivate}
                                             isMobile={true}

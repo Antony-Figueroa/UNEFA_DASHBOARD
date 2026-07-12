@@ -27,6 +27,7 @@ import PeriodoPDF from "../../components/ui/pdf/templates/PeriodoPDF";
 import { Periodo, PeriodoRowData, CreatePeriodPayload, UpdatePeriodPayload } from "../../features/periods/types";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 import { matchSearch } from "../../utils/searchNormalizer";
+import { useAuth } from "../../context/auth";
 
 /**
  * Información para los diálogos de confirmación.
@@ -56,6 +57,10 @@ export default function Period() {
         }, 500);
         return () => clearTimeout(timer);
     }, []);
+
+    // Tutor (role 3) tiene acceso de solo lectura al período: puede verlo, no editarlo ni culminarlo.
+    const { user } = useAuth();
+    const isTutor = user?.role === 3;
 
     // Hook personalizado que encapsula toda la lógica de negocio de los periodos.
     const {
@@ -442,10 +447,12 @@ export default function Period() {
                                     <FileText className="w-5 h-5" />
                                     <span className="ml-2">Reporte</span>
                                 </Button>
-                                <Button onClick={handleOpenCreateModal} disabled={isSelecting} className="sm:w-auto">
-                                    <PlusCircleIcon className="w-5 h-5" />
-                                    <span className="ml-2">Nuevo Período</span>
-                                </Button>
+                                {!isTutor && (
+                                    <Button onClick={handleOpenCreateModal} disabled={isSelecting} className="sm:w-auto">
+                                        <PlusCircleIcon className="w-5 h-5" />
+                                        <span className="ml-2">Nuevo Período</span>
+                                    </Button>
+                                )}
                             </div>
                         )}
                     </div>
@@ -479,6 +486,7 @@ export default function Period() {
                                         onBulkRestore={handleBulkRestore}
                                         onSelectionChange={setIsSelecting}
                                         externalLoading={loadingAction}
+                                        readOnly={isTutor}
                                     />
                                 </SkeletonLoader>
                             </div>

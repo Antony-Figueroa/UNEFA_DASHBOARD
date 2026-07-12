@@ -192,12 +192,12 @@ export interface UseEvaluationsCulminationReturn {
 
   /** UI de culminación agrupada (useCulminationUI) */
   culminationExpandedStudentCi: string | null;
-  culminationActiveTab: 'evaluations' | 'culmination' | 'certification' | 'reprobados';
+  culminationActiveTab: 'evaluations' | 'culmination' | 'certification';
   isCulminationModalOpen: boolean;
   culminationModalType: string | null;
   culminationSelectedPracticeId: number | null;
   toggleCulminationRow: (studentCi: string) => void;
-  setCulminationActiveTab: (tab: 'evaluations' | 'culmination' | 'certification' | 'reprobados') => void;
+  setCulminationActiveTab: (tab: 'evaluations' | 'culmination' | 'certification') => void;
   openCulminationModal: (type: string, practiceId?: number) => void;
   closeCulminationModal: () => void;
 

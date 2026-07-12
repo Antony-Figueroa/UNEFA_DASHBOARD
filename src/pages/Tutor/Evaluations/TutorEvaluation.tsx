@@ -46,7 +46,7 @@ export default function TutorEvaluation() {
   const midpoint = scoreRange.min + Math.floor((scoreRange.max - scoreRange.min) / 2);
 
   // Nombre del tutor desde autenticación (solo lectura)
-  const tutorName = user?.name || user?.fullName || "";
+  const tutorName = user?.name || "";
 
   const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);

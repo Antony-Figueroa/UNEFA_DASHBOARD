@@ -119,13 +119,13 @@ export default function GeographicAddressFields({
   }, [geoOptions, selectedEstadoId, selectedMunicipioId]);
 
   const handleStreetChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const v = e.target.value;
+    const v = e.target.value.toUpperCase();
     setStreetAddress(v);
     emitChange(selectedParroquiaId, v, reference, addressTypeId, isPrimary);
   };
 
   const handleReferenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value;
+    const v = e.target.value.toUpperCase();
     setReference(v);
     emitChange(selectedParroquiaId, streetAddress, v, addressTypeId, isPrimary);
   };

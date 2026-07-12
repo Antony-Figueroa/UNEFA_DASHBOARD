@@ -313,59 +313,48 @@ export default function EnrollmentPage() {
 
     /**
      * Handles saving an enrollment (create or update).
+     * El modal ya muestra su propio diálogo de confirmación, este handler
+     * ejecuta el guardado directo sin duplicar la confirmación.
      * 
      * @param payload - The data to save (CreateEnrollmentPayload or UpdateEnrollmentPayload).
      */
-    const handleSave = (payload: CreateEnrollmentPayload | UpdateEnrollmentPayload) => {
+    const handleSave = async (payload: CreateEnrollmentPayload | UpdateEnrollmentPayload) => {
         const isEditing = "enrollmentId" in payload;
-        const trySave = async (override: boolean) => {
-            try {
-                if (isEditing) {
-                    await editEnrollment(
-                        override
-                            ? { ...(payload as UpdateEnrollmentPayload), overridePeriodValidation: true }
-                            : (payload as UpdateEnrollmentPayload),
-                    );
-                } else {
-                    await addEnrollment(
-                        override
-                            ? { ...(payload as CreateEnrollmentPayload), overridePeriodValidation: true }
-                            : (payload as CreateEnrollmentPayload),
-                    );
-                }
-                setIsModalOpen(false);
-                setConfirmation(null);
-                    } catch (e: any) {
-                const errorCode = e?.response?.data?.code;
-                if (errorCode === "DATE_OUTSIDE_PERIOD" || errorCode === "PERIOD_NOT_ACTIVE") {
-                    // Cerrar el diálogo actual y mostrar el de override en el próximo tick
-                    // para evitar conflictos de loading state entre useCrud y UnifiedDialog
-                    setConfirmation(null);
-                    setTimeout(() => {
-                        setConfirmation({
-                            isOpen: true,
-                            title: "Período Cerrado",
-                            message: `El período de inscripción ha finalizado. ¿Desea ${isEditing ? "guardar los cambios" : "registrar la inscripción"} de todas formas?`,
-                            onConfirm: () => trySave(true),
-                            confirmText: isEditing ? "Guardar cambios" : "Registrar de todas formas",
-                            variant: "warning",
-                        });
-                    }, 0);
-                } else {
-                    console.error("[EnrollmentPage] Error saving enrollment:", e);
-                    setConfirmation(null);
-                }
+        try {
+            if (isEditing) {
+                await editEnrollment(payload as UpdateEnrollmentPayload);
+            } else {
+                await addEnrollment(payload as CreateEnrollmentPayload);
             }
-        };
-
-        setConfirmation({
-            isOpen: true,
-            title: isEditing ? "Confirmar Actualización" : "Confirmar Registro",
-            message: `¿Estás seguro de que deseas ${isEditing ? "actualizar" : "registrar"} esta inscripción?`,
-            onConfirm: () => trySave(false),
-			confirmText: MODAL_CONFIG.confirmLabel(isEditing),
-			variant: "info",
-		});
+            setIsModalOpen(false);
+        } catch (e: any) {
+            const errorCode = e?.response?.data?.code;
+            if (errorCode === "DATE_OUTSIDE_PERIOD" || errorCode === "PERIOD_NOT_ACTIVE") {
+                setConfirmation({
+                    isOpen: true,
+                    title: "Período Cerrado",
+                    message: `El período de inscripción ha finalizado. ¿Desea ${isEditing ? "guardar los cambios" : "registrar la inscripción"} de todas formas?`,
+                    onConfirm: async () => {
+                        try {
+                            if (isEditing) {
+                                await editEnrollment({ ...(payload as UpdateEnrollmentPayload), overridePeriodValidation: true });
+                            } else {
+                                await addEnrollment({ ...(payload as CreateEnrollmentPayload), overridePeriodValidation: true });
+                            }
+                            setIsModalOpen(false);
+                            setConfirmation(null);
+                        } catch (e2: any) {
+                            console.error("[EnrollmentPage] Error saving enrollment with override:", e2);
+                            setConfirmation(null);
+                        }
+                    },
+                    confirmText: isEditing ? "Guardar cambios" : "Registrar de todas formas",
+                    variant: "warning",
+                });
+            } else {
+                console.error("[EnrollmentPage] Error saving enrollment:", e);
+            }
+        }
 	};
 
 	/**

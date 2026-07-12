@@ -1245,16 +1245,47 @@ export const getDataEvaluacionConsolidada = async (req: Request, res: Response) 
     const tutorAcad = tutors.find((t: any) => t.tutorType === 'ACADEMICO');
 
     const evaluaciones = await getEvaluations(supabase, practiceId);
-    const evalInst = evaluaciones.find((e: any) => e.evaluatorType === 'INSTITUCIONAL');
-    const evalAcad = evaluaciones.find((e: any) => e.evaluatorType === 'ACADEMICO');
-    const evaluacionesComite = evaluaciones
+
+    // Always fetch criteria definitions so tables render even without evaluations
+    const EVAL_TYPES = ['INSTITUCIONAL', 'ACADEMICO', 'COMITE'];
+    const { data: allCriteria } = await supabase
+      .from('t_evaluation_criteria')
+      .select('ITEM_NUMBER, DESCRIPTION, EVALUATOR_TYPE')
+      .in('EVALUATOR_TYPE', EVAL_TYPES)
+      .eq('STATUS', 1);
+
+    const criteriaByType: Record<string, { itemNumber: number; description: string; score: null }[]> = {};
+    for (const c of allCriteria || []) {
+      if (!criteriaByType[c.EVALUATOR_TYPE]) criteriaByType[c.EVALUATOR_TYPE] = [];
+      criteriaByType[c.EVALUATOR_TYPE].push({
+        itemNumber: c.ITEM_NUMBER,
+        description: c.DESCRIPTION,
+        score: null,
+      });
+    }
+
+    const placeholder = (type: string) => ({
+      evaluatorType: type,
+      totalScore: null,
+      observations: '',
+      criterios: criteriaByType[type] || [],
+    });
+
+    const evalInst = evaluaciones.find((e: any) => e.evaluatorType === 'INSTITUCIONAL') || placeholder('INSTITUCIONAL');
+    const evalAcad = evaluaciones.find((e: any) => e.evaluatorType === 'ACADEMICO') || placeholder('ACADEMICO');
+    let evaluacionesComite = evaluaciones
       .filter((e: any) => e.evaluatorType === 'COMITE')
       .sort((a: any, b: any) => (a.comiteMemberIndex || 0) - (b.comiteMemberIndex || 0));
 
+    if (evaluacionesComite.length === 0) {
+      evaluacionesComite = [{ ...placeholder('COMITE'), evaluationId: null, evaluatorName: '' }];
+    }
+
     let comiteTotalScore = 0;
-    if (evaluacionesComite.length > 0) {
+    const realComite = evaluacionesComite.filter((e: any) => e.totalScore !== null);
+    if (realComite.length > 0) {
       comiteTotalScore = parseFloat(
-        (evaluacionesComite.reduce((sum: number, e: any) => sum + e.totalScore, 0) / evaluacionesComite.length).toFixed(1)
+        (realComite.reduce((sum: number, e: any) => sum + e.totalScore, 0) / realComite.length).toFixed(1)
       );
     }
 

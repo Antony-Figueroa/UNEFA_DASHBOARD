@@ -269,36 +269,25 @@ export default function PreEnrollmentPage() {
 
     /**
      * Maneja el guardado (creación o actualización) de una pre-inscripción.
-     * Muestra un diálogo de confirmación antes de proceder.
+     * El modal ya muestra su propio diálogo de confirmación, este handler
+     * ejecuta el guardado directo sin duplicar la confirmación.
      * 
      * @param payload - Datos de la pre-inscripción (Create o Update).
      */
-    const handleSave = (payload: CreatePreEnrollmentPayload | UpdatePreEnrollmentPayload) => {
-        const isEditing = !!editingEntry;
-        setConfirmation({
-            isOpen: true,
-            title: isEditing ? "Confirmar Actualización" : "Confirmar Registro",
-            message: `¿Estás seguro de que deseas ${isEditing ? "actualizar" : "registrar"} esta pre-inscripción?`,
-            onConfirm: async () => {
-                try {
-                    if (isEditing && editingEntry) {
-                        await editPreEnrollment({ 
-                            ...payload, 
-                            preEnrollmentId: editingEntry.preEnrollmentId 
-                        } as UpdatePreEnrollmentPayload);
-                    } else {
-                        await addPreEnrollment(payload as CreatePreEnrollmentPayload);
-                    }
-                    setIsModalOpen(false);
-                } catch (error) {
-                    // El error ya es manejado por el hook usePreEnrollment (muestra Toast)
-                } finally {
-                    setConfirmation(null);
-                }
-            },
-		confirmText: MODAL_CONFIG.confirmLabel(isEditing),
-		variant: "info",
-		});
+    const handleSave = async (payload: CreatePreEnrollmentPayload | UpdatePreEnrollmentPayload) => {
+        try {
+            if (editingEntry) {
+                await editPreEnrollment({ 
+                    ...payload, 
+                    preEnrollmentId: editingEntry.preEnrollmentId 
+                } as UpdatePreEnrollmentPayload);
+            } else {
+                await addPreEnrollment(payload as CreatePreEnrollmentPayload);
+            }
+            setIsModalOpen(false);
+        } catch (error) {
+            // El error ya es manejado por el hook usePreEnrollment (muestra Toast)
+        }
 	};
 
 	/**

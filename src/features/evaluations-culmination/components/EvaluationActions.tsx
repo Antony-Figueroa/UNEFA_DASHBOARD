@@ -13,7 +13,6 @@ interface EvaluationActionsProps {
   onFreezeAll: () => void;
   onExportExcel: () => void;
   onBulkExtension: () => void;
-  onCloseActas: () => void;
 }
 
 export const EvaluationActions: React.FC<EvaluationActionsProps> = ({
@@ -21,7 +20,6 @@ export const EvaluationActions: React.FC<EvaluationActionsProps> = ({
   onFreezeAll,
   onExportExcel,
   onBulkExtension,
-  onCloseActas,
 }) => {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
@@ -47,7 +45,7 @@ export const EvaluationActions: React.FC<EvaluationActionsProps> = ({
       <Button
         variant="outline"
         size="sm"
-        onClick={onCloseActas}
+        onClick={onFreezeAll}
         disabled={isReadOnly}
         className="border-error-300 text-error-600 hover:bg-error-50 dark:border-error-700 dark:text-error-400 dark:hover:bg-error-900/20"
       >

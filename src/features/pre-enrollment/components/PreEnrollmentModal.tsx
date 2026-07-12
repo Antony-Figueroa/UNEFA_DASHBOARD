@@ -32,7 +32,7 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";
-import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, CEDULA_MAX_LENGTH, PASSPORT_MAX_LENGTH } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneDisplay, CEDULA_MAX_DIGITS, CEDULA_MAX_LENGTH, PASSPORT_MAX_LENGTH } from "../../../utils/inputFormat";
 import { UserCircleIcon, ShieldCheckIcon, DocsIcon, InfoIcon, SearchIcon, PlusIcon } from "../../../icons";
 import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
@@ -143,9 +143,17 @@ export default function PreEnrollmentModal({
   // Handle identification number input change with formatting (sin prefijo porque ya está en el select)
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    const cleaned = cleanCedula(input);
-    const formatted = formatCedulaDisplay(cleaned, false); // Sin prefijo
-    setDisplayIdentificationNumber(formatted);
+    const prefix = watch("identificationPrefix") || "V";
+    const isPassport = prefix === "P";
+    let cleaned: string;
+    if (isPassport) {
+      cleaned = input.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, PASSPORT_MAX_LENGTH);
+      setDisplayIdentificationNumber(cleaned);
+    } else {
+      cleaned = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+      const formatted = formatCedulaDisplay(cleaned, false);
+      setDisplayIdentificationNumber(formatted);
+    }
     setValue("identificationNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
 
@@ -170,6 +178,7 @@ export default function PreEnrollmentModal({
     reset,
     setValue,
     getValues,
+    watch,
     formState: { errors, isDirty, isValid },
     setError,
     clearErrors,

@@ -32,7 +32,7 @@ import * as enrollmentService from "../services/enrollmentService";
 import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";
 import { unwrapData } from "../../../api/crudServiceFactory";
-import { formatCedulaDisplay, cleanCedula, PASSPORT_MAX_LENGTH } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, CEDULA_MAX_DIGITS, PASSPORT_MAX_LENGTH } from "../../../utils/inputFormat";
 import { UserCircleIcon, ShieldCheckIcon, DocsIcon, SearchIcon, UsersIcon, PlusIcon } from "../../../icons";
 import { cn } from "../../../utils/cn";
 import Badge from "../../../components/ui/badge/Badge";
@@ -86,9 +86,9 @@ interface EnrollmentModalProps {
  */
 const enrollmentSchema = z.object({
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
-  identificationNumber: z.string()
+    identificationNumber: z.string()
     .min(1, "La identificación es obligatoria")
-    .regex(/^\d+$/, "Solo se admiten números"),
+    .regex(/^[A-Za-z0-9]+$/, "Solo se admiten letras y números"),
   studentName: z.string()
     .min(1, "El nombre del estudiante es obligatorio")
     .max(100, "El nombre es demasiado largo")
@@ -147,10 +147,17 @@ export default function EnrollmentModal({
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    const cleaned = cleanCedula(input);
-    const formatted = formatCedulaDisplay(cleaned);
+    const prefix = watch("identificationPrefix") || "V";
+    const isPassport = prefix === "P";
+    let cleaned: string;
+    if (isPassport) {
+      cleaned = input.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, PASSPORT_MAX_LENGTH);
+    } else {
+      cleaned = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+    }
+    const formatted = isPassport ? cleaned : formatCedulaDisplay(cleaned, false);
     setDisplayIdentificationNumber(formatted);
-    setValue("identificationNumber", cleaned.replace(/^[A-Z]/, ''), { shouldValidate: true, shouldDirty: true });
+    setValue("identificationNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
 
   const { responsibles } = useInstitutionalResponsibles();

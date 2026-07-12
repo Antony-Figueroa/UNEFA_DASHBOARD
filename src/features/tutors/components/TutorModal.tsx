@@ -1509,7 +1509,7 @@ export default function TutorModal({
                 />
               </div>
               <div>
-                <Label>Grado de Instrucción <span className="text-red-500">*</span></Label>
+                <Label>Título <span className="text-red-500">*</span></Label>
                 <Controller
                   name="titulo"
                   control={control}

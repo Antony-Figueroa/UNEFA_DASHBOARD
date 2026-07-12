@@ -1,4 +1,5 @@
-// create-user.ts — Crea usuario 00000000 / Admin123! en Supabase local
+// create-user.ts — Crea usuario Admin (CI 00000000 / Admin123!) en Supabase local
+import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 
@@ -7,77 +8,144 @@ const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!key) throw new Error('Set SUPABASE_SERVICE_ROLE_KEY env var before running');
 const supabase = createClient(url, key, { auth: { persistSession: false } });
 
+const ADMIN_CI = 'V00000000';
+const ADMIN_PASSWORD = 'Admin123!';
+
 async function main() {
-  // 1. Check local schema for t_persons
-  const { data: cols } = await supabase.from('t_persons').select('*').limit(1);
-  const personCols = cols && cols.length > 0 ? Object.keys(cols[0]) : [];
-  console.log('[PERSON] Columns: ' + personCols.join(', '));
+  // 0. Clean up orphaned records from previous run with wrong CI format
+  await cleanupOldRecords();
 
-  // Try CI primary, fall back to lowercase 'ci'
-  const ciCol = personCols.includes('CI') ? 'CI' : 'ci';
-  const nameCol = personCols.includes('FIRST_NAME') ? 'FIRST_NAME' : 'first_name';
-  const surnameCol = personCols.includes('FIRST_SURNAME') ? 'FIRST_SURNAME' : 'last_name';
-  const emailCol = personCols.includes('EMAIL') ? 'EMAIL' : 'email';
-  const genderCol = personCols.includes('GENDER') ? 'GENDER' : 'gender';
-  const statusCol = personCols.includes('STATUS') ? 'STATUS' : 'status';
+  // 1. Create or find person (t_persons — lowercase columns per schema)
+  const { data: existingPerson } = await supabase
+    .from('t_persons')
+    .select('person_id')
+    .eq('ci', ADMIN_CI)
+    .maybeSingle();
 
-  const { data: existing } = await supabase.from('t_persons').select('person_id').eq(ciCol, '00000000').maybeSingle();
   let personId: number;
-  if (existing) {
-    personId = existing.person_id;
-    console.log('[PERSON] Already exists, id=' + personId);
+  if (existingPerson) {
+    personId = existingPerson.person_id;
+    console.log(`[PERSON] Already exists, id=${personId}`);
   } else {
-    const personData: any = {};
-    personData[ciCol] = '00000000';
-    personData[nameCol] = 'ADMIN';
-    personData[surnameCol] = 'SISTEMA';
-    if (personCols.includes('SECOND_NAME')) personData['SECOND_NAME'] = null;
-    if (personCols.includes('middle_name')) personData['middle_name'] = null;
-    if (personCols.includes('SECOND_SURNAME')) personData['SECOND_SURNAME'] = null;
-    if (personCols.includes('second_last_name')) personData['second_last_name'] = null;
-    personData[genderCol] = 'M';
-    personData[emailCol] = 'admin@sistema.com';
-    if (personCols.includes('PHONE_NUMBER')) personData['PHONE_NUMBER'] = null;
-    if (personCols.includes('phone')) personData['phone'] = null;
-    personData[statusCol] = 1;
-
-    const { data: p, error: pe } = await supabase.from('t_persons').insert(personData).select().single();
-    if (pe) { console.log('[PERSON] ERROR: ' + pe.message); return; }
+    const { data: p, error: pe } = await supabase
+      .from('t_persons')
+      .insert({
+        ci: ADMIN_CI,
+        first_name: 'ADMIN',
+        middle_name: null,
+        last_name: 'SISTEMA',
+        second_last_name: null,
+        email: 'admin@sistema.com',
+        phone: null,
+        gender: 'M',
+        status: 1,
+      })
+      .select('person_id')
+      .single();
+    if (pe) { console.error('[PERSON] ERROR:', pe.message); return; }
     personId = p.person_id;
-    console.log('[PERSON] Created, id=' + personId);
+    console.log(`[PERSON] Created, id=${personId}`);
   }
 
-  // 2. Check user columns
-  const { data: ucols } = await supabase.from('t_user').select('*').limit(1);
-  const userCols = ucols && ucols.length > 0 ? Object.keys(ucols[0]) : [];
-  console.log('[USER] Columns: ' + userCols.join(', '));
+  // 2. Create or find user (t_user — UPPERCASE columns per schema)
+  const { data: existingUser } = await supabase
+    .from('t_user')
+    .select('USER_ID')
+    .eq('USER_CI', ADMIN_CI)
+    .maybeSingle();
 
-  const userCiCol = userCols.includes('USER_CI') ? 'USER_CI' : 'user_ci';
-  const userNameCol = userCols.includes('NAME') ? 'NAME' : 'name';
-  const userEmailCol = userCols.includes('EMAIL') ? 'EMAIL' : 'email';
-  const userPassCol = userCols.includes('PASSWORD') ? 'PASSWORD' : 'password';
-  const userStatusCol = userCols.includes('STATUS') ? 'STATUS' : 'status';
-
-  const { data: existingUser } = await supabase.from('t_user').select('USER_ID').eq(userCiCol, '00000000').maybeSingle();
   if (existingUser) {
-    console.log('[USER] Already exists, id=' + existingUser.USER_ID);
+    console.log(`[USER] Already exists, USER_ID=${existingUser.USER_ID}`);
+    // Still ensure password key exists
+    await ensurePasswordKey(existingUser.USER_ID);
     return;
   }
 
-  const hash = await bcrypt.hash('Admin123!', 10);
-  const userData: any = {};
-  userData[userCiCol] = '00000000';
-  userData[userNameCol] = 'ADMIN SISTEMA';
-  userData[userEmailCol] = 'admin@sistema.com';
-  userData[userPassCol] = hash;
-  userData[userStatusCol] = 1;
-  userData['person_id'] = personId;
-  if (userCols.includes('CREATION_DATE')) userData['CREATION_DATE'] = new Date().toISOString();
-  if (userCols.includes('created_at')) userData['created_at'] = new Date().toISOString();
+  const { data: u, error: ue } = await supabase
+    .from('t_user')
+    .insert({
+      person_id: personId,
+      USER: 'admin',
+      USER_CI: ADMIN_CI,
+      NAME: 'ADMIN',
+      SECOND_NAME: null,
+      SURNAME: 'SISTEMA',
+      SECOND_SURNAME: null,
+      EMAIL: 'admin@sistema.com',
+      PHONE_NUMBER: null,
+      CREATION_DATE: new Date().toISOString(),
+      LOGIN: 0,
+      TERMS_CONDITIONS: 'A',
+      STATUS_SESSION: 0,
+      STATUS: 1,
+    })
+    .select('USER_ID')
+    .single();
+  if (ue) { console.error('[USER] ERROR:', ue.message); return; }
 
-  const { data: u, error: ue } = await supabase.from('t_user').insert(userData).select().single();
-  if (ue) { console.log('[USER] ERROR: ' + ue.message); return; }
-  console.log('[USER] ✅ Created, USER_ID=' + u.USER_ID + '  CI=00000000 / Admin123!');
+  console.log(`[USER] Created, USER_ID=${u.USER_ID}`);
+
+  // 3. Insert password in t_user_key
+  await ensurePasswordKey(u.USER_ID);
+
+  console.log(`[DONE] User ready — CI=${ADMIN_CI} / Password=${ADMIN_PASSWORD}`);
+}
+
+async function cleanupOldRecords() {
+  // Remove orphaned records from previous run where CI was stored without prefix
+  const { data: oldUser } = await supabase
+    .from('t_user')
+    .select('USER_ID, person_id')
+    .eq('USER_CI', '00000000')
+    .maybeSingle();
+
+  if (oldUser) {
+    // Delete password key first (FK dependency)
+    await supabase.from('t_user_key').delete().eq('USER_ID', oldUser.USER_ID);
+    // Delete user
+    await supabase.from('t_user').delete().eq('USER_ID', oldUser.USER_ID);
+    // Delete person
+    if (oldUser.person_id) {
+      await supabase.from('t_persons').delete().eq('person_id', oldUser.person_id);
+    }
+    console.log('[CLEANUP] Removed old records with CI=00000000');
+  }
+}
+
+async function ensurePasswordKey(userId: number) {
+  const { data: existing } = await supabase
+    .from('t_user_key')
+    .select('USER_KEY_ID')
+    .eq('USER_ID', userId)
+    .maybeSingle();
+
+  if (existing) {
+    console.log(`[KEY] Password key already exists for USER_ID=${userId}`);
+    return;
+  }
+
+  const hash = await bcrypt.hash(ADMIN_PASSWORD, 10);
+  const now = new Date().toISOString();
+
+  const { error } = await supabase
+    .from('t_user_key')
+    .insert({
+      USER_ID: userId,
+      KEY: hash,
+      START_DATE: now,
+      END_DATE: '2099-12-31T23:59:59.000Z',
+      MODIF_USER_ID: 0,
+      MODIF_USER_DATE: now,
+      ELIM_USER_ID: 0,
+      ELIM_USER_DATE: now,
+      REST_USER_ID: 0,
+      REST_USER_DATE: now,
+      STATUS: 1,
+      IS_TEMPORARY: false,
+    });
+
+  if (error) { console.error('[KEY] ERROR:', error.message); return; }
+  console.log(`[KEY] Password hash stored for USER_ID=${userId}`);
 }
 
 main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });

@@ -2,6 +2,10 @@
 // Read from prod via Supabase REST API, write to local via docker exec psql
 // Bypasses local REST API entirely (which was failing with "fetch failed")
 
+import dotenv from 'dotenv';
+import { resolve } from 'path';
+dotenv.config({ path: resolve(import.meta.dirname, '.env.cloud') });
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { execSync } from 'child_process';
 
@@ -55,6 +59,12 @@ function esc(val: any): string {
   if (val === null || val === undefined) return 'NULL';
   if (typeof val === 'boolean') return val ? 'true' : 'false';
   if (typeof val === 'number') return String(val);
+  // PostgreSQL text[] arrays — Supabase REST returns them as JS arrays
+  if (Array.isArray(val)) {
+    if (val.length === 0) return "'{}'::text[]";
+    const items = val.map(v => `'${String(v).replace(/'/g, "''")}'`).join(', ');
+    return `ARRAY[${items}]::text[]`;
+  }
   if (typeof val === 'object') {
     const json = JSON.stringify(val);
     const s = json.replace(/\\/g, '\\\\').replace(/'/g, "''");
@@ -135,6 +145,28 @@ async function main() {
     if (!existing.includes(cname)) existing.push(cname);
   }
 
+  // Detect jsonb columns — values inserted as strings must be wrapped as '"val"'::jsonb
+  const jsonbResult = execSync(
+    `docker exec supabase_db_UNEFA_DASHBOARD psql -U postgres -t -A -F"," -c "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='public' AND data_type = 'jsonb'"`,
+    { encoding: 'utf8', timeout: 10000 }
+  );
+  const jsonbCols = new Set<string>();
+  for (const line of jsonbResult.trim().split('\n').filter(Boolean)) {
+    const [tname, cname] = line.split(',');
+    jsonbCols.add(`${tname}.${cname}`);
+  }
+
+  // Detect text[] columns — arrays should use ARRAY[...]::text[] syntax
+  const textArrayResult = execSync(
+    `docker exec supabase_db_UNEFA_DASHBOARD psql -U postgres -t -A -F"," -c "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='public' AND udt_name = '_text'"`,
+    { encoding: 'utf8', timeout: 10000 }
+  );
+  const textArrayCols = new Set<string>();
+  for (const line of textArrayResult.trim().split('\n').filter(Boolean)) {
+    const [tname, cname] = line.split(',');
+    textArrayCols.add(`${tname}.${cname}`);
+  }
+
   // Read and insert each table
   for (const table of TABLES) {
     if (SKIP_TABLES.has(table)) continue;
@@ -151,6 +183,13 @@ async function main() {
         continue;
       }
 
+      // TRUNCATE local table first so local matches production exactly
+      try {
+        execPsql(`TRUNCATE TABLE "${table}" CASCADE;\n`);
+      } catch (e: any) {
+        console.warn(`[sync] ⚠️  TRUNCATE falló en ${table}: ${e.message.slice(0, 120)}`);
+      }
+
       const colList = cols.map(escCol).join(', ');
       const rowsPerInsert = 20;
       let inserted = 0;
@@ -161,7 +200,25 @@ async function main() {
         const values = batch.map(row => {
           const vals = cols.map(col => {
             const key = Object.keys(row).find(k => k.toLowerCase() === col.toLowerCase());
-            return key ? esc(row[key]) : 'NULL';
+            if (!key) return 'NULL';
+            const val = row[key];
+            // text[] columns: arrays → ARRAY[...]::text[]
+            if (textArrayCols.has(`${table}.${col}`) && Array.isArray(val)) {
+              if (val.length === 0) return "'{}'::text[]";
+              const items = val.map(v => `'${String(v).replace(/'/g, "''")}'`).join(', ');
+              return `ARRAY[${items}]::text[]`;
+            }
+            // jsonb columns: strings → '"val"'::jsonb
+            if (jsonbCols.has(`${table}.${col}`) && typeof val === 'string') {
+              const escaped = val.replace(/\\/g, '\\\\').replace(/'/g, "''");
+              return `'"${escaped}"'::jsonb`;
+            }
+            // jsonb columns: arrays → '[...]'::jsonb
+            if (jsonbCols.has(`${table}.${col}`) && Array.isArray(val)) {
+              const jsonArr = JSON.stringify(val).replace(/'/g, "''");
+              return `'${jsonArr}'::jsonb`;
+            }
+            return esc(val);
           });
           return `(${vals.join(', ')})`;
         }).join(',\n');
@@ -176,7 +233,22 @@ async function main() {
           for (const row of batch) {
             const rowVals = cols.map(col => {
               const key = Object.keys(row).find(k => k.toLowerCase() === col.toLowerCase());
-              return key ? esc(row[key]) : 'NULL';
+              if (!key) return 'NULL';
+              const val = row[key];
+              if (textArrayCols.has(`${table}.${col}`) && Array.isArray(val)) {
+                if (val.length === 0) return "'{}'::text[]";
+                const items = val.map(v => `'${String(v).replace(/'/g, "''")}'`).join(', ');
+                return `ARRAY[${items}]::text[]`;
+              }
+              if (jsonbCols.has(`${table}.${col}`) && typeof val === 'string') {
+                const escaped = val.replace(/\\/g, '\\\\').replace(/'/g, "''");
+                return `'"${escaped}"'::jsonb`;
+              }
+              if (jsonbCols.has(`${table}.${col}`) && Array.isArray(val)) {
+                const jsonArr = JSON.stringify(val).replace(/'/g, "''");
+                return `'${jsonArr}'::jsonb`;
+              }
+              return esc(val);
             });
             const singleSql = `INSERT INTO "${table}" (${colList}) VALUES (${rowVals.join(', ')}) ON CONFLICT DO NOTHING;\n`;
             try {

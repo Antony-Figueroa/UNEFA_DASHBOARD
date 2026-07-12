@@ -313,9 +313,6 @@ export default function InstitutionalResponsibleModal({
     for (const tab of TAB_IDS) counts[tab] = keys.filter(k => TAB_FIELDS[tab].includes(k)).length;
     return counts;
   }, [errors]);
-  const currentTabIndex = TAB_IDS.indexOf(tabsState.activeTab as typeof TAB_IDS[number]);
-  const goPrevTab = () => { if (currentTabIndex > 0) tabsState.setActiveTab(TAB_IDS[currentTabIndex - 1]); };
-  const goNextTab = () => { if (currentTabIndex < TAB_IDS.length - 1) tabsState.setActiveTab(TAB_IDS[currentTabIndex + 1]); };
   const onFormError = useCallback((formErrors: FieldErrors<RespFormData>) => {
     const firstTab = TAB_IDS.find(tab => TAB_FIELDS[tab].some(f => (formErrors as Record<string, any>)[f]));
     if (firstTab) tabsState.setActiveTab(firstTab);
@@ -1272,19 +1269,6 @@ onChange={(val) => {
               )}
             </div>
 
-          {/* Navegación entre tabs */}
-          <div className="flex items-center justify-between pt-4 mt-6 border-t border-border-light dark:border-border-dark">
-            <Button variant="outline" size="sm" onClick={goPrevTab} disabled={currentTabIndex === 0}>
-              ← Anterior
-            </Button>
-            {currentTabIndex < TAB_IDS.length - 1 ? (
-              <Button size="sm" onClick={goNextTab}>
-                Siguiente →
-              </Button>
-            ) : (
-              <span className="text-xs text-text-tertiary">Última sección</span>
-            )}
-          </div>
           </form>
         </ModalBody>
 

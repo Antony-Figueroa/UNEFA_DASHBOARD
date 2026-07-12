@@ -200,7 +200,7 @@ export function TablePreviewModal<T>({
                         <button
                           onClick={() => pagination.onPageChange(pagination.page - 1)}
                           disabled={pagination.page === 0}
-                          className="px-2 py-1 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
+                          className="px-2 py-1 rounded hover:bg-brand-500 hover:text-white dark:hover:bg-brand-500 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
                         >
                           ← Anterior
                         </button>
@@ -210,7 +210,7 @@ export function TablePreviewModal<T>({
                         <button
                           onClick={() => pagination.onPageChange(pagination.page + 1)}
                           disabled={pagination.page >= pagination.totalPages - 1}
-                          className="px-2 py-1 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
+                          className="px-2 py-1 rounded hover:bg-brand-500 hover:text-white dark:hover:bg-brand-500 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
                         >
                           Siguiente →
                         </button>

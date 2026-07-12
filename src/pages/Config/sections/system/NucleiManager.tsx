@@ -173,7 +173,7 @@ export default function NucleiManager() {
   };
 
   const handleAddNewRegion = async () => {
-    const raw = addValueInput.trim().toUpperCase();
+    const raw = addValueInput.trim();
     if (!raw) return;
     setSavingNewValue(true);
     try {
@@ -569,15 +569,11 @@ export default function NucleiManager() {
         </ModalFooter>
       </Modal>
 
-      {/* Dialog para agregar región nueva */}
-      <UnifiedDialog
-        isOpen={addValueOpen}
-        onClose={() => setAddValueOpen(false)}
-        title="Agregar nueva región"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-text-secondary dark:text-text-tertiary">
+      {/* Modal para agregar región nueva */}
+      <Modal isOpen={addValueOpen} onClose={() => setAddValueOpen(false)} size="sm">
+        <ModalHeader>{MODAL_CONFIG.titleByMode(false, 'Región')}</ModalHeader>
+        <ModalBody>
+          <p className="text-sm text-text-secondary dark:text-text-tertiary mb-3">
             Ingrese el nombre de la nueva región:
           </p>
           <input
@@ -589,16 +585,16 @@ export default function NucleiManager() {
             autoFocus
             onKeyDown={(e) => e.key === "Enter" && handleAddNewRegion()}
           />
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setAddValueOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleAddNewRegion} loading={savingNewValue}>
-              Agregar
-            </Button>
-          </div>
-        </div>
-      </UnifiedDialog>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="outline" onClick={() => setAddValueOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleAddNewRegion} loading={savingNewValue}>
+            Agregar
+          </Button>
+        </ModalFooter>
+      </Modal>
     </>
   );
 }

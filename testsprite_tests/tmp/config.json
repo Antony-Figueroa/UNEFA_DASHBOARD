@@ -7,7 +7,7 @@
     "projectName": "UNEFA_DASHBOARD",
     "projectPath": "C:\\Users\\Server Admin\\Documents\\GitHub\\UNEFA_DASHBOARD",
     "testIds": [],
-    "additionalInstruction": "Test the following flow in the application:\n1. Login with admin credentials (admin@unefa.edu / admin123)\n2. Navigate to Students page (/students) and register a new student with: CI=V-25000001, name=\"ESTUDIANTE PRUEBA\", career selection\n3. Navigate to Tutors page (/tutors) and register a new tutor with: CI=V-30000001, name=\"TUTOR PRUEBA\", career assignment\n4. Navigate to Institutions page (/institutions), create new institution with RIF=J-00000001, add a responsible\n5. Navigate to PreEnrollment page (/pre-enrollment) and create pre-enrollment for the test student\n6. Navigate to Enrollment page (/enrollment) and create enrollment for the test student\n\nFocus on verifying:\n- Each \"Agregar Nueva Carrera\" button appears and works in Enrollment page\n- The create/modals work correctly\n- No console errors during these operations",
+    "additionalInstruction": "Verificar que los bugs fijos no rompen otros modulos: Bug #1 (cedula/pasaporte), Bug #2 (mayusculas en direccion), Bug #4 (label Titulo), Bug #8 (Estado Civil protegido), Bug #9 (fechas invalidas), Bug #10 (doble confirmacion), Bug #11 (route opcional). Ademas verificar que el flujo general de login y dashboard funciona.",
     "serverMode": "production",
     "envs": {
       "API_KEY": "sk-user-Hs3UbGNgkghcLHOI-TKtCCSkZkS_voZaqKaTa3piEyt3BE3z_b3VS3pZRDtGTolXyue81dO78hyro4hzv8lFlhlTaZLhdb60Ewee5YAJBY-MEHUO8-c8UO0_5CLpKLVaUdw"

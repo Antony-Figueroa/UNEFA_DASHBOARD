@@ -5,11 +5,11 @@ import { SkeletonLoader } from "@/components/ui/skeleton";
 import Button from "@/components/ui/button/Button";
 import apiClient from "@/api/apiClient";
 import { useToast } from "@/context/toast";
-import { TOAST } from "@/components/ui/dialog/DialogConfig";
+import { TOAST, MODAL_CONFIG } from "@/components/ui/dialog/DialogConfig";
 import { EditIcon } from "@/icons/actions";
 import * as listsService from "@/features/lists/services/listsService";
 import type { ListValue } from "@/features/lists/types";
-import UnifiedDialog from "@/components/ui/dialog/UnifiedDialog";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/modal";
 
 interface InstitutionData {
   legal_name: string;
@@ -65,7 +65,7 @@ export default function InstitutionConfig() {
   };
 
   const handleAddNewValue = async () => {
-    const raw = addValueInput.trim().toUpperCase();
+    const raw = addValueInput.trim();
     if (!raw) return;
     setSavingNewValue(true);
     try {
@@ -388,14 +388,10 @@ export default function InstitutionConfig() {
       </div>
 
       {/* Modal para agregar nuevo valor a lista */}
-      <UnifiedDialog
-        isOpen={addValueOpen}
-        onClose={() => setAddValueOpen(false)}
-        title="Agregar nuevo valor"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-text-secondary dark:text-text-tertiary">
+      <Modal isOpen={addValueOpen} onClose={() => setAddValueOpen(false)} size="sm">
+        <ModalHeader>{MODAL_CONFIG.titleByMode(false, 'Valor')}</ModalHeader>
+        <ModalBody>
+          <p className="text-sm text-text-secondary dark:text-text-tertiary mb-3">
             Ingrese el nombre del nuevo valor para <strong>{addValueListName}</strong>:
           </p>
           <input
@@ -407,16 +403,16 @@ export default function InstitutionConfig() {
             autoFocus
             onKeyDown={(e) => e.key === "Enter" && handleAddNewValue()}
           />
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setAddValueOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleAddNewValue} loading={savingNewValue}>
-              Agregar
-            </Button>
-          </div>
-        </div>
-      </UnifiedDialog>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="outline" onClick={() => setAddValueOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleAddNewValue} loading={savingNewValue}>
+            Agregar
+          </Button>
+        </ModalFooter>
+      </Modal>
     </>
   );
 }

@@ -2241,7 +2241,21 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
     // Assert grace period (allows INSCRITO and REPROBADO within deadline)
     await assertGracePeriod(supabase, normalizedPracticeId, { blockIfCertified: true });
 
-    // Step 1: Fetch ALL evaluations for this practice (avoid .not() filter issues)
+    // Fetch practice to check current status
+    const { data: practice, error: practiceError } = await supabase
+      .from('t_professional_practices')
+      .select('PRACTICES_STATUS')
+      .eq('PROFESSIONAL_PRACTICE_ID', normalizedPracticeId)
+      .single();
+
+    if (practiceError || !practice) {
+      return res.status(404).json({ success: false, message: 'Práctica no encontrada' });
+    }
+
+    const isReprobado = practice.PRACTICES_STATUS === PRACTICES_STATUS.REPROBADO;
+    const now = new Date().toISOString();
+
+    // Step 1: Fetch ALL evaluations for this practice
     const { data: allEvals, error: findError } = await supabase
       .from('t_evaluation')
       .select('EVALUATION_ID, FROZEN_AT, UNFROZEN_AT')
@@ -2252,28 +2266,30 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
     // Step 2: Filter frozen evaluations in JS (FROZEN_AT is set, UNFROZEN_AT is null)
     const frozenEvals = (allEvals || []).filter((e: any) => e.FROZEN_AT != null && e.UNFROZEN_AT == null);
 
-    if (frozenEvals.length === 0) {
+    // If no frozen evaluations AND not REPROBADO, nothing to unfreeze
+    if (frozenEvals.length === 0 && !isReprobado) {
       return res.status(400).json({
         success: false,
         message: 'No hay evaluaciones congeladas para descongelar en esta práctica.'
       });
     }
 
-    // Step 3: Update only the frozen evaluation IDs
-    const evalIds = frozenEvals.map((e: any) => e.EVALUATION_ID);
-    const now = new Date().toISOString();
+    // Step 3: Update frozen evaluations (if any)
+    if (frozenEvals.length > 0) {
+      const evalIds = frozenEvals.map((e: any) => e.EVALUATION_ID);
 
-    const { error: updateError } = await supabase
-      .from('t_evaluation')
-      .update({
-        FROZEN_AT: null,
-        UNFROZEN_AT: now,
-        UNFREEZE_REASON: reason.trim(),
-        UNFREEZE_AUTHORIZED_BY: userId
-      })
-      .in('EVALUATION_ID', evalIds);
+      const { error: updateError } = await supabase
+        .from('t_evaluation')
+        .update({
+          FROZEN_AT: null,
+          UNFROZEN_AT: now,
+          UNFREEZE_REASON: reason.trim(),
+          UNFREEZE_AUTHORIZED_BY: userId
+        })
+        .in('EVALUATION_ID', evalIds);
 
-    if (updateError) throw updateError;
+      if (updateError) throw updateError;
+    }
 
     // Step 4: Restore practice to INSCRITO + set unfreeze metadata
     const { error: practiceUpdateError } = await supabase
@@ -2301,9 +2317,14 @@ export const unfreezePracticeEvaluations = async (req: AuthRequest, res: Respons
       console.error('[Audit] Error auditing unfreeze:', auditError);
     }
 
+    const unfrozenCount = frozenEvals.length;
+    const message = isReprobado && unfrozenCount === 0
+      ? 'Práctica reprobada restaurada a INSCRITO para nueva evaluación'
+      : `${unfrozenCount} evaluación(es) descongelada(s) para corrección`;
+
     res.json({
       success: true,
-      message: `${evalIds.length} evaluación(es) descongelada(s) para corrección`
+      message
     });
 
   } catch (error: any) {

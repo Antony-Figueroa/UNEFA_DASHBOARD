@@ -242,8 +242,8 @@ export default function EvaluationsAndCulminationPage() {
                         : []),
                       // Ver Auditoría — siempre visible
                       { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
-                      // Descongelar — solo si está congelado
-                      ...(practice.isFrozen
+                      // Descongelar — si está congelado O si es reprobado (para permitir nueva evaluación)
+                      ...(practice.isFrozen || practice.practicesStatusCode === 'REPROBADO'
                         ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
                         : []),
                     ]} />
@@ -304,7 +304,7 @@ export default function EvaluationsAndCulminationPage() {
                     ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
                     : []),
                   { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
-                  ...(practice.isFrozen
+                  ...(practice.isFrozen || practice.practicesStatusCode === 'REPROBADO'
                     ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
                     : []),
                 ]} />

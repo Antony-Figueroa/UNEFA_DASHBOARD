@@ -36,6 +36,7 @@ interface CulminationGroup {
   studentCi: string;
   studentName: string;
   careerName: string;
+  periodId: number;
   period: string;
   practices: CulminationPractice[];
   overallStatus: 'completed' | 'in_progress';
@@ -248,6 +249,7 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
       const studentName = getPersonFullName(p.t_persons);
       const careerName = p.t_career?.CAREER_NAME || '';
       const periodDesc = p.t_internships_period?.DESCRIPTION || '';
+      const periodId = p.PERIOD_ID;
       const groupKey = `${studentCi}|${periodDesc}`;
 
       if (!groupsMap.has(groupKey)) {
@@ -255,6 +257,7 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
           studentCi,
           studentName,
           careerName,
+          periodId,
           period: periodDesc,
           practices: [],
           overallStatus: 'in_progress',
@@ -289,14 +292,108 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
       );
     }
 
+    const total = groups.length;
+    const completed = groups.filter(g => g.overallStatus === 'completed').length;
+    const inProgress = groups.filter(g => g.overallStatus === 'in_progress').length;
+
+    // Transformar a formato StudentCulminationRowData que el frontend espera
+    const mappedGroups = groups.map(g => {
+      const phases = g.practices.map((p, idx) => {
+        // Determinar status de la fase
+        let phaseStatus: 'pending' | 'approved' | 'certified' | 'failed' | 'withdrawn_justified' = 'pending';
+        let statusLabel = 'Pendiente';
+
+        if (p.culminationStatus === 'certified') {
+          phaseStatus = 'certified';
+          statusLabel = 'Certificado';
+        } else if (p.result === 'approved') {
+          phaseStatus = 'approved';
+          statusLabel = 'Aprobado';
+        } else if (p.result === 'failed') {
+          phaseStatus = 'failed';
+          statusLabel = 'Reprobado';
+        }
+
+        return {
+          practiceId: Number(p.id),
+          practiceTypeId: p.practiceTypeId,
+          practiceTypeName: p.practiceType,
+          priority: idx + 1,
+          status: phaseStatus,
+          statusLabel,
+          grade: p.finalGrade,
+          isFrozen: p.isFrozen,
+          evaluationStatus: p.evaluationStatus,
+          institutionName: p.institutionName,
+          hoursCompleted: p.totalHours,
+        };
+      });
+
+      const totalPractices = phases.length;
+      const completedPractices = phases.filter(ph =>
+        ph.status === 'approved' || ph.status === 'certified'
+      ).length;
+
+      // Determinar finalStatus
+      const allCertified = phases.every(ph => ph.status === 'certified');
+      const anyFailed = phases.some(ph => ph.status === 'failed');
+      const allApprovedOrCertified = phases.every(ph =>
+        ph.status === 'approved' || ph.status === 'certified'
+      );
+
+      let finalStatus: 'approved' | 'pending' | 'failed' | 'partial' = 'pending';
+      let finalStatusLabel = 'Pendiente';
+      if (allCertified) {
+        finalStatus = 'approved';
+        finalStatusLabel = 'Certificado';
+      } else if (allApprovedOrCertified) {
+        finalStatus = 'approved';
+        finalStatusLabel = 'Aprobado';
+      } else if (anyFailed) {
+        finalStatus = 'failed';
+        finalStatusLabel = 'Reprobado';
+      } else if (completedPractices > 0) {
+        finalStatus = 'partial';
+        finalStatusLabel = 'Aprobado Parcial';
+      }
+
+      // canCertify: todas las fases aprobadas/certificadas y ninguna certificada aún
+      const canCertify = allApprovedOrCertified && !allCertified && totalPractices > 0;
+
+      // Certificado info (del primer práctica que tenga)
+      const certPractice = g.practices.find(p => p.certificateNumber);
+
+      return {
+        studentCi: g.studentCi,
+        studentName: g.studentName,
+        careerName: g.careerName,
+        periodId: g.periodId,
+        periodName: g.period,
+        phases,
+        finalStatus,
+        finalStatusLabel,
+        canCertify,
+        certificateNumber: certPractice?.certificateNumber || null,
+        certifiedAt: certPractice?.certifiedAt || null,
+        totalPractices,
+        completedPractices,
+      };
+    });
+
+    // Calcular stats de culminación (para compatibilidad con frontend CulminationGroupsResponse)
+    const allPractices = groups.flatMap(g => g.practices);
+    const stats = {
+      total: allPractices.length,
+      pending: allPractices.filter(p => p.culminationStatus === 'pending').length,
+      approved: allPractices.filter(p => p.culminationStatus === 'approved').length,
+      certified: allPractices.filter(p => p.culminationStatus === 'certified').length,
+    };
+
     res.json({
       success: true,
-      data: groups,
-      meta: {
-        total: groups.length,
-        completed: groups.filter(g => g.overallStatus === 'completed').length,
-        inProgress: groups.filter(g => g.overallStatus === 'in_progress').length,
-      }
+      groups: mappedGroups,
+      stats,
+      meta: { total, completed, inProgress }
     });
 
   } catch (error) {

@@ -86,7 +86,7 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos }: Props) {
   const responsableNombre = data.responsable?.nombreCompleto || institucionNombre;
   const responsableTitulo = data.responsable?.titulo
     ? data.responsable.titulo.toUpperCase()
-    : 'SR(A).';
+    : '';
 
   const hoursRequired = data.hoursRequired || 480;
   const periodoDesc = data.periodo?.description || '_________';
@@ -105,7 +105,7 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos }: Props) {
       {/* Sección izquierda: Señor (a), Responsable, Institución, Presente */}
       <View style={styles.leftSection}>
         <Text style={styles.labelText}>Señor (a):</Text>
-        <Text style={styles.labelText}>{responsableTitulo} {responsableNombre}</Text>
+        <Text style={styles.labelText}>{responsableTitulo ? `${responsableTitulo} ` : ''}{responsableNombre}</Text>
         <Text style={styles.labelText}>{institucionNombre}</Text>
         <Text style={styles.labelText}>Presente.</Text>
       </View>

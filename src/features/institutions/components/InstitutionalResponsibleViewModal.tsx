@@ -49,13 +49,16 @@ export default function InstitutionalResponsibleViewModal({
 
   if (!responsible) return null;
 
-  const formattedDate = new Date(responsible.registrationDate).toLocaleDateString('es-VE', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const formattedDate = (() => {
+    const d = new Date(responsible.registrationDate);
+    return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-VE', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  })();
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>

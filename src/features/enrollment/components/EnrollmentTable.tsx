@@ -64,6 +64,8 @@ interface EnrollmentTableProps {
   careerOptions?: FilterOption[];
   /** Callback to generate a report from the filtered data */
   onReport?: (data: EnrollmentRowData[]) => void;
+  /** Si hay múltiples tipos de práctica activos, el nombre del tipo prioridad 1 (que sí permite inactivación) */
+  priorityOnePracticeType?: string | null;
 }
 
 /**
@@ -307,6 +309,7 @@ export default function EnrollmentTable({
   loading: externalLoading,
   practiceTypeOptions = [],
   careerOptions = [],
+  priorityOnePracticeType = null,
 }: EnrollmentTableProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
@@ -685,7 +688,11 @@ export default function EnrollmentTable({
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
                                             onViewHistory={onViewHistory ? () => onViewHistory(s) : undefined}
-                                            onInactivate={onInactivate ? () => onInactivate(s) : undefined}
+                                            onInactivate={
+                                                onInactivate && (!priorityOnePracticeType || s.practiceType === priorityOnePracticeType)
+                                                    ? () => onInactivate(s)
+                                                    : undefined
+                                            }
                                             onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
                                             onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
                                             onReactivate={onReactivate ? () => onReactivate(s) : undefined}
@@ -771,7 +778,11 @@ export default function EnrollmentTable({
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
                                             onViewHistory={onViewHistory ? () => onViewHistory(s) : undefined}
-                                            onInactivate={onInactivate ? () => onInactivate(s) : undefined}
+                                            onInactivate={
+                                                onInactivate && (!priorityOnePracticeType || s.practiceType === priorityOnePracticeType)
+                                                    ? () => onInactivate(s)
+                                                    : undefined
+                                            }
                                             onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
                                             onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
                                             onReactivate={onReactivate ? () => onReactivate(s) : undefined}

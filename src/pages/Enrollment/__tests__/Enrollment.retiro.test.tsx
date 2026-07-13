@@ -104,7 +104,7 @@ vi.mock('../../../features/careers/hooks/useCareers', () => ({
 }));
 
 vi.mock('../../../features/internship-types/hooks/useInternshipTypes', () => ({
-  useInternshipTypes: () => ({ activeOptions: [] }),
+  useInternshipTypes: () => ({ activeOptions: [], internshipTypes: [] }),
 }));
 
 vi.mock('../../../features/internship-types/services/internshipTypesService', () => ({

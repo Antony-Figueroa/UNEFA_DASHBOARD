@@ -960,17 +960,9 @@ export default function EnrollmentModal({
                     name="methodologicalTutorId"
                     control={control}
                     render={({ field }) => {
-                      // Buscar careerId desde careersState usando careerName o careerId directo
-                      const careerObj = careersState.find(c => c.careerName === selectedCareerName || String(c.careerId) === selectedCareerName);
-                      const careerId = careerObj ? String(careerObj.careerId) : String(selectedCareerName);
-                      
                       const filteredTutors = tutors.filter(t => {
                         // Excluir el tutor académico seleccionado
                         if (t.tutorId === selectedAcademicTutorId) return false;
-                        // Filtrar por carrera si hay una seleccionada
-                        if (careerId && t.carreras) {
-                          return t.carreras.some((c: string) => String(c) === careerId || c === careerId);
-                        }
                         return true;
                       });
                       
@@ -980,21 +972,18 @@ export default function EnrollmentModal({
                             value: t.tutorId,
                             label: `${t.firstName} ${t.lastName}`
                           }))}
-                          placeholder={careerId || editingEntry
-                            ? (filteredTutors.length === 0 
-                                ? "No hay tutores para esta carrera" 
-                                : "Seleccione el tutor metodológico")
-                            : "Seleccione un estudiante primero"}
+                          placeholder={filteredTutors.length === 0
+                            ? "No hay tutores disponibles"
+                            : "Seleccione el tutor metodológico"}
                           onChange={field.onChange}
                           value={String(field.value)}
                           className="rounded-xl h-[48px]"
-                          disabled={!careerId && !editingEntry}
-                          onAddNew={(!careerId && !editingEntry) ? undefined : () => {
+                          onAddNew={() => {
                             window.dispatchEvent(new CustomEvent("enrollment:addTutor", {
                               detail: { targetField: "methodologicalTutorId" }
                             }));
                           }}
-                          addNewLabel={(!careerId && !editingEntry) ? undefined : "Nuevo Tutor"}
+                          addNewLabel="Nuevo Tutor"
                         />
                       );
                     }}

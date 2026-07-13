@@ -25,6 +25,10 @@ vi.mock('../../../features/students/components/StudentViewModal', () => ({
   default: ({ isOpen, onClose }: any) => isOpen ? <div data-testid="student-view-modal">Student View</div> : null,
 }));
 
+vi.mock('../../../context/auth', () => ({
+  useAuth: () => ({ user: { role: 2 } }),
+}));
+
 vi.mock('../../../context/tab', () => ({
   useTabs: () => ({
     openTab: vi.fn(),

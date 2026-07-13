@@ -189,7 +189,7 @@ export default function EvaluationsAndCulminationPage() {
                     evaluation={practice.evaluations.INSTITUCIONAL}
                     evaluatorType="INSTITUCIONAL"
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
-                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
+                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id, practice.studentName, practice.studentCi)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
                     readOnly={isTerminal}
@@ -201,7 +201,7 @@ export default function EvaluationsAndCulminationPage() {
                     evaluation={practice.evaluations.ACADEMICO}
                     evaluatorType="ACADEMICO"
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
-                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
+                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id, practice.studentName, practice.studentCi)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
                     readOnly={isTerminal}
@@ -213,7 +213,7 @@ export default function EvaluationsAndCulminationPage() {
                     evaluation={practice.evaluations.COMITE}
                     evaluatorType="COMITE"
                     onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
-                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
+                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id, practice.studentName, practice.studentCi)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
                     readOnly={isTerminal}
@@ -222,7 +222,7 @@ export default function EvaluationsAndCulminationPage() {
                 </TableCell>
                 <TableCell className="text-center">
                   <span className="text-lg font-bold text-brand-500">
-                    {practice.finalGrade != null ? `${Math.round((practice.finalGrade / evalConfig.score.displayScale) * 100)}%` : '-'}
+                    {practice.finalGrade != null ? `${((practice.finalGrade / evalConfig.score.displayScale) * 100).toFixed(1)}%` : '-'}
                   </span>
                 </TableCell>
                 <TableCell className="text-center">
@@ -561,6 +561,8 @@ export default function EvaluationsAndCulminationPage() {
         isOpen={hook.detailModalOpen}
         onClose={hook.handleCloseDetailModal}
         evaluationId={hook.selectedEvaluationId}
+        studentName={hook.selectedDetailStudentName}
+        studentCi={hook.selectedDetailStudentCi}
       />
 
       <StudentDetailModal

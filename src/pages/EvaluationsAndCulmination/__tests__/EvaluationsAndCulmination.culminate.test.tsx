@@ -108,11 +108,11 @@ vi.mock('../../../features/evaluations-culmination/components/CommitteeModal', (
 vi.mock('../../../features/evaluations-culmination/components/CertificationView', () => ({ CertificationView: () => <div data-testid="certification-view" /> }));
 vi.mock('../../../features/evaluations-culmination/components/PhaseStatusBadge', () => ({ PhaseStatusBadge: () => <span data-testid="phase-status-badge" /> }));
 vi.mock('../../../features/evaluations-culmination/components/StudentCulminationRow', () => ({
-  StudentCulminationRow: ({ row, onApprove }: any) => (
+  StudentCulminationRow: ({ row, onCertify }: any) => (
     <div data-testid="student-culmination-row">
       <span>{row.studentName}</span>
       {row.phases?.some((p: any) => p.status === 'approved') && (
-        <button onClick={() => onApprove(row.phases.find((p: any) => p.status === 'approved').practiceId)}>
+        <button onClick={() => onCertify(row.phases.find((p: any) => p.status === 'approved').practiceId)}>
           Aprobar
         </button>
       )}
@@ -557,22 +557,22 @@ describe('EvaluationsAndCulmination — Culminate flow', () => {
 
   // ─── handleApprove wiring ───────────────────────────
 
-  it('calls handleApprove when "Aprobar" button is clicked', async () => {
+  it('calls certifyPracticeGrouped when "Aprobar" button is clicked', async () => {
     mockActiveTab = 'culmination';
-    const approveGroupedMock = vi.fn().mockResolvedValue(true);
+    const certifyMock = vi.fn().mockResolvedValue(true);
     mockHookInstance = {
       ...mockHookInstance,
       filteredPractices: [makePractice({ culminationStatus: 'pending', result: 'approved' })],
       culminationGroups: [makeCulminationGroup()],
-      approveCulminationGrouped: approveGroupedMock,
+      certifyPracticeGrouped: certifyMock,
     };
 
     const Page = await getPage();
     render(<Page />);
 
     fireEvent.click(screen.getByText('Aprobar'));
-    expect(approveGroupedMock).toHaveBeenCalledTimes(1);
-    expect(approveGroupedMock).toHaveBeenCalledWith(1); // practiceId
+    expect(certifyMock).toHaveBeenCalledTimes(1);
+    expect(certifyMock).toHaveBeenCalledWith(1); // practiceId
   });
 
   it('calls handleApprove when "Culminar" is clicked in Evaluaciones tab', async () => {

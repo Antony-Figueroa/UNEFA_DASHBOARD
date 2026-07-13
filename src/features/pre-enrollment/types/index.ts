@@ -55,6 +55,10 @@ export interface PreEnrollment {
 export interface PreEnrollmentRowData extends Omit<PreEnrollment, "preEnrollmentDate"> {
   /** Fecha de pre-inscripción formateada como string para visualización */
   preEnrollmentDate: string;
+  /** Tipo de registro para renderizado condicional: 'active' | 'withdrawn' */
+  recordType?: 'active' | 'withdrawn';
+  /** Tipo de retiro: 'justified' | 'unjustified' */
+  withdrawalType?: 'justified' | 'unjustified';
 }
 
 /**

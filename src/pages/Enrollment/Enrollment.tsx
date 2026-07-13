@@ -155,7 +155,16 @@ export default function EnrollmentPage() {
     const { institutions, addInstitution, loadingAction: institutionLoading } = useInstitutions();
     const { addResponsible, loadingAction: responsibleLoading } = useInstitutionalResponsibles();
     const { careers, addCareer } = useCareers();
-    const { activeOptions: internshipTypeOptions } = useInternshipTypes();
+    const { activeOptions: internshipTypeOptions, internshipTypes } = useInternshipTypes();
+
+    // Si hay más de 1 tipo de práctica activo, solo la prioridad 1 permite inactivación
+    const hasMultiplePracticeTypes = practiceTypeOptions.length > 1;
+    const priorityOnePracticeType = useMemo(() => {
+        if (!hasMultiplePracticeTypes) return null;
+        const active = internshipTypes.filter(t => t.status);
+        const p1 = active.find(t => t.priority === 1);
+        return p1 ? p1.name.toUpperCase() : null;
+    }, [hasMultiplePracticeTypes, internshipTypes]);
 
     const careerOptions = useMemo(() => 
         careers.filter(c => c.status).map(c => ({ 
@@ -499,6 +508,7 @@ export default function EnrollmentPage() {
                                 onViewHistory={handleViewHistory}
                                 loading={loadingAction}
                                 practiceTypeOptions={practiceTypeOptions}
+                                priorityOnePracticeType={priorityOnePracticeType}
                             />
                         </SkeletonLoader>
                     </ComponentCard>

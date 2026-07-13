@@ -5,7 +5,7 @@
  */
 
 import { PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../types";
-import { preEnrollmentService, batchCreate, BatchPreEnrollRequest, BatchResult, togglePreEnrollmentStatus } from "../services/preEnrollmentService";
+import { preEnrollmentService, batchCreate, BatchPreEnrollRequest, BatchResult, togglePreEnrollmentStatus, withdrawPreEnrollment } from "../services/preEnrollmentService";
 import { useToast } from "../../../context/toast";
 import { RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
 import { useCrud } from "../../../hooks/useCrud";
@@ -43,6 +43,41 @@ export const usePreEnrollment = () => {
     resourceName: "Pre-Inscripción",
     idField: "preEnrollmentId",
   });
+
+  /**
+   * Retira una pre-inscripción (justificado o sin justificación).
+   * 
+   * @param practiceId - ID de la pre-inscripción
+   * @param withdrawalType - 'justified' | 'unjustified'
+   * @param justificationReason - Motivo (requerido para justificado)
+   * @param withdrawComment - Comentario opcional
+   */
+  const withdrawPreEnrollment = async (
+    practiceId: string,
+    withdrawalType: 'justified' | 'unjustified',
+    justificationReason: string,
+    withdrawComment?: string
+  ) => {
+    try {
+      await preEnrollmentService.withdrawPreEnrollment(practiceId, withdrawalType, justificationReason, withdrawComment);
+      addToast({
+        variant: withdrawalType === 'justified' ? "success" : "warning",
+        title: withdrawalType === 'justified' ? "Retiro Justificado" : "Abandono Registrado",
+        message: withdrawalType === 'justified'
+          ? `La pre-inscripción ha sido retirada con justificativo.`
+          : `La pre-inscripción ha sido retirada sin justificación.`,
+      });
+      refreshPreEnrollments();
+    } catch (error: any) {
+      console.error("[usePreEnrollment] Error withdrawing pre-enrollment:", error);
+      addToast({
+        variant: "error",
+        title: "Error",
+        message: error.response?.data?.message || "No se pudo procesar la retirada.",
+      });
+      throw error;
+    }
+  };
 
   /**
    * Registra una nueva pre-inscripción.
@@ -232,6 +267,7 @@ export const usePreEnrollment = () => {
     addPreEnrollment,
     editPreEnrollment,
     toggleStatus,
+    withdrawPreEnrollment,
     bulkToggleStatus,
     batchAddPreEnrollment,
     refreshPreEnrollments,

@@ -180,6 +180,7 @@ const navItems: NavItem[] = [
       { name: "Cargar Notas", path: "/tutor/grades" },
       { name: "Bitácora", path: "/tutor/activity-logs" },
       { name: "Seguimiento", path: "/tutor/tracking" },
+      { name: "Reportes", path: "/tutor/reports" },
       { name: "Mi Perfil", path: "/tutor/profile" },
     ],
   },

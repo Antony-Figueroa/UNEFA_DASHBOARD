@@ -15,5 +15,6 @@ router.post('/batch', requirePermission('enrollments:create'), validateCreatePre
 router.put('/:id', requirePermission('enrollments:edit'), validateUpdatePreEnrollmentPeriod, preEnrollmentsController.updatePreEnrollment);
 router.delete('/:id', requirePermission('enrollments:delete'), preEnrollmentsController.deletePreEnrollment);
 router.patch('/:id/status', requirePermission('enrollments:edit'), preEnrollmentsController.togglePreEnrollmentStatus);
+router.patch('/:id/withdraw', requirePermission('enrollments:edit'), preEnrollmentsController.withdrawPreEnrollment);
 
 export default router;

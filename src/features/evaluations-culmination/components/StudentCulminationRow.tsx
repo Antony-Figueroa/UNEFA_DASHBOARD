@@ -162,7 +162,6 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
                   <tr className="text-left text-text-tertiary text-xs uppercase border-b border-gray-200 dark:border-gray-700">
                     <th className="py-2 pr-4">Práctica</th>
                     <th className="py-2 pr-4">Institución</th>
-                    <th className="py-2 pr-4 text-center">Horas</th>
                     <th className="py-2 pr-4 text-center">Estado</th>
                     <th className="py-2 pr-4 text-center">Calificación</th>
                     <th className="py-2 text-center">Acción</th>
@@ -187,13 +186,6 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
                             phase.institutionName
                           )}
                         </td>
-                        <td className="py-3 pr-4 text-center tabular-nums">
-                          {isLocked ? (
-                            <span className="text-text-tertiary">—</span>
-                          ) : (
-                            <span className="font-medium">{phase.hoursCompleted}h</span>
-                          )}
-                        </td>
                         <td className="py-3 pr-4 text-center">
                           <PhaseStatusBadge
                             status={phase.status}
@@ -203,7 +195,7 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
                         </td>
                         <td className="py-3 pr-4 text-center">
                           {phase.grade != null ? (
-                            <span className="font-semibold tabular-nums">{phase.grade}</span>
+                            <span className="font-semibold tabular-nums">{Number(phase.grade).toFixed(2)}</span>
                           ) : (
                             <span className="text-text-tertiary">—</span>
                           )}

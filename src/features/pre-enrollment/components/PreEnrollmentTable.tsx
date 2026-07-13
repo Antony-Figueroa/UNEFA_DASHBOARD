@@ -46,6 +46,10 @@ interface PreEnrollmentTableProps {
   onView?: (item: PreEnrollmentRowData) => void;
   /** Función para exportar a inscripción definitiva */
   onExportToEnrollment?: (item: PreEnrollmentRowData) => void;
+  /** Función para retirada justificada */
+  onWithdrawJustified?: (item: PreEnrollmentRowData) => void;
+  /** Función para retirada sin justificación (abandono) */
+  onWithdrawUnjustified?: (item: PreEnrollmentRowData) => void;
   /** Función para eliminación masiva */
   onBulkDelete?: (ids: string[]) => void;
   /** Función para restauración masiva */
@@ -62,6 +66,8 @@ interface PreEnrollmentTableProps {
   careerOptions?: FilterOption[];
   /** Callback que notifica si hay filas seleccionadas (para bloquear botonera externa) */
   onSelectionChange?: (selecting: boolean) => void;
+  /** Si hay múltiples tipos de práctica activos, el nombre del tipo prioridad 1 (que sí permite inactivación) */
+  priorityOnePracticeType?: string | null;
 }
 
 type SortKey = "identificationNumber" | "studentName" | "period" | "preEnrollmentDate" | "enrollmentCode";
@@ -72,7 +78,11 @@ interface ActionButtonsProps {
     onToggleStatus?: () => void;
     onView?: () => void;
     onExportToEnrollment?: () => void;
+    onWithdrawJustified?: () => void;
+    onWithdrawUnjustified?: () => void;
     status: boolean;
+    recordType?: string;
+    withdrawalType?: string;
     isMobile?: boolean;
     disableAll?: boolean;
 }
@@ -82,7 +92,11 @@ const ActionButtons = ({
     onToggleStatus,
     onView,
     onExportToEnrollment,
+    onWithdrawJustified,
+    onWithdrawUnjustified,
     status,
+    recordType,
+    withdrawalType,
     isMobile = false,
     disableAll = false,
 }: ActionButtonsProps) => {
@@ -109,6 +123,8 @@ const ActionButtons = ({
         </svg>
     );
 
+    const isWithdrawn = recordType === 'withdrawn';
+
     return (
         <div className={containerClasses}>
             {onView && (
@@ -122,7 +138,8 @@ const ActionButtons = ({
                     disabled={disableAll}
                 />
             )}
-            {onEdit && (
+
+            {!isWithdrawn && onEdit && (
                 <AsyncActionButton
                     onClick={async () => onEdit()}
                     icon={<EditIcon />}
@@ -133,7 +150,8 @@ const ActionButtons = ({
                     disabled={disableAll}
                 />
             )}
-            {onExportToEnrollment && (
+
+            {!isWithdrawn && onExportToEnrollment && (
                 <AsyncActionButton
                     onClick={async () => onExportToEnrollment()}
                     icon={<ExportIcon />}
@@ -144,7 +162,8 @@ const ActionButtons = ({
                     disabled={disableAll}
                 />
             )}
-            {onToggleStatus && (
+
+            {!isWithdrawn && onToggleStatus && (
                 <AsyncActionButton
                     onClick={async () => onToggleStatus()}
                     icon={status ? <TrashIcon /> : <RefreshIcon />}
@@ -154,6 +173,57 @@ const ActionButtons = ({
                     fullWidth={isMobile}
                     disabled={disableAll}
                 />
+            )}
+
+            {/* Withdrawn: badge */}
+            {isWithdrawn && (
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${
+                    withdrawalType === 'justified'
+                        ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400"
+                        : "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400"
+                }`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                    {withdrawalType === 'justified' ? 'Retiro Justificado' : 'Abandono'}
+                </span>
+            )}
+
+            {/* Active: withdrawal buttons */}
+            {!isWithdrawn && (
+                <>
+                    {onWithdrawJustified && (
+                        <AsyncActionButton
+                            onClick={async () => onWithdrawJustified()}
+                            icon={
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                            }
+                            tooltip="Retiro Justificado"
+                            label={isMobile ? "Retiro Justificado" : undefined}
+                            variant="info"
+                            fullWidth={isMobile}
+                            disabled={disableAll}
+                        />
+                    )}
+                    {onWithdrawUnjustified && (
+                        <AsyncActionButton
+                            onClick={async () => onWithdrawUnjustified()}
+                            icon={
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 14.25 12 18l3.75-3.75M12 18V11.25" />
+                                </svg>
+                            }
+                            tooltip="Abandono"
+                            label={isMobile ? "Abandono" : undefined}
+                            variant="error"
+                            fullWidth={isMobile}
+                            disabled={disableAll}
+                        />
+                    )}
+                </>
             )}
         </div>
     );
@@ -167,6 +237,8 @@ export default function PreEnrollmentTable({
     onToggleStatus,
     onView,
     onExportToEnrollment,
+    onWithdrawJustified,
+    onWithdrawUnjustified,
     onBulkDelete,
     onBulkRestore,
     activeTab = "Activas",
@@ -175,6 +247,7 @@ export default function PreEnrollmentTable({
     practiceTypeOptions = [],
     careerOptions = [],
     onSelectionChange,
+    priorityOnePracticeType = null,
 }: PreEnrollmentTableProps) {
     const { careers: allCareers } = useCareers();
     const [searchTerm, setSearchTerm] = useState("");
@@ -610,9 +683,17 @@ export default function PreEnrollmentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
+                                            onToggleStatus={
+                                                onToggleStatus && (!priorityOnePracticeType || s.practiceType === priorityOnePracticeType)
+                                                    ? () => onToggleStatus(s)
+                                                    : undefined
+                                            }
                                             onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
+                                            onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
+                                            onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
                                             status={s.status}
+                                            recordType={s.recordType}
+                                            withdrawalType={s.withdrawalType}
                                             disableAll={selectedIds.length > 0}
                                         />
                                     </TableCell>
@@ -699,9 +780,17 @@ export default function PreEnrollmentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
+                                            onToggleStatus={
+                                                onToggleStatus && (!priorityOnePracticeType || s.practiceType === priorityOnePracticeType)
+                                                    ? () => onToggleStatus(s)
+                                                    : undefined
+                                            }
                                             onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
+                                            onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
+                                            onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
                                             status={s.status}
+                                            recordType={s.recordType}
+                                            withdrawalType={s.withdrawalType}
                                             isMobile={true}
                                             disableAll={selectedIds.length > 0}
                                         />

@@ -57,10 +57,18 @@ class PermissionService {
   }
 
   /**
-   * Verifica si un rol tiene un permiso específico
+   * Verifica si un rol tiene un permiso específico.
+   * Soporta wildcard con '*': p.ej. 'tracking:*' coincide con 'tracking:view', 'tracking:create', etc.
    */
   async hasPermission(roleId: number, permission: string): Promise<boolean> {
     const permissions = await this.getPermissionsByRole(roleId);
+
+    // Soporte para wildcard: 'modulo:*' coincide con cualquier permiso que empiece con 'modulo:'
+    if (permission.endsWith(':*')) {
+      const prefix = permission.slice(0, -1);
+      return permissions.some(p => p.startsWith(prefix));
+    }
+
     return permissions.includes(permission);
   }
 

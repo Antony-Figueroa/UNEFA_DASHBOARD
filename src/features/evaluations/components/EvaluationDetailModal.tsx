@@ -9,12 +9,16 @@ interface EvaluationDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   evaluationId: number | null;
+  studentName?: string;
+  studentCi?: string;
 }
 
 export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
   isOpen,
   onClose,
-  evaluationId
+  evaluationId,
+  studentName,
+  studentCi
 }) => {
   const { getEvaluationById, fetchCriteria, criteria } = useEvaluations();
   const { config } = useSystemEvaluationConfig();
@@ -75,6 +79,13 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
           </div>
         ) : evaluation ? (
           <div className="space-y-6">
+            {(studentName || studentCi) && (
+              <div className="p-4 bg-brand-50 dark:bg-brand-500/10 rounded-lg border border-brand-200 dark:border-brand-500/20">
+                <p className="text-xs font-bold uppercase text-brand-600 dark:text-brand-400 mb-1">Estudiante Evaluado</p>
+                <p className="font-semibold text-text-primary dark:text-text-emphasis">{studentName || '—'}</p>
+                {studentCi && <p className="text-sm text-text-secondary">{studentCi}</p>}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p className="text-xs font-bold uppercase text-text-tertiary mb-1">Tipo de Evaluación</p>
@@ -84,8 +95,8 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p className="text-xs font-bold uppercase text-text-tertiary mb-1">Puntaje Total</p>
-                <p className={`text-2xl font-bold ${getPctColor(Math.round((evaluation.totalScore / config.score.displayScale) * 100))}`}>
-                  {Math.round((evaluation.totalScore / config.score.displayScale) * 100)}%
+                <p className={`text-2xl font-bold ${getPctColor(((evaluation.totalScore / config.score.displayScale) * 100))}`}>
+                  {((evaluation.totalScore / config.score.displayScale) * 100).toFixed(1)}%
                 </p>
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -130,8 +141,8 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`text-lg font-bold ${getPctColor(Math.round((item.score / config.score.max) * 100))}`}>
-                            {Math.round((item.score / config.score.max) * 100)}%
+                          <span className={`text-lg font-bold ${getPctColor(((item.score / config.score.max) * 100))}`}>
+                            {((item.score / config.score.max) * 100).toFixed(1)}%
                           </span>
                         </div>
                       </div>

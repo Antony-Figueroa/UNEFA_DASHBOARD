@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import tutorService, { TutorStudent } from "../../features/tutor/services/tutorService";
@@ -13,6 +14,7 @@ import { EmptyState } from "../../components/ui/table/EmptyState";
 
 export default function TutorGrades() {
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const [students, setStudents] = useState<TutorStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +51,10 @@ export default function TutorGrades() {
     setSelectedStudent(student);
     setGrade(student.grade > 0 ? student.grade.toString() : "");
     setObservations("");
+  };
+
+  const openEvaluationModification = (enrollmentId: string) => {
+    navigate(`/tutor/evaluations/${enrollmentId}`);
   };
 
   const handleSaveGrade = async () => {
@@ -248,7 +254,7 @@ export default function TutorGrades() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => openGradeModal(student)}
+                          onClick={() => openEvaluationModification(student.enrollmentId)}
                         >
                           Modificar
                         </Button>

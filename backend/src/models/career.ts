@@ -1,7 +1,7 @@
 export interface CareerDBRecord {
   CAREER_ID?: number;
   CAREER_NAME?: string;
-  CAREER_CODE?: number;
+  CAREER_CODE?: string;
   MINIMUM_GRADE?: number;
   CAREER_ABBREVIATION?: string;
   CAREER_TYPE?: string;
@@ -20,7 +20,7 @@ export interface CareerDBRecord {
 export interface Career {
   careerId?: number | string;
   careerName?: string;
-  careerCode?: number;
+  careerCode?: string;
   minimumGrade?: number;
   careerAbbreviation?: string;
   careerType?: string;

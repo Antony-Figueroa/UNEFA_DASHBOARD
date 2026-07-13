@@ -104,6 +104,8 @@ interface VisitModalProps {
   tutorId: number;
   loading?: boolean;
   mode?: 'edit' | 'view';
+  /** Cuando true: salta llamadas a endpoints admin (tutores, listas dinámicas) y usa valores legacy */
+  tutorMode?: boolean;
   /** Fecha de inicio del período académico */
   periodStartDate?: Date;
   /** Fecha de fin del período académico */
@@ -142,6 +144,7 @@ export default function VisitModal({
   tutorId,
   loading = false,
   mode = 'edit',
+  tutorMode = false,
   periodStartDate,
   periodEndDate,
   modalId,
@@ -202,9 +205,12 @@ export default function VisitModal({
   const maxHtmlDate = periodEndDate && periodEndDate < today ? periodEndDate : today;
   const maxDateLocal = formatLocalDateTime(maxHtmlDate);
 
-  // Schema dinámico con validación de período (se recrea cuando cambian las fechas)
+  // Schema dinámico: en tutor mode, tutorId es opcional (lo asigna el backend)
   const dynamicSchema = useMemo(() => {
-    return visitSchemaBase.refine(
+    const base = tutorMode
+      ? visitSchemaBase.extend({ tutorId: z.string().optional() })
+      : visitSchemaBase;
+    return base.refine(
       (data) => {
         const d = new Date(data.visitDate);
         if (isNaN(d.getTime())) return true;
@@ -248,8 +254,8 @@ export default function VisitModal({
 
   const { showConfirmation, handleCloseAttempt, confirmClose, cancelClose } = useUnsavedChanges(isDirty, onClose);
 
-  // Estados para el selector de tutor
-  const { tutors, refreshTutors } = useTutors();
+  // Estados para el selector de tutor (solo admin)
+  const { tutors, refreshTutors } = tutorMode ? { tutors: [] as any[], refreshTutors: async () => {} } : useTutors();
   const [tutorOptions, setTutorOptions] = useState<{ value: string; label: string }[]>([]);
   const [isTutorModalOpen, setIsTutorModalOpen] = useState(false);
 
@@ -334,10 +340,14 @@ export default function VisitModal({
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !tutorMode) {
       loadLists();
+    } else if (isOpen && tutorMode) {
+      // Tutor mode: usar opciones legacy (no puede llamar /api/lists)
+      setVisitTypeOptions(LEGACY_VISIT_TYPES);
+      setVisitCaseOptions(LEGACY_VISIT_CASES);
     }
-  }, [isOpen, fetchMultipleLists]);
+  }, [isOpen, fetchMultipleLists, tutorMode]);
 
   // Estado para alternar entre tutores asignados y todos los tutores (suplente)
   const [showAllTutors, setShowAllTutors] = useState(false);
@@ -597,30 +607,22 @@ export default function VisitModal({
   const handleConfirmSave = async () => {
     if (!pendingData) return;
 
-    const tutorIdFromForm = parseInt(pendingData.tutorId);
+    const basePayload = {
+      practiceId,
+      visitDate: new Date(pendingData.visitDate).toISOString(),
+      visitType: pendingData.visitType,
+      visitCase: pendingData.visitCase,
+      hoursWorked: pendingData.hoursWorked,
+      activitiesPerformed: pendingData.activitiesPerformed,
+      observations: pendingData.observations || '',
+      recommendations: pendingData.recommendations || ''
+    };
 
     const payload: CreateVisitPayload | UpdateVisitPayload = isEditing
-      ? {
-          practiceId, // Necesario para validar duplicados en backend
-          visitDate: new Date(pendingData.visitDate).toISOString(),
-          visitType: pendingData.visitType,
-          visitCase: pendingData.visitCase,
-          hoursWorked: pendingData.hoursWorked,
-          activitiesPerformed: pendingData.activitiesPerformed,
-          observations: pendingData.observations || '',
-          recommendations: pendingData.recommendations || ''
-        }
-      : {
-          practiceId,
-          tutorId: tutorIdFromForm,
-          visitDate: new Date(pendingData.visitDate).toISOString(),
-          visitType: pendingData.visitType,
-          visitCase: pendingData.visitCase,
-          hoursWorked: pendingData.hoursWorked,
-          activitiesPerformed: pendingData.activitiesPerformed,
-          observations: pendingData.observations || '',
-          recommendations: pendingData.recommendations || ''
-        };
+      ? basePayload
+      : tutorMode
+        ? basePayload  // tutor mode: backend asigna tutor desde JWT
+        : { ...basePayload, tutorId: parseInt(pendingData.tutorId!) };
 
     setConfirmSaveOpen(false);
     
@@ -667,7 +669,11 @@ export default function VisitModal({
               </div>
             )}
 
-            {/* Fila 0: Selector de Tutor (primero) */}
+            {tutorMode ? (
+              /* Tutor mode: el backend asigna el tutor desde el JWT */
+              <input type="hidden" name="tutorId" value="" />
+            ) : (
+            /* Fila 0: Selector de Tutor (solo admin) */
             <div className="grid grid-cols-1 gap-x-6 gap-y-5">
               <div>
                 <label className="text-sm font-medium text-text-primary dark:text-white/90">
@@ -716,6 +722,7 @@ export default function VisitModal({
                 </div>
               </div>
             </div>
+            )}
 
             {/* Fila 1: Fecha, Tipo y Caso */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
@@ -1003,6 +1010,7 @@ export default function VisitModal({
       />
 
       {/* Modal para agregar nuevo tutor (usando TutorModal existente) */}
+      {isTutorModalOpen && (
       <TutorModal
         isOpen={isTutorModalOpen}
         onClose={() => setIsTutorModalOpen(false)}
@@ -1010,6 +1018,7 @@ export default function VisitModal({
         isLoading={false}
         modalId={`${modalId}-tutor`}
       />
+      )}
 
       {/* Modal para agregar nuevo valor a lista (VISIT_TYPE o VISIT_CASE) */}
       <UnifiedDialog

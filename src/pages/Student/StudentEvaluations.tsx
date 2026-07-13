@@ -270,6 +270,8 @@ export default function StudentEvaluations() {
           setSelectedEvaluationId(null);
         }}
         evaluationId={selectedEvaluationId}
+        studentName={studentInfo?.studentName}
+        studentCi={studentInfo?.studentCi}
       />
     </div>
   );

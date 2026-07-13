@@ -114,3 +114,25 @@ export const togglePreEnrollmentStatus = async (id: string | number, status: boo
 };
 export const bulkDeletePreEnrollments = preEnrollmentService.bulkDelete;
 export const bulkRestorePreEnrollments = preEnrollmentService.bulkRestore;
+
+/**
+ * Retira una pre-inscripción (justificado o sin justificación).
+ * 
+ * @param practiceId - ID de la pre-inscripción
+ * @param withdrawalType - 'justified' | 'unjustified'
+ * @param justificationReason - Motivo requerido para retiro justificado
+ * @param withdrawComment - Comentario opcional
+ */
+export const withdrawPreEnrollment = async (
+  practiceId: string,
+  withdrawalType: 'justified' | 'unjustified',
+  justificationReason: string,
+  withdrawComment?: string
+): Promise<void> => {
+  await apiClient.patch(`${API_URL}/${practiceId}/withdraw`, {
+    withdrawalType,
+    justificationReason,
+    withdrawComment
+  });
+  invalidateCache(crudCachePrefix(API_URL));
+};

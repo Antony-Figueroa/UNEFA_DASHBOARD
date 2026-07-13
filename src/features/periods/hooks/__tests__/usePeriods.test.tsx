@@ -4,7 +4,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
+import { usePeriods } from '../usePeriods';
+import * as periodTypeDatesService from '../../services/periodTypeDatesService';
+import { useToast } from '@/context/toast';
 
 // Mock del contexto de Toast
 const mockAddToast = vi.fn();
@@ -43,8 +46,7 @@ describe('usePeriods — updateTypeDates', () => {
     vi.clearAllMocks();
   });
 
-  it('debería exponer updateTypeDates como función', async () => {
-    const { usePeriods } = await import('../usePeriods');
+  it('debería exponer updateTypeDates como función', () => {
     const { result } = renderHook(() => usePeriods());
 
     expect(result.current.updateTypeDates).toBeDefined();
@@ -52,8 +54,6 @@ describe('usePeriods — updateTypeDates', () => {
   });
 
   it('debería llamar upsert del servicio cuando se invoca updateTypeDates', async () => {
-    const periodTypeDatesService = await import('../../services/periodTypeDatesService');
-    const { usePeriods } = await import('../usePeriods');
     const mockUpsert = vi.mocked(periodTypeDatesService.upsert);
     mockUpsert.mockResolvedValue({ id: 1, periodId: 1, internshipTypeId: 1, startDate: '2026-03-16', endDate: '2026-05-08' });
 
@@ -69,8 +69,6 @@ describe('usePeriods — updateTypeDates', () => {
   });
 
   it('debería actualizar typeDates para múltiples tipos', async () => {
-    const periodTypeDatesService = await import('../../services/periodTypeDatesService');
-    const { usePeriods } = await import('../usePeriods');
     const mockUpsert = vi.mocked(periodTypeDatesService.upsert);
     mockUpsert.mockResolvedValue({ id: 1, periodId: 1, internshipTypeId: 1, startDate: '2026-03-16', endDate: '2026-05-08' });
 

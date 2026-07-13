@@ -22,6 +22,7 @@ import PreEnrollmentModal from "../../features/pre-enrollment/components/PreEnro
 import PreEnrollmentViewModal from "../../features/pre-enrollment/components/PreEnrollmentViewModal";
 import StudentModal from "../../features/students/components/StudentModal";
 import { usePreEnrollment } from "../../features/pre-enrollment/hooks/usePreEnrollment";
+import { withdrawPreEnrollment } from "../../features/pre-enrollment/services/preEnrollmentService";
 import { useStudents } from "../../features/students/hooks/useStudents";
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { useLists } from "../../features/lists/hooks/useLists";
@@ -38,10 +39,17 @@ import { toTitleCase } from "../../utils/textFormat";
  * @param p - El registro de pre-inscripción.
  * @returns El registro formateado.
  */
-const formatPreEnrollmentToRow = (p: PreEnrollment): PreEnrollmentRowData => ({
-    ...p,
-    preEnrollmentDate: formatDateTime(p.preEnrollmentDate),
-});
+const formatPreEnrollmentToRow = (p: PreEnrollment): PreEnrollmentRowData => {
+    // Determinar el tipo de registro basado en el estado
+    // status=true = activa, status=false = inactiva/retirada
+    const isWithdrawn = !p.status; // Por ahora usamos status=false como indicador de retirada
+    return {
+        ...p,
+        preEnrollmentDate: formatDateTime(p.preEnrollmentDate),
+        recordType: isWithdrawn ? 'withdrawn' : 'active',
+        withdrawalType: undefined // Se actualizará cuando se implemente la lógica de retirada completa
+    };
+};
 
 /**
  * Componente PreEnrollmentPage.
@@ -135,6 +143,7 @@ export default function PreEnrollmentPage() {
         addPreEnrollment,
         editPreEnrollment,
         toggleStatus,
+        withdrawPreEnrollment,
         bulkToggleStatus,
     } = usePreEnrollment();
 
@@ -186,6 +195,15 @@ export default function PreEnrollmentPage() {
     };
 
     const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
+
+    // Diálogo de retiro / abandono
+    const [withdrawDialog, setWithdrawDialog] = useState<{
+        type: 'justified' | 'unjustified';
+        enrollment: PreEnrollmentRowData;
+    } | null>(null);
+    const [withdrawReason, setWithdrawReason] = useState('');
+    const [withdrawComment, setWithdrawComment] = useState('');
+    const [withdrawSubmitting, setWithdrawSubmitting] = useState(false);
     const [hasCheckedExpired, setHasCheckedExpired] = useState(false);
 
     // Detectar pre-inscripciones activas cuyo período de inscripción ya venció
@@ -383,6 +401,32 @@ export default function PreEnrollmentPage() {
         navigate("/enrollment", { state: { preEnrollmentData: item } });
     };
 
+    /**
+     * Abre el modal de retiro justificado / abandono.
+     */
+    const handleWithdraw = (type: 'justified' | 'unjustified', row: PreEnrollmentRowData) => {
+        setWithdrawDialog({ type, enrollment: row });
+        setWithdrawReason('');
+        setWithdrawComment('');
+    };
+
+    /**
+     * Confirma el retiro / abandono y llama al backend.
+     */
+    const handleWithdrawConfirm = async () => {
+        if (!withdrawDialog) return;
+        const { type, enrollment } = withdrawDialog;
+        setWithdrawSubmitting(true);
+        try {
+            await withdrawPreEnrollment(enrollment.preEnrollmentId || '', type, withdrawReason, withdrawComment);
+            setWithdrawDialog(null);
+        } catch (error) {
+            console.error("[PreEnrollmentPage] Error withdrawing:", error);
+        } finally {
+            setWithdrawSubmitting(false);
+        }
+    };
+
     return (
         <>
             <PageMeta title="Gestión de Pre-Inscripciones" description="Administración de pre-inscripciones" />
@@ -432,7 +476,7 @@ export default function PreEnrollmentPage() {
                             </button>
                         </div>
 
-                        <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="pre-enrollment-table">
+<SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="pre-enrollment-table">
                             <PreEnrollmentTable
                                 data={filtered}
                                 status={status}
@@ -444,6 +488,8 @@ export default function PreEnrollmentPage() {
                                 onBulkRestore={handleBulkRestore}
                                 onView={setViewItem}
                                 onExportToEnrollment={handleExportToEnrollment}
+                                onWithdrawJustified={(row) => handleWithdraw('justified', row)}
+                                onWithdrawUnjustified={(row) => handleWithdraw('unjustified', row)}
                                 loading={loadingAction}
                                 periodOptions={periodOptions}
                                 practiceTypeOptions={practiceTypeOptions}
@@ -507,6 +553,58 @@ export default function PreEnrollmentPage() {
                         variant={confirmation?.variant || "info"}
                         isLoading={loadingAction}
                     />
+
+                    {/* Diálogo de Retiro Justificado / Abandono */}
+                    <UnifiedDialog
+                        isOpen={!!withdrawDialog}
+                        onClose={() => setWithdrawDialog(null)}
+                        onConfirm={handleWithdrawConfirm}
+                        title={withdrawDialog?.type === 'justified' ? 'Retiro Justificado' : 'Abandono'}
+                        confirmLabel="Confirmar"
+                        confirmStartIcon={
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+                        }
+                        variant="warning"
+                        isLoading={withdrawSubmitting}
+                    >
+                        <div className="w-full text-left space-y-4">
+                            <p className="text-sm text-text-secondary">
+                                {withdrawDialog?.type === 'justified'
+                                    ? `Registrar retiro justificado para ${withdrawDialog?.enrollment?.studentName || ''}.`
+                                    : `Registrar abandono para ${withdrawDialog?.enrollment?.studentName || ''}.`
+                                }
+                            </p>
+                            <div>
+                                <label className="block text-sm font-semibold text-text-primary mb-1">
+                                    Motivo <span className="text-error-500">*</span>
+                                </label>
+                                <textarea
+                                    value={withdrawReason}
+                                    onChange={(e) => setWithdrawReason(e.target.value)}
+                                    className="w-full h-24 rounded-xl border border-border-medium bg-transparent p-3 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none resize-none"
+                                    placeholder="Describa el motivo del retiro..."
+                                />
+                                {withdrawReason.trim().length > 0 && withdrawReason.trim().length < 10 && (
+                                    <p className="text-xs text-error-500 mt-1">Mínimo 10 caracteres</p>
+                                )}
+                            </div>
+                            {withdrawDialog?.type === 'justified' && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-text-primary mb-1">
+                                        Comentario <span className="text-text-tertiary">(opcional)</span>
+                                    </label>
+                                    <textarea
+                                        value={withdrawComment}
+                                        onChange={(e) => setWithdrawComment(e.target.value)}
+                                        className="w-full h-20 rounded-xl border border-border-medium bg-transparent p-3 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none resize-none"
+                                        placeholder="Comentarios adicionales..."
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </UnifiedDialog>
                 </div>
             </div>
         </>

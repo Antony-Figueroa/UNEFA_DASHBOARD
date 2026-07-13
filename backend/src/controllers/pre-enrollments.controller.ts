@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { cacheManager } from '../lib/cache-manager.js';
 import { sanitizeText } from '../utils/text-utils.js';
-import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
+import { PRACTICES_STATUS, PRACTICES_STATUS_LABELS } from '../constants/practice-status.constants.js';
 import { checkSequentialPrerequisite } from '../utils/sequential-validation.js';
+import { auditStatusChange } from '../utils/audit-helpers.js';
 
 const TABLE_NAME = 't_professional_practices';
 
@@ -852,5 +854,99 @@ export const batchCreatePreEnrollment = async (req: Request, res: Response) => {
     res.status(201).json(result);
   } catch (error) {
     handleDbError(res, error);
+  }
+};
+
+/**
+ * PATCH /api/pre-enrollments/:id/withdraw
+ * Marca una pre-inscripción como RETIRADA con motivo (justificado / sin justificación).
+ */
+export const withdrawPreEnrollment = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { withdrawalType, justificationReason, withdrawComment } = req.body;
+
+    if (!['justified', 'unjustified'].includes(withdrawalType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'El campo withdrawalType es requerido y debe ser "justified" o "unjustified"'
+      });
+    }
+
+    if (withdrawalType === 'justified' && (!justificationReason || justificationReason.trim().length < 10)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debe proporcionar un motivo de al menos 10 caracteres para el retiro justificado'
+      });
+    }
+
+    const supabase = dbManager.getConnection();
+
+    // Verificar que existe y está PRE_INSCRITO
+    const { data: preEnrollment, error: fetchError } = await supabase
+      .from(TABLE_NAME)
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        PRACTICES_STATUS,
+        STATUS,
+        STUDENTS_ID,
+        CAREER_ID,
+        INTERNSHIP_TYPE_ID
+      `)
+      .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id, 10))
+      .single();
+
+    if (fetchError || !preEnrollment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pre-inscripción no encontrada'
+      });
+    }
+
+    if (preEnrollment.PRACTICES_STATUS !== PRACTICES_STATUS.PRE_INSCRITO) {
+      return res.status(400).json({
+        success: false,
+        message: 'Solo se puede retirar una pre-inscripción en estado PRE_INSCRITO'
+      });
+    }
+
+    const observation = withdrawalType === 'justified'
+      ? `RETIRO CON JUSTIFICATIVO: ${justificationReason}${withdrawComment ? '\nComentario: ' + withdrawComment : ''}`
+      : `RETIRO SIN JUSTIFICATIVO${withdrawComment ? ': ' + withdrawComment : ''}`;
+
+    const updateData: Record<string, any> = {
+      PRACTICES_STATUS: PRACTICES_STATUS.RETIRADO,
+      WITHDRAWAL_TYPE: withdrawalType,
+      OBSERVATION: observation,
+      STATUS: 0 // desactivada
+    };
+
+    const { error: updateError } = await supabase
+      .from(TABLE_NAME)
+      .update(updateData)
+      .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id, 10));
+
+    if (updateError) throw updateError;
+
+    // Auditoría de cambio de estado
+    await auditStatusChange(
+      req as any, TABLE_NAME, id,
+      PRACTICES_STATUS.PRE_INSCRITO, PRACTICES_STATUS.RETIRADO
+    );
+
+    cacheManager.deleteByPrefix('pre-enrollments:');
+
+    res.json({
+      success: true,
+      message: withdrawalType === 'justified'
+        ? 'Pre-inscripción retirada con justificativo'
+        : 'Pre-inscripción retirada sin justificación'
+    });
+  } catch (error) {
+    console.error('[PreEnrollmentsController] Error withdrawing pre-enrollment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al retirar pre-inscripción'
+    });
   }
 };

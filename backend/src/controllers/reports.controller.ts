@@ -432,7 +432,10 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
             dedication: tutor.DEDICATION,
             category: tutor.CATEGORY,
             phone: getPersonField(tutor.t_persons, 'phone') || '',
-            email: getPersonField(tutor.t_persons, 'email')
+            email: getPersonField(tutor.t_persons, 'email'),
+            gender: tutor.GENDER,
+            tutorId: tutor.TUTOR_ID,
+            titulo: tutor.TITULO
           },
           career: career?.CAREER_NAME || '',
           region: sysLoc.region,
@@ -464,7 +467,10 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
         categoria: item.tutor.category,
         telefono: item.tutor.phone,
         correo: item.tutor.email,
-        cantidadEstudiantes: item.studentCount
+        cantidadEstudiantes: item.studentCount,
+        sexo: item.tutor.gender,
+        codigoTutor: item.tutor.tutorId,
+        titulo: item.tutor.titulo
       }));
 
     const totalCount = reportData.length;
@@ -1783,7 +1789,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           .from('t_professional_practices')
           .select(`
             PROFESSIONAL_PRACTICE_ID,
-            t_institution (INSTITUTION_NAME, RIF, INSTITUTION_TYPE, REGION, NUCLEUS, EXTENSION),
+            t_institution (INSTITUTION_NAME, RIF, INSTITUTION_TYPE, REGION, NUCLEUS, EXTENSION, INSTITUTION_CONTACT),
             t_career (CAREER_NAME),
             STUDENTS_ID
           `)
@@ -1798,6 +1804,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         const empresaMap = new Map<string, {
           region: string; nucleo: string; extension: string;
           empresa: string; rif: string; tipo: string;
+          responsable: string; telefonoResponsable: string;
           carreras: Set<string>; estudiantes: number;
         }>();
 
@@ -1808,12 +1815,14 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           const carrera = (p.t_career as any)?.CAREER_NAME || '';
           if (!empresaMap.has(key)) {
             empresaMap.set(key, {
-              region: sysLoc.region,
-              nucleo: sysLoc.nucleus,
-              extension: sysLoc.extension,
+              region: inst.REGION || sysLoc.region,
+              nucleo: inst.NUCLEUS || sysLoc.nucleus,
+              extension: inst.EXTENSION || sysLoc.extension,
               empresa: inst.INSTITUTION_NAME || '',
               rif: inst.RIF || '',
               tipo: inst.INSTITUTION_TYPE || '',
+              responsable: inst.INSTITUTION_CONTACT || '',
+              telefonoResponsable: inst.INSTITUTION_CONTACT || '',
               carreras: new Set(),
               estudiantes: 0,
             });
@@ -1829,6 +1838,9 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           extension: e.extension,
           empresa: e.empresa,
           rif: e.rif,
+          tipo: e.tipo,
+          responsable: e.responsable,
+          telefonoResponsable: e.telefonoResponsable,
           publica: (e.tipo || '').toUpperCase() === 'PÚBLICA' ? 'X' : '',
           privada: (e.tipo || '').toUpperCase() === 'PRIVADA' ? 'X' : '',
           carrera: Array.from(e.carreras).join(', '),

@@ -49,7 +49,7 @@ export function ConstanciaTutorAcademicoPDF({ data, textos }: Props) {
   });
 
   return (
-    <PDFLayout title="CONSTANCIA DE TUTOR ACADÉMICO">
+    <PDFLayout title="CONSTANCIA">
       <Text style={styles.paragraph}>{cuerpo}</Text>
       <View style={styles.firmaContainer}>
         <Text style={styles.firmaLine}>___________________________________</Text>

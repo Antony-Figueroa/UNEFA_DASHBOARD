@@ -139,8 +139,32 @@ function lastCol(count: number): string {
  * Genera el reporte Excel ANEXO 4 para Tutores Académicos
  * con encabezado institucional y estructura específica.
  */
-export function generateAnexo4Excel(data: any[], fileName: string) {
-  const wb = XLSX.utils.book_new();
+export async function generateAnexo4Excel(data: any[], fileName: string) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Anexo 4');
+  const totalCols = 17; // Updated for new columns
+
+  worksheet.columns = [
+    { key: 'nro', width: 6 },
+    { key: 'region', width: 18 },
+    { key: 'nucleo', width: 22 },
+    { key: 'extension', width: 22 },
+    { key: 'carrera', width: 35 },
+    { key: 'nombre', width: 22 },
+    { key: 'apellido', width: 22 },
+    { key: 'cedula', width: 16 },
+    { key: 'condicion', width: 15 },
+    { key: 'dedicacion', width: 15 },
+    { key: 'categoria', width: 15 },
+    { key: 'telefono', width: 15 },
+    { key: 'correo', width: 30 },
+    { key: 'estudiantes', width: 14 },
+    { key: 'sexo', width: 10 },
+    { key: 'codigoTutor', width: 14 },
+    { key: 'titulo', width: 18 },
+  ];
+
+  // Institutional header (6 rows)
   const institutionalHeader = [
     ['REPÚBLICA BOLIVARIANA DE VENEZUELA'],
     ['MINISTERIO DEL PODER POPULAR PARA LA DEFENSA'],
@@ -151,38 +175,81 @@ export function generateAnexo4Excel(data: any[], fileName: string) {
     ['ANEXO 4 - RELACIÓN DE TUTORES ACADÉMICOS'],
     ['']
   ];
-  const tableHeaders = [
+
+  institutionalHeader.forEach((row, i) => {
+    const r = worksheet.getRow(i + 1);
+    r.getCell(1).value = row[0];
+    r.getCell(1).font = { ...DEFAULT_FONT, size: 11, bold: true };
+    r.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.mergeCells(i + 1, 1, i + 1, totalCols);
+  });
+
+  // Table headers row 9
+  const headerRow = worksheet.getRow(9);
+  const headers = [
     'N°', 'REGIÓN', 'NÚCLEO', 'EXTENSIÓN', 'CARRERA', 'NOMBRE',
     'APELLIDO', 'CÉDULA', 'CONDICIÓN', 'DEDICACIÓN', 'CATEGORÍA',
-    'TELÉFONO', 'CORREO ELECTRÓNICO', 'ESTUDIANTES'
+    'TELÉFONO', 'CORREO ELECTRÓNICO', 'ESTUDIANTES', 'SEXO', 'CÓDIGO TUTOR', 'TÍTULO'
   ];
-  const rows = data.map(item => [
-    item.nro || '', (item.region || '').toUpperCase(), (item.nucleo || '').toUpperCase(),
-    (item.extension || '').toUpperCase(), (item.carrera || '').toUpperCase(),
-    (item.nombreTutor || '').toUpperCase(), (item.apellidoTutor || '').toUpperCase(),
-    (item.cedula || '').toUpperCase(), (item.condicion || '').toUpperCase(), (item.dedicacion || '').toUpperCase(),
-    (item.categoria || '').toUpperCase(), (item.telefono || '').toUpperCase(), (item.correo || '').toUpperCase(), item.cantidadEstudiantes || 0
-  ]);
-  const wsData = [...institutionalHeader, tableHeaders, ...rows];
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-  const cols = [
-    { wch: 6 }, { wch: 18 }, { wch: 22 }, { wch: 22 }, { wch: 35 },
-    { wch: 22 }, { wch: 22 }, { wch: 16 }, { wch: 15 }, { wch: 15 },
-    { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 14 }
-  ];
-  ws['!cols'] = cols;
-  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:N1');
-  const lastColIndex = range.e.c;
-  ws['!merges'] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: lastColIndex } },
-    { s: { r: 1, c: 0 }, e: { r: 1, c: lastColIndex } },
-    { s: { r: 2, c: 0 }, e: { r: 2, c: lastColIndex } },
-    { s: { r: 3, c: 0 }, e: { r: 3, c: lastColIndex } },
-    { s: { r: 4, c: 0 }, e: { r: 4, c: lastColIndex } },
-    { s: { r: 6, c: 0 }, e: { r: 6, c: lastColIndex } },
-  ];
-  XLSX.utils.book_append_sheet(wb, ws, 'Anexo 4');
-  XLSX.writeFile(wb, `${fileName}.xlsx`);
+  headers.forEach((h, i) => {
+    const cell = headerRow.getCell(i + 1);
+    cell.value = h;
+    cell.style = HEADER_STYLE;
+  });
+  headerRow.height = 25;
+
+  // Data rows
+  data.forEach((item, idx) => {
+    const row = worksheet.getRow(10 + idx);
+    row.values = [
+      idx + 1,
+      (item.region || '').toUpperCase(),
+      (item.nucleo || '').toUpperCase(),
+      (item.extension || '').toUpperCase(),
+      (item.carrera || '').toUpperCase(),
+      (item.nombreTutor || '').toUpperCase(),
+      (item.apellidoTutor || '').toUpperCase(),
+      (item.cedula || '').toUpperCase(),
+      (item.condicion || '').toUpperCase(),
+      (item.dedicacion || '').toUpperCase(),
+      (item.categoria || '').toUpperCase(),
+      (item.telefono || '').toUpperCase(),
+      (item.correo || '').toUpperCase(),
+      item.cantidadEstudiantes || 0,
+      (item.sexo || '').toUpperCase(),
+      item.codigoTutor || '',
+      (item.titulo || '').toUpperCase()
+    ];
+    row.height = 20;
+    row.eachCell((cell, colNumber) => {
+      cell.style = { ...DATA_STYLE, alignment: { horizontal: 'center', vertical: 'middle' } };
+      if (colNumber === 5 || colNumber === 6 || colNumber === 7) {
+        cell.alignment = { ...cell.alignment, horizontal: 'left' };
+      }
+    });
+    // Yellow highlight for observations column (if needed in future)
+    // const obsCell = row.getCell(totalCols);
+    // obsCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
+  });
+
+  // Add observations column header and yellow highlight
+  const obsHeaderCell = worksheet.getRow(9).getCell(totalCols);
+  obsHeaderCell.value = 'OBSERVACIONES';
+  obsHeaderCell.style = { ...HEADER_STYLE, fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } } };
+
+  // Add empty observations with yellow background for data rows
+  data.forEach((_, idx) => {
+    const obsCell = worksheet.getRow(10 + idx).getCell(totalCols);
+    obsCell.value = '';
+    obsCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
+  });
+
+  await addLogos(workbook, worksheet);
+  const buffer = await workbook.xlsx.writeBuffer();
+  if (typeof window !== 'undefined') {
+    const { saveAs } = await import('file-saver');
+    saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `${fileName}.xlsx`);
+  }
 }
 
 /**
@@ -338,12 +405,14 @@ export async function generateRelacionGeneralTutoresExcel(data: any[], period: s
 export async function generateRelacionEmpresasExcel(data: any[], period: string, fileName: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Relacion Empresas');
-  const totalCols = 9;
+  const totalCols = 11;
 
   worksheet.columns = [
-    { key: 'region', width: 14 }, { key: 'nucleo', width: 16 }, { key: 'extension', width: 16 },
+    { key: 'region', width: 18 }, { key: 'nucleo', width: 18 }, { key: 'extension', width: 18 },
     { key: 'empresa', width: 50 }, { key: 'rif', width: 18 }, { key: 'tipo', width: 12 },
-    { key: 'publica', width: 10 }, { key: 'carrera', width: 30 }, { key: 'estudiantes', width: 14 },
+    { key: 'publica', width: 10 }, { key: 'privada', width: 10 },
+    { key: 'responsable', width: 30 }, { key: 'telefonoResponsable', width: 20 },
+    { key: 'carrera', width: 30 }, { key: 'estudiantes', width: 14 },
   ];
 
   applyInstitutionalHeader(worksheet, totalCols);
@@ -355,14 +424,23 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
   row9.height = 20;
   row10.height = 35;
 
+  // REGIÓN, NÚCLEO, EXTENSIÓN merged vertically (9-10) and will span full width visually
+  // NOMBRE DE LA EMPRESA merged vertically
+  // RIF merged vertically
+  // TIPO DE EMPRESA header split into PÚBLICA/PRIVADA in row 10
+  // RESPONSABLE and TELÉFONO merged vertically
+  // CARRERA merged vertically
+  // CANTIDAD DE ESTUDIANTES merged vertically
+
   const mergedCols = [
     { col: 'A', text: 'REGIÓN', merge: true }, { col: 'B', text: 'NÚCLEO', merge: true },
     { col: 'C', text: 'EXTENSIÓN', merge: true }, { col: 'D', text: 'NOMBRE DE LA EMPRESA O INSTITUCIÓN', merge: true },
     { col: 'E', text: 'RIF', merge: true },
     { col: 'F', text: 'TIPO DE\nEMPRESA', merge: false },
     { col: 'G', text: '', merge: false },
-    { col: 'H', text: 'CARRERA', merge: true },
-    { col: 'I', text: 'CANTIDAD DE\nESTUDIANTES', merge: true },
+    { col: 'H', text: 'RESPONSABLE', merge: true }, { col: 'I', text: 'TELÉFONO RESPONSABLE', merge: true },
+    { col: 'J', text: 'CARRERA', merge: true },
+    { col: 'K', text: 'CANTIDAD DE\nESTUDIANTES', merge: true },
   ];
 
   mergedCols.forEach(def => {
@@ -401,8 +479,10 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
     applyDataCell(worksheet, currentRow, 5, (item.rif || '').toUpperCase());
     applyDataCell(worksheet, currentRow, 6, isPublica ? 'X' : '');
     applyDataCell(worksheet, currentRow, 7, isPrivada ? 'X' : '');
-    applyDataCell(worksheet, currentRow, 8, (item.carrera || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 9, item.cantidadEstudiantes || 0);
+    applyDataCell(worksheet, currentRow, 8, (item.responsable || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 9, (item.telefonoResponsable || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 10, (item.carrera || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 11, item.cantidadEstudiantes || 0);
 
     currentRow++;
   });
@@ -1042,11 +1122,12 @@ export async function generateProyeccionExcel(data: any, period: string, fileNam
     v2.style = TOTAL_CARRERAS_VALUE_STYLE;
     currentRow++;
 
-    // 3. TOTAL DE ESTUDIANTES PASANTES — B-C label, D value, E-G empty (white bg)
+    // 3. TOTAL DE ESTUDIANTES PASANTES — B-C label, D-E value merged (2 cells)
     worksheet.mergeCells(`B${currentRow}:C${currentRow}`);
     const label3 = worksheet.getCell(currentRow, 2);
     label3.value = `TOTAL DE ESTUDIANTES PASANTES DEL NÚCLEO PROYECTADOS PARA EL ${periodDesc}`;
     label3.style = TOTAL_CARRERAS_STYLE;
+    worksheet.mergeCells(`D${currentRow}:E${currentRow}`);
     const v3 = worksheet.getCell(currentRow, 4);
     v3.value = totalStudents;
     v3.style = TOTAL_CARRERAS_VALUE_STYLE;

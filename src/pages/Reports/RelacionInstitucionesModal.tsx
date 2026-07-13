@@ -50,18 +50,20 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "config">("preview");
   const [sysLocation, setSysLocation] = useState({ region: 'LOS LLANOS', nucleus: 'PORTUGUESA', extension: 'ACARIGUA' });
+  const [allResponsables, setAllResponsables] = useState<any[]>([]);
 
-  // Load periods + institutions when modal opens
+  // Load periods + institutions + responsables when modal opens
   useEffect(() => {
     if (!isOpen) return;
 
     const load = async () => {
       try {
         setLoading(true);
-        const [periodList, instList, sysInstRes] = await Promise.all([
+        const [periodList, instList, sysInstRes, respList] = await Promise.all([
           getPeriods(),
           getInstitutions(),
-          apiClient.get('/system-institution').catch(() => null)
+          apiClient.get('/system-institution').catch(() => null),
+          apiClient.get('/institutional-responsibles').catch(() => ({ data: [] }))
         ]);
         if (sysInstRes?.data) {
           setSysLocation({
@@ -78,6 +80,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
         setPeriods(periodOptions);
         const institutions = Array.isArray(instList) ? instList : (instList?.data ?? []);
         setAllInstitutions(institutions);
+        setAllResponsables(respList?.data || []);
       } catch (error) {
         console.error("Error loading data:", error);
         addToast(TOAST.loadError());
@@ -144,6 +147,13 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
     );
   }, [institutionOptions, searchTerm, activeInstitutions]);
 
+  // Get responsables for a specific institution
+  const getResponsablesForInstitution = useCallback((instId: string) => {
+    return allResponsables.filter(r => 
+      r.institutions?.some((i: any) => i.institutionId === instId)
+    );
+  }, [allResponsables]);
+
   // Prepare data for Excel export
   const prepareExcelData = useCallback(() => {
     if (selectedInstitutions.length === 0) return null;
@@ -154,9 +164,13 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
     selectedInstitutions.forEach(inst => {
       const careers = institutionCareers[inst.institutionId] || [];
       const careerNames = careers.map(c => c.name).filter(Boolean).join(', ');
+      const responsibleId = responsibleMap[inst.institutionId] || '';
+      const responsables = getResponsablesForInstitution(inst.institutionId);
+      const responsable = responsables.find((r: any) => r.responsibleId === responsibleId);
+      const responsableName = responsable ? `${responsable.firstName} ${responsable.lastName}` : responsibleId;
       rows.push({
         empresa: inst.name,
-        responsable: responsibleMap[inst.institutionId] || '',
+        responsable: responsableName,
         numeroContacto: inst.phone || 'N/A',
         tipoEmpresa: inst.institutionType || '',
         carreras: careerNames,
@@ -165,7 +179,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
     });
 
     return { periodDescription: periodLabel, rows };
-  }, [selectedInstitutions, institutionCareers, responsibleMap, studentsMap, periods, selectedPeriodId]);
+  }, [selectedInstitutions, institutionCareers, responsibleMap, studentsMap, periods, selectedPeriodId, getResponsablesForInstitution]);
 
   // Preview table rows
   const previewTableData = useMemo(() => {
@@ -470,13 +484,52 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                                 <label className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest block mb-0.5">
                                   Responsable
                                 </label>
-                                <input
-                                  type="text"
-                                  placeholder="Nombre del responsable"
-                                  value={responsibleMap[inst.institutionId] || ''}
-                                  onChange={(e) => handleResponsibleChange(inst.institutionId, e.target.value)}
-                                  className="w-full rounded border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface px-1.5 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-brand-500"
-                                />
+                                {(() => {
+                                  const responsables = getResponsablesForInstitution(inst.institutionId);
+                                  const currentResponsibleId = responsibleMap[inst.institutionId] || '';
+                                  if (responsables.length === 0) {
+                                    return (
+                                      <input
+                                        type="text"
+                                        placeholder="Sin responsables registrados"
+                                        value={currentResponsibleId}
+                                        onChange={(e) => handleResponsibleChange(inst.institutionId, e.target.value)}
+                                        className="w-full rounded border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface px-1.5 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                      />
+                                    );
+                                  }
+                                  if (responsables.length === 1) {
+                                    const r = responsables[0];
+                                    // Auto-select if not already set
+                                    if (!currentResponsibleId) {
+                                      setTimeout(() => handleResponsibleChange(inst.institutionId, r.responsibleId), 0);
+                                    }
+                                    return (
+                                      <input
+                                        type="text"
+                                        placeholder="Responsable asignado"
+                                        value={r.firstName + ' ' + r.lastName}
+                                        readOnly
+                                        className="w-full rounded border border-border-default dark:border-border-dark bg-gray-50 dark:bg-gray-800 px-1.5 py-1 text-[10px] text-text-secondary"
+                                      />
+                                    );
+                                  }
+                                  // Multiple responsables: show select
+                                  return (
+                                    <CustomSelect
+                                      options={[
+                                        { value: "", label: "Seleccionar responsable" },
+                                        ...responsables.map((r: any) => ({
+                                          value: r.responsibleId,
+                                          label: `${r.firstName} ${r.lastName} (${r.cargo || 'Sin cargo'})`
+                                        }))
+                                      ]}
+                                      value={currentResponsibleId}
+                                      onChange={(e) => handleResponsibleChange(inst.institutionId, e as unknown as string)}
+                                      className="w-full"
+                                    />
+                                  );
+                                })()}
                               </div>
                               <div>
                                 <label className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest block mb-0.5">

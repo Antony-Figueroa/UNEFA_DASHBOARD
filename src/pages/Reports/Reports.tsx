@@ -16,13 +16,11 @@ import { DocumentReportModal } from "../../features/reports/components/DocumentR
 import { ProyeccionModal } from "./ProyeccionModal";
 import { RelacionInstitucionesModal } from "./RelacionInstitucionesModal";
 import { useReports } from "../../features/reports/hooks/useReports";
-import { getReportConfig, DOCUMENT_SECTIONS, ReportType, setCurrentTutorId, currentTutorId } from "../../features/reports/config/reportConfig";
+import { getReportConfig, DOCUMENT_SECTIONS, ReportType } from "../../features/reports/config/reportConfig";
 
 import { useToast } from "../../context/toast";
 import { TOAST } from "../../components/ui/dialog/DialogConfig";
 import { DocumentProps } from "@react-pdf/renderer";
-import { SearchableInput } from "../../features/reports/components/SearchableInput";
-import type { TutorSearchResult } from "../../features/reports/services/reportsService";
 import { SearchInput } from "../../components/common/SearchInput";
 
 export default function ReportsPage() {
@@ -55,11 +53,6 @@ export default function ReportsPage() {
 
   const [paginationInfo, setPaginationInfo] = useState<{ page: number; totalPages: number; totalRecords: number } | null>(null);
   const activeReportConfigRef = useRef<{ type: string; periodNum?: number } | null>(null);
-
-  // State for tutor selection (relacion-individual-docente)
-  const [showTutorSelector, setShowTutorSelector] = useState(false);
-  const [pendingExportType, setPendingExportType] = useState<string | null>(null);
-  const [pendingViewType, setPendingViewType] = useState<string | null>(null);
 
   const { fetchData: fetchReportData, exportExcel } = useReports();
 
@@ -140,11 +133,6 @@ export default function ReportsPage() {
       setIsRelacionInstitucionesModalOpen(true);
       return;
     }
-    if (type === "relacion-individual-docente" && !currentTutorId) {
-      setPendingViewType(type);
-      setShowTutorSelector(true);
-      return;
-    }
     // Documentos oficiales → DocumentReportModal
     if (/^(aceptacion-tutor|solicitud-institucion|carta-postulacion|acta-validacion|evaluacion-|constancia-)/.test(type)) {
       setSelectedDocumentType(type);
@@ -210,7 +198,7 @@ export default function ReportsPage() {
     }
   }, [fetchReportData]);
 
-  const handleExportExcel = useCallback(async (type: string, preSelectedTutorId?: number) => {
+  const handleExportExcel = useCallback(async (type: string) => {
     if (type === "proyeccion-pasantias") {
       setIsProyeccionModalOpen(true);
       return;
@@ -218,15 +206,6 @@ export default function ReportsPage() {
     if (type === "relacion-instituciones-solicitan") {
       setIsRelacionInstitucionesModalOpen(true);
       return;
-    }
-    // Para relacion-individual-docente, necesitamos un tutorId
-    if (type === "relacion-individual-docente") {
-      const tutorId = preSelectedTutorId || currentTutorId;
-      if (!tutorId) {
-        setPendingExportType(type);
-        setShowTutorSelector(true);
-        return;
-      }
     }
 
     setLoadingExcelId(type);
@@ -238,11 +217,7 @@ export default function ReportsPage() {
       const dateStr = new Date().toISOString().split('T')[0];
       const filename = `${type}_${safeLabel}_${dateStr}.xlsx`;
 
-      // Llamada directa al backend — reemplaza la generación client-side
-      const tutorId = type === "relacion-individual-docente"
-        ? (preSelectedTutorId || currentTutorId)
-        : undefined;
-      const blob = await reportsService.exportReportExcel(type, periodNum, undefined, effectiveCareerIds, tutorId);
+      const blob = await reportsService.exportReportExcel(type, periodNum, undefined, effectiveCareerIds);
       downloadBlob(blob, filename);
       addToast({ variant: "success", title: "Exportado", message: "Reporte exportado exitosamente" });
     } catch (error: any) {
@@ -253,24 +228,6 @@ export default function ReportsPage() {
       setLoadingExcelId(null);
     }
   }, [periodFilter, downloadBlob, careerIdsFilter]);
-
-  const handleTutorSelect = useCallback(async (tutor: TutorSearchResult) => {
-    setCurrentTutorId(tutor.tutorId);
-    setShowTutorSelector(false);
-
-    if (pendingViewType) {
-      const viewType = pendingViewType;
-      setPendingViewType(null);
-      await handleViewReport(viewType);
-      return;
-    }
-
-    const exportType = pendingExportType;
-    setPendingExportType(null);
-    if (exportType) {
-      handleExportExcel(exportType, tutor.tutorId);
-    }
-  }, [pendingViewType, pendingExportType, handleViewReport, handleExportExcel]);
 
   const exportTableToExcel = async (data: any[], fileName: string) => {
     try {
@@ -349,42 +306,6 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Tutor selector for relacion-individual-docente export */}
-        {showTutorSelector && (
-          <div className="rounded-xl border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-text-primary dark:text-text-emphasis">
-                Seleccionar Tutor para Relación Individual
-              </h3>
-              <button
-                onClick={() => { setShowTutorSelector(false); setPendingExportType(null); }}
-                className="text-text-tertiary hover:text-text-primary transition-colors"
-                aria-label="Cerrar"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <SearchableInput<TutorSearchResult>
-              placeholder="Buscar tutor por nombre o cédula..."
-              search={async (q) => { const res = await reportsService.searchTutors(q); return res.data; }}
-              renderItem={(item) => (
-                <div>
-                  <p className="text-sm font-medium text-text-primary dark:text-text-emphasis">
-                    {item.fullName}
-                  </p>
-                  <p className="text-xs text-text-tertiary">
-                    CI: {item.ci} | Email: {item.email} | {item.careers}
-                  </p>
-                </div>
-              )}
-              onSelect={handleTutorSelect}
-              getKey={(item) => String(item.tutorId)}
-              minChars={2}
-            />
-          </div>
-        )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {loading ? (

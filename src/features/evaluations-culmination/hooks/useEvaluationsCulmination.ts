@@ -80,6 +80,8 @@ export interface UseEvaluationsCulminationReturn {
   /** Modal de detalle */
   detailModalOpen: boolean;
   selectedEvaluationId: number | null;
+  selectedDetailStudentName: string;
+  selectedDetailStudentCi: string;
   handleViewEvaluationDetails: (evaluationId: number, studentName?: string, studentCi?: string) => void;
   handleCloseDetailModal: () => void;
 

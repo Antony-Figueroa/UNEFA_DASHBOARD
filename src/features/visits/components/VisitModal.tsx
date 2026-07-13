@@ -210,8 +210,9 @@ export default function VisitModal({
     const base = tutorMode
       ? visitSchemaBase.extend({ tutorId: z.string().optional() })
       : visitSchemaBase;
-    return base.refine(
-      (data) => {
+    // Cast to allow refine on union type
+    return (base as any).refine(
+      (data: VisitFormData) => {
         const d = new Date(data.visitDate);
         if (isNaN(d.getTime())) return true;
         if (periodStartDate && d < periodStartDate) return false;

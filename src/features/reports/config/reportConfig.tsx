@@ -25,9 +25,7 @@ export type ReportType =
   | "resumen-pasantias"
   | "relacion-empresas"
   | "relacion-instituciones-solicitan"
-  | "distribucion-tutores"
   | "distribucion-tutores-v2"
-  | "relacion-individual-docente"
   | "proyeccion-pasantias"
   | "acta-notas-finales"
   | "evaluaciones-consolidadas"
@@ -82,26 +80,13 @@ export const DOCUMENT_SECTIONS: SectionGroup[] = [
       { id: "resumen-pasantias", title: "Resumen de Pasantías", subtitle: "Resumen General de Prácticas Profesionales", icon: "table", type: "excel" },
       { id: "relacion-empresas", title: "Relación de Empresas", subtitle: "Instituciones que Demandan Pasantes", icon: "spreadsheet", type: "excel" },
       { id: "relacion-instituciones-solicitan", title: "Relación de Instituciones", subtitle: "Instituciones que Solicitan Asignación de Pasantes", icon: "spreadsheet", type: "excel" },
-      { id: "distribucion-tutores", title: "Distribución de Tutores", subtitle: "Asignación de Tutores por Estudiante", icon: "spreadsheet", type: "excel" },
       { id: "distribucion-tutores-v2", title: "Dist. Tutores (Detallada)", subtitle: "Distribución con Horario Detallado", icon: "spreadsheet", type: "excel" },
-      { id: "relacion-individual-docente", title: "Relación Individual Doc.", subtitle: "Reporte Individual por Docente", icon: "spreadsheet", type: "excel" },
       { id: "proyeccion-pasantias", title: "Proyección de Pasantías", subtitle: "Proyección Prospectiva de Pasantías por Período Académico", icon: "table", type: "excel" },
       { id: "acta-notas-finales", title: "Acta de Notas Finales", subtitle: "Notas Finales de Prácticas Profesionales por Período", icon: "spreadsheet", type: "excel" },
       { id: "evaluaciones-consolidadas", title: "Evaluaciones Consolidadas", subtitle: "Consolidado de Evaluaciones por Estudiante", icon: "spreadsheet", type: "excel" },
     ],
   },
 ];
-
-// ---------------------------------------------------------------------------
-// Module-level context for report-specific parameters
-// ---------------------------------------------------------------------------
-
-/** Current tutorId for relacion-individual-docente data loading */
-export let currentTutorId: number | undefined = undefined;
-
-export function setCurrentTutorId(id: number | undefined) {
-  currentTutorId = id;
-}
 
 // ---------------------------------------------------------------------------
 // Report config entries
@@ -267,30 +252,6 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       { header: "Cantidad de Estudiantes", accessor: "cantidadEstudiantes", className: "text-center font-bold" },
     ],
   },
-  "distribucion-tutores": {
-    title: "Distribución de Tutores",
-    subtitle: "Asignación de Tutores por Estudiante",
-    type: "excel",
-    loadData: async (periodId, careerId, page, limit, careerIds) => {
-      const response = await reportsService.getDistribucionTutores(periodId, careerId, page, limit, careerIds);
-      return { data: response?.data || [], meta: response?.meta };
-    },
-    columns: [
-      { header: "N°", accessor: "nro", className: "w-12 text-center" },
-      { header: "Carrera", accessor: "carrera" },
-      { header: "Estudiante", accessor: "estudiante" },
-      { header: "Cédula Estudiante", accessor: (r: any) => r.estudianteCi || '' },
-      { header: "Título TA", accessor: (r: any) => r.tutorAcademico?.titulo || '' },
-      { header: "Nombre TA", accessor: (r: any) => r.tutorAcademico?.nombre || '' },
-      { header: "Contacto TA", accessor: (r: any) => r.tutorAcademico?.contacto || '' },
-      { header: "Correo TA", accessor: (r: any) => r.tutorAcademico?.email || '' },
-      { header: "Nombre TM", accessor: (r: any) => r.tutorMetodologico?.nombre || '' },
-      { header: "Contacto TM", accessor: (r: any) => r.tutorMetodologico?.contacto || '' },
-      { header: "Horario TM", accessor: (r: any) => r.tutorMetodologico?.horario || '' },
-      { header: "Nombre Eval", accessor: (r: any) => r.evaluador?.nombre || '' },
-      { header: "Contacto Eval", accessor: (r: any) => r.evaluador?.contacto || '' },
-    ],
-  },
   "distribucion-tutores-v2": {
     title: "Dist. Tutores (Detallada)",
     subtitle: "Distribución de Tutores con Horario Detallado",
@@ -371,37 +332,6 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       { header: "E. Comité", accessor: "evalComite" },
       { header: "Nota Final", accessor: "notaFinal" },
       { header: "Observaciones", accessor: "observaciones" },
-    ],
-  },
-  "relacion-individual-docente": {
-    title: "Relación Individual del Docente",
-    subtitle: "Reporte Individual por Docente Tutor",
-    type: "excel",
-    loadData: async (periodId, careerId, page, limit, careerIds) => {
-      if (!currentTutorId) return { data: [] };
-      const response = await reportsService.getRelacionIndividualDocente(currentTutorId);
-      return { data: response?.data || [], meta: response?.meta };
-    },
-    columns: [
-      { header: "N°", accessor: "nro", className: "w-12 text-center" },
-      { header: "Región", accessor: "region" },
-      { header: "Núcleo", accessor: "nucleo" },
-      { header: "Extensión", accessor: "extension" },
-      { header: "Carrera", accessor: "carrera" },
-      { header: "Nombre", accessor: (r: any) => r.estudiante?.nombre || '' },
-      { header: "Apellido", accessor: (r: any) => r.estudiante?.apellido || '' },
-      { header: "Cédula", accessor: (r: any) => r.estudiante?.ci || '' },
-      { header: "Sexo", accessor: (r: any) => r.estudiante?.sexo || '' },
-      { header: "Tipo", accessor: (r: any) => r.estudiante?.tipo || '' },
-      { header: "Teléfono", accessor: (r: any) => r.estudiante?.telefono || '' },
-      { header: "Institución", accessor: (r: any) => r.institucion?.nombre || '' },
-      { header: "Tipo Institución", accessor: (r: any) => r.institucion?.tipo || r.tipoInstitucion || '' },
-      { header: "Tutor Inst.", accessor: (r: any) => `${r.tutorInstitucional?.nombre || ''} ${r.tutorInstitucional?.apellido || ''}`.trim() },
-      { header: "CI Tutor Inst.", accessor: (r: any) => r.tutorInstitucional?.ci || r.ciTutorInst || '' },
-      { header: "Teléfono Tutor Inst.", accessor: (r: any) => r.tutorInstitucional?.telefono || r.telefonoTutorInst || '' },
-      { header: "Correo Tutor Inst.", accessor: (r: any) => r.tutorInstitucional?.correo || r.correoTutorInst || '' },
-      { header: "Dirección", accessor: "direccion" },
-      { header: "Observaciones", accessor: (r: any) => r.observaciones || '' },
     ],
   },
 };

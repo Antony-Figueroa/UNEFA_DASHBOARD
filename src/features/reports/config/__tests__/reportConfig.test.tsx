@@ -76,8 +76,8 @@ describe('reportConfig — resumen-pasantias (Task 3.2)', () => {
   });
 });
 
-describe('reportConfig — distribucion-tutores (Task 3.3)', () => {
-  const config = reportConfig['distribucion-tutores'];
+describe('reportConfig — distribucion-tutores-v2 (Task 3.3)', () => {
+  const config = reportConfig['distribucion-tutores-v2'];
 
   it('debería incluir Cédula Estudiante y Correo TA', () => {
     const headers = config.columns.map((c) => c.header);
@@ -113,45 +113,12 @@ describe('reportConfig — distribucion-tutores (Task 3.3)', () => {
   });
 });
 
-describe('reportConfig — relacion-individual-docente (Task 3.4)', () => {
-  const config = reportConfig['relacion-individual-docente'];
-
-  it('debería incluir Tipo Institución, datos TI y Observaciones', () => {
-    const headers = config.columns.map((c) => c.header);
-    expect(headers).toContain('Tipo Institución');
-    expect(headers).toContain('CI Tutor Inst.');
-    expect(headers).toContain('Teléfono Tutor Inst.');
-    expect(headers).toContain('Correo Tutor Inst.');
-    expect(headers).toContain('Observaciones');
-  });
-
-  it('debería tener las columnas completas en el orden oficial', () => {
-    const headers = config.columns.map((c) => c.header);
-    expect(headers).toEqual([
-      'N°', 'Región', 'Núcleo', 'Extensión', 'Carrera',
-      'Nombre', 'Apellido', 'Cédula', 'Sexo', 'Tipo',
-      'Teléfono', 'Institución', 'Tipo Institución',
-      'Tutor Inst.', 'CI Tutor Inst.', 'Teléfono Tutor Inst.', 'Correo Tutor Inst.',
-      'Dirección', 'Observaciones',
-    ]);
-  });
-
-  it('debería cargar datos vía reportsService.getRelacionIndividualDocente cuando se pasa tutorId', async () => {
-    // This test verifies the loadData function is connected — it will call the real
-    // service which will fail in test environment. We test the shape instead.
-    expect(typeof config.loadData).toBe('function');
-    // loadData should accept periodId, careerId, page, limit, careerIds
-    // and internally pass tutorId for relacion-individual-docente
-  });
-});
-
 describe('reportConfig — estructura general', () => {
   it('debería tener todas las configuraciones esperadas', () => {
     const types = Object.keys(reportConfig);
     expect(types).toContain('tutores-academicos');
     expect(types).toContain('resumen-pasantias');
-    expect(types).toContain('distribucion-tutores');
-    expect(types).toContain('relacion-individual-docente');
+    expect(types).toContain('distribucion-tutores-v2');
   });
 
   it('cada configuración debería tener title, subtitle, type, loadData, columns', () => {

@@ -7,8 +7,6 @@ import {
   generateResumenPasantiasExcel,
   generateRelacionEmpresasExcel,
   generateRelacionInstitucionesSolicitanExcel,
-  generateDistribucionTutoresExcel,
-  generateRelacionIndividualDocenteExcel,
   generateDistribucionTutoresV2Excel,
   generateProyeccionExcel,
   generateActaNotasFinalesExcel,
@@ -40,15 +38,7 @@ export function useReports() {
         case 'relacion-instituciones-solicitan':
           await generateRelacionInstitucionesSolicitanExcel(data, period, fileName);
           break;
-        case 'distribucion-tutores':
-          await generateDistribucionTutoresExcel(data, period, fileName);
-          break;
         case 'distribucion-tutores-v2':
-          await generateDistribucionTutoresV2Excel(data, period, fileName);
-          break;
-        case 'relacion-individual-docente':
-          await generateRelacionIndividualDocenteExcel(data, period, extra || '', fileName);
-          break;
         case 'proyeccion-pasantias':
           await generateProyeccionExcel(data, period, fileName);
           break;

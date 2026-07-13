@@ -380,12 +380,27 @@ export default function EvaluationsAndCulminationPage() {
   };
 
   // ─── Render: Certification tab ──────────────────────────
-  const renderCertificationTab = () => (
-    <CertificationView
-      groups={hook.culminationGroups}
-      loading={hook.culminationGroupsLoading}
-    />
-  );
+  const renderCertificationTab = () => {
+    const handleCertifyBatch = async (studentCis: string[]) => {
+      const groups = hook.culminationGroups;
+      for (const ci of studentCis) {
+        const group = groups.find((g) => g.studentCi === ci);
+        if (group && group.phases.length > 0) {
+          // Use the first phase's practiceId — backend handles N sequential types
+          await hook.certifyPracticeGrouped(group.phases[0].practiceId);
+        }
+      }
+    };
+
+    return (
+      <CertificationView
+        groups={hook.culminationGroups}
+        loading={hook.culminationGroupsLoading}
+        onCertify={handleCertifyBatch}
+        certifying={hook.actionCertifying}
+      />
+    );
+  };
 
   // ─── Tab content switch ─────────────────────────────────
   const renderTabContent = () => {

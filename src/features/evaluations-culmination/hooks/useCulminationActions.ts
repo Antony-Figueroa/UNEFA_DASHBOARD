@@ -8,7 +8,15 @@
 import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { evaluationsCulminationService } from '../services/evaluationsCulminationService';
+import type { CloseActasResult, AutoPreEnrollResultItem } from '../services/evaluationsCulminationService';
 import { evaluationService } from '../../evaluations/services/evaluationService';
+
+/** Resultado completo de cerrar actas (para que el padre muestre el modal de resultados) */
+export interface CloseActasFullResult {
+  results: CloseActasResult[];
+  summary: { total: number; culminated: number; failed: number; skipped: number };
+  autoPreEnrollResults: AutoPreEnrollResultItem[];
+}
 
 export interface UseCulminationActionsReturn {
   // Culmination actions
@@ -16,8 +24,8 @@ export interface UseCulminationActionsReturn {
   certifyPractice: (practiceId: number) => Promise<boolean>;
   reverseCulmination: (practiceId: number, reason: string, resolutionNumber: string) => Promise<boolean>;
 
-  // Close actas actions
-  closeActas: (practiceIds: number[]) => Promise<boolean>;
+  // Close actas actions — returns full result data (not just boolean)
+  closeActas: (practiceIds: number[]) => Promise<CloseActasFullResult | null>;
   previewCloseActas: (practiceIds: number[]) => Promise<boolean>;
 
   // Bulk actions
@@ -112,22 +120,26 @@ export const useCulminationActions = (
   );
 
   const closeActas = useCallback(
-    async (practiceIds: number[]): Promise<boolean> => {
+    async (practiceIds: number[]): Promise<CloseActasFullResult | null> => {
       setClosingActas(true);
       setError(null);
       try {
         const response = await evaluationsCulminationService.closeActas(practiceIds);
-        const { summary } = response.data;
+        const { summary, autoPreEnrollResults } = response.data;
         toast.success(
           `${summary.culminated} culminado(s), ${summary.failed} reprobado(s), ${summary.skipped} omitido(s)`
         );
         onSuccess?.();
-        return true;
+        return {
+          results: response.data.results,
+          summary,
+          autoPreEnrollResults: autoPreEnrollResults || [],
+        };
       } catch (err: any) {
         const message = err?.message || 'Error al cerrar actas';
         setError(message);
         toast.error(message);
-        return false;
+        return null;
       } finally {
         setClosingActas(false);
       }

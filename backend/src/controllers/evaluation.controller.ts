@@ -2078,6 +2078,32 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Batch-fetch student names for auto-pre-enrollment results
+    const studentIds = [...new Set((practices as any[]).map(p => p.STUDENTS_ID).filter(Boolean))];
+    const studentNameMap = new Map<number, string>();
+    if (studentIds.length > 0) {
+      try {
+        const { data: students } = await supabase
+          .from('t_students')
+          .select('STUDENTS_ID, PERSON_ID')
+          .in('STUDENTS_ID', studentIds);
+        const personIds = (students || []).map((s: any) => s.PERSON_ID).filter(Boolean);
+        if (personIds.length > 0) {
+          const { data: persons } = await supabase
+            .from('t_person')
+            .select('PERSON_ID, FIRST_NAME, LAST_NAME')
+            .in('PERSON_ID', personIds);
+          const personMap = new Map<number, string>((persons || []).map((p: any) => [p.PERSON_ID, `${p.FIRST_NAME || ''} ${p.LAST_NAME || ''}`.trim()]));
+          (students || []).forEach((s: any) => {
+            const name: string = personMap.get(s.PERSON_ID) || `Estudiante #${s.STUDENTS_ID}`;
+            studentNameMap.set(s.STUDENTS_ID, name);
+          });
+        }
+      } catch (nameErr) {
+        console.error('[closeActas] Error fetching student names:', nameErr);
+      }
+    }
+
     const evaluatorTypes = Object.keys(evalConfig.weights);
     const results: Array<{
       practiceId: number;
@@ -2086,6 +2112,13 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
       grade: number;
       action: 'culminated' | 'failed' | 'skipped';
       error?: string;
+    }> = [];
+    const autoPreEnrollResults: Array<{
+      practiceId: number;
+      studentName: string;
+      nextType: string;
+      created: boolean;
+      message?: string;
     }> = [];
 
     for (const practice of practices as any[]) {
@@ -2216,11 +2249,46 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
               MANAGER_ID: practice.MANAGER_ID,
               GRADE: grade,
             };
-            triggerAutoPreEnrollment(supabase, practiceData, req).catch(err => {
-              console.error('[AutoPreEnroll] Unhandled error in closeActas:', err);
+            const autoResult = await triggerAutoPreEnrollment(supabase, practiceData, req);
+
+            // Resolve next type name for the response
+            let nextTypeName = 'Siguiente tipo';
+            try {
+              const { data: currentTypeData } = await supabase
+                .from('t_internship_type')
+                .select('PRIORITY')
+                .eq('INTERNSHIP_TYPE_ID', practice.INTERNSHIP_TYPE_ID)
+                .maybeSingle();
+              if (currentTypeData?.PRIORITY) {
+                const { data: nextTypeData } = await supabase
+                  .from('t_internship_type')
+                  .select('NAME')
+                  .gt('PRIORITY', currentTypeData.PRIORITY)
+                  .order('PRIORITY', { ascending: true })
+                  .limit(1)
+                  .maybeSingle();
+                nextTypeName = nextTypeData?.NAME || 'Siguiente tipo';
+              }
+            } catch { /* ignore */ }
+
+            const studentName = studentNameMap.get(practice.STUDENTS_ID) || `Estudiante #${practice.STUDENTS_ID}`;
+            autoPreEnrollResults.push({
+              practiceId,
+              studentName,
+              nextType: nextTypeName,
+              created: autoResult.created,
+              message: autoResult.reason || (autoResult.created ? 'Pre-inscripción creada exitosamente' : 'No se pudo crear pre-inscripción'),
             });
           } catch (autoErr) {
-            console.error('[AutoPreEnroll] Error preparing auto-pre-enrollment:', autoErr);
+            console.error('[AutoPreEnroll] Error in closeActas:', autoErr);
+            const studentName = studentNameMap.get(practice.STUDENTS_ID) || `Estudiante #${practice.STUDENTS_ID}`;
+            autoPreEnrollResults.push({
+              practiceId,
+              studentName,
+              nextType: '',
+              created: false,
+              message: autoErr instanceof Error ? autoErr.message : 'Error desconocido',
+            });
           }
         }
 
@@ -2262,7 +2330,7 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
       skipped: results.filter(r => r.action === 'skipped').length,
     };
 
-    res.json({ success: true, data: { results, summary } });
+    res.json({ success: true, data: { results, summary, autoPreEnrollResults } });
   } catch (error) {
     console.error('[Evaluation] Error in closeActas:', error);
     res.status(500).json({ success: false, message: 'Error al cerrar actas' });
@@ -2590,11 +2658,9 @@ async function updatePracticeGrade(practiceId: number): Promise<void> {
           MANAGER_ID: (practice as any).MANAGER_ID,
           GRADE: finalGrade,
         };
-        triggerAutoPreEnrollment(supabase, practiceData).catch(err => {
-          console.error('[AutoPreEnroll] Unhandled error in updatePracticeGrade:', err);
-        });
+        await triggerAutoPreEnrollment(supabase, practiceData);
       } catch (autoErr) {
-        console.error('[AutoPreEnroll] Error preparing auto-pre-enrollment:', autoErr);
+        console.error('[AutoPreEnroll] Error in updatePracticeGrade:', autoErr);
       }
     }
   } else {

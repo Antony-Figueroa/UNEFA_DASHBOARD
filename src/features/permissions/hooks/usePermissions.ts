@@ -1,6 +1,19 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { permissionService } from '../services/permissionService';
 import { useAuth } from '../../../context/auth';
+
+let cachedPermissions: string[] | null = null;
+let permissionsPromise: Promise<string[]> | null = null;
+let cachedUserId: number | null = null;
+let cachedFailure: { userId: number; status: number; timestamp: number } | null = null;
+const FAILURE_COOLDOWN_MS = 10000;
+
+const resetPermissionsCache = () => {
+  cachedPermissions = null;
+  permissionsPromise = null;
+  cachedUserId = null;
+  cachedFailure = null;
+};
 
 /**
  * Hook que proporciona acceso a los permisos del usuario actual.
@@ -11,15 +24,45 @@ import { useAuth } from '../../../context/auth';
  *   if (hasPermission('students:edit')) { ... }
  */
 export function usePermissions() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [permissions, setPermissions] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(authLoading);
   const [error, setError] = useState<string | null>(null);
-  const fetchedRef = useRef(false);
 
-  const fetchPermissions = useCallback(async () => {
+  const fetchPermissions = useCallback(async (force = false) => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     if (!user) {
+      resetPermissionsCache();
       setPermissions([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    if (cachedUserId !== user.id) {
+      resetPermissionsCache();
+      cachedUserId = user.id;
+    }
+
+    const hasRecentFailure =
+      !force &&
+      cachedFailure?.userId === user.id &&
+      Date.now() - cachedFailure.timestamp < FAILURE_COOLDOWN_MS;
+
+    if (hasRecentFailure) {
+      setPermissions([]);
+      setError('Error al cargar permisos');
+      setLoading(false);
+      return;
+    }
+
+    if (!force && cachedPermissions) {
+      setPermissions(cachedPermissions);
+      setError(null);
       setLoading(false);
       return;
     }
@@ -27,24 +70,46 @@ export function usePermissions() {
     try {
       setLoading(true);
       setError(null);
-      const data = await permissionService.getMyPermissions();
+
+      if (!permissionsPromise || force) {
+        permissionsPromise = (async () => {
+          try {
+            return await permissionService.getMyPermissions();
+          } finally {
+            permissionsPromise = null;
+          }
+        })();
+      }
+
+      const data = await permissionsPromise;
+      cachedPermissions = data;
+      cachedFailure = null;
       setPermissions(data);
     } catch (err) {
-      console.error('[usePermissions] Error fetching permissions:', err);
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      cachedPermissions = null;
+
+      if (status === 401 || status === 403) {
+        cachedFailure = {
+          userId: user.id,
+          status,
+          timestamp: Date.now(),
+        };
+      } else {
+        cachedFailure = null;
+        console.error('[usePermissions] Error fetching permissions:', err);
+      }
+
       setError('Error al cargar permisos');
       setPermissions([]);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [authLoading, user]);
 
   useEffect(() => {
-    // Solo fetchear una vez por sesión (o cuando cambie el user)
-    if (!fetchedRef.current || user) {
-      fetchedRef.current = true;
-      fetchPermissions();
-    }
-  }, [fetchPermissions, user]);
+    fetchPermissions();
+  }, [fetchPermissions]);
 
   /**
    * Verifica si el usuario tiene un permiso específico.
@@ -78,7 +143,7 @@ export function usePermissions() {
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
-    refresh: fetchPermissions,
+    refresh: () => fetchPermissions(true),
   };
 }
 

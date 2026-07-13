@@ -32,6 +32,8 @@ import { EvaluationActions } from '../../features/evaluations-culmination/compon
 import { BulkExtensionModal } from '../../features/evaluations-culmination/components/BulkExtensionModal';
 import { AuditHistoryModal } from '../../features/evaluations-culmination/components/AuditHistoryModal';
 import { CommitteeModal } from '../../features/evaluations-culmination/components/CommitteeModal';
+import { CloseActasModal } from '../../features/evaluations-culmination/components/CloseActasModal';
+import { CloseActasResultsModal } from '../../features/evaluations-culmination/components/CloseActasResultsModal';
 import { useEvaluationsCulmination } from '../../features/evaluations-culmination/hooks/useEvaluationsCulmination';
 import { Tabs } from '../../components/ui/tabs/Tabs';
 import { useTabs } from '../../hooks/useTabs';
@@ -712,6 +714,21 @@ export default function EvaluationsAndCulminationPage() {
           onSuccess={hook.refresh}
         />
       )}
+
+      {/* Close Actas — Confirmation preview modal */}
+      <CloseActasModal
+        isOpen={hook.closeActasModalOpen}
+        onClose={() => hook.setCloseActasModalOpen(false)}
+        practiceIds={hook.selectedPracticeIdsForCloseActas}
+        onConfirm={hook.closeActasFromPreview}
+      />
+
+      {/* Close Actas — Results modal (shows auto-preinscription) */}
+      <CloseActasResultsModal
+        isOpen={hook.closeActasResultsModalOpen}
+        onClose={() => hook.setCloseActasResultsModalOpen(false)}
+        results={hook.closeActasResults}
+      />
     </>
   );
 }

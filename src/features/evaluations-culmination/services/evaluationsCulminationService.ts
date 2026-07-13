@@ -73,6 +73,15 @@ export interface CloseActasResult {
   error?: string;
 }
 
+/** Resultado de auto-pre-inscripción para un estudiante */
+export interface AutoPreEnrollResultItem {
+  practiceId: number;
+  studentName: string;
+  nextType: string;
+  created: boolean;
+  message?: string;
+}
+
 /** Filters for culmination groups endpoint */
 export interface CulminationGroupFilters {
   periodId?: number;
@@ -235,6 +244,7 @@ export const evaluationsCulminationService = {
     data: {
       results: CloseActasResult[];
       summary: { total: number; culminated: number; failed: number; skipped: number };
+      autoPreEnrollResults: AutoPreEnrollResultItem[];
     };
   }> => {
     const response = await apiClient.post('/evaluations/close-actas', { practiceIds });

@@ -8,6 +8,7 @@ import { getPersonField } from '../utils/person-utils.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getEvalConfig, scaleToDisplay, calculateWeightedGrade, invalidateEvalConfigCache } from '../services/evaluation-config.service.js';
 import { checkSequentialPrerequisite } from '../utils/sequential-validation.js';
+import { triggerAutoPreEnrollment, type CulminatedPractice } from '../utils/auto-pre-enrollment.js';
 import { generateWorkbook } from '../services/excel-export.service.js';
 import type { SheetSection } from '../services/excel-export.service.js';
 
@@ -2056,7 +2057,7 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
     // Fetch all practices
     const { data: practices, error: practicesError } = await supabase
       .from('t_professional_practices')
-      .select('PROFESSIONAL_PRACTICE_ID, GRADE, PRACTICES_STATUS, FROZEN_AT, CAREER_ID')
+      .select('PROFESSIONAL_PRACTICE_ID, GRADE, PRACTICES_STATUS, FROZEN_AT, CAREER_ID, STUDENTS_ID, INTERNSHIP_TYPE_ID, PERIOD_ID, SEMESTER, SECTION, REGIME, ENROLLMENT, INSTITUTION_ID, MANAGER_ID')
       .in('PROFESSIONAL_PRACTICE_ID', normalizedIds);
 
     if (practicesError) throw practicesError;
@@ -2197,6 +2198,29 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
             await supabase
               .from('t_practice_culmination')
               .insert({ PRACTICE_ID: practiceId, STATUS: 1 });
+          }
+
+          // 7b. Auto-pre-inscribe next internship type in sequence
+          try {
+            const practiceData: CulminatedPractice = {
+              PROFESSIONAL_PRACTICE_ID: practiceId,
+              STUDENTS_ID: practice.STUDENTS_ID,
+              CAREER_ID: practice.CAREER_ID,
+              INTERNSHIP_TYPE_ID: practice.INTERNSHIP_TYPE_ID,
+              PERIOD_ID: practice.PERIOD_ID,
+              SEMESTER: practice.SEMESTER,
+              SECTION: practice.SECTION,
+              REGIME: practice.REGIME,
+              ENROLLMENT: practice.ENROLLMENT,
+              INSTITUTION_ID: practice.INSTITUTION_ID,
+              MANAGER_ID: practice.MANAGER_ID,
+              GRADE: grade,
+            };
+            triggerAutoPreEnrollment(supabase, practiceData, req).catch(err => {
+              console.error('[AutoPreEnroll] Unhandled error in closeActas:', err);
+            });
+          } catch (autoErr) {
+            console.error('[AutoPreEnroll] Error preparing auto-pre-enrollment:', autoErr);
           }
         }
 
@@ -2510,7 +2534,7 @@ async function updatePracticeGrade(practiceId: number): Promise<void> {
     // Obtener MINIMUM_GRADE de la carrera y PRACTICES_STATUS actual
     const { data: practice } = await supabase
       .from('t_professional_practices')
-      .select('CAREER_ID, PRACTICES_STATUS')
+      .select('CAREER_ID, PRACTICES_STATUS, STUDENTS_ID, INTERNSHIP_TYPE_ID, PERIOD_ID, SEMESTER, SECTION, REGIME, ENROLLMENT, INSTITUTION_ID, MANAGER_ID')
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
       .single();
 
@@ -2548,6 +2572,31 @@ async function updatePracticeGrade(practiceId: number): Promise<void> {
       .from('t_professional_practices')
       .update(updateFields)
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
+
+    // Auto-pre-inscribe next internship type when REPROBADO → CULMINADO
+    if (updateFields.PRACTICES_STATUS === PRACTICES_STATUS.CULMINADO) {
+      try {
+        const practiceData: CulminatedPractice = {
+          PROFESSIONAL_PRACTICE_ID: practiceId,
+          STUDENTS_ID: (practice as any).STUDENTS_ID,
+          CAREER_ID: (practice as any).CAREER_ID,
+          INTERNSHIP_TYPE_ID: (practice as any).INTERNSHIP_TYPE_ID,
+          PERIOD_ID: (practice as any).PERIOD_ID,
+          SEMESTER: (practice as any).SEMESTER,
+          SECTION: (practice as any).SECTION,
+          REGIME: (practice as any).REGIME,
+          ENROLLMENT: (practice as any).ENROLLMENT,
+          INSTITUTION_ID: (practice as any).INSTITUTION_ID,
+          MANAGER_ID: (practice as any).MANAGER_ID,
+          GRADE: finalGrade,
+        };
+        triggerAutoPreEnrollment(supabase, practiceData).catch(err => {
+          console.error('[AutoPreEnroll] Unhandled error in updatePracticeGrade:', err);
+        });
+      } catch (autoErr) {
+        console.error('[AutoPreEnroll] Error preparing auto-pre-enrollment:', autoErr);
+      }
+    }
   } else {
     await supabase
       .from('t_professional_practices')

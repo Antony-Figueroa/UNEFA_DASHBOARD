@@ -32,11 +32,33 @@ vi.mock('@/components/ui/dialog/DialogConfig', () => ({
   },
 }));
 
-const { mockGetPractices, mockGetCulminationGroups, mockApproveCulmination, mockGenerateCertificate, mockReverseFailed } = vi.hoisted(() => ({
+const { mockGetPractices, mockGetCulminationGroups, mockGetPracticeById, mockGetEvaluationStats, mockGetCulminationStats, mockApproveCulmination, mockGenerateCertificate, mockGetCertificate, mockCloseActasPreview, mockCloseActas, mockReverseFailed } = vi.hoisted(() => ({
   mockGetPractices: vi.fn(),
   mockGetCulminationGroups: vi.fn(),
+  mockGetPracticeById: vi.fn().mockResolvedValue(null),
+  mockGetEvaluationStats: vi.fn().mockResolvedValue({
+    total: 0, completed: 0, partial: 0, pending: 0, approved: 0, failed: 0,
+  }),
+  mockGetCulminationStats: vi.fn().mockResolvedValue({
+    total: 0, pending: 0, approved: 0, certified: 0,
+  }),
   mockApproveCulmination: vi.fn(),
   mockGenerateCertificate: vi.fn(),
+  mockGetCertificate: vi.fn().mockResolvedValue({
+    success: true,
+    certificate: { number: 'CERT-001' },
+  }),
+  mockCloseActasPreview: vi.fn().mockResolvedValue({
+    success: true,
+    practices: [],
+    totalHours: 0,
+  }),
+  mockCloseActas: vi.fn().mockResolvedValue({
+    success: true,
+    closedCount: 0,
+    frozenCount: 0,
+    autoPreEnrollResults: [],
+  }),
   mockReverseFailed: vi.fn(),
 }));
 
@@ -44,8 +66,14 @@ vi.mock('../../services/evaluationsCulminationService', () => ({
   evaluationsCulminationService: {
     getPractices: mockGetPractices,
     getCulminationGroups: mockGetCulminationGroups,
+    getPracticeById: mockGetPracticeById,
+    getEvaluationStats: mockGetEvaluationStats,
+    getCulminationStats: mockGetCulminationStats,
     approveCulmination: mockApproveCulmination,
     generateCertificate: mockGenerateCertificate,
+    getCertificate: mockGetCertificate,
+    closeActasPreview: mockCloseActasPreview,
+    closeActas: mockCloseActas,
     reverseFailed: mockReverseFailed,
   },
 }));

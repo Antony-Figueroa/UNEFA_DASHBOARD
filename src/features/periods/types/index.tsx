@@ -85,6 +85,43 @@ export interface GraceDefaults {
 }
 
 /**
+ * Práctica pendiente de decisión antes de cerrar un período.
+ * Devuelta por GET /api/periods/:id/pending-practices.
+ */
+export interface PendingPractice {
+    practiceId: number;
+    studentName: string;
+    studentCi: string;
+    careerName: string;
+    status: number;
+    statusLabel: string;
+    pendingIssue: string;
+    hasEvaluations: boolean;
+    evaluationCount: number;
+}
+
+/**
+ * Decisión del admin para una práctica pendiente.
+ */
+export type ClosureDecision = 'extend' | 'enroll' | 'retiro_justificado' | 'abandono';
+
+/**
+ * Asociación práctica → decisión.
+ */
+export interface PracticeDecision {
+    practiceId: number;
+    decision: ClosureDecision;
+}
+
+/**
+ * Respuesta del endpoint GET /api/periods/:id/pending-practices.
+ */
+export interface PendingPracticesResponse {
+    pendingPractices: PendingPractice[];
+    totalPractices: number;
+}
+
+/**
  * Estructura de datos para la visualización en tablas y componentes de UI.
  * Incluye campos pre-formateados y cálculos de progreso.
  */

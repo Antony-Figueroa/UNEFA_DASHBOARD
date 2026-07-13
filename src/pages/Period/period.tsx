@@ -22,6 +22,8 @@ import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import PeriodViewModal from "../../features/periods/components/PeriodViewModal";
+import PeriodClosureModal from "../../features/periods/components/PeriodClosureModal";
+import { PreEnrollTimeoutWarning } from "../../features/periods/components/PreEnrollTimeoutWarning";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import PeriodoPDF from "../../components/ui/pdf/templates/PeriodoPDF";
 import { Periodo, PeriodoRowData, CreatePeriodPayload, UpdatePeriodPayload } from "../../features/periods/types";
@@ -74,6 +76,7 @@ export default function Period() {
         bulkRemovePeriods,
         bulkRestorePeriods,
         updateTypeDates,
+        refreshPeriods,
     } = usePeriods();
 
 
@@ -88,6 +91,8 @@ export default function Period() {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewingPeriod, setViewingPeriod] = useState<Periodo | null>(null);
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
+    const [isClosureModalOpen, setIsClosureModalOpen] = useState(false);
+    const [closingPeriod, setClosingPeriod] = useState<PeriodoRowData | null>(null);
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
     const [pdfStatusFilter, setPdfStatusFilter] = useState<string>("");
     const tabsState = useTabs({ defaultTab: 'active' });
@@ -173,6 +178,16 @@ export default function Period() {
         setIsViewModalOpen(false);
     };
 
+    /**
+     * Callback cuando el período se cierra exitosamente desde el PeriodClosureModal.
+     * Refresca la lista de períodos para reflejar el cambio de estado.
+     */
+    const handlePeriodClosed = async () => {
+        setIsClosureModalOpen(false);
+        setClosingPeriod(null);
+        await refreshPeriods();
+    };
+
     // --- Lógica de Negocio ---
 
     /**
@@ -198,29 +213,13 @@ export default function Period() {
 
     /**
      * Maneja la culminación de un periodo académico.
+     * Abre el modal de cierre con decisiones para que el admin revise prácticas pendientes.
      * 
      * @param periodoToCulminate - Datos de la fila del periodo a culminar.
      */
     const handleCulminatePeriod = async (periodoToCulminate: PeriodoRowData) => {
-        setConfirmation({
-            isOpen: true,
-            title: 'Confirmar Culminación',
-            message: `¿Estás seguro de que deseas culminar el periodo "${periodoToCulminate.description}"? Los periodos culminados no se pueden editar.`,
-            onConfirm: async () => {
-                try {
-                    const originalPeriodo = periodos.find(p => p.periodId === periodoToCulminate.periodId);
-                    if (originalPeriodo) {
-                        await editPeriod({ ...originalPeriodo, periodStatus: 3 });
-                    }
-                } catch (e) {
-                    console.error("[PeriodPage] Error al culminar periodo:", e);
-                } finally {
-                    setConfirmation(null);
-                }
-            },
-            confirmText: 'Culminar',
-            variant: 'warning'
-        });
+        setClosingPeriod(periodoToCulminate);
+        setIsClosureModalOpen(true);
     };
 
     /**
@@ -458,6 +457,7 @@ export default function Period() {
                     </div>
 
                     <div className="space-y-6">
+                        <PreEnrollTimeoutWarning timeoutDays={30} onTimeoutExecuted={() => refreshPeriods?.()} />
                         <ComponentCard title={tabsState.activeTab === 'active' ? "Períodos Activos" : "Períodos Inactivos"}>
                             <Tabs
                                 options={[
@@ -556,6 +556,16 @@ export default function Period() {
                      cancelLabel="Cancelar"
                      onConfirm={confirmation?.onConfirm}
                      isLoading={loadingAction}
+                 />
+                 <PeriodClosureModal
+                     isOpen={isClosureModalOpen}
+                     onClose={() => {
+                         setIsClosureModalOpen(false);
+                         setClosingPeriod(null);
+                     }}
+                     periodId={closingPeriod?.periodId || ""}
+                     periodDescription={closingPeriod?.description || ""}
+                     onClosed={handlePeriodClosed}
                  />
             </>
         </ErrorBoundary>

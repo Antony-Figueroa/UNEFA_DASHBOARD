@@ -12,6 +12,8 @@ import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 interface ValidationResult {
   valid: boolean;
   message?: string;
+  /** Cross-period blocking reason: 'reprobado' | 'retirado' | 'retiro_justificado' | null */
+  blockingReason?: 'reprobado' | 'retirado' | 'retiro_justificado' | null;
 }
 
 // ponytail: overload for practiceId OR direct params
@@ -145,6 +147,27 @@ export async function checkSequentialPrerequisite(supabase: any, params: SeqChec
   );
 
   if (validCulminations.length === 0) {
+    // ─── Cross-period validation (D-05) ───────────────────────────────
+    // Check if student has REPROBADO/RETIRADO/RETIRO_JUSTIFICADO for prerequisites in ANY period
+    const { data: failedPractices } = await supabase
+      .from('t_professional_practices')
+      .select('INTERNSHIP_TYPE_ID, PRACTICES_STATUS')
+      .eq('STUDENTS_ID', studentsId)
+      .eq('CAREER_ID', careerId)
+      .in('INTERNSHIP_TYPE_ID', prerequisiteIds)
+      .in('PRACTICES_STATUS', [
+        PRACTICES_STATUS.REPROBADO,
+        PRACTICES_STATUS.RETIRADO,
+        PRACTICES_STATUS.RETIRO_JUSTIFICADO,
+      ])
+      .eq('STATUS', 1);
+
+    const failedList = failedPractices || [];
+    const hasReprobado = failedList.some((p: any) => p.PRACTICES_STATUS === PRACTICES_STATUS.REPROBADO);
+    const hasRetirado = failedList.some((p: any) => p.PRACTICES_STATUS === PRACTICES_STATUS.RETIRADO);
+    const hasRetiroJustificado = failedList.some((p: any) => p.PRACTICES_STATUS === PRACTICES_STATUS.RETIRO_JUSTIFICADO);
+
+    // Get prerequisite type name for message
     const prerequisiteTypeNames = (typePriorities as any[])
       .filter((t: any) => prerequisiteIds.includes(t.INTERNSHIP_TYPE_ID))
       .sort((a: any, b: any) => a.PRIORITY - b.PRIORITY);
@@ -159,9 +182,28 @@ export async function checkSequentialPrerequisite(supabase: any, params: SeqChec
       if (typeInfo) typeName = `la práctica ${typeInfo.NAME}`;
     }
 
+    // Priority: REPROBADO/RETIRADO > RETIRO_JUSTIFICADO > generic
+    if (hasReprobado || hasRetirado) {
+      const reason = hasReprobado ? 'reprobado' : 'retirado';
+      return {
+        valid: false,
+        message: `${typeName} fue ${reason} en un período anterior. Debe esperar hasta el próximo año lectivo para reintentar.`,
+        blockingReason: reason,
+      };
+    }
+
+    if (hasRetiroJustificado) {
+      return {
+        valid: false,
+        message: `${typeName} tiene un retiro justificado pendiente. Puede reinscribirse en el siguiente período.`,
+        blockingReason: 'retiro_justificado',
+      };
+    }
+
     return {
       valid: false,
-      message: `Debe completar y aprobar ${typeName} antes de continuar con esta práctica.`
+      message: `Debe completar y aprobar ${typeName} antes de continuar con esta práctica.`,
+      blockingReason: null,
     };
   }
 

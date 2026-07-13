@@ -148,6 +148,7 @@ model TCareer {
   REST_USER_DATE      DateTime
   STATUS              Int       @default(1)
   CAREER_TYPE         String    @default("LARGA")
+  AUTO_PRE_ENROLL     Boolean   @default(true)
 
   // Relaciones
   tutors              TTutorCareer[]

@@ -311,6 +311,21 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         }
       }
 
+      // 4c. Sequential prerequisite check (same as batch endpoint)
+      if (careerIdNumber && typeData.INTERNSHIP_TYPE_ID) {
+        const seqCheck = await checkSequentialPrerequisite(supabase, {
+          studentsId: student.STUDENTS_ID,
+          careerId: careerIdNumber,
+          internshipTypeId: typeData.INTERNSHIP_TYPE_ID
+        });
+        if (!seqCheck.valid) {
+          const err = new Error(seqCheck.message ?? 'Prerrequisito secuencial no cumplido');
+          (err as any).status = 409;
+          (err as any).blockingReason = seqCheck.blockingReason ?? null;
+          throw err;
+        }
+      }
+
       // 5. Preparar institución y responsable (opcional para pre-inscripciones)
       // Estos campos ahora son nullable, se asignan durante la inscripción正式
       let finalInstId: number | null = null;

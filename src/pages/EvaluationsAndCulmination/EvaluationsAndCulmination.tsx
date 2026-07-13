@@ -32,6 +32,8 @@ import { EvaluationActions } from '../../features/evaluations-culmination/compon
 import { BulkExtensionModal } from '../../features/evaluations-culmination/components/BulkExtensionModal';
 import { AuditHistoryModal } from '../../features/evaluations-culmination/components/AuditHistoryModal';
 import { CommitteeModal } from '../../features/evaluations-culmination/components/CommitteeModal';
+import { CloseActasModal } from '../../features/evaluations-culmination/components/CloseActasModal';
+import { CloseActasResultsModal } from '../../features/evaluations-culmination/components/CloseActasResultsModal';
 import { useEvaluationsCulmination } from '../../features/evaluations-culmination/hooks/useEvaluationsCulmination';
 import { Tabs } from '../../components/ui/tabs/Tabs';
 import { useTabs } from '../../hooks/useTabs';
@@ -378,12 +380,27 @@ export default function EvaluationsAndCulminationPage() {
   };
 
   // ─── Render: Certification tab ──────────────────────────
-  const renderCertificationTab = () => (
-    <CertificationView
-      groups={hook.culminationGroups}
-      loading={hook.culminationGroupsLoading}
-    />
-  );
+  const renderCertificationTab = () => {
+    const handleCertifyBatch = async (studentCis: string[]) => {
+      const groups = hook.culminationGroups;
+      for (const ci of studentCis) {
+        const group = groups.find((g) => g.studentCi === ci);
+        if (group && group.phases.length > 0) {
+          // Use the first phase's practiceId — backend handles N sequential types
+          await hook.certifyPracticeGrouped(group.phases[0].practiceId);
+        }
+      }
+    };
+
+    return (
+      <CertificationView
+        groups={hook.culminationGroups}
+        loading={hook.culminationGroupsLoading}
+        onCertify={handleCertifyBatch}
+        certifying={hook.actionCertifying}
+      />
+    );
+  };
 
   // ─── Tab content switch ─────────────────────────────────
   const renderTabContent = () => {
@@ -532,6 +549,7 @@ export default function EvaluationsAndCulminationPage() {
       </UnifiedDialog>
 
       {hook.selectedPracticeForEval && (
+        <>
         <EvaluationModal
           isOpen={hook.evalModalOpen}
           onClose={hook.handleCloseEvaluationModal}
@@ -540,6 +558,7 @@ export default function EvaluationsAndCulminationPage() {
           evaluationId={hook.editingEvaluationId}
           onSuccess={hook.handleEvaluationSuccess}
           isFrozen={hook.selectedPracticeForEval.isFrozen}
+          onNavigateToNext={hook.handleNavigateToNext}
           existingComiteMembers={
             hook.selectedPracticeForEval.evaluations.COMITE?.members?.map(m => ({
               memberIndex: m.memberIndex,
@@ -555,6 +574,7 @@ export default function EvaluationsAndCulminationPage() {
             })) || []
           }
         />
+        </>
       )}
 
       <EvaluationDetailModal
@@ -709,6 +729,21 @@ export default function EvaluationsAndCulminationPage() {
           onSuccess={hook.refresh}
         />
       )}
+
+      {/* Close Actas — Confirmation preview modal */}
+      <CloseActasModal
+        isOpen={hook.closeActasModalOpen}
+        onClose={() => hook.setCloseActasModalOpen(false)}
+        practiceIds={hook.selectedPracticeIdsForCloseActas}
+        onConfirm={hook.closeActasFromPreview}
+      />
+
+      {/* Close Actas — Results modal (shows auto-preinscription) */}
+      <CloseActasResultsModal
+        isOpen={hook.closeActasResultsModalOpen}
+        onClose={() => hook.setCloseActasResultsModalOpen(false)}
+        results={hook.closeActasResults}
+      />
     </>
   );
 }

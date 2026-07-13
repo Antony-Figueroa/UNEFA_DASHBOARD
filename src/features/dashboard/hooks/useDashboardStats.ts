@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { DashboardStats } from "../types";
 import { getDashboardStats } from "../services/dashboardService";
+import { useAuth } from "../../../context/auth";
 
 const CACHE_DURATION = 5 * 60 * 1000;
 
 interface CacheEntry {
   data: DashboardStats;
   timestamp: number;
+}
+
+interface UseDashboardStatsOptions {
+  enabled?: boolean;
 }
 
 const getCacheKey = (pid?: number | null) => `dashboard_stats_cache_${pid ?? 'default'}`;
@@ -30,9 +35,11 @@ const setCachedStats = (data: DashboardStats, pid?: number | null): void => {
   }
 };
 
-export const useDashboardStats = () => {
+export const useDashboardStats = (options: UseDashboardStatsOptions = {}) => {
+  const { enabled = true } = options;
+  const { user, loading: authLoading } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
   const [isStale, setIsStale] = useState(false);
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);
@@ -42,7 +49,13 @@ export const useDashboardStats = () => {
   useEffect(() => { statsRef.current = stats; }, [stats]);
   useEffect(() => { periodRef.current = selectedPeriodId; }, [selectedPeriodId]);
 
+  const isReady = enabled && !!user && !authLoading;
+
   const fetchStats = useCallback(async (silent = false, force = false, periodOverride?: number | null) => {
+    if (!isReady) {
+      return;
+    }
+
     const effectivePeriodId = periodOverride !== undefined ? periodOverride : periodRef.current;
 
     try {
@@ -64,13 +77,17 @@ export const useDashboardStats = () => {
       setCachedStats(data, effectivePeriodId);
       setError(null);
       setIsStale(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorWithResponse = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
       console.error("[useDashboardStats] Error fetching dashboard stats:", err);
 
       const cached = getCachedStats(effectivePeriodId);
       if (!cached) {
-        const errorMessage = err.response?.data?.message ||
-          err.message ||
+        const errorMessage = errorWithResponse.response?.data?.message ||
+          errorWithResponse.message ||
           "Error de conexión con el servidor";
         setError(errorMessage);
       }
@@ -86,13 +103,24 @@ export const useDashboardStats = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, []);
+  }, [isReady]);
 
   useEffect(() => {
+    if (!isReady) {
+      setLoading(enabled ? authLoading : false);
+      setError(null);
+      setIsStale(false);
+      setStats(null);
+      statsRef.current = null;
+      setSelectedPeriodId(null);
+      periodRef.current = null;
+      return;
+    }
+
     fetchStats();
     const interval = setInterval(() => fetchStats(true, false, periodRef.current), 30000);
     return () => clearInterval(interval);
-  }, [fetchStats]);
+  }, [authLoading, enabled, fetchStats, isReady]);
 
   useEffect(() => {
     if (stats?.currentPeriod?.periodId && selectedPeriodId === null) {

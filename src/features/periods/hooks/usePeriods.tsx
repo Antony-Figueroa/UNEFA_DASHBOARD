@@ -10,6 +10,7 @@ import * as periodTypeDatesService from "../services/periodTypeDatesService";
 import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
 import { useCrud } from "../../../hooks/useCrud";
+import { useAuth } from "../../../context/auth";
 
 /**
  * Etiquetas para la visualización de detalles en alertas y comparaciones.
@@ -75,10 +76,13 @@ const transformPeriodForDisplay = (period: Record<string, unknown>): Record<stri
  * Ahora utiliza el hook genérico useCrud para centralizar la gestión de estado,
  * carga, errores y notificaciones, manteniendo la lógica de auditoría visual.
  * 
+ * @param options - Opciones del hook (enabled para deshabilitar carga automática).
  * @returns Un objeto con el estado de los periodos y funciones para manipularlos.
  */
-export const usePeriods = () => {
+export const usePeriods = (options?: { enabled?: boolean }) => {
     const { addToast } = useToast();
+    const { user, loading: authLoading } = useAuth();
+    const enabled = options?.enabled !== false;
 
     const [graceDefaults, setGraceDefaults] = useState<GraceDefaults | null>(null);
 
@@ -97,6 +101,7 @@ export const usePeriods = () => {
     } = useCrud<Periodo, CreatePeriodPayload, UpdatePeriodPayload>(periodService as any, {
         resourceName: "Período",
         idField: "periodId",
+        autoLoad: enabled && !!user && !authLoading,
     });
 
     /**

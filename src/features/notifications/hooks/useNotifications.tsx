@@ -12,18 +12,19 @@ import { useAuth } from '../../../context/auth';
 const resourceName = 'Notificación';
 
 interface UseNotificationsOptions {
+  enabled?: boolean;
   autoConnect?: boolean;
   limit?: number;
 }
 
 export const useNotifications = (options: UseNotificationsOptions = {}) => {
-  const { autoConnect = true, limit = 20 } = options;
+  const { enabled = true, autoConnect = true, limit = 20 } = options;
   const { user, loading: authLoading } = useAuth();
   const isAuthenticated = !!user;
   
   // El sistema de auth usa cookies, no localStorage
   // isReady solo necesita que el usuario esté autenticado y que auth no esté cargando
-  const isReady = isAuthenticated && !authLoading;
+  const isReady = enabled && isAuthenticated && !authLoading;
   
   const { addToast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);

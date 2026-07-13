@@ -3,7 +3,7 @@
  * @description Encapsula la lógica de comunicación con la API para las operaciones CRUD.
  */
 
-import { Periodo, CreatePeriodPayload, UpdatePeriodPayload, GraceDefaults, PeriodTypeDate } from "../types";
+import { Periodo, CreatePeriodPayload, UpdatePeriodPayload, GraceDefaults, PeriodTypeDate, PendingPracticesResponse, PracticeDecision } from "../types";
 import apiClient from "../../../api/apiClient";
 
 /**
@@ -344,8 +344,97 @@ export const updateGraceDefaults = async (
   }
 };
 
+/**
+ * Obtiene las prácticas pendientes de decisión para el cierre de un período.
+ *
+ * @param periodId - Identificador del período.
+ * @returns Respuesta con la lista de prácticas pendientes.
+ */
+export const getPendingPractices = async (periodId: string): Promise<PendingPracticesResponse> => {
+  try {
+    const response = await apiClient.get<PendingPracticesResponse>(`${API_URL}/${periodId}/pending-practices`);
+    return response.data;
+  } catch (error) {
+    console.error(`[periodService] Error al obtener prácticas pendientes:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Cierra un período aplicando las decisiones del admin para cada práctica pendiente.
+ *
+ * @param periodId - Identificador del período a cerrar.
+ * @param decisions - Arreglo de decisiones (practiceId + decision).
+ * @returns Respuesta del cierre con resumen de decisiones aplicadas.
+ */
+export const closePeriodWithDecisions = async (
+  periodId: string,
+  decisions?: PracticeDecision[]
+): Promise<{ success: boolean; message: string; data: Record<string, unknown> }> => {
+  invalidateCache();
+  try {
+    const response = await apiClient.post<{ success: boolean; message: string; data: Record<string, unknown> }>(
+      `${API_URL}/${periodId}/close`,
+      { decisions }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`[periodService] Error al cerrar período con decisiones:`, error);
+    throw error;
+  }
+};
+
 // --- CRUD Adapter ---
 export const getAll = getPeriods;
 export const create = createPeriod;
 export const update = updatePeriod;
 export { deletePeriod as delete };
+
+// --- Pre-enrollment Timeout (D-03) ---
+
+export interface TimeoutPreviewPractice {
+  practiceId: number;
+  studentName: string;
+  studentCi: string;
+  careerName: string;
+  createdAt: string;
+  daysSinceCreation: number;
+}
+
+export interface TimeoutPreviewResult {
+  wouldCancel: number;
+  practices: TimeoutPreviewPractice[];
+}
+
+export interface TimeoutCheckResult {
+  cancelled: number;
+  practices: TimeoutPreviewPractice[];
+}
+
+/**
+ * Preview which PRE_INSCRITO practices would be auto-cancelled by timeout (read-only).
+ */
+export const getTimeoutPreview = async (timeoutDays: number = 30): Promise<TimeoutPreviewResult> => {
+  try {
+    const response = await apiClient.get<TimeoutPreviewResult>('/periods/timeout-preview', {
+      params: { timeoutDays },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('[periodService] Error fetching timeout preview:', error);
+    throw error;
+  }
+};
+
+/**
+ * Execute timeout check: cancel stale PRE_INSCRITO practices.
+ */
+export const executeTimeoutCheck = async (timeoutDays: number = 30): Promise<TimeoutCheckResult> => {
+  try {
+    const response = await apiClient.post<TimeoutCheckResult>('/periods/check-timeouts', { timeoutDays });
+    return response.data;
+  } catch (error) {
+    console.error('[periodService] Error executing timeout check:', error);
+    throw error;
+  }
+};

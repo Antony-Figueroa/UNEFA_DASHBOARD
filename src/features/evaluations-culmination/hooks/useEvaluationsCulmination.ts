@@ -19,6 +19,7 @@ import {
 } from '../types';
 import type { EvaluatorType } from '../../evaluations/types';
 import { evaluationsCulminationService } from '../services/evaluationsCulminationService';
+import type { AutoPreEnrollResultItem } from '../services/evaluationsCulminationService';
 import { evaluationService, type AuditEntry } from '../../evaluations/services/evaluationService';
 import { withdrawPractice, reclassifyWithdrawal } from '../../enrollment/services/enrollmentService';
 import { useAuth } from '../../../context/auth';
@@ -29,6 +30,7 @@ import { useCulminationData } from './useCulminationData';
 import { useCulminationFilters } from './useCulminationFilters';
 import { useCulminationUI } from './useCulminationUI';
 import { useCulminationActions } from './useCulminationActions';
+import type { CloseActasFullResult } from './useCulminationActions';
 
 const resourceName = 'Culminación';
 
@@ -76,6 +78,8 @@ export interface UseEvaluationsCulminationReturn {
   handleOpenEvaluation: (practice: PracticeWithEvaluations, type: EvaluatorType, existingEvalId?: number) => void;
   handleCloseEvaluationModal: () => void;
   handleEvaluationSuccess: () => void;
+  /** Navega al siguiente paso en el flujo secuencial de evaluaciones */
+  handleNavigateToNext: (nextType: EvaluatorType, nextMemberIndex?: number) => Promise<void>;
 
   /** Modal de detalle */
   detailModalOpen: boolean;
@@ -148,6 +152,14 @@ export interface UseEvaluationsCulminationReturn {
 
   /** Cierre de actas */
   handleFreezeAll: () => void;
+  closeActasFromPreview: () => void;
+  closeActasModalOpen: boolean;
+  setCloseActasModalOpen: (open: boolean) => void;
+  closeActasResults: CloseActasFullResult | null;
+  closeActasResultsModalOpen: boolean;
+  setCloseActasResultsModalOpen: (open: boolean) => void;
+  selectedPracticeIdsForCloseActas: number[];
+  closingActas: boolean;
 
   /** Comité */
   committeeDialogOpen: boolean;
@@ -288,6 +300,12 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     practice: PracticeWithEvaluations;
     reason: string;
   } | null>(null);
+
+  // ─── Close Actas State ────────────────────────────────────
+  const [closeActasModalOpen, setCloseActasModalOpen] = useState(false);
+  const [selectedPracticeIdsForCloseActas, setSelectedPracticeIdsForCloseActas] = useState<number[]>([]);
+  const [closeActasResults, setCloseActasResults] = useState<CloseActasFullResult | null>(null);
+  const [closeActasResultsModalOpen, setCloseActasResultsModalOpen] = useState(false);
 
   const setOverrideReason = useCallback((reason: string) => {
     setOverrideTarget(prev => prev ? { ...prev, reason } : null);
@@ -519,6 +537,52 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     fetchPractices();
   }, [fetchPractices]);
 
+  /**
+   * Navega al siguiente paso en el flujo secuencial de evaluaciones.
+   * Cierra el modal, refresca las prácticas, actualiza la referencia de la práctica
+   * (para que existingComiteMembers esté fresco), y reabre con el nuevo evaluatorType.
+   */
+  const handleNavigateToNext = useCallback(
+    async (nextType: EvaluatorType, _nextMemberIndex?: number) => {
+      // 1. Capture current practice ID before closing
+      const practiceId = selectedPracticeForEval?.practiceId;
+
+      // 2. Close current modal
+      setEvalModalOpen(false);
+
+      // 3. Refresh practices to get latest evaluation status and members
+      try {
+        const response = await evaluationsCulminationService.getPractices({
+          ...filters,
+          search: searchTerm || undefined,
+        });
+
+        if (response.success) {
+          setPractices(response.data);
+          setMeta(response.meta || { total: 0, periods: [], careers: [], practiceTypes: [] });
+
+          // 4. Find updated practice by ID and update the reference
+          if (practiceId) {
+            const updatedPractice = response.data.find(
+              (p: PracticeWithEvaluations) => p.practiceId === practiceId
+            );
+            if (updatedPractice) {
+              setSelectedPracticeForEval(updatedPractice);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[useEvaluationsCulmination] Error refreshing for navigation:', error);
+      }
+
+      // 5. Switch evaluator type and reopen
+      setSelectedEvaluatorType(nextType);
+      setEditingEvaluationId(undefined);
+      setEvalModalOpen(true);
+    },
+    [selectedPracticeForEval, filters, searchTerm]
+  );
+
   // ─── Detail Modal Handlers ──────────────────────────────
   const handleViewEvaluationDetails = useCallback((evaluationId: number, studentName?: string, studentCi?: string) => {
     setSelectedEvaluationId(evaluationId);
@@ -689,27 +753,35 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
       .map(p => p.practiceId);
 
     if (completedIds.length === 0) {
-      toast.error('No hay evaluaciones completas para congelar');
+      toast.error('No hay evaluaciones completas para cerrar actas');
       return;
     }
 
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Cerrar Actas',
-      message: `¿Desea congelar ${completedIds.length} evaluaciones completas? Esta acción cerrará las actas de evaluación.`,
-      onConfirm: async () => {
-        try {
-          const result = await evaluationService.freezeBatch(completedIds);
-          addToast({ ...TOAST.updated('Cierre de Actas'), message: `${result.frozenCount} evaluaciones congeladas` });
-          fetchPractices();
-        } catch (error: any) {
-          addToast({ ...TOAST.updateError('Cierre de Actas'), message: error.message || 'Error al congelar' });
-        } finally {
-          setConfirmDialog(null);
-        }
-      },
-    });
-  }, [practices, fetchPractices]);
+    setSelectedPracticeIdsForCloseActas(completedIds);
+    setCloseActasModalOpen(true);
+  }, [practices]);
+
+  // ─── Grouped Culmination Sub-Hooks (PR 2b) ──────────────
+  const culminationFilters = useCulminationFilters();
+  const culminationUI = useCulminationUI();
+  const culminationData = useCulminationData({
+    periodId: culminationFilters.periodId,
+    search: culminationFilters.search,
+    careerId: culminationFilters.careerId,
+  });
+  const culminationActions = useCulminationActions(fetchPractices);
+
+  const closeActasFromPreview = useCallback(async () => {
+    if (selectedPracticeIdsForCloseActas.length === 0) return;
+    const result = await culminationActions.closeActas(selectedPracticeIdsForCloseActas);
+    setCloseActasModalOpen(false);
+    if (result) {
+      setCloseActasResults(result);
+      setCloseActasResultsModalOpen(true);
+    }
+    fetchPractices();
+    culminationData.refetch();
+  }, [selectedPracticeIdsForCloseActas, culminationActions, fetchPractices, culminationData]);
 
   const handleOpenCommittee = useCallback((practiceId: number, studentName: string) => {
     setCommitteeTarget({ practiceId, studentName });
@@ -771,16 +843,6 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     }
   }, [overrideTarget, fetchPractices]);
 
-  // ─── Grouped Culmination Sub-Hooks (PR 2b) ──────────────
-  const culminationFilters = useCulminationFilters();
-  const culminationUI = useCulminationUI();
-  const culminationData = useCulminationData({
-    periodId: culminationFilters.periodId,
-    search: culminationFilters.search,
-    careerId: culminationFilters.careerId,
-  });
-  const culminationActions = useCulminationActions(fetchPractices);
-
   return {
     practices,
     meta,
@@ -807,6 +869,7 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     handleOpenEvaluation,
     handleCloseEvaluationModal,
     handleEvaluationSuccess,
+    handleNavigateToNext,
     detailModalOpen,
     selectedEvaluationId,
     selectedDetailStudentName,
@@ -859,8 +922,16 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     setBulkExtensionReason,
     handleBulkExtension,
     handleConfirmBulkExtension,
-    // Freeze all
+    // Freeze all / Close actas
     handleFreezeAll,
+    closeActasFromPreview,
+    closeActasModalOpen,
+    setCloseActasModalOpen,
+    closeActasResults,
+    closeActasResultsModalOpen,
+    setCloseActasResultsModalOpen,
+    selectedPracticeIdsForCloseActas,
+    closingActas: culminationActions.closingActas,
     // Committee
     committeeDialogOpen,
     committeeTarget,

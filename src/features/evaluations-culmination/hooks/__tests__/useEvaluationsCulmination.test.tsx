@@ -47,10 +47,37 @@ vi.mock('../../services/evaluationsCulminationService', () => ({
       data: [],
       meta: { total: 0, periods: [], careers: [], practiceTypes: [] },
     }),
+    getCulminationGroups: vi.fn().mockResolvedValue({
+      success: true,
+      data: [],
+      meta: { total: 0, periods: [], careers: [] },
+    }),
+    getPracticeById: vi.fn().mockResolvedValue(null),
+    getEvaluationStats: vi.fn().mockResolvedValue({
+      total: 0, completed: 0, partial: 0, pending: 0, approved: 0, failed: 0,
+    }),
+    getCulminationStats: vi.fn().mockResolvedValue({
+      total: 0, pending: 0, approved: 0, certified: 0,
+    }),
     approveCulmination: vi.fn().mockResolvedValue({ success: true }),
     generateCertificate: vi.fn().mockResolvedValue({
       success: true,
       certificate: { number: 'CERT-001' },
+    }),
+    getCertificate: vi.fn().mockResolvedValue({
+      success: true,
+      certificate: { number: 'CERT-001' },
+    }),
+    closeActasPreview: vi.fn().mockResolvedValue({
+      success: true,
+      practices: [],
+      totalHours: 0,
+    }),
+    closeActas: vi.fn().mockResolvedValue({
+      success: true,
+      closedCount: 0,
+      frozenCount: 0,
+      autoPreEnrollResults: [],
     }),
   },
 }));

@@ -337,32 +337,11 @@ export const evaluationService = {
    * Get detailed practice evaluation status including per-type completion info.
    * Used to determine whether to show the completion/freeze dialog after a save.
    */
-  getDetailedPracticeStatus: async (practiceId: number) => {
+  getDetailedPracticeStatus: async (practiceId: number): Promise<EvaluationStatus> => {
     try {
-      const response = await apiClient.get<{
-        success: boolean;
-        data: {
-          practiceId: string;
-          evaluationStatus: 'pending' | 'partial' | 'completed';
-          evaluations: Record<string, {
-            completed: boolean;
-            score: number;
-            evaluatorName: string;
-            evaluationId?: number;
-            members?: Array<{
-              memberIndex: number;
-              score: number;
-              evaluatorName: string;
-              evaluationId: number;
-            }>;
-            completedCount?: string;
-          }>;
-          finalGrade: string;
-          completedCount: number;
-          canEvaluate: boolean;
-          periodMessage: string;
-        }
-      }>(`${API_URL}/practice/${practiceId}/status`);
+      const response = await apiClient.get<{ success: boolean; data: EvaluationStatus }>(
+        `${API_URL}/practice/${practiceId}/status`
+      );
       return response.data.data;
     } catch (error) {
       console.error('[evaluationService] Error getting detailed practice status:', error);

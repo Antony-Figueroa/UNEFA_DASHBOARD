@@ -88,17 +88,17 @@ export function CartaPostulacionPDF({ data, textos }: Props) {
       {/* Student info + photo box */}
       <View style={styles.infoRow}>
         <View style={styles.infoFields}>
-          <Text style={styles.fieldRow}>NOMBRES Y APELLIDOS:    {nombreCompleto}</Text>
-          <Text style={styles.fieldRow}>CÉDULA DE IDENTIDAD:     {ci}</Text>
-          <Text style={styles.fieldRow}>NÚMEROS DE CONTACTO:  {data.estudiante.telefono || ''}</Text>
-          <Text style={styles.fieldRow}>CORREO ELECTRÓNICO:   {(data.estudiante.email || '').toUpperCase()}</Text>
+          <Text style={styles.fieldRow}>NOMBRES Y APELLIDOS:    <Text style={{ fontWeight: 'bold' }}>{nombreCompleto}</Text></Text>
+          <Text style={styles.fieldRow}>CÉDULA DE IDENTIDAD:     <Text style={{ fontWeight: 'bold' }}>{ci}</Text></Text>
+          <Text style={styles.fieldRow}>NÚMEROS DE CONTACTO:  <Text style={{ fontWeight: 'bold' }}>{data.estudiante.telefono || ''}</Text></Text>
+          <Text style={styles.fieldRow}>CORREO ELECTRÓNICO:   <Text style={{ fontWeight: 'bold' }}>{(data.estudiante.email || '').toUpperCase()}</Text></Text>
           <Text style={styles.fieldRow}>
             RÉGIMEN: {esDiurno ? 'DIURNO (X)    NOCTURNO (  )' : 'DIURNO (  )    NOCTURNO (X)'}
           </Text>
-          <Text style={styles.fieldRow}>CARRERA:    {data.carrera.nombre}</Text>
-          <Text style={styles.fieldRow}>SEMESTRE:  {data.practica?.semester || ''}</Text>
+          <Text style={styles.fieldRow}>CARRERA:    <Text style={{ fontWeight: 'bold' }}>{data.carrera.nombre}</Text></Text>
+          <Text style={styles.fieldRow}>SEMESTRE:  <Text style={{ fontWeight: 'bold' }}>{data.practica?.semester || ''}</Text></Text>
           <Text style={styles.fieldRow}>
-            TRABAJO:  {trabaja ? 'SI (X)  NO (  )' : 'SI (  )  NO (X)'}
+            TRABAJO:  <Text style={{ fontWeight: 'bold' }}>{trabaja ? 'SI (X)  NO (  )' : 'SI (  )  NO (X)'}</Text>
           </Text>
         </View>
         <View style={styles.photoBox}>
@@ -108,10 +108,10 @@ export function CartaPostulacionPDF({ data, textos }: Props) {
 
       {/* Institution & HR manager */}
       <Text style={styles.fieldRow}>
-        NOMBRE DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: {data.institucion?.nombre || '________________________'}
+        NOMBRE DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: <Text style={{ fontWeight: 'bold' }}>{data.institucion?.nombre || '________________________'}</Text>
       </Text>
       <Text style={styles.fieldRow}>
-        NOMBRE Y APELLIDOS DEL (DE LA) GERENTE DE TALENTO HUMANO DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS: {data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '________________________'}
+        NOMBRE Y APELLIDOS DEL (DE LA) GERENTE DE TALENTO HUMANO DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS: <Text style={{ fontWeight: 'bold' }}>{data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '________________________'}</Text>
       </Text>
 
       {/* Signatures */}

@@ -4,7 +4,7 @@
  * Incluye funcionalidades de filtrado, ordenamiento, paginación y acciones masivas.
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"; import { createPortal } from "react-dom"; import { cn } from "../../../utils/cn";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
@@ -50,6 +50,8 @@ interface PreEnrollmentTableProps {
   onWithdrawJustified?: (item: PreEnrollmentRowData) => void;
   /** Función para retirada sin justificación (abandono) */
   onWithdrawUnjustified?: (item: PreEnrollmentRowData) => void;
+  /** Función para eliminar una pre-inscripción individual */
+  onDelete?: (item: PreEnrollmentRowData) => void;
   /** Función para eliminación masiva */
   onBulkDelete?: (ids: string[]) => void;
   /** Función para restauración masiva */
@@ -76,6 +78,7 @@ type SortOrder = "asc" | "desc";
 interface ActionButtonsProps {
     onEdit?: () => void;
     onToggleStatus?: () => void;
+    onDelete?: () => void;
     onView?: () => void;
     onExportToEnrollment?: () => void;
     onWithdrawJustified?: () => void;
@@ -90,6 +93,7 @@ interface ActionButtonsProps {
 const ActionButtons = ({
     onEdit,
     onToggleStatus,
+    onDelete,
     onView,
     onExportToEnrollment,
     onWithdrawJustified,
@@ -100,33 +104,82 @@ const ActionButtons = ({
     isMobile = false,
     disableAll = false,
 }: ActionButtonsProps) => {
-    const containerClasses = isMobile 
-        ? "flex flex-col gap-3 pt-2" 
-        : "flex justify-end gap-3";
+    const [kebabOpen, setKebabOpen] = useState(false);
+    const [kebabPos, setKebabPos] = useState({ top: 0, left: 0 });
+    const kebabBtnRef = useRef<HTMLButtonElement>(null);
+    const kebabRef = useRef<HTMLDivElement>(null);
 
-    const ExportIcon = (props: React.SVGProps<SVGSVGElement>) => (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            {...props}
-        >
-            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-            <polyline points="10 17 15 12 10 7" />
-            <line x1="15" y1="12" x2="3" y2="12" />
-        </svg>
+    // Cerrar kebab al hacer click fuera
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (kebabRef.current && !kebabRef.current.contains(e.target as Node)) {
+                setKebabOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const toggleKebab = useCallback(() => {
+        if (!kebabOpen && kebabBtnRef.current) {
+            const rect = kebabBtnRef.current.getBoundingClientRect();
+            setKebabPos({ top: rect.bottom + 4, left: rect.right - 200 });
+        }
+        setKebabOpen(prev => !prev);
+    }, [kebabOpen]);
+
+    const closeKebab = useCallback(() => setKebabOpen(false), []);
+
+    const renderKebabItems = () => (
+        <>
+            {onToggleStatus && (
+                <button
+                    onClick={() => { closeKebab(); onToggleStatus!(); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
+                >
+                    {status ? <TrashIcon className="w-4 h-4 text-warning-500" /> : <RefreshIcon className="w-4 h-4 text-success-500" />}
+                    <span>{status ? 'Inactivar' : 'Restaurar'}</span>
+                </button>
+            )}
+            {onDelete && (
+                <button
+                    onClick={() => { closeKebab(); onDelete!(); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
+                >
+                    <TrashIcon className="w-4 h-4 text-error-500" />
+                    <span>Eliminar</span>
+                </button>
+            )}
+            {onWithdrawJustified && (
+                <button
+                    onClick={() => { closeKebab(); onWithdrawJustified!(); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-blue-500">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span>Retiro Justificado</span>
+                </button>
+            )}
+            {onWithdrawUnjustified && (
+                <button
+                    onClick={() => { closeKebab(); onWithdrawUnjustified!(); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-bg-secondary dark:hover:bg-white/5 transition-colors"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-error-500">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 14.25 12 18l3.75-3.75M12 18V11.25" />
+                    </svg>
+                    <span>Abandono</span>
+                </button>
+            )}
+        </>
     );
 
     const isWithdrawn = recordType === 'withdrawn';
 
     return (
-        <div className={containerClasses}>
+        <div className={isMobile ? "flex flex-col gap-3 pt-2" : "flex justify-end gap-3"}>
             {onView && (
                 <AsyncActionButton
                     onClick={async () => onView()}
@@ -151,10 +204,17 @@ const ActionButtons = ({
                 />
             )}
 
+            {/* Exportar a Inscripción - botón individual fuera del kebab */}
             {!isWithdrawn && onExportToEnrollment && (
                 <AsyncActionButton
                     onClick={async () => onExportToEnrollment()}
-                    icon={<ExportIcon />}
+                    icon={
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                            <polyline points="10 17 15 12 10 7" />
+                            <line x1="15" y1="12" x2="3" y2="12" />
+                        </svg>
+                    }
                     tooltip="Exportar a Inscripción"
                     label={isMobile ? "Exportar a Inscripción" : undefined}
                     variant="info"
@@ -163,16 +223,39 @@ const ActionButtons = ({
                 />
             )}
 
-            {!isWithdrawn && onToggleStatus && (
-                <AsyncActionButton
-                    onClick={async () => onToggleStatus()}
-                    icon={status ? <TrashIcon /> : <RefreshIcon />}
-                    tooltip={status ? "Eliminar" : "Restaurar"}
-                    label={isMobile ? (status ? "Eliminar Pre-inscripción" : "Restaurar Pre-inscripción") : undefined}
-                    variant={status ? "error" : "success"}
-                    fullWidth={isMobile}
-                    disabled={disableAll}
-                />
+            {/* Active: kebab menu */}
+            {!isWithdrawn && (
+                <div className={isMobile ? "" : "relative"} ref={kebabRef}>
+                    <AsyncActionButton
+                        ref={kebabBtnRef}
+                        onClick={async () => toggleKebab()}
+                        icon={
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5ZM12 12.75a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5ZM12 18.75a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5Z" />
+                            </svg>
+                        }
+                        tooltip="Acciones"
+                        variant="info"
+                        fullWidth={isMobile}
+                        disabled={disableAll}
+                    />
+                    {kebabOpen && (
+                        isMobile ? (
+                            <div className="min-w-[200px] bg-white dark:bg-bg-dark rounded-xl border border-border-light dark:border-white/10 shadow-lg py-1 mt-1">
+                                {renderKebabItems()}
+                            </div>
+                        ) : createPortal(
+                            <div
+                                ref={kebabRef}
+                                className="fixed z-[9999] min-w-[200px] bg-white dark:bg-bg-dark rounded-xl border border-border-light dark:border-white/10 shadow-lg py-1"
+                                style={{ top: kebabPos.top, left: kebabPos.left }}
+                            >
+                                {renderKebabItems()}
+                            </div>,
+                            document.body
+                        )
+                    )}
+                </div>
             )}
 
             {/* Withdrawn: badge */}
@@ -188,43 +271,6 @@ const ActionButtons = ({
                     {withdrawalType === 'justified' ? 'Retiro Justificado' : 'Abandono'}
                 </span>
             )}
-
-            {/* Active: withdrawal buttons */}
-            {!isWithdrawn && (
-                <>
-                    {onWithdrawJustified && (
-                        <AsyncActionButton
-                            onClick={async () => onWithdrawJustified()}
-                            icon={
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                </svg>
-                            }
-                            tooltip="Retiro Justificado"
-                            label={isMobile ? "Retiro Justificado" : undefined}
-                            variant="info"
-                            fullWidth={isMobile}
-                            disabled={disableAll}
-                        />
-                    )}
-                    {onWithdrawUnjustified && (
-                        <AsyncActionButton
-                            onClick={async () => onWithdrawUnjustified()}
-                            icon={
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 14.25 12 18l3.75-3.75M12 18V11.25" />
-                                </svg>
-                            }
-                            tooltip="Abandono"
-                            label={isMobile ? "Abandono" : undefined}
-                            variant="error"
-                            fullWidth={isMobile}
-                            disabled={disableAll}
-                        />
-                    )}
-                </>
-            )}
         </div>
     );
 };
@@ -235,6 +281,7 @@ export default function PreEnrollmentTable({
     error,
     onEdit,
     onToggleStatus,
+    onDelete,
     onView,
     onExportToEnrollment,
     onWithdrawJustified,
@@ -688,6 +735,7 @@ export default function PreEnrollmentTable({
                                                     ? () => onToggleStatus(s)
                                                     : undefined
                                             }
+                                            onDelete={onDelete ? () => onDelete(s) : undefined}
                                             onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
                                             onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
@@ -785,6 +833,7 @@ export default function PreEnrollmentTable({
                                                     ? () => onToggleStatus(s)
                                                     : undefined
                                             }
+                                            onDelete={onDelete ? () => onDelete(s) : undefined}
                                             onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
                                             onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}

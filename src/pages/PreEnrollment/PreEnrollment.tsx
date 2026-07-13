@@ -153,6 +153,7 @@ export default function PreEnrollmentPage() {
         loadingAction,
         addPreEnrollment,
         editPreEnrollment,
+        deletePreEnrollment,
         toggleStatus,
         withdrawPreEnrollment,
         bulkToggleStatus,
@@ -319,8 +320,8 @@ export default function PreEnrollmentPage() {
         }
 	};
 
-	/**
-	 * Maneja el cambio de estado (activar/desactivar) de una pre-inscripción.
+/**
+     * Maneja el cambio de estado (activar/desactivar) de una pre-inscripción.
      * Muestra un diálogo de confirmación antes de proceder con la desactivación.
      * 
      * @param item - Registro de la fila seleccionada.
@@ -343,6 +344,34 @@ export default function PreEnrollmentPage() {
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
+                } catch (error) {
+                    console.error(error);
+                } finally {
+                    setConfirmation(null);
+                }
+            }
+        });
+    };
+
+    /**
+     * Maneja la eliminación (desactivación) individual de una pre-inscripción.
+     * Muestra un diálogo de confirmación antes de proceder.
+     * 
+     * @param item - Registro de la fila seleccionada.
+     */
+    const handleDelete = (item: PreEnrollmentRowData) => {
+        const original = preEnrollments.find((p) => p.preEnrollmentId === item.preEnrollmentId);
+        if (!original) return;
+
+setConfirmation({
+            isOpen: true,
+            title: "Confirmar Eliminación",
+            message: `¿Estás seguro de que deseas eliminar la pre-inscripción de ${item.studentName}? Esta acción no se puede deshacer.`,
+            confirmText: "Eliminar",
+            variant: "error",
+            onConfirm: async () => {
+                try {
+                    await deletePreEnrollment(original.preEnrollmentId);
                 } catch (error) {
                     console.error(error);
                 } finally {
@@ -495,6 +524,7 @@ export default function PreEnrollmentPage() {
                                 activeTab={activeTab}
                                 onEdit={handleEdit}
                                 onToggleStatus={handleToggleStatus}
+                                onDelete={handleDelete}
                                 onBulkDelete={handleBulkDelete}
                                 onBulkRestore={handleBulkRestore}
                                 onView={setViewItem}

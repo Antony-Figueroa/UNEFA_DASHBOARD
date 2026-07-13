@@ -1,7 +1,7 @@
 import { SidebarProvider } from "../context/SidebarContext";
 import { useSidebar } from "../context/sidebar";
 import { Navigate } from "react-router";
-import { useState, useEffect, useLayoutEffect, Suspense, useRef, memo } from "react";
+import { useState, useEffect, useLayoutEffect, Suspense, useRef, memo, Component, ErrorInfo, ReactNode } from "react";
 import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
@@ -18,6 +18,30 @@ import { TourButton } from "../features/tour/components/TourButton";
 import { getTourForPath } from "../features/tour/data/tourRoutes";
 import { useMemo } from "react";
 import { RouteParamsProvider } from "../context/RouteParamsContext";
+
+/**
+ * Error boundary for catching lazy component loading errors.
+ * Catches errors during render, in lifecycle methods, and in constructors
+ * of the whole tree below it.
+ */
+class LazyErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[LazyErrorBoundary] Error loading component:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
 
 /**
  * Memoized wrapper for a single tab's content.
@@ -39,8 +63,17 @@ const TabContent = memo(function TabContent({
   isMounted: boolean;
 }) {
   const resolved = resolveComponent(path);
-  if (!resolved) return null;
+  if (!resolved) {
+    console.warn('[TabContent] No component resolved for path:', path);
+    return null;
+  }
   const { component: Component, params } = resolved;
+  
+  // Ensure Component is a valid React component type
+  if (!Component || typeof Component !== 'function' && typeof Component !== 'object') {
+    console.error('[TabContent] Invalid component for path:', path, Component);
+    return null;
+  }
 
   return (
     <div
@@ -49,7 +82,9 @@ const TabContent = memo(function TabContent({
       {isMounted && (
         <RouteParamsProvider params={params ?? {}}>
           <Suspense fallback={<div className="flex items-center justify-center size-full"><Loader /></div>}>
-            <Component />
+            <LazyErrorBoundary fallback={<div className="flex items-center justify-center size-full p-4 text-error-500">Error cargando la página</div>}>
+              <Component />
+            </LazyErrorBoundary>
           </Suspense>
         </RouteParamsProvider>
       )}

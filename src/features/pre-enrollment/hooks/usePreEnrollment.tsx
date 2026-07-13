@@ -36,6 +36,7 @@ export const usePreEnrollment = () => {
     refresh: refreshPreEnrollments,
     createItem: baseAddPreEnrollment,
     updateItem: baseEditPreEnrollment,
+    deleteItem: baseDeletePreEnrollment,
     toggleItemStatus: togglePreEnrollmentStatus,
     bulkDelete: baseBulkDelete,
     bulkRestore: baseBulkRestore
@@ -59,7 +60,7 @@ export const usePreEnrollment = () => {
     withdrawComment?: string
   ) => {
     try {
-      await preEnrollmentService.withdrawPreEnrollment(practiceId, withdrawalType, justificationReason, withdrawComment);
+      await withdrawPreEnrollment(practiceId, withdrawalType, justificationReason, withdrawComment);
       addToast({
         variant: withdrawalType === 'justified' ? "success" : "warning",
         title: withdrawalType === 'justified' ? "Retiro Justificado" : "Abandono Registrado",
@@ -75,12 +76,37 @@ export const usePreEnrollment = () => {
         title: "Error",
         message: error.response?.data?.message || "No se pudo procesar la retirada.",
       });
-      throw error;
-    }
-  };
+throw error;
+  }
+};
 
-  /**
-   * Registra una nueva pre-inscripción.
+/**
+ * Elimina (desactiva) una pre-inscripción individual.
+ * 
+ * @param practiceId - ID de la pre-inscripción
+ */
+const deletePreEnrollment = async (practiceId: string) => {
+  try {
+    await baseDeletePreEnrollment(practiceId);
+    addToast({
+      variant: "success",
+      title: "Pre-Inscripción Eliminada",
+      message: `La pre-inscripción ha sido desactivada correctamente.`,
+    });
+    refreshPreEnrollments();
+  } catch (error: any) {
+    console.error("[usePreEnrollment] Error deleting pre-enrollment:", error);
+    addToast({
+      variant: "error",
+      title: "Error",
+      message: error.response?.data?.message || "No se pudo eliminar la pre-inscripción.",
+    });
+    throw error;
+  }
+};
+
+/**
+ * Registra una nueva pre-inscripción.
    * 
    * @param payload - Datos de la pre-inscripción a crear.
    */
@@ -266,6 +292,7 @@ export const usePreEnrollment = () => {
     error,
     addPreEnrollment,
     editPreEnrollment,
+    deletePreEnrollment,
     toggleStatus,
     withdrawPreEnrollment,
     bulkToggleStatus,

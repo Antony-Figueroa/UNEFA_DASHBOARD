@@ -532,6 +532,7 @@ export default function EvaluationsAndCulminationPage() {
       </UnifiedDialog>
 
       {hook.selectedPracticeForEval && (
+        <>
         <EvaluationModal
           isOpen={hook.evalModalOpen}
           onClose={hook.handleCloseEvaluationModal}
@@ -540,6 +541,7 @@ export default function EvaluationsAndCulminationPage() {
           evaluationId={hook.editingEvaluationId}
           onSuccess={hook.handleEvaluationSuccess}
           isFrozen={hook.selectedPracticeForEval.isFrozen}
+          onNavigateToNext={hook.handleNavigateToNext}
           existingComiteMembers={
             hook.selectedPracticeForEval.evaluations.COMITE?.members?.map(m => ({
               memberIndex: m.memberIndex,
@@ -555,6 +557,7 @@ export default function EvaluationsAndCulminationPage() {
             })) || []
           }
         />
+        </>
       )}
 
       <EvaluationDetailModal

@@ -139,6 +139,24 @@ export interface PendingPracticesReport {
  * Valores por defecto del sistema de evaluación.
  * Se usan como fallback si no se puede obtener la configuración del backend.
  */
+/**
+ * Representa el siguiente paso en el flujo secuencial de evaluaciones.
+ */
+export interface EvaluationFlowStep {
+  type: EvaluatorType;
+  memberIndex?: number;
+  label: string;
+}
+
+/**
+ * Estado del modal de flujo de evaluación secuencial.
+ */
+export interface EvaluationFlowState {
+  isOpen: boolean;
+  nextStep: EvaluationFlowStep | null;
+  studentName?: string;
+}
+
 /** @deprecated Los valores reales vienen del backend via GET /api/evaluations/system-config */
 export const DEFAULT_EVALUATION_CONFIG: SystemEvaluationConfig = {
   score: { min: 1, max: 10, displayScale: 20 },

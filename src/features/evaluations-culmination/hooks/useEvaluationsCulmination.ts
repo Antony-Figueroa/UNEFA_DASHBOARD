@@ -76,6 +76,8 @@ export interface UseEvaluationsCulminationReturn {
   handleOpenEvaluation: (practice: PracticeWithEvaluations, type: EvaluatorType, existingEvalId?: number) => void;
   handleCloseEvaluationModal: () => void;
   handleEvaluationSuccess: () => void;
+  /** Navega al siguiente paso en el flujo secuencial de evaluaciones */
+  handleNavigateToNext: (nextType: EvaluatorType, nextMemberIndex?: number) => Promise<void>;
 
   /** Modal de detalle */
   detailModalOpen: boolean;
@@ -519,6 +521,52 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     fetchPractices();
   }, [fetchPractices]);
 
+  /**
+   * Navega al siguiente paso en el flujo secuencial de evaluaciones.
+   * Cierra el modal, refresca las prácticas, actualiza la referencia de la práctica
+   * (para que existingComiteMembers esté fresco), y reabre con el nuevo evaluatorType.
+   */
+  const handleNavigateToNext = useCallback(
+    async (nextType: EvaluatorType, _nextMemberIndex?: number) => {
+      // 1. Capture current practice ID before closing
+      const practiceId = selectedPracticeForEval?.practiceId;
+
+      // 2. Close current modal
+      setEvalModalOpen(false);
+
+      // 3. Refresh practices to get latest evaluation status and members
+      try {
+        const response = await evaluationsCulminationService.getPractices({
+          ...filters,
+          search: searchTerm || undefined,
+        });
+
+        if (response.success) {
+          setPractices(response.data);
+          setMeta(response.meta || { total: 0, periods: [], careers: [], practiceTypes: [] });
+
+          // 4. Find updated practice by ID and update the reference
+          if (practiceId) {
+            const updatedPractice = response.data.find(
+              (p: PracticeWithEvaluations) => p.practiceId === practiceId
+            );
+            if (updatedPractice) {
+              setSelectedPracticeForEval(updatedPractice);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[useEvaluationsCulmination] Error refreshing for navigation:', error);
+      }
+
+      // 5. Switch evaluator type and reopen
+      setSelectedEvaluatorType(nextType);
+      setEditingEvaluationId(undefined);
+      setEvalModalOpen(true);
+    },
+    [selectedPracticeForEval, filters, searchTerm]
+  );
+
   // ─── Detail Modal Handlers ──────────────────────────────
   const handleViewEvaluationDetails = useCallback((evaluationId: number, studentName?: string, studentCi?: string) => {
     setSelectedEvaluationId(evaluationId);
@@ -807,6 +855,7 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     handleOpenEvaluation,
     handleCloseEvaluationModal,
     handleEvaluationSuccess,
+    handleNavigateToNext,
     detailModalOpen,
     selectedEvaluationId,
     selectedDetailStudentName,

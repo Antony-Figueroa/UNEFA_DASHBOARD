@@ -9,6 +9,7 @@ import {
   EVALUATOR_TYPE_LABELS,
   SystemEvaluationConfig,
   EvaluationCriteria,
+  EvaluationStatus,
   EvaluationWithDetails,
 } from '../types';
 import { useEvaluations } from '../hooks/useEvaluations';
@@ -19,6 +20,7 @@ import { searchPersons } from '../../persons/services/personService';
 import apiClient from '../../../api/apiClient';
 import { SearchIcon } from '../../../icons';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
+import { EvaluationFlowModal } from './EvaluationFlowModal';
 
 const schema = z.object({
   evaluatorName: z.string()
@@ -53,6 +55,12 @@ interface EvaluationModalProps {
   onSuccess: () => void;
   /** Si es true, la evaluación está congelada (actas cerradas) — solo lectura */
   isFrozen?: boolean;
+  /**
+   * Callback para navegar al siguiente paso en el flujo secuencial.
+   * Se invoca después de guardar cuando hay más evaluaciones pendientes
+   * y el paso actual no completa todas las evaluaciones.
+   */
+  onNavigateToNext?: (type: EvaluatorType, memberIndex?: number) => void;
 }
 
 interface ComiteMemberData {
@@ -73,6 +81,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   committeeAssignments = [],
   onSuccess,
   isFrozen = false,
+  onNavigateToNext,
 }) => {
   const { criteria, fetchCriteria, createEvaluation, updateEvaluation, loading, error: submitError } = useEvaluations();
   const { config } = useSystemEvaluationConfig();
@@ -98,6 +107,10 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const [searching, setSearching] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionReason, setCompletionReason] = useState<'committee' | 'all'>('committee');
+
+  // Flow modal state — shows after save when more evaluations are pending
+  const [showFlowModal, setShowFlowModal] = useState(false);
+  const [flowNextStep, setFlowNextStep] = useState<{ type: EvaluatorType; memberIndex?: number } | null>(null);
 
   const handleSearchInput = async (q: string) => {
     setSearchQuery(q);
@@ -361,6 +374,30 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     setActiveMember(idx);
   };
 
+  /**
+   * Cierra el modal actual y delega la navegación al padre via onNavigateToNext.
+   * El padre se encarga de refrescar datos y reabrir un nuevo EvaluationModal
+   * con el evaluatorType/memberIndex adecuado.
+   */
+  const performNavigateToNext = (
+    nextType: EvaluatorType,
+    nextMemberIndex?: number
+  ) => {
+    reset();
+    setExistingData(null);
+    setDataLoaded(false);
+    setItemScores({});
+    setCriteriaLoaded([]);
+    setConfirmed(false);
+    setComiteData({});
+    setActiveMember(1);
+    // Do NOT call onClose() here — the hook's handleNavigateToNext manages
+    // modal lifecycle (close → refresh → reopen with new type)
+    if (onNavigateToNext) {
+      onNavigateToNext(nextType, nextMemberIndex);
+    }
+  };
+
   const onSubmit = async (formData: FormData) => {
     const items = criteriaLoaded.map(c => ({
       criteriaId: c.criteriaId,
@@ -413,7 +450,12 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
         );
 
         if (nextIdx) {
-          // More committee members to evaluate — close modal, refresh list
+          // More committee members to evaluate — show flow modal or fall back
+          if (onNavigateToNext) {
+            setFlowNextStep({ type: 'COMITE', memberIndex: nextIdx });
+            setShowFlowModal(true);
+            return;
+          }
           onSuccess();
           return;
         }
@@ -427,19 +469,73 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
         if (status.evaluationStatus === 'completed') {
           setCompletionReason(isComiteMode ? 'committee' : 'all');
           setShowCompletionModal(true);
+        } else if (onNavigateToNext) {
+          // Not all evaluations complete — show flow modal for user choice
+          const nextStep = calculateNextStep(status);
+          if (nextStep) {
+            setFlowNextStep(nextStep);
+            setShowFlowModal(true);
+          } else {
+            // No next step determined (probably a bug) — fallback
+            reset();
+            setConfirmed(false);
+            onClose();
+          }
         } else {
-          // Not all evaluations complete — close modal and refresh list
+          // Not all evaluations complete — close modal and refresh list (old behavior)
           reset();
           setConfirmed(false);
           onClose();
         }
       } catch {
-        // On error, just close and refresh
-        reset();
-        setConfirmed(false);
-        onClose();
+        if (onNavigateToNext) {
+          // On error with flow support, just close parent will handle refresh
+          reset();
+          setConfirmed(false);
+          onClose();
+        } else {
+          // On error, just close and refresh
+          reset();
+          setConfirmed(false);
+          onClose();
+        }
       }
     }
+  };
+
+  /**
+   * Determina el siguiente paso pendiente en la secuencia de evaluaciones
+   * INSTITUCIONAL → ACADEMICO → COMITE(1-3).
+   * Retorna {type, memberIndex} del primer evaluador que falta,
+   * o null si todos están completos.
+   */
+  const calculateNextStep = (
+    status: EvaluationStatus
+  ): { type: EvaluatorType; memberIndex?: number } | null => {
+    const { evaluations } = status;
+
+    if (!evaluations.INSTITUCIONAL.completed) {
+      return { type: 'INSTITUCIONAL' };
+    }
+
+    if (!evaluations.ACADEMICO.completed) {
+      return { type: 'ACADEMICO' };
+    }
+
+    if (evaluations.COMITE.completed) {
+      return null;
+    }
+
+    // COMITE — find first missing member index
+    const existingMembers = evaluations.COMITE.members || [];
+    const existingMemberIndices = new Set(existingMembers.map(m => m.memberIndex));
+    const missingMember = [1, 2, 3].find(i => !existingMemberIndices.has(i));
+    if (missingMember) {
+      return { type: 'COMITE', memberIndex: missingMember };
+    }
+
+    // All members evaluated but COMITE not marked completed — edge case
+    return null;
   };
 
   const handleClose = () => {
@@ -814,6 +910,28 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
         </div>
       </ModalBody>
     </Modal>
+
+    {/* Flow modal — guide user to next evaluation step */}
+    <EvaluationFlowModal
+      isOpen={showFlowModal}
+      onClose={() => {
+        // "Cerrar" — return to list
+        setShowFlowModal(false);
+        setFlowNextStep(null);
+        handleClose();
+      }}
+      onContinue={() => {
+        // "Continuar" — navigate to next evaluation
+        setShowFlowModal(false);
+        const step = flowNextStep;
+        setFlowNextStep(null);
+        if (step) {
+          performNavigateToNext(step.type, step.memberIndex);
+        }
+      }}
+      nextType={flowNextStep?.type ?? 'INSTITUCIONAL'}
+      nextMemberIndex={flowNextStep?.memberIndex}
+    />
 
     {/* Completion modal — all evaluation types complete */}
     <UnifiedDialog

@@ -83,7 +83,8 @@ describe('usePeriods — updateTypeDates', () => {
     );
   });
 
-  it('debería exponer updateTypeDates como función', () => {
+  it('debería exponer updateTypeDates como función', async () => {
+    const { usePeriods } = await import('../usePeriods');
     const { result } = renderHook(() => usePeriods());
 
     expect(result.current.updateTypeDates).toBeDefined();
@@ -91,6 +92,8 @@ describe('usePeriods — updateTypeDates', () => {
   });
 
   it('debería llamar upsert del servicio cuando se invoca updateTypeDates', async () => {
+    const { usePeriods } = await import('../usePeriods');
+    const periodTypeDatesService = await import('../../services/periodTypeDatesService');
     const mockUpsert = vi.mocked(periodTypeDatesService.upsert);
     mockUpsert.mockResolvedValue({ id: 1, periodId: 1, internshipTypeId: 1, startDate: '2026-03-16', endDate: '2026-05-08' });
 
@@ -106,6 +109,8 @@ describe('usePeriods — updateTypeDates', () => {
   });
 
   it('debería actualizar typeDates para múltiples tipos', async () => {
+    const { usePeriods } = await import('../usePeriods');
+    const periodTypeDatesService = await import('../../services/periodTypeDatesService');
     const mockUpsert = vi.mocked(periodTypeDatesService.upsert);
     mockUpsert.mockResolvedValue({ id: 1, periodId: 1, internshipTypeId: 1, startDate: '2026-03-16', endDate: '2026-05-08' });
 

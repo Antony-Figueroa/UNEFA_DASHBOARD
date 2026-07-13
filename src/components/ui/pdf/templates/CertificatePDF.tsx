@@ -178,7 +178,7 @@ export function CertificatePDF({ data, certificateNumber, issueDate }: Certifica
             <Text style={styles.paragraphText}>
               El presente certificado se emite a petición del interesado, certificando que el(la) bachiller{' '}
               {data.studentName}, portador(a) de la cédula de identidad V-{data.studentCi.replace('V-', '')}, 
-             完成了 {data.totalHours} horas de prácticas profesionales en la institución {data.institutionName}, 
+              ha completado {data.totalHours} horas de prácticas profesionales en la institución {data.institutionName}, 
               durante el período académico {data.period}, cumpliendo con todos los requisitos establecidos por la 
               Universidad Nacional Experimental de la Fuerza Armada (UNEFA).
             </Text>

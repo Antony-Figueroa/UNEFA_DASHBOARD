@@ -6,7 +6,7 @@ const TABLE_NAME = 't_career';
 const RELATION_TABLE = 't_career_internship_type';
 const CACHE_PREFIX = 'careers:';
 const CACHE_TTL = 3600000;
-const CAREER_COLUMNS = 'CAREER_ID, CAREER_NAME, CAREER_CODE, MINIMUM_GRADE, STATUS, CAREER_ABBREVIATION, CAREER_TYPE, SEMESTER';
+const CAREER_COLUMNS = 'CAREER_ID, CAREER_NAME, CAREER_CODE, MINIMUM_GRADE, STATUS, CAREER_ABBREVIATION, CAREER_TYPE, SEMESTER, CREATION_DATE';
 
 const mapRecord = (career: Record<string, unknown>): Career => {
   const relationData = career[RELATION_TABLE] as unknown as { INTERNSHIP_TYPE_ID: number; PRIORITY: number }[] | undefined;
@@ -20,7 +20,7 @@ const mapRecord = (career: Record<string, unknown>): Career => {
       // CamelCase keys for frontend
       careerId: c.CAREER_ID ?? undefined,
       careerName: (c.CAREER_NAME as string) ?? undefined,
-      careerCode: (c.CAREER_CODE as unknown as number) ?? undefined,
+      careerCode: (c.CAREER_CODE as string) ?? undefined,
       minimumGrade: (c.MINIMUM_GRADE as unknown as number) ?? undefined,
       careerAbbreviation: (c.CAREER_ABBREVIATION as string) ?? undefined,
       careerType: (c.CAREER_TYPE as string) ?? undefined,
@@ -252,6 +252,7 @@ export const createCareer = async (payload: Record<string, unknown>, userId: num
           CREATION_DATE: now,
           MODIF_USER_ID: userId,
           MODIF_USER_DATE: now,
+          // Schema requires NOT NULL; these are placeholders — actual delete/restore sets real values
           ELIM_USER_ID: userId,
           ELIM_USER_DATE: now,
           REST_USER_ID: userId,

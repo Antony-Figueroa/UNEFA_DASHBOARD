@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { HelmetProvider } from 'react-helmet-async';
+import { MemoryRouter } from 'react-router';
 import TutorGrades from '../TutorGrades';
 
 // ── Mocks ──────────────────────────────────────────────────
@@ -120,7 +121,7 @@ const MOCK_STUDENTS = [
   },
 ];
 
-const renderComponent = () => render(<HelmetProvider><TutorGrades /></HelmetProvider>);
+const renderComponent = () => render(<MemoryRouter><HelmetProvider><TutorGrades /></HelmetProvider></MemoryRouter>);
 
 describe('TutorGrades', () => {
   beforeEach(() => {

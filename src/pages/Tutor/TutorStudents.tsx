@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useTabs } from "../../context/tab";
+import { useAuth } from "../../context/auth";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import tutorService, { TutorStudent } from "../../features/tutor/services/tutorService";
@@ -10,6 +11,7 @@ import { Search } from "lucide-react";
 import { matchSearch } from "../../utils/searchNormalizer";
 import StudentViewModal from "../../features/students/components/StudentViewModal";
 import { StudentRowData } from "../../features/students/types";
+import { getStudentByCi } from "../../features/students/services/studentsService";
 import {
   Table,
   TableBody,
@@ -17,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
+import { Modal, ModalHeader, ModalBody } from "../../components/ui/modal";
 import { EmptyState } from "../../components/ui/table/EmptyState";
 import InputField from "../../components/form/input/InputField";
 import CustomSelect from "../../components/form/CustomSelect";
@@ -49,6 +52,7 @@ const STATUS_OPTIONS = [
 export default function TutorStudents() {
   const navigate = useNavigate();
   const { openTab } = useTabs();
+  const { user } = useAuth();
   const [students, setStudents] = useState<TutorStudent[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<TutorStudent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +60,8 @@ export default function TutorStudents() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedStudent, setSelectedStudent] = useState<TutorStudent | null>(null);
+  const [selectedStudentData, setSelectedStudentData] = useState<StudentRowData | null>(null);
+  const [loadingStudent, setLoadingStudent] = useState(false);
 
   useEffect(() => {
     fetchStudents();
@@ -75,6 +81,30 @@ export default function TutorStudents() {
       setError("Error al cargar estudiantes");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewStudent = async (tutorStudent: TutorStudent) => {
+    setSelectedStudent(tutorStudent);
+    setLoadingStudent(true);
+    try {
+      const result = await getStudentByCi(tutorStudent.studentCi);
+      if (result.student) {
+        const s = result.student;
+        setSelectedStudentData({
+          ...s,
+          enrollmentDate: s.enrollmentDate instanceof Date
+            ? s.enrollmentDate.toISOString().split('T')[0]
+            : String(s.enrollmentDate),
+          fullNames: `${s.firstName} ${s.middleName || ''} ${s.lastName} ${s.secondLastName || ''}`.trim(),
+        });
+      } else {
+        setSelectedStudentData(null);
+      }
+    } catch {
+      setSelectedStudentData(null);
+    } finally {
+      setLoadingStudent(false);
     }
   };
 
@@ -198,7 +228,7 @@ export default function TutorStudents() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <AsyncActionButton
-                            onClick={async () => setSelectedStudent(student)}
+                            onClick={async () => handleViewStudent(student)}
                             icon={<Eye className="w-4 h-4" />}
                             tooltip="Ver detalles"
                             variant="primary"
@@ -246,12 +276,28 @@ export default function TutorStudents() {
       </div>
 
       {selectedStudent && (
-        <StudentViewModal
-          isOpen={true}
-          onClose={() => setSelectedStudent(null)}
-          student={selectedStudent as unknown as StudentRowData}
-          onEdit={() => {}}
-        />
+        selectedStudentData ? (
+          <StudentViewModal
+            isOpen={true}
+            onClose={() => { setSelectedStudent(null); setSelectedStudentData(null); }}
+            student={selectedStudentData}
+            onEdit={user?.role === 1 ? () => setSelectedStudent(null) : undefined}
+          />
+        ) : (
+          <Modal isOpen={true} onClose={() => { setSelectedStudent(null); setSelectedStudentData(null); }}>
+            <ModalHeader>
+              <h2 className="text-lg font-semibold text-text-emphasis">
+                Detalles del Estudiante
+              </h2>
+            </ModalHeader>
+            <ModalBody>
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+                <span className="ml-3 text-text-secondary">Cargando datos del estudiante...</span>
+              </div>
+            </ModalBody>
+          </Modal>
+        )
       )}
     </>
   );

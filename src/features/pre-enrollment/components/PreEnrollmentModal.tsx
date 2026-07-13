@@ -140,6 +140,9 @@ export default function PreEnrollmentModal({
   const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
   const [_displayPhone, setDisplayPhone] = useState("");
 
+  // State for sequential blocking reason display
+  const [blockingInfo, setBlockingInfo] = useState<{ message: string; reason: string | null } | null>(null);
+
   // Handle identification number input change with formatting (sin prefijo porque ya está en el select)
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -674,13 +677,20 @@ if (student) {
       }
       setShowConfirmDialog(false);
       setPendingData(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("[PreEnrollmentModal] Error al procesar el formulario:", error);
-      addToast({
-        variant: "error",
-        title: "Error de Formulario",
-        message: "Ocurrió un error inesperado al procesar el formulario.",
-      });
+      // Check for sequential blocking reason from backend
+      const reason = error?.response?.data?.blockingReason || error?.blockingReason;
+      if (reason) {
+        const message = error?.response?.data?.message || error?.message;
+        setBlockingInfo({ message, reason });
+      } else {
+        addToast({
+          variant: "error",
+          title: "Error de Formulario",
+          message: "Ocurrió un error inesperado al procesar el formulario.",
+        });
+      }
     }
   };
 
@@ -707,6 +717,49 @@ if (student) {
 
         <ModalBody className="bg-slate-50/50 dark:bg-transparent custom-scrollbar">
           <form id="pre-enrollment-form" onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto py-8 px-2">
+            {/* Sequential blocking warning banner */}
+            {blockingInfo && (
+              <div className={`rounded-lg border p-4 mb-4 ${
+                blockingInfo.reason === 'retiro_justificado' 
+                  ? 'border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30'
+                  : 'border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-950/30'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <svg className={`h-5 w-5 ${
+                      blockingInfo.reason === 'retiro_justificado' 
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-red-600 dark:text-red-400'
+                    }`} viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-sm font-medium ${
+                      blockingInfo.reason === 'retiro_justificado' 
+                        ? 'text-blue-800 dark:text-blue-200'
+                        : 'text-red-800 dark:text-red-200'
+                    }`}>{blockingInfo.message}</p>
+                    {blockingInfo.reason === 'retiro_justificado' && (
+                      <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+                        El estudiante puede reinscribirse en el siguiente período en el mismo tipo de práctica.
+                      </p>
+                    )}
+                    <button 
+                      type="button"
+                      onClick={() => setBlockingInfo(null)} 
+                      className={`mt-2 text-sm underline ${
+                        blockingInfo.reason === 'retiro_justificado' 
+                          ? 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200'
+                          : 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200'
+                      }`}
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               
               {/* Columna Izquierda: Identificación y Perfil */}
@@ -895,7 +948,10 @@ if (student) {
                           <CustomSelect
                             id="careerId"
                             options={careerOptions}
-                            onChange={field.onChange}
+                            onChange={(value) => {
+                              field.onChange(value);
+                              setBlockingInfo(null);
+                            }}
                             value={field.value}
                             placeholder="Seleccione la carrera..."
                             error={!!errors.careerId}
@@ -988,7 +1044,10 @@ if (student) {
                           <CustomSelect
                             id="practiceType"
                             options={practiceTypeOptions}
-                            onChange={field.onChange}
+                            onChange={(value) => {
+                              field.onChange(value);
+                              setBlockingInfo(null);
+                            }}
                             value={field.value}
                             placeholder="Seleccione el tipo..."
                             error={!!errors.practiceType}

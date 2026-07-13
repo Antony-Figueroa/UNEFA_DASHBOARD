@@ -72,6 +72,13 @@ export default function VisitRegistration() {
   const [visitTypeLabelMap, setVisitTypeLabelMap] = useState<Record<string, string>>({});
   const [visitCaseLabelMap, setVisitCaseLabelMap] = useState<Record<string, string>>({});
 
+  // Calcular stats client-side para tutor mode (no tiene endpoint propio)
+  const clientStats = useMemo(() => ({
+    totalVisits: visits.filter(v => v.status).length,
+    totalHours: visits.reduce((sum, v) => sum + (v.hoursWorked || 0), 0),
+    visitsByType: {} as Record<string, number>,
+  }), [visits]);
+
   // Filtrar visitas según la pestaña activa (mismo patrón que Periods)
   const tableData = useMemo(() => visits
     .filter(v => v.status === (tabsState.activeTab === 'active')),
@@ -151,6 +158,7 @@ export default function VisitRegistration() {
 
   // Cargar listas dinámicas para resolver IDs a nombres (VISIT_TYPE, VISIT_CASE)
   useEffect(() => {
+    if (tutorMode) return; // ponytail: el tutor no tiene permiso para /api/lists
     fetchMultipleLists(['VISIT_TYPE', 'VISIT_CASE']).then(lists => {
       const typeMap: Record<string, string> = {};
       const caseMap: Record<string, string> = {};
@@ -293,7 +301,7 @@ export default function VisitRegistration() {
             </div>
             <div className="p-4 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
               <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">Total Horas</p>
-              <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{stats?.totalHours || 0} hrs</p>
+              <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{(tutorMode ? clientStats.totalHours : stats?.totalHours) || 0} hrs</p>
             </div>
           </div>
         </ComponentCard>
@@ -456,6 +464,7 @@ export default function VisitRegistration() {
         )}
       </ComponentCard>
 
+      {isModalOpen && (
       <VisitModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -464,7 +473,8 @@ export default function VisitRegistration() {
         practiceId={parseInt(id || '0')}
         tutorId={1}
         loading={loading}
-        mode={tutorMode ? "view" : "edit"}
+        mode="edit"
+        tutorMode={tutorMode}
         periodStartDate={practiceInfo?.periodStartDate ? parseApiDate(practiceInfo.periodStartDate) : undefined}
         periodEndDate={practiceInfo?.periodEndDate ? parseApiDate(practiceInfo.periodEndDate) : undefined}
         studentName={practiceInfo?.studentName}
@@ -483,6 +493,7 @@ export default function VisitRegistration() {
         }, [])}
         hoursAccumulated={visits.reduce((sum, v) => sum + (v.hoursWorked || 0), 0)}
       />
+      )}
 
       <Modal
         isOpen={viewDialog.isOpen}

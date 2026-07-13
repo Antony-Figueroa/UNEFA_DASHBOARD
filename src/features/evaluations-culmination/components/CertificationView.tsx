@@ -30,9 +30,9 @@ const formatDate = (dateStr: string | null): string => {
 };
 
 /** Find the practice hours value; 0—empty should show "—" */
-const getGrade = (phase: { grade: number | null; status: string }): string | number => {
+const getGrade = (phase: { grade: number | null; status: string }): string => {
   if (phase.grade == null) return '—';
-  return phase.grade;
+  return Number(phase.grade).toFixed(2);
 };
 
 export const CertificationView: React.FC<CertificationViewProps> = ({

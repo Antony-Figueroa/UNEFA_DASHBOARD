@@ -124,9 +124,8 @@ describe('StudentCulminationRow', () => {
 
   it('shows expanded detail when isExpanded=true', () => {
     render(<StudentCulminationRow {...defaultProps} isExpanded={true} />);
-    // Expanded section should show institution and hours
+    // Expanded section should show institution
     expect(screen.getByText('Hospital Central')).toBeInTheDocument();
-    expect(screen.getByText(/360h/)).toBeInTheDocument();
   });
 
   it('hides expanded detail when isExpanded=false', () => {

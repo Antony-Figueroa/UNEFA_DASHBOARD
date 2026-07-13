@@ -195,9 +195,9 @@ describe('CertificationView', () => {
   it('renders both practice grades for a student with 2 practices', () => {
     render(<CertificationView groups={[certifiedRow1]} loading={false} />);
 
-    // Should show both grades
-    expect(screen.getByText('16')).toBeInTheDocument();
-    expect(screen.getByText('15')).toBeInTheDocument();
+    // Should show both grades (with .toFixed(2) formatting)
+    expect(screen.getByText('16.00')).toBeInTheDocument();
+    expect(screen.getByText('15.00')).toBeInTheDocument();
   });
 
   it('shows "—" for missing practice grade', () => {
@@ -205,11 +205,11 @@ describe('CertificationView', () => {
     // The 1-phase row (certifiedRow2) will have a fill cell with "—"
     render(<CertificationView groups={[certifiedRow1, certifiedRow2]} loading={false} />);
 
-    // certifiedRow1 (Juan) has both phases with grades 16 and 15
-    expect(screen.getByText('16')).toBeInTheDocument();
-    expect(screen.getByText('15')).toBeInTheDocument();
-    // certifiedRow2 (María) has only Hospitalaria (grade 17) and a fill "—"
-    expect(screen.getByText('17')).toBeInTheDocument();
+    // certifiedRow1 (Juan) has both phases with grades 16 and 15 (formatted as 16.00, 15.00)
+    expect(screen.getByText('16.00')).toBeInTheDocument();
+    expect(screen.getByText('15.00')).toBeInTheDocument();
+    // certifiedRow2 (María) has only Hospitalaria (grade 17, formatted as 17.00) and a fill "—"
+    expect(screen.getByText('17.00')).toBeInTheDocument();
     // Find the "—" elements (table header separator + missing grade) — at least one should exist
     const dashes = screen.getAllByText('—');
     expect(dashes.length).toBeGreaterThanOrEqual(1);

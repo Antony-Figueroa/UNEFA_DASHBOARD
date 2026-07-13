@@ -1769,7 +1769,7 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
     }
 
     // Step 3: Set FROZEN_AT a nivel de práctica + calculate grade + mark evaluation completed + create culmination
-    const practiceIdsSet = [...new Set((frozenResult || []).map((r: any) => r.PROFESSIONAL_PRACTICE_ID))];
+    const frozenPracticeIds: number[] = [...new Set((frozenResult || []).map((r: any) => r.PROFESSIONAL_PRACTICE_ID))] as number[];
     const evalConfig = await getEvalConfig();
     const evaluatorTypes = Object.keys(evalConfig.weights);
 
@@ -1777,7 +1777,7 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
     const { data: practiceCareerRows } = await supabase
       .from('t_professional_practices')
       .select('PROFESSIONAL_PRACTICE_ID, CAREER_ID')
-      .in('PROFESSIONAL_PRACTICE_ID', practiceIdsSet);
+      .in('PROFESSIONAL_PRACTICE_ID', frozenPracticeIds);
 
     const careerIdMap = new Map<number, number | null>();
     (practiceCareerRows || []).forEach((p: any) => {
@@ -1797,7 +1797,7 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    for (const pid of practiceIdsSet) {
+    for (const pid of frozenPracticeIds) {
       // 3a. Set practice-level FROZEN_AT
       const { error: practiceFreezeError } = await supabase
         .from('t_professional_practices')
@@ -1849,8 +1849,11 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
         }
 
         // 3e. Upsert culmination record if grade meets minimum (mirrors closeActas step 7)
-        const practiceCareerId = careerIdMap.get(pid);
-        const minimumGrade = practiceCareerId ? (minimumGradeMap.get(practiceCareerId) ?? 10) : 10;
+        const practiceCareerId = careerIdMap.get(pid) ?? null;
+        let minimumGrade = 10;
+        if (practiceCareerId !== null) {
+          minimumGrade = minimumGradeMap.get(practiceCareerId) ?? 10;
+        }
         if (grade >= minimumGrade) {
           try {
             const { data: existingCulm } = await supabase
@@ -1892,7 +1895,7 @@ export const freezeEvaluations = async (req: AuthRequest, res: Response) => {
 
     // Auditoría
     try {
-      for (const pid of practiceIdsSet) {
+for (const pid of frozenPracticeIds) {
         await auditCreate(req, 't_evaluation', {
           PROFESSIONAL_PRACTICE_ID: pid,
           ACTION: 'FREEZE',

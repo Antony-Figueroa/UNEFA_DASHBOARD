@@ -819,9 +819,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     <UnifiedDialog
       isOpen={showCompletionModal}
       onClose={() => {
-        // "Continuar Editando" — close modal, refresh list, NO freeze
+        // "Continuar Editando" — solo cerrar el dialog, mantener el modal principal abierto
         setShowCompletionModal(false);
-        handleClose();
       }}
       onConfirm={async () => {
         // "Finalizar y Congelar" — freeze practice, then close and refresh

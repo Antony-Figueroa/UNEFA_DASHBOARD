@@ -80,7 +80,7 @@ export interface UseEvaluationsCulminationReturn {
   /** Modal de detalle */
   detailModalOpen: boolean;
   selectedEvaluationId: number | null;
-  handleViewEvaluationDetails: (evaluationId: number) => void;
+  handleViewEvaluationDetails: (evaluationId: number, studentName?: string, studentCi?: string) => void;
   handleCloseDetailModal: () => void;
 
   /** Modal de detalle de estudiante */
@@ -241,6 +241,8 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
 
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
+  const [selectedDetailStudentName, setSelectedDetailStudentName] = useState('');
+  const [selectedDetailStudentCi, setSelectedDetailStudentCi] = useState('');
 
   const [studentDetailOpen, setStudentDetailOpen] = useState(false);
   const [selectedStudentPracticeId, setSelectedStudentPracticeId] = useState<number | null>(null);
@@ -516,14 +518,18 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
   }, [fetchPractices]);
 
   // ─── Detail Modal Handlers ──────────────────────────────
-  const handleViewEvaluationDetails = useCallback((evaluationId: number) => {
+  const handleViewEvaluationDetails = useCallback((evaluationId: number, studentName?: string, studentCi?: string) => {
     setSelectedEvaluationId(evaluationId);
+    setSelectedDetailStudentName(studentName || '');
+    setSelectedDetailStudentCi(studentCi || '');
     setDetailModalOpen(true);
   }, []);
 
   const handleCloseDetailModal = useCallback(() => {
     setDetailModalOpen(false);
     setSelectedEvaluationId(null);
+    setSelectedDetailStudentName('');
+    setSelectedDetailStudentCi('');
   }, []);
 
   // ─── Student Detail Modal Handlers ──────────────────────
@@ -801,6 +807,8 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     handleEvaluationSuccess,
     detailModalOpen,
     selectedEvaluationId,
+    selectedDetailStudentName,
+    selectedDetailStudentCi,
     handleViewEvaluationDetails,
     handleCloseDetailModal,
     studentDetailOpen,

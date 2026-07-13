@@ -67,6 +67,7 @@ export default function PreEnrollmentPage() {
     const { periodos } = usePeriods();
     const [periodOptions, setPeriodOptions] = useState<{ value: string; label: string }[]>([]);
     const [practiceTypeOptions, setPracticeTypeOptions] = useState<{ value: string; label: string }[]>([]);
+    const [internshipTypeData, setInternshipTypeData] = useState<{ name: string; priority: number }[]>([]);
 
     // Event listener for Command Palette - open create modal
     useEffect(() => {
@@ -108,6 +109,8 @@ export default function PreEnrollmentPage() {
                         { value: "ESPECIAL", label: toTitleCase("ESPECIAL") },
                     ]);
                 }
+                // Store raw data for priority computation
+                setInternshipTypeData(practiceData.map(t => ({ name: t.name, priority: t.priority })));
             } catch (error) {
                 console.error("Error loading filter options:", error);
                 // Fallback en caso de error
@@ -119,6 +122,14 @@ export default function PreEnrollmentPage() {
         };
         loadFilterOptions();
     }, []);
+
+    // Si hay más de 1 tipo de práctica activo, solo la prioridad 1 permite inactivación
+    const hasMultiplePracticeTypes = practiceTypeOptions.length > 1;
+    const priorityOnePracticeType = useMemo(() => {
+        if (!hasMultiplePracticeTypes) return null;
+        const p1 = internshipTypeData.find(t => t.priority === 1);
+        return p1 ? p1.name.toUpperCase() : null;
+    }, [hasMultiplePracticeTypes, internshipTypeData]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -494,6 +505,7 @@ export default function PreEnrollmentPage() {
                                 periodOptions={periodOptions}
                                 practiceTypeOptions={practiceTypeOptions}
                                 onSelectionChange={setIsSelecting}
+                                priorityOnePracticeType={priorityOnePracticeType}
                             />
                         </SkeletonLoader>
                     </ComponentCard>

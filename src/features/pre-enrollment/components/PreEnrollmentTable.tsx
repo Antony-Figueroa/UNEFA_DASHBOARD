@@ -66,6 +66,8 @@ interface PreEnrollmentTableProps {
   careerOptions?: FilterOption[];
   /** Callback que notifica si hay filas seleccionadas (para bloquear botonera externa) */
   onSelectionChange?: (selecting: boolean) => void;
+  /** Si hay múltiples tipos de práctica activos, el nombre del tipo prioridad 1 (que sí permite inactivación) */
+  priorityOnePracticeType?: string | null;
 }
 
 type SortKey = "identificationNumber" | "studentName" | "period" | "preEnrollmentDate" | "enrollmentCode";
@@ -245,6 +247,7 @@ export default function PreEnrollmentTable({
     practiceTypeOptions = [],
     careerOptions = [],
     onSelectionChange,
+    priorityOnePracticeType = null,
 }: PreEnrollmentTableProps) {
     const { careers: allCareers } = useCareers();
     const [searchTerm, setSearchTerm] = useState("");
@@ -680,7 +683,11 @@ export default function PreEnrollmentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
+                                            onToggleStatus={
+                                                onToggleStatus && (!priorityOnePracticeType || s.practiceType === priorityOnePracticeType)
+                                                    ? () => onToggleStatus(s)
+                                                    : undefined
+                                            }
                                             onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
                                             onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}
@@ -773,7 +780,11 @@ export default function PreEnrollmentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
+                                            onToggleStatus={
+                                                onToggleStatus && (!priorityOnePracticeType || s.practiceType === priorityOnePracticeType)
+                                                    ? () => onToggleStatus(s)
+                                                    : undefined
+                                            }
                                             onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             onWithdrawJustified={onWithdrawJustified ? () => onWithdrawJustified(s) : undefined}
                                             onWithdrawUnjustified={onWithdrawUnjustified ? () => onWithdrawUnjustified(s) : undefined}

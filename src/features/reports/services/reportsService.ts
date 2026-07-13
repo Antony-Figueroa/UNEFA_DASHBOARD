@@ -251,17 +251,6 @@ export const reportsService = {
     return response.data;
   },
 
-  getDistribucionTutoresV2: async (periodId?: number, careerId?: number, page?: number, limit?: number, careerIds?: number[]) => {
-    const params = new URLSearchParams();
-    if (periodId) params.append('periodId', periodId.toString());
-    if (careerId) params.append('careerId', careerId.toString());
-    if (careerIds && careerIds.length > 0) params.append('careerIds', careerIds.join(','));
-    if (page !== undefined) params.append('page', page.toString());
-    if (limit !== undefined) params.append('limit', limit.toString());
-    const response = await apiClient.get(`/reports/distribucion-tutores-v2?${params.toString()}`);
-    return response.data;
-  },
-
   getRelacionIndividualDocente: async (tutorId: number) => {
     const response = await apiClient.get(`/reports/relacion-individual-docente/${tutorId}`);
     return response.data;

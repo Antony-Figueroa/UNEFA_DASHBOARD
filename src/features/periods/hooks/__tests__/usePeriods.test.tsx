@@ -12,7 +12,7 @@ vi.mock('@/context/toast', () => ({
   useToast: () => ({ addToast: mockAddToast }),
 }));
 
-const authState = {
+const authState: { user: { id: number; role: number } | null; loading: boolean } = {
   user: { id: 1, role: 1 },
   loading: false,
 };

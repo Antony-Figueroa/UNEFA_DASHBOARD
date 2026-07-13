@@ -76,49 +76,12 @@ describe('reportConfig — resumen-pasantias (Task 3.2)', () => {
   });
 });
 
-describe('reportConfig — distribucion-tutores-v2 (Task 3.3)', () => {
-  const config = reportConfig['distribucion-tutores-v2'];
-
-  it('debería incluir Cédula Estudiante y Correo TA', () => {
-    const headers = config.columns.map((c) => c.header);
-    expect(headers).toContain('Cédula Estudiante');
-    expect(headers).toContain('Correo TA');
-  });
-
-  it('debería tener Cédula Estudiante después de Estudiante', () => {
-    const headers = config.columns.map((c) => c.header);
-    const estIdx = headers.indexOf('Estudiante');
-    const cedIdx = headers.indexOf('Cédula Estudiante');
-    expect(cedIdx).toBeGreaterThan(estIdx);
-    expect(cedIdx).toBe(estIdx + 1);
-  });
-
-  it('debería tener Correo TA después de Contacto TA', () => {
-    const headers = config.columns.map((c) => c.header);
-    const taIdx = headers.indexOf('Contacto TA');
-    const correoIdx = headers.indexOf('Correo TA');
-    expect(correoIdx).toBeGreaterThan(taIdx);
-    expect(correoIdx).toBe(taIdx + 1);
-  });
-
-  it('debería acceder a estudianteCi desde el accessor de Cédula Estudiante', () => {
-    const col = config.columns.find((c) => c.header === 'Cédula Estudiante');
-    expect(col).toBeDefined();
-    if (typeof col!.accessor === 'function') {
-      const result = col!.accessor({ estudianteCi: 'V-12345678' });
-      expect(result).toBe('V-12345678');
-    } else {
-      expect(col!.accessor).toBe('estudianteCi');
-    }
-  });
-});
-
 describe('reportConfig — estructura general', () => {
   it('debería tener todas las configuraciones esperadas', () => {
     const types = Object.keys(reportConfig);
     expect(types).toContain('tutores-academicos');
     expect(types).toContain('resumen-pasantias');
-    expect(types).toContain('distribucion-tutores-v2');
+    expect(types).toContain('proyeccion-pasantias');
   });
 
   it('cada configuración debería tener title, subtitle, type, loadData, columns', () => {

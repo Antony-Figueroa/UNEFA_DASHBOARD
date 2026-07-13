@@ -409,6 +409,8 @@ export interface TimeoutPreviewResult {
 export interface TimeoutCheckResult {
   cancelled: number;
   practices: TimeoutPreviewPractice[];
+  /** Mensaje descriptivo del backend (opcional) */
+  message?: string;
 }
 
 /**

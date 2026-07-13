@@ -118,7 +118,7 @@ export const getPendingPractices = async (req: Request, res: Response) => {
 
     // Filter to only PRE_INSCRITO and INSCRITO
     const pendingPracticesRaw = practices.filter(
-      (p) => p.PRACTICES_STATUS === PRACTICES_STATUS.PRE_INSCRITO || p.PRACTICES_STATUS === PRACTICES_STATUS.INSCRITO
+      (p: any) => p.PRACTICES_STATUS === PRACTICES_STATUS.PRE_INSCRITO || p.PRACTICES_STATUS === PRACTICES_STATUS.INSCRITO
     );
 
     if (pendingPracticesRaw.length === 0) {
@@ -346,7 +346,7 @@ export const closePeriodWithDecisions = async (req: AuthRequest, res: Response) 
         .select('PROFESSIONAL_PRACTICE_ID, PRACTICES_STATUS')
         .eq('PERIOD_ID', id);
 
-      const practiceIds = (practices || []).map((p) => p.PROFESSIONAL_PRACTICE_ID);
+      const practiceIds = (practices || []).map((p: any) => p.PROFESSIONAL_PRACTICE_ID);
       const totalPractices = practiceIds.length;
 
       // Freeze evaluations

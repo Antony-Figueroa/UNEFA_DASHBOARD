@@ -802,7 +802,7 @@ async function main() {
   console.log('   - resumen-pasantias');
   console.log('   - tutores-academicos');
   console.log('   - relacion-empresas-demandan');
-  console.log('   - distribucion-tutores / distribucion-tutores-v2');
+  console.log('   - distribucion-tutores');
   console.log('   - relacion-individual-docente');
   console.log('   - export-excel');
   console.log('');

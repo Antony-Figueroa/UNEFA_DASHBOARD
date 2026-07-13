@@ -7,7 +7,6 @@ import {
   generateResumenPasantiasExcel,
   generateRelacionEmpresasExcel,
   generateRelacionInstitucionesSolicitanExcel,
-  generateDistribucionTutoresV2Excel,
   generateProyeccionExcel,
   generateActaNotasFinalesExcel,
   generateEvaluacionesConsolidadasExcel,
@@ -38,7 +37,6 @@ export function useReports() {
         case 'relacion-instituciones-solicitan':
           await generateRelacionInstitucionesSolicitanExcel(data, period, fileName);
           break;
-        case 'distribucion-tutores-v2':
         case 'proyeccion-pasantias':
           await generateProyeccionExcel(data, period, fileName);
           break;

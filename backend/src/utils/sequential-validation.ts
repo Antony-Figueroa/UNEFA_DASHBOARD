@@ -57,9 +57,10 @@ export async function checkSequentialPrerequisite(supabase: any, params: SeqChec
     internshipTypeId = practice.INTERNSHIP_TYPE_ID;
   } else {
     // Modo pre-inscripción: usar parámetros directos
-    studentsId = params.studentsId;
-    careerId = params.careerId;
-    internshipTypeId = params.internshipTypeId;
+    // ponytail: type contract guarantees these are defined in the else branch
+    studentsId = params.studentsId!;
+    careerId = params.careerId!;
+    internshipTypeId = params.internshipTypeId!;
   }
 
   if (!careerId) {

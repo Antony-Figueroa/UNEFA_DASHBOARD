@@ -11,7 +11,6 @@ import {
   getRelacionEmpresasDemandan,
   getRelacionInstitucionesSolicitan,
   getDistribucionTutores,
-  getDistribucionTutoresV2,
   getRelacionIndividualDocente,
   getActaNotasFinalesReport,
   getEvaluacionesConsolidadasReport,
@@ -31,7 +30,6 @@ router.get('/culminated-students', requirePermission('reports:view'), getCulmina
 router.get('/relacion-empresas-demandan', requirePermission('reports:view'), getRelacionEmpresasDemandan);
 router.get('/relacion-instituciones-solicitan', requirePermission('reports:view'), getRelacionInstitucionesSolicitan);
 router.get('/distribucion-tutores', requirePermission('reports:view'), getDistribucionTutores);
-router.get('/distribucion-tutores-v2', requirePermission('reports:view'), getDistribucionTutoresV2);
 router.get('/relacion-individual-docente/:tutorId', requirePermission('reports:view'), getRelacionIndividualDocente);
 router.get('/acta-notas-finales', requirePermission('reports:view'), getActaNotasFinalesReport);
 router.get('/evaluaciones-consolidadas', requirePermission('reports:view'), getEvaluacionesConsolidadasReport);

@@ -904,7 +904,7 @@ export const getPresetQuestions = async () => {
 
     return { 
       success: true, 
-      questions: data.map(q => ({
+      questions: data.map((q: any) => ({
         id: q.PRESET_QUESTION_ID,
         description: q.DESCRIPTION
       }))
@@ -1117,12 +1117,12 @@ export const verifySecurityAnswersAndReset = async (
       let isValid = false;
 
       if (ans.isCustom) {
-        const customStored = storedQuestions.find(q => !q.PRESET_QUESTION_ID && q.CUSTOM_QUESTION);
+        const customStored = storedQuestions.find((q: any) => !q.PRESET_QUESTION_ID && q.CUSTOM_QUESTION);
         if (customStored && customStored.ANSWER.toLowerCase().trim() === ans.answer.toLowerCase().trim()) {
           isValid = true;
         }
       } else {
-        const presetStored = storedQuestions.find(q => q.PRESET_QUESTION_ID === ans.questionId);
+        const presetStored = storedQuestions.find((q: any) => q.PRESET_QUESTION_ID === ans.questionId);
         if (presetStored && presetStored.ANSWER.toLowerCase().trim() === ans.answer.toLowerCase().trim()) {
           isValid = true;
         }

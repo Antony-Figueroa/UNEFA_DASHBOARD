@@ -66,7 +66,7 @@ const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ pendingCount, onTasksClic
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden rounded-2xl sm:rounded-3xl text-white shadow-xl"
       style={{ 
-        background: `linear-gradient(135deg, ${PRIMARY_COLOR} 0%, #065A99 100%)` 
+        background: `linear-gradient(135deg, ${PRIMARY_COLOR} 0%, #065A99 100%)`
       }}
     >
       {/* Background pattern */}

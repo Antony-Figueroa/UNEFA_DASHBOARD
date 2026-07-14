@@ -377,6 +377,43 @@ const CarrerasPage: React.FC = React.memo(() => {
           </div>
         </motion.section>
 
+        {/* ─── Enlace a oferta académica oficial ──────── */}
+        <motion.section
+          className="py-6"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.a
+              href="http://www.unefa.edu.ve/CMS/administrador/vistas/archivos/OFERTA-ACADEMICA-UNEFA-10-05-2026.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center justify-between gap-4 px-6 py-4 rounded-2xl bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0 group-hover:bg-white/30 transition-colors">
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-base">Oferta Académica Oficial UNEFA 2026</p>
+                  <p className="text-white/80 text-sm">Pregrado y Postgrado — PDF oficial del portal UNEFA</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-white/80 group-hover:text-white transition-colors shrink-0">
+                <span className="text-sm font-medium hidden sm:inline">Ver PDF</span>
+                <svg className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </div>
+            </motion.a>
+          </div>
+        </motion.section>
+
         <motion.section 
           className="py-8 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-y border-gray-200 dark:border-gray-700"
           initial={{ opacity: 0, y: 20 }}

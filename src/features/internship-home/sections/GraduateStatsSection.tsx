@@ -4,7 +4,7 @@ import CountUp from "../components/CountUp";
 
 const GraduateStatsSection: React.FC = () => {
   return (
-    <section className="bg-white py-24 dark:bg-bg-dark">
+    <section className="bg-white py-16 lg:py-20 dark:bg-bg-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
@@ -56,7 +56,7 @@ const GraduateStatsSection: React.FC = () => {
         {/* Breakdown by Location - Simplified to only Acarigua */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           <div className="space-y-8">
-            <div className="bg-bg-secondary dark:bg-white/5 p-8 rounded-2xl border border-border-light dark:border-border-dark shadow-theme-md">
+            <div className="bg-bg-secondary dark:bg-white/5 p-6 sm:p-8 rounded-2xl border border-border-light dark:border-border-dark shadow-theme-md">
               <h3 className="text-2xl font-bold text-text-emphasis mb-4 flex items-center gap-3">
                 <span className="h-8 w-1.5 bg-brand-500 rounded-full" />
                 Definición del Proceso
@@ -78,7 +78,7 @@ const GraduateStatsSection: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-bg-secondary dark:bg-white/5 p-8 rounded-3xl border border-border-light dark:border-border-dark shadow-theme-md">
+          <div className="bg-bg-secondary dark:bg-white/5 p-6 sm:p-8 rounded-2xl border border-border-light dark:border-border-dark shadow-theme-md">
             <h3 className="text-2xl font-bold text-text-emphasis mb-6 flex items-center gap-3">
               <span className="h-8 w-1.5 bg-brand-500 rounded-full" />
               Relación Pasantía vs. Graduación

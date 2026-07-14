@@ -27,11 +27,11 @@ const MissionVisionSection: React.FC = () => {
 
   if (loading || !missionVision) {
     return (
-      <section id="mision-vision" className="py-20 bg-white dark:bg-bg-dark">
+      <section id="mision-vision" className="py-16 lg:py-20 bg-white dark:bg-bg-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {[1, 2].map((i) => (
-              <div key={i} className="p-8 rounded-3xl bg-gray-100 dark:bg-gray-800 animate-pulse">
+              <div key={i} className="p-8 rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse">
                 <div className="h-14 w-14 rounded-2xl bg-gray-300 dark:bg-gray-700 mb-6" />
                 <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
                 <div className="space-y-2">
@@ -48,14 +48,14 @@ const MissionVisionSection: React.FC = () => {
   }
 
   return (
-    <section id="mision-vision" className="py-20 bg-white dark:bg-bg-dark">
+    <section id="mision-vision" className="py-16 lg:py-20 bg-white dark:bg-bg-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.1 }}
-            className="relative p-8 rounded-3xl bg-bg-secondary/40 dark:bg-white/5 border border-border-light dark:border-white/10 transition-all duration-300 hover:shadow-theme-lg group"
+            className="relative p-6 sm:p-8 rounded-2xl bg-bg-secondary/40 dark:bg-white/5 border border-border-light dark:border-white/10 transition-all duration-300 hover:shadow-theme-lg group"
           >
             <div className="flex items-center gap-4 mb-6">
               <motion.div
@@ -76,7 +76,7 @@ const MissionVisionSection: React.FC = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="relative p-8 rounded-3xl bg-bg-secondary/40 dark:bg-white/5 border border-border-light dark:border-white/10 transition-all duration-300 hover:shadow-theme-lg group"
+            className="relative p-6 sm:p-8 rounded-2xl bg-bg-secondary/40 dark:bg-white/5 border border-border-light dark:border-white/10 transition-all duration-300 hover:shadow-theme-lg group"
           >
             <div className="flex items-center gap-4 mb-6">
               <motion.div

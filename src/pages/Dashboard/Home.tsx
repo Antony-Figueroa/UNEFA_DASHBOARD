@@ -1,5 +1,6 @@
 import PageMeta from "../../components/common/PageMeta";
 import WelcomeBanner from "../../components/common/WelcomeBanner";
+import UnefaBanner from "../../components/common/UnefaBanner";
 import { useDashboardStats } from "../../features/dashboard/hooks/useDashboardStats";
 import { useDashboardLayout } from "../../features/dashboard/hooks/useDashboardLayout";
 import { DynamicDashboard } from "../../features/dashboard/components/DynamicDashboard";
@@ -63,6 +64,9 @@ export default function Home() {
           pendingCount={pendingCount}
           onTasksClick={() => setIsSlideoverOpen(true)}
         />
+
+        {/* 1b. Banner Institucional UNEFA (imagen scrapeada automáticamente) */}
+        <UnefaBanner />
 
         {/* 2. Dashboard dinámico con widgets configurables */}
         <DynamicDashboard

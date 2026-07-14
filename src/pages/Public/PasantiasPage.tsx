@@ -341,12 +341,17 @@ const PasantiasPage: React.FC = React.memo(() => {
               </p>
               <div className="flex flex-wrap gap-4 justify-center">
                 <motion.a
-                  href="/faq"
-                  className="px-8 py-3 rounded-lg border-2 border-brand-500 text-brand-500 font-medium hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
+                  href="http://aplicaciones.unefa.edu.ve/SC3_unefa/modulo/Ms34mun3Pr4Pr/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-brand-500 text-white font-medium hover:bg-brand-600 transition-colors shadow-lg"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Ver Preguntas Frecuentes
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Ir al Sistema SICEU
                 </motion.a>
               </div>
             </div>

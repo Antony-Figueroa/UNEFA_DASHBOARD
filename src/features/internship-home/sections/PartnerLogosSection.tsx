@@ -14,7 +14,7 @@ const unefaSocialLogos = [
 
 const PartnerLogosSection: React.FC = () => {
   return (
-    <section className="py-12 bg-bg-secondary/30 dark:bg-bg-dark/50 border-y border-border-light dark:border-border-dark">
+    <section className="py-8 lg:py-12 bg-bg-secondary/30 dark:bg-bg-dark/50 border-y border-border-light dark:border-border-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

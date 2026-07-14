@@ -1,0 +1,30 @@
+{
+  "sourceUrl": "http://www.unefa.edu.ve/portal/img/banner-1-2026-2.png",
+  "lastUpdated": "2026-07-14T23:28:58.365Z",
+  "lastFetchAttempt": "2026-07-14T23:28:55.833Z",
+  "lastError": null,
+  "imageUrl": "/uploads/unefa-banner/current-banner.png",
+  "status": "ok",
+  "carouselImages": [
+    {
+      "src": "http://www.unefa.edu.ve/portal/../CMS/upload/images/popup/imagen-588886205.png",
+      "link": "http://unefa.edu.ve/CMS/administrador/vistas/archivos/oferta_academica-Postgrado-3-2026.pdf",
+      "title": null
+    },
+    {
+      "src": "http://www.unefa.edu.ve/portal/../CMS/upload/images/popup/imagen-345145445.png",
+      "link": "http://www.unefa.edu.ve/CMS/administrador/vistas/archivos/LISTADO-SERVICIO-DE-CERTIFICACION-DE-DOCUMENTOS--ACTUALIZADO-AL-31OCT2025-(1).pdf",
+      "title": null
+    },
+    {
+      "src": "http://www.unefa.edu.ve/portal/../CMS/upload/images/popup/imagen-830906229.png",
+      "link": "http://www.unefa.edu.ve/CMS/administrador/vistas/archivos/LISTADO-DE-DOCUMENTOS-CERTIFICADOS-(SOLICITUDES-DE-2018).pdf",
+      "title": null
+    },
+    {
+      "src": "http://www.unefa.edu.ve/portal/../CMS/upload/images/popup/imagen-545794670.png",
+      "link": "http://www.unefa.edu.ve/CMS/administrador/vistas/archivos/PASO%20A%20PASO%20CINU%20(1).pdf",
+      "title": null
+    }
+  ]
+}

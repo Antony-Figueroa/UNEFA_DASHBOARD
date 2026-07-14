@@ -35,7 +35,7 @@ const CommunityInfoSection: React.FC = () => {
 
   if (loading) {
     return (
-      <section id="ofertas" className="py-24 bg-gray-50 dark:bg-bg-dark/50">
+      <section id="ofertas" className="py-16 lg:py-20 bg-gray-50 dark:bg-bg-dark/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div className="space-y-4">
@@ -54,7 +54,7 @@ const CommunityInfoSection: React.FC = () => {
   }
 
   return (
-    <section id="ofertas" className="py-24 bg-gray-50 dark:bg-bg-dark/50">
+    <section id="ofertas" className="py-16 lg:py-20 bg-gray-50 dark:bg-bg-dark/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="space-y-4">

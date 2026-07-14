@@ -17,7 +17,7 @@ const FAQItemComponent: React.FC<{ item: FAQItem; index: number }> = ({ item, in
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.1, duration: 0.4 }}
-      className="border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+      className="border-b border-border-light dark:border-border-dark last:border-b-0"
     >
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
@@ -98,13 +98,13 @@ const FAQSection: React.FC = () => {
 
   if (loading) {
     return (
-      <section id="faq" className="py-24 bg-gray-50/50 dark:bg-gray-900/50 backdrop-blur-sm relative overflow-hidden">
+      <section id="faq" className="py-16 lg:py-20 bg-gray-50/50 dark:bg-gray-900/50 backdrop-blur-sm relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="h-10 w-48 bg-gray-200 dark:bg-gray-700 rounded mx-auto mb-4 animate-pulse" />
             <div className="h-6 w-96 bg-gray-200 dark:bg-gray-700 rounded mx-auto animate-pulse" />
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-10 border border-gray-100 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-10 border border-border-light dark:border-border-dark">
             {[1, 2, 3].map((i) => (
               <div key={i} className="py-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
@@ -122,7 +122,7 @@ const FAQSection: React.FC = () => {
   }));
 
   return (
-    <section id="faq" className="py-24 bg-gray-50/50 dark:bg-gray-900/50 backdrop-blur-sm relative overflow-hidden">
+    <section id="faq" className="py-16 lg:py-20 bg-gray-50/50 dark:bg-gray-900/50 backdrop-blur-sm relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-0 w-96 h-96 bg-brand-100 dark:bg-brand-900/10 rounded-full blur-3xl opacity-50" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-success-100 dark:bg-success-900/10 rounded-full blur-3xl opacity-50" />
@@ -158,7 +158,7 @@ const FAQSection: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-theme-sm p-6 sm:p-10 border border-gray-100 dark:border-gray-700"
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-theme-sm p-6 sm:p-10 border border-border-light dark:border-border-dark"
         >
           {faqItems.map((item, index) => (
             <FAQItemComponent key={index} item={item} index={index} />

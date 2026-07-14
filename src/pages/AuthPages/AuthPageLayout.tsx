@@ -5,7 +5,7 @@ import { Spotlight } from "../../components/ui/spotlight/Spotlight";
 import { useTheme } from "../../context/theme";
 
 const preloadImages = [
-  '/unefa-img/fondo-login.png',
+  '/login.jpeg',
   '/logo-nuevo.png',
 ];
 
@@ -81,7 +81,7 @@ export default function AuthLayout({
           className="w-full h-[calc(100vh-32px)] rounded-3xl overflow-hidden relative"
         >
           <img
-            src="/unefa-img/fondo-login.png"
+            src="/login.jpeg"
             alt="UNEFA"
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -89,7 +89,7 @@ export default function AuthLayout({
           <div
             className="absolute inset-0"
             style={{
-              background: 'linear-gradient(160deg, rgba(5,79,148,0.92) 0%, rgba(6,61,110,0.88) 50%, rgba(3,42,77,0.95) 100%)',
+              background: 'linear-gradient(160deg, rgba(5,79,148,0.60) 0%, rgba(6,61,110,0.50) 50%, rgba(3,42,77,0.70) 100%)',
             }}
           />
 

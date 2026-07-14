@@ -71,6 +71,8 @@ import * as listsService from './services/lists.service.js';
 import * as usersService from './services/users.service.js';
 import { startPeriodScheduler } from './services/period-scheduler.service.js';
 import { startReminderScheduler } from './services/reminder-scheduler.service.js';
+import { startBannerScheduler } from './services/unefa-banner-scraper.service.js';
+import unefaBannerRoutes from './routes/unefa-banner.routes.js';
 import { emailTemplatesService } from './services/email-templates.service.js';
 import { seedIfEmpty as seedKBIfEmpty } from './services/knowledge-base-seed.service.js';
 
@@ -111,6 +113,7 @@ if (!isVercel) {
     try {
       startPeriodScheduler();
       startReminderScheduler();
+      startBannerScheduler();
     } catch (err: unknown) {
       console.error('[Scheduler] Error starting:', err);
     }
@@ -241,6 +244,7 @@ import testRoutes from './routes/test.routes.js';
 app.use('/api/public', publicRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/landing-config', landingConfigRoutes);
+app.use('/api/unefa-banner', unefaBannerRoutes);
 app.use('/api/search', globalSearchRoutes);
 app.use('/api/dashboard-config', dashboardConfigRoutes);
 app.use('/api/institutions', institutionsRoutes);

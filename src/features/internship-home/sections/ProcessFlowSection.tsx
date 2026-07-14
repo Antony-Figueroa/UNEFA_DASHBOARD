@@ -76,7 +76,7 @@ const steps = [
 
 const ProcessFlowSection: React.FC = () => {
   return (
-    <section id="procesos" className="py-24 bg-white dark:bg-bg-dark">
+    <section id="procesos" className="py-16 lg:py-20 bg-white dark:bg-bg-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl font-bold text-text-emphasis sm:text-4xl mb-4">

@@ -38,7 +38,7 @@ const DOCUMENT_CONFIG: Record<string, {
   idLabel: string;
   idPlaceholder: string;
   getData: (id: number) => Promise<any>;
-  pdfTemplate: React.FC<{ data: any; textos: Record<string, string>; verificationHash?: string }>;
+  pdfTemplate: React.FC<{ data: any; textos: Record<string, string>; verificationHash?: string; qrCodeDataUri?: string }>;
 }> = {
   'aceptacion-tutor': {
     title: 'Carta de Aceptación del Tutor Académico',
@@ -216,12 +216,12 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
     setRenderKey(k => k + 1);
   };
 
-  const renderTemplate = useCallback(
-    (data: any, verificationHash?: string) => {
+const renderTemplate = useCallback(
+    (data: any, verificationHash?: string, qrCodeDataUri?: string) => {
       const Tpl = DOCUMENT_CONFIG[documentType]?.pdfTemplate;
       const dataToUse = editableData || data;
       const textosToUse = Object.keys(editableTextos).length > 0 ? editableTextos : textos;
-      return Tpl ? <Tpl key={renderKey} data={dataToUse} textos={textosToUse} verificationHash={verificationHash} /> : <></>;
+      return Tpl ? <Tpl key={renderKey} data={dataToUse} textos={textosToUse} verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} /> : <></>;
     },
     [documentType, textos, editableTextos, editableData, renderKey]
   );
@@ -237,7 +237,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <Modal isOpen={isOpen} onClose={onClose} size="md" className="max-w-full rounded-none min-h-screen max-h-full sm:max-w-md sm:rounded-2xl sm:min-h-0 sm:max-h-[95vh]">
         <div className="p-6 space-y-6">
           <div>
             <h2 className="text-lg font-bold text-text-primary dark:text-text-emphasis">

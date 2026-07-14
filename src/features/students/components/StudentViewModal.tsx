@@ -184,8 +184,12 @@ export default function StudentViewModal({
                 title="Ficha de Estudiante"
                 subtitle={`${toTitleCase(student.firstName)} ${toTitleCase(student.lastName)} - ${student.identificationPrefix}-${student.identificationNumber}`}
                 data={student}
-                template={(data) => <StudentIndividualPDF data={data} />}
+                template={(data, verificationHash) => <StudentIndividualPDF data={data} verificationHash={verificationHash} />}
                 fileName={`estudiante_${student.identificationNumber}`}
+                verificationConfig={{
+                  docType: 'ficha-estudiante',
+                  metadata: { studentId: student.studentId },
+                }}
             />
         </Modal>
     );

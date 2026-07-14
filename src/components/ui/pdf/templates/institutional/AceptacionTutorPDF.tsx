@@ -46,6 +46,8 @@ interface Props {
     } | null;
   };
   textos: Record<string, string>;
+  verificationHash?: string;
+  qrCodeDataUri?: string;
 }
 
 const getTutorTitle = (titulo: string | null): string => {
@@ -58,7 +60,7 @@ const getTutorTitle = (titulo: string | null): string => {
   return 'MAESTR';
 };
 
-export function AceptacionTutorPDF({ data }: Props) {
+export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Props) {
   const fechaHoy = getFechaParts(null);
   
   const tutorTitle = data.tutor ? getTutorTitle(data.tutor.titulo) : 'MAESTR';
@@ -71,7 +73,7 @@ export function AceptacionTutorPDF({ data }: Props) {
   const carreraNombre = data.carrera.nombre;
 
   return (
-    <PDFLayout title="ACEPTACIÓN DEL TUTOR ACADÉMICO">
+    <PDFLayout title="ACEPTACIÓN DEL TUTOR ACADÉMICO" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
       <Text style={styles.paragraph}>
         Yo, {tutorTitle}. {tutorName}, titular de la cedula de identidad {tutorCI}, hago constar por medio de la presente que acepto la tutoría académica de la práctica profesional por parte de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional (UNEFA) del (la) bachiller {estudianteNombre}, titular de la cedula de identidad {estudianteCI} para optar al grado de {carreraNombre}
       </Text>

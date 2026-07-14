@@ -126,15 +126,15 @@ export default function BatchPreEnrollModal({
 
         // Practice type options
         setPracticeTypeOptions(
-          internshipTypesData.map((t: any) => ({ value: t.name?.toUpperCase() || "", label: t.name?.toUpperCase() || "" }))
+          internshipTypesData.map((t: any) => ({ value: t.name || "", label: t.name || "" }))
         );
 
         // Dynamic lists
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         Object.entries(listData).forEach(([key, values]) => {
           mappedOptions[key] = (values as any[]).map((v: any) => ({
-            value: v.name.toUpperCase(),
-            label: v.name.toUpperCase(),
+            value: v.name,
+            label: v.name,
           }));
         });
         setOptions(mappedOptions);
@@ -181,13 +181,13 @@ export default function BatchPreEnrollModal({
         const sortedTypes = [...types].sort((a, b) => a.priority - b.priority);
 
         setPracticeTypeOptions(
-          sortedTypes.map((t) => ({ value: t.name?.toUpperCase() || "", label: t.name?.toUpperCase() || "" }))
+          sortedTypes.map((t) => ({ value: t.name || "", label: t.name || "" }))
         );
 
         if (sortedTypes.length === 1) {
-          setValue("practiceType", sortedTypes[0].name.toUpperCase());
+          setValue("practiceType", sortedTypes[0].name);
         } else if (sortedTypes.length > 1) {
-          setValue("practiceType", sortedTypes[0].name.toUpperCase());
+          setValue("practiceType", sortedTypes[0].name);
         }
       } catch {
         // Silently fail

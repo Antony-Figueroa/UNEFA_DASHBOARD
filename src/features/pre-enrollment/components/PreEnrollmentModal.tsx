@@ -278,7 +278,7 @@ export default function PreEnrollmentModal({
         ]);
 
         setPracticeTypeOptions(
-          internshipTypesData.map((t: any) => ({ value: t.name?.toUpperCase() || "", label: t.name?.toUpperCase() || "" }))
+          internshipTypesData.map((t: any) => ({ value: t.name || "", label: t.name || "" }))
         );
         
         const activePeriods = periodData
@@ -334,8 +334,8 @@ export default function PreEnrollmentModal({
         
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = (values as any[]).map((v: any) => ({
-            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
-            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase()
+            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name,
+            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name
           }));
         });
         
@@ -539,11 +539,11 @@ if (student) {
         setInternshipTypesWithIds(sortedTypes);
 
         setPracticeTypeOptions(
-          sortedTypes.map(t => ({ value: t.name?.toUpperCase() || "", label: t.name?.toUpperCase() || "" }))
+          sortedTypes.map(t => ({ value: t.name || "", label: t.name || "" }))
         );
 
         if (sortedTypes.length === 1) {
-          setValue("practiceType", sortedTypes[0].name.toUpperCase(), { shouldValidate: true });
+          setValue("practiceType", sortedTypes[0].name, { shouldValidate: true });
         } else if (sortedTypes.length > 1) {
           const studentPrefix = getValues("identificationPrefix");
           const studentNumber = getValues("identificationNumber");
@@ -555,12 +555,12 @@ if (student) {
             );
             const nextType = sortedTypes.find(t => !completedTypeIds.includes(t.id));
             if (nextType) {
-              setValue("practiceType", nextType.name.toUpperCase(), { shouldValidate: true });
+              setValue("practiceType", nextType.name, { shouldValidate: true });
             } else {
-              setValue("practiceType", sortedTypes[0].name.toUpperCase(), { shouldValidate: true });
+              setValue("practiceType", sortedTypes[0].name, { shouldValidate: true });
             }
           } else {
-            setValue("practiceType", sortedTypes[0].name.toUpperCase(), { shouldValidate: true });
+            setValue("practiceType", sortedTypes[0].name, { shouldValidate: true });
           }
         }
       } catch (error) {
@@ -815,7 +815,7 @@ if (student) {
                         <Input
                           value={displayIdentificationNumber}
                           onChange={handleIdentificationNumberChange}
-                          placeholder="Número de cédula..."
+                          placeholder={idPrefix === "P" ? "Pasaporte (letras y números)" : "Número de cédula"}
                           error={!!errors.identificationNumber}
                           className={cn(
                             "rounded-xl h-[48px] font-bold tracking-wider",

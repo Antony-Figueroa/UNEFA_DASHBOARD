@@ -1,5 +1,26 @@
 import apiClient from "@/api/apiClient";
 
+/**
+ * Obtiene la URL base para los códigos QR de verificación.
+ * - En producción: usa window.location.origin
+ * - En localhost: usa VITE_VERIFY_BASE_URL o fallback a Vercel
+ * - Nunca usa localhost porque los QR serían inservibles.
+ */
+export function getVerifyBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin;
+    const isLocal =
+      origin.includes("localhost") ||
+      origin.includes("127.0.0.1") ||
+      origin.includes("::1");
+    if (!isLocal) return origin;
+  }
+  return (
+    import.meta.env.VITE_VERIFY_BASE_URL ||
+    "https://unefa-dashboard-nine.vercel.app"
+  );
+}
+
 export interface VerificationResult {
   valid: boolean;
   message: string;

@@ -8,7 +8,7 @@ const styles = StyleSheet.create({
   page: {
     paddingTop: 30,
     paddingBottom: 40,
-    paddingHorizontal: 40,
+    paddingHorizontal: 45,
     fontFamily: 'Helvetica',
     fontSize: 9,
     color: '#000000',

@@ -21,9 +21,9 @@ interface DynamicDashboardProps {
  * Skeleton para cuando un widget está cargando
  */
 const WidgetSkeleton = ({ size }: { size: WidgetSize }) => {
-  const height = size === 'xl' ? 280 : size === 'lg' ? 260 : 240;
+  const height = size === 'xl' ? 320 : size === 'lg' ? 300 : size === 'md' ? 280 : 260;
   return (
-    <div className="h-full rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
+      <div className="flex min-h-[360px] flex-col rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
       <Skeleton height={24} width="50%" className="mb-4" />
       <Skeleton height={height} className="rounded-xl" />
     </div>
@@ -64,7 +64,7 @@ export const DynamicDashboard = ({ widgets, data, loading }: DynamicDashboardPro
 
   if (visibleWidgets.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
+      <div className="flex flex-col items-center justify-center py-16 text-text-tertiary">
         <svg className="w-16 h-16 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 3h18v18H3V3z" />
         </svg>

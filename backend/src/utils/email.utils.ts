@@ -39,6 +39,9 @@ const tryGmail = async (opts: { to: string; subject: string; html: string; text?
       port: 465,
       secure: true,
       auth: { user, pass },
+      // ponytail: host es la IP resuelta, pero el cert TLS de Google tiene SAN = smtp.gmail.com.
+      // Sin servername, la validación del cert falla con "IP not in cert's list".
+      tls: { servername: 'smtp.gmail.com' },
       connectionTimeout: 15000,
       greetingTimeout: 15000,
       socketTimeout: 20000,

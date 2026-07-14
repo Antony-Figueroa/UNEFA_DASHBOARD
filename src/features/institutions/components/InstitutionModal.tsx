@@ -443,13 +443,13 @@ export default function InstitutionModal({
       
       Object.entries(data).forEach(([key, values]) => {
         mappedOptions[key] = values.map(v => {
-          // Para Rif y Nacionalidad usamos la abreviación si existe
+          // Para Rif y Nacionalidad usamos la abreviación (siempre mayúsculas)
           const useAbbr = ["Rif", "Nacionalidad"].includes(key) && v.abbreviation;
           const displayValue = useAbbr ? v.abbreviation : v.name;
           
           return {
-            value: displayValue.toUpperCase(),
-            label: displayValue.toUpperCase()
+            value: useAbbr ? displayValue.toUpperCase() : displayValue,
+            label: useAbbr ? displayValue.toUpperCase() : displayValue
           };
         });
       });
@@ -472,7 +472,7 @@ export default function InstitutionModal({
       return internshipTypeOptions.map(opt => ({
         // Usar el ID (opt.id) como value para que el filtrado funcione correctamente
         value: String(opt.id),
-        label: opt.label.toUpperCase()
+        label: opt.label
       }));
     }
     

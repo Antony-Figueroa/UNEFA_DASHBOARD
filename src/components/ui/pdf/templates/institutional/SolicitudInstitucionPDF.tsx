@@ -5,7 +5,7 @@ const styles = StyleSheet.create({
   page: {
     paddingTop: 20,
     paddingBottom: 40,
-    paddingHorizontal: 45,
+    paddingHorizontal: 50,
     fontFamily: 'Helvetica',
     fontSize: 11,
     color: '#000000',
@@ -156,9 +156,11 @@ interface Props {
     periodo: { description: string; startDate: string; endDate: string } | null;
   };
   textos: Record<string, string>;
+  verificationHash?: string;
+  qrCodeDataUri?: string;
 }
 
-export function SolicitudInstitucionPDF({ data, textos }: Props) {
+export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCodeDataUri }: Props) {
   const fechaHoy = getFechaParts(null);
 
   const estudianteNombre = formatNombreCompleto(data.estudiante);
@@ -246,10 +248,12 @@ export function SolicitudInstitucionPDF({ data, textos }: Props) {
         
         {/* Footer */}
         <View style={styles.footerContainer}>
-          <Image 
-            src="/pdfs-docs/qr.png" 
-            style={styles.qrCode} 
-          />
+          {qrCodeDataUri && (
+            <Image 
+              src={qrCodeDataUri}
+              style={styles.qrCode} 
+            />
+          )}
           <View style={{ flex: 1, marginHorizontal: 20 }}>
             <Text style={styles.validationText}>Generado el {formattedDate}.</Text>
             <Text style={styles.validationText}>Documento validado digitalmente por la Coordinación de Prácticas Profesionales</Text>

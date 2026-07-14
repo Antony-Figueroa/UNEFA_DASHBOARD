@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ComponentCard from "../../components/common/ComponentCard";
 import Button from "../../components/ui/button/Button";
 import Badge from "../../components/ui/badge/Badge";
 import InputField from "../../components/form/input/InputField";
@@ -107,7 +106,7 @@ export default function ManualsPage() {
               Manuales y Documentación
             </h1>
             <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
-              Accede a guías, tutoriales y documentación del sistema
+              Accede a los manuales del sistema
             </p>
           </div>
         </div>
@@ -192,34 +191,6 @@ export default function ManualsPage() {
             ))
           )}
         </div>
-
-        <ComponentCard title="Recursos Adicionales">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <a href="#" className="flex items-center gap-4 p-4 rounded-lg border border-border-light dark:border-white/10 hover:border-brand-300 dark:hover:border-brand-700 transition-colors">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-500/10">
-                <svg className="w-5 h-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-medium text-text-primary dark:text-text-emphasis">Preguntas Frecuentes</h3>
-                <p className="text-xs text-text-tertiary">Respuestas a dudas comunes</p>
-              </div>
-            </a>
-
-            <a href="#" className="flex items-center gap-4 p-4 rounded-lg border border-border-light dark:border-white/10 hover:border-brand-300 dark:hover:border-brand-700 transition-colors">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-success-50 dark:bg-success-500/10">
-                <svg className="w-5 h-5 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-medium text-text-primary dark:text-text-emphasis">Soporte Técnico</h3>
-                <p className="text-xs text-text-tertiary">Contacta al equipo de soporte</p>
-              </div>
-            </a>
-          </div>
-        </ComponentCard>
       </div>
     </>
   );

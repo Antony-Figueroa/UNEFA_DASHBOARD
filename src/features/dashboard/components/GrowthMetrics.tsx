@@ -75,7 +75,7 @@ const AnimatedNumber: React.FC<{ value: number; duration?: number }> = ({
 const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
   if (loading) {
     return (
-      <div className="h-full rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:bg-gray-900">
+      <div className="flex min-h-[420px] flex-col rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:bg-gray-900">
         <Skeleton height={24} width="60%" className="mb-2" />
         <Skeleton height={16} width="40%" className="mb-6" />
         <Skeleton height={48} width="50%" className="mb-6" />
@@ -117,7 +117,7 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="flex h-full flex-col rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900"
+      className="flex min-h-[420px] flex-col rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900"
     >
       {/* Header - Enhanced */}
       <div className="mb-6">
@@ -130,7 +130,7 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
           >
             <FiUsers className="size-5 text-white" />
           </motion.div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
+          <h3 className="text-lg font-bold text-text-primary tracking-tight">
             Estudiantes este mes
           </h3>
         </div>
@@ -143,15 +143,15 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
       <div className="mb-8">
         {!hasData ? (
           <div className="text-center py-8">
-            <div className="size-14 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-3">
-              <FiUsers className="size-6 text-gray-400" />
+            <div className="size-14 rounded-xl bg-bg-secondary dark:bg-gray-800 flex items-center justify-center mx-auto mb-3">
+              <FiUsers className="size-6 text-text-tertiary" />
             </div>
-            <h4 className="text-base font-semibold text-gray-600 dark:text-gray-400 mb-1">
-              Sin datos este mes
-            </h4>
-            <p className="text-sm text-gray-500 dark:text-gray-500">
-              Los registros aparecerán al inscribir estudiantes
-            </p>
+        <h4 className="text-base font-semibold text-text-secondary mb-1">
+            Sin datos este mes
+          </h4>
+          <p className="text-sm text-text-secondary">
+            Los registros aparecerán al inscribir estudiantes
+          </p>
           </div>
         ) : (
           <>
@@ -162,7 +162,7 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="flex items-baseline gap-2"
             >
-              <span className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight">
+              <span className="text-4xl font-bold text-text-primary tracking-tight">
                 <AnimatedNumber value={totalLastMonth} />
               </span>
               <span className="text-sm text-text-secondary dark:text-text-tertiary">
@@ -187,7 +187,7 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-xs text-text-secondary dark:text-text-tertiary bg-gray-50 dark:bg-gray-800/50 px-2.5 py-1.5 rounded-lg inline-block"
+            className="text-xs text-text-secondary bg-bg-secondary/50 dark:bg-gray-800/50 px-2.5 py-1.5 rounded-lg inline-block"
           >
             {trend === 'up' ? '↑ Incremento' : trend === 'down' ? '↓ Reducción' : '→ Sin cambios'} 
             {' '}vs mes anterior
@@ -202,7 +202,7 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
           <h4 className="text-xs font-semibold text-text-secondary dark:text-text-tertiary uppercase tracking-wider">
             Semanas
           </h4>
-          <span className="text-[10px] font-medium text-text-tertiary bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-medium text-text-tertiary bg-bg-secondary dark:bg-gray-800 px-2 py-0.5 rounded-full">
             {safeWeeklyBreakdown.reduce((a, b) => a + (b?.count || 0), 0)} total
           </span>
         </div>
@@ -221,7 +221,7 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 + i * 0.08 }}
               >
-                <div className="flex h-20 w-full items-end overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800/50">
+                  <div className="flex h-20 w-full items-end overflow-hidden rounded-md bg-bg-secondary dark:bg-gray-800/50">
                   <motion.div 
                     initial={{ height: 0 }}
                     animate={{ height: `${height}%` }}
@@ -254,7 +254,7 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
       </div>
 
       {/* Daily Activity - Enhanced with tooltips */}
-      <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
+      <div className="mt-auto pt-4 border-t border-border-light dark:border-border-dark">
         <h4 className="text-xs font-semibold text-text-secondary dark:text-text-tertiary uppercase tracking-wider mb-3">
           Últimos 7 días
         </h4>

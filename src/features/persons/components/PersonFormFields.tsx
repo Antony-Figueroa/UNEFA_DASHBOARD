@@ -267,7 +267,7 @@ export default function PersonFormFields({
                 onClick={onEditExisting}
                 className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400"
               >
-                Editar esta persona
+                Continuar editando
               </button>
             )}
           </div>

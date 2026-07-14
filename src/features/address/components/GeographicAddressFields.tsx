@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import CustomSelect from '../../../components/form/CustomSelect';
 import Input from '../../../components/form/input/InputField';
 import TextArea from '../../../components/form/input/TextArea';
+import { normalizeText } from '../../../utils/textNormalization';
 import type { GeoOptionsItem } from '../types';
 
 export interface GeographicAddressValue {
@@ -96,14 +97,14 @@ export default function GeographicAddressFields({
   }, [value?.parroquiaId, geoOptions]);
 
   const estadoOptions = useMemo(() =>
-    geoOptions.map(e => ({ value: String(e.estado_id), label: e.name })),
+    geoOptions.map(e => ({ value: String(e.estado_id), label: normalizeText(e.name) })),
     [geoOptions]
   );
 
   const municipioOptions = useMemo(() => {
     const estado = geoOptions.find(e => e.estado_id === selectedEstadoId);
     if (!estado) return [];
-    return estado.t_municipio.map(m => ({ value: String(m.municipio_id), label: m.name }));
+    return estado.t_municipio.map(m => ({ value: String(m.municipio_id), label: normalizeText(m.name) }));
   }, [geoOptions, selectedEstadoId]);
 
   const parroquiaOptions = useMemo(() => {
@@ -115,17 +116,17 @@ export default function GeographicAddressFields({
     // Ponytail: parche temporal hasta corregir la BD (Agua Blanca no pertenece a Araure)
     return municipio.t_parroquia
       .filter(p => !(municipio.name === 'Araure' && p.name === 'Agua Blanca'))
-      .map(p => ({ value: String(p.parroquia_id), label: p.name }));
+      .map(p => ({ value: String(p.parroquia_id), label: normalizeText(p.name) }));
   }, [geoOptions, selectedEstadoId, selectedMunicipioId]);
 
   const handleStreetChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const v = e.target.value.toUpperCase();
+    const v = e.target.value;
     setStreetAddress(v);
     emitChange(selectedParroquiaId, v, reference, addressTypeId, isPrimary);
   };
 
   const handleReferenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value.toUpperCase();
+    const v = e.target.value;
     setReference(v);
     emitChange(selectedParroquiaId, streetAddress, v, addressTypeId, isPrimary);
   };
@@ -166,7 +167,7 @@ export default function GeographicAddressFields({
     <div className="space-y-4">
       {showTypeSelector && addressTypes && addressTypes.length > 0 && (
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de Dirección</label>
+          <label className="mb-2 block text-sm font-medium text-text-primary">Tipo de Dirección</label>
           <CustomSelect
             options={addressTypes}
             value={addressTypeId}
@@ -179,7 +180,7 @@ export default function GeographicAddressFields({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{estadoLabel}</label>
+          <label className="mb-2 block text-sm font-medium text-text-primary">{estadoLabel}</label>
           <CustomSelect
             options={estadoOptions}
             value={selectedEstadoId ? String(selectedEstadoId) : ''}
@@ -190,7 +191,7 @@ export default function GeographicAddressFields({
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{municipioLabel}</label>
+          <label className="mb-2 block text-sm font-medium text-text-primary">{municipioLabel}</label>
           <CustomSelect
             options={municipioOptions}
             value={selectedMunicipioId ? String(selectedMunicipioId) : ''}
@@ -201,7 +202,7 @@ export default function GeographicAddressFields({
           />
         </div>
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{parroquiaLabel}</label>
+          <label className="mb-2 block text-sm font-medium text-text-primary">{parroquiaLabel}</label>
           <CustomSelect
             key={`parroquia-select-${selectedMunicipioId}`}
             options={parroquiaOptions}
@@ -215,7 +216,7 @@ export default function GeographicAddressFields({
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{streetLabel}</label>
+        <label className="mb-2 block text-sm font-medium text-text-primary">{streetLabel}</label>
         <TextArea
           placeholder="Calle, número, sector, urbanización..."
           value={streetAddress}
@@ -227,7 +228,7 @@ export default function GeographicAddressFields({
 
       {showReference && (
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Referencia</label>
+          <label className="mb-2 block text-sm font-medium text-text-primary">Referencia</label>
           <Input
             placeholder="Punto de referencia (opcional)"
             value={reference}
@@ -244,9 +245,9 @@ export default function GeographicAddressFields({
             checked={isPrimary}
             onChange={handlePrimaryChange}
             disabled={disabled}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600"
+            className="h-4 w-4 rounded border-border-medium text-brand-600"
           />
-          <span className="text-sm text-gray-700 dark:text-gray-300">Dirección principal</span>
+          <span className="text-sm text-text-primary">Dirección principal</span>
         </label>
       )}
     </div>

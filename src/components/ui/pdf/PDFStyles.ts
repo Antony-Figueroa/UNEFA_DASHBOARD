@@ -35,7 +35,7 @@ export const pdfStyles = StyleSheet.create({
   page: {
     paddingTop: 30,
     paddingBottom: 60,
-    paddingHorizontal: 30,
+    paddingHorizontal: 35,
     fontFamily: "Nunito",
     fontSize: 11,
     color: "#1C2434", // text-primary

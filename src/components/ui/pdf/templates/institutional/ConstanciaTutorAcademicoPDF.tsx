@@ -26,9 +26,11 @@ interface Props {
     periodo: { description: string; startDate: string; endDate: string } | null;
   };
   textos: Record<string, string>;
+  verificationHash?: string;
+  qrCodeDataUri?: string;
 }
 
-export function ConstanciaTutorAcademicoPDF({ data, textos }: Props) {
+export function ConstanciaTutorAcademicoPDF({ data, textos, verificationHash, qrCodeDataUri }: Props) {
   const fechaHoy = getFechaParts(null);
   const tutorTitulo = (data.tutor.tituloAbrev || data.tutor.titulo || 'LICDO.').toUpperCase();
   const cuerpo = renderDocumentText(textos.cuerpo || '', {
@@ -49,7 +51,7 @@ export function ConstanciaTutorAcademicoPDF({ data, textos }: Props) {
   });
 
   return (
-    <PDFLayout title="CONSTANCIA">
+    <PDFLayout title="CONSTANCIA" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
       <Text style={styles.paragraph}>{cuerpo}</Text>
       <View style={styles.firmaContainer}>
         <Text style={styles.firmaLine}>___________________________________</Text>

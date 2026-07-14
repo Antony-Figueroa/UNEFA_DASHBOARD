@@ -80,12 +80,12 @@ const CulminatedStudentsTable: React.FC<CulminatedStudentsTableProps> = ({
               <TableCell isHeader>Cédula</TableCell>
               <TableCell isHeader>Estudiante</TableCell>
               <TableCell isHeader>Carrera</TableCell>
-              <TableCell isHeader>Institución</TableCell>
-              <TableCell isHeader>Tipo</TableCell>
-              <TableCell isHeader>Tutor</TableCell>
-              <TableCell isHeader>Período</TableCell>
-              <TableCell isHeader>Inicio</TableCell>
-              <TableCell isHeader>Fin</TableCell>
+              <TableCell isHeader className="hidden md:table-cell">Institución</TableCell>
+              <TableCell isHeader className="hidden md:table-cell">Tipo</TableCell>
+              <TableCell isHeader className="hidden md:table-cell">Tutor</TableCell>
+              <TableCell isHeader className="hidden lg:table-cell">Período</TableCell>
+              <TableCell isHeader className="hidden lg:table-cell">Inicio</TableCell>
+              <TableCell isHeader className="hidden lg:table-cell">Fin</TableCell>
               <TableCell isHeader>Horas</TableCell>
               <TableCell isHeader>Nota</TableCell>
               <TableCell isHeader>Estado</TableCell>
@@ -98,12 +98,12 @@ const CulminatedStudentsTable: React.FC<CulminatedStudentsTableProps> = ({
                 <TableCell className="uppercase">{item.studentCi}</TableCell>
                 <TableCell className="font-medium uppercase">{item.studentName}</TableCell>
                 <TableCell className="uppercase">{item.careerName}</TableCell>
-                <TableCell className="uppercase">{item.institutionName}</TableCell>
-                <TableCell className="uppercase">{item.practiceType}</TableCell>
-                <TableCell className="uppercase">{item.tutorName}</TableCell>
-                <TableCell className="uppercase">{item.period}</TableCell>
-                <TableCell className="uppercase">{formatDate(item.startDate)}</TableCell>
-                <TableCell className="uppercase">{formatDate(item.endDate)}</TableCell>
+                <TableCell className="hidden md:table-cell uppercase">{item.institutionName}</TableCell>
+                <TableCell className="hidden md:table-cell uppercase">{item.practiceType}</TableCell>
+                <TableCell className="hidden md:table-cell uppercase">{item.tutorName}</TableCell>
+                <TableCell className="hidden lg:table-cell uppercase">{item.period}</TableCell>
+                <TableCell className="hidden lg:table-cell uppercase">{formatDate(item.startDate)}</TableCell>
+                <TableCell className="hidden lg:table-cell uppercase">{formatDate(item.endDate)}</TableCell>
                 <TableCell className="text-center uppercase">{item.totalHours}</TableCell>
                 <TableCell className="text-center uppercase">{item.grade > 0 ? item.grade.toFixed(1) : '-'}</TableCell>
                 <TableCell className="uppercase">{getStatusBadge(item.status)}</TableCell>

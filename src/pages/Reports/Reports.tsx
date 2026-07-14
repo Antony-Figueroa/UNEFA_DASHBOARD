@@ -272,12 +272,12 @@ export default function ReportsPage() {
               Visualiza métricas y genera reportes del sistema
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <SearchInput
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Buscar reporte..."
-              className="!w-56"
+              className="w-full sm:!w-56"
             />
             <CustomSelect
               options={[
@@ -286,7 +286,7 @@ export default function ReportsPage() {
               ]}
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e as unknown as string)}
-              className="w-40"
+              className="w-full sm:w-40"
             />
             <MultiSelect
               label=""
@@ -294,9 +294,9 @@ export default function ReportsPage() {
               value={careerIdsFilter.map(String)}
               onChange={(selected) => setCareerIdsFilter(selected.map(Number))}
               placeholder="Todas las carreras"
-              className="w-56"
+              className="w-full sm:w-56"
             />
-            <Button variant="outline" onClick={fetchDashboardData} startIcon={
+            <Button variant="outline" onClick={fetchDashboardData} className="w-full sm:w-auto" startIcon={
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>

@@ -647,6 +647,7 @@ export default function VisitModal({
         showCloseButton 
         size="3xl"
         modalId={modalId}
+        className="max-w-full rounded-none min-h-screen max-h-full sm:max-w-3xl sm:rounded-2xl sm:min-h-0 sm:max-h-[95vh]"
       >
         <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">
           <div className="w-full">

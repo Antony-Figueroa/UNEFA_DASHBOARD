@@ -5,6 +5,8 @@ import { XIcon, ListIcon } from "../../../icons/actions";
 import { useSingleReport } from "../../../hooks/pdf/useSingleReport";
 import { PDFViewer, DocumentProps } from "@react-pdf/renderer";
 import { createVerification } from "../../../services/verificationService";
+import QRCode from "qrcode";
+import { getVerifyBaseUrl } from "../../../services/verificationService";
 
 export interface VerificationConfig {
   docType: string;
@@ -17,7 +19,7 @@ interface SingleReportModalProps<T> {
   title: string;
   subtitle?: string;
   data: T;
-  template: (data: T, verificationHash?: string) => React.ReactElement<DocumentProps>;
+  template: (data: T, verificationHash?: string, qrCodeDataUri?: string) => React.ReactElement<DocumentProps>;
   fileName: string;
   recordInfo?: {
     label: string;
@@ -42,11 +44,13 @@ export const SingleReportModal = <T,>({
   const { generatePDF, previewPDF, isGenerating } = useSingleReport({ fileName });
   const [activeTab, setActiveTab] = useState<"preview" | "info">("preview");
   const [verificationHash, setVerificationHash] = useState<string>("");
+  const [qrCodeDataUri, setQrCodeDataUri] = useState<string>("");
 
   // Fetch verification hash when modal opens
   useEffect(() => {
     if (!isOpen || !verificationConfig) {
       setVerificationHash("");
+      setQrCodeDataUri("");
       return;
     }
 
@@ -59,7 +63,13 @@ export const SingleReportModal = <T,>({
           title,
           verificationConfig.metadata
         );
-        if (!cancelled) setVerificationHash(hash);
+        if (!cancelled) {
+          setVerificationHash(hash);
+          // Generate QR code data URI locally
+          const verifyUrl = `${getVerifyBaseUrl()}/validar?hash=${hash}`;
+          const dataUri = await QRCode.toDataURL(verifyUrl, { width: 150, margin: 1 });
+          setQrCodeDataUri(dataUri);
+        }
       } catch {
         console.warn("[Verify] No se pudo crear verificación, se usará fallback");
       }
@@ -69,8 +79,8 @@ export const SingleReportModal = <T,>({
   }, [isOpen, verificationConfig?.docType]);
 
   const finalTemplate = useMemo(
-    () => template(data, verificationHash || undefined),
-    [template, data, verificationHash]
+    () => template(data, verificationHash || undefined, qrCodeDataUri || undefined),
+    [template, data, verificationHash, qrCodeDataUri]
   );
 
   return (

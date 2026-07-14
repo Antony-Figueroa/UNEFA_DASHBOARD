@@ -507,6 +507,7 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
   ];
 
   applyInstitutionalHeader(worksheet, totalCols);
+  await addLogos(workbook, worksheet);
 
   applyTitleRow(worksheet, 7, `RELACIÓN DE INSTITUCIONES QUE SOLICITAN ASIGNACIÓN DE PASANTES - ${period}`, totalCols);
 

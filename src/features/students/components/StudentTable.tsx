@@ -9,32 +9,12 @@ import { StudentRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
 
-import Badge from "../../../components/ui/badge/Badge";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { CrudStatus } from "../../../hooks/useCrud";
 import { formatPhoneDisplay } from "../../../utils/inputFormat";
 import { matchSearch } from "../../../utils/searchNormalizer";
 import { toTitleCase } from "../../../utils/textFormat";
-
-/**
- * Mapea el status numérico a color y etiqueta para el badge.
- */
-const STATUS_CONFIG: Record<number, { color: "success" | "info" | "warning" | "error" | "light"; label: string }> = {
-  0: { color: "error", label: "Retirado" },
-   1: { color: "warning", label: "Pre-inscrito" },
-  2: { color: "info", label: "Inscrito" },
-  3: { color: "success", label: "Culminado" },
-};
-
-/** Badge que muestra el estado de práctica profesional del estudiante. */
-const StatusBadge = ({ status }: { status: number | null }) => {
-  if (status === null || status === undefined) {
-    return <Badge color="light" size="sm">Sin registro</Badge>;
-  }
-  const config = STATUS_CONFIG[status] ?? { color: "light" as const, label: "Desconocido" };
-  return <Badge color={config.color} size="sm">{config.label}</Badge>;
-};
 
 /**
  * Propiedades del componente StudentTable.
@@ -617,7 +597,6 @@ export default function StudentTable({
                                 <div className="flex items-center">Nombres y Apellidos <SortIndicator column="fullNames" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell">Teléfono</TableCell>
-                            <TableCell isHeader className="table-header-cell">Estatus</TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("email")}>
                                 <div className="flex items-center">Correo Electrónico <SortIndicator column="email" /></div>
                             </TableCell>
@@ -652,9 +631,6 @@ export default function StudentTable({
                                         {toTitleCase(s.fullNames)}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary whitespace-nowrap">{formatPhoneDisplay(s.phone)}</TableCell>
-                                    <TableCell className="table-cell">
-                                        <StatusBadge status={s.currentPracticeStatus ?? null} />
-                                    </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary lowercase">{s.email}</TableCell>
                                     <TableCell className="table-cell text-right relative">
                                         <ActionButtons
@@ -676,7 +652,7 @@ export default function StudentTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell className="table-cell py-24 text-center" colSpan={7}>
+                                <TableCell className="table-cell py-24 text-center" colSpan={6}>
                                     <EmptyState
                                         title={
                                             inactiveMode
@@ -719,9 +695,6 @@ export default function StudentTable({
                                             <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8">
                                                 {toTitleCase(s.fullNames)}
                                             </h3>
-                                            <div className="flex justify-center mt-1.5">
-                                                <StatusBadge status={s.currentPracticeStatus ?? null} />
-                                            </div>
                                             <p className="text-xs text-text-secondary dark:text-text-tertiary mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>
                                         <button
@@ -737,10 +710,6 @@ export default function StudentTable({
                                 {isExpanded && (
                                     <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
-                                            <div className="col-span-2 flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Estatus</p>
-                                                <StatusBadge status={s.currentPracticeStatus ?? null} />
-                                            </div>
                                             <div className="col-span-2 flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo Electrónico</p>
                                                 <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium truncate w-full max-w-62.5 lowercase">{s.email}</p>

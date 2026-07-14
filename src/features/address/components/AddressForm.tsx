@@ -5,6 +5,7 @@ import Button from '../../../components/ui/button/Button';
 import CustomSelect from '../../../components/form/CustomSelect';
 import Input from '../../../components/form/input/InputField';
 import TextArea from '../../../components/form/input/TextArea';
+import { normalizeText } from '../../../utils/textNormalization';
 import type { GeoOptionsItem } from '../types';
 
 interface AddressFormProps {
@@ -47,14 +48,14 @@ export default function AddressForm({
   const [isPrimary, setIsPrimary] = useState(false);
 
   const estadoOptions = useMemo(() =>
-    geoOptions.map(e => ({ value: String(e.estado_id), label: e.name })),
+    geoOptions.map(e => ({ value: String(e.estado_id), label: normalizeText(e.name) })),
     [geoOptions]
   );
 
   const municipioOptions = useMemo(() => {
     const estado = geoOptions.find(e => e.estado_id === selectedEstadoId);
     if (!estado) return [];
-    return estado.t_municipio.map(m => ({ value: String(m.municipio_id), label: m.name }));
+    return estado.t_municipio.map(m => ({ value: String(m.municipio_id), label: normalizeText(m.name) }));
   }, [geoOptions, selectedEstadoId]);
 
   const parroquiaOptions = useMemo(() => {
@@ -62,7 +63,7 @@ export default function AddressForm({
     if (!estado) return [];
     const municipio = estado.t_municipio.find(m => m.municipio_id === selectedMunicipioId);
     if (!municipio) return [];
-    return municipio.t_parroquia.map(p => ({ value: String(p.parroquia_id), label: p.name }));
+    return municipio.t_parroquia.map(p => ({ value: String(p.parroquia_id), label: normalizeText(p.name) }));
   }, [geoOptions, selectedEstadoId, selectedMunicipioId]);
 
   useEffect(() => {
@@ -136,7 +137,7 @@ export default function AddressForm({
       <ModalBody>
         <div className="space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Tipo de Dirección <span className="text-red-500">*</span></label>
+            <label className="mb-2 block text-sm font-medium text-text-primary">Tipo de Dirección <span className="text-error-500">*</span></label>
             <CustomSelect
               options={addressTypes}
               value={addressTypeId}
@@ -146,7 +147,7 @@ export default function AddressForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Estado <span className="text-red-500">*</span></label>
+            <label className="mb-2 block text-sm font-medium text-text-primary">Estado <span className="text-error-500">*</span></label>
             <CustomSelect
               options={estadoOptions}
               value={selectedEstadoId ? String(selectedEstadoId) : ''}
@@ -161,7 +162,7 @@ export default function AddressForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Municipio <span className="text-red-500">*</span></label>
+            <label className="mb-2 block text-sm font-medium text-text-primary">Municipio <span className="text-error-500">*</span></label>
             <CustomSelect
               options={municipioOptions}
               value={selectedMunicipioId ? String(selectedMunicipioId) : ''}
@@ -176,7 +177,7 @@ export default function AddressForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Parroquia <span className="text-red-500">*</span></label>
+            <label className="mb-2 block text-sm font-medium text-text-primary">Parroquia <span className="text-error-500">*</span></label>
             <CustomSelect
               options={parroquiaOptions}
               value={selectedParroquiaId ? String(selectedParroquiaId) : ''}
@@ -188,7 +189,7 @@ export default function AddressForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Dirección <span className="text-red-500">*</span></label>
+            <label className="mb-2 block text-sm font-medium text-text-primary">Dirección <span className="text-error-500">*</span></label>
             <TextArea
               placeholder="Calle, número, sector, urbanización..."
               value={streetAddress}
@@ -198,7 +199,7 @@ export default function AddressForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Referencia</label>
+            <label className="mb-2 block text-sm font-medium text-text-primary">Referencia</label>
             <Input
               placeholder="Punto de referencia (opcional)"
               value={reference}
@@ -211,9 +212,9 @@ export default function AddressForm({
               type="checkbox"
               checked={isPrimary}
               onChange={(e) => setIsPrimary(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600"
+              className="h-4 w-4 rounded border-border-medium text-brand-600"
             />
-            <span className="text-sm text-gray-700">Establecer como dirección principal</span>
+            <span className="text-sm text-text-primary">Establecer como dirección principal</span>
           </label>
         </div>
       </ModalBody>

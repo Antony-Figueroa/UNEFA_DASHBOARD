@@ -16,6 +16,7 @@ import { Tracking } from "../types";
 import { Visit } from "../../visits/types";
 import { visitsService } from "../../visits/services/visitsService";
 import { getTrackingById, TrackingDetailDTO } from "../services/trackingService";
+import { PracticeTimeline } from "./PracticeTimeline";
 
 interface TrackingDetailModalProps {
   /** Indica si el modal está visible */
@@ -144,7 +145,8 @@ export default function TrackingDetailModal({
   const display = detail || tracking;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>
+    <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton
+      className="max-w-full rounded-none min-h-screen max-h-full sm:max-w-5xl sm:rounded-2xl sm:min-h-0 sm:max-h-[95vh]">
       <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">
         Detalles del Seguimiento
       </ModalHeader>
@@ -312,6 +314,9 @@ export default function TrackingDetailModal({
               </p>
             </div>
           </div>
+
+          {/* Sección: Línea de Tiempo de la Práctica */}
+          <PracticeTimeline practiceId={tracking.trackingId} />
 
           {/* Sección: Visitas Realizadas */}
           <div className="space-y-4">

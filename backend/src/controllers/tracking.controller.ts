@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { DatabaseManager } from "../lib/db-manager.js";
 import { sanitizeText } from "../utils/text-utils.js";
-import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
+import { PRACTICES_STATUS, PRACTICES_STATUS_LABELS } from '../constants/practice-status.constants.js';
 
 interface DBProfessionalPractice {
   PROFESSIONAL_PRACTICE_ID: number;
@@ -351,6 +351,124 @@ export const restoreTracking = async (req: Request, res: Response) => {
     const err = error as Error;
     console.error("[TrackingController] Error in restoreTracking:", err);
     res.status(500).json({ error: err.message || "Error al restaurar seguimiento" });
+  }
+};
+
+export const getPracticeTimeline = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const db = DatabaseManager.getInstance();
+    const supabase = db.getConnection();
+
+    // All queries in parallel
+    const [
+      { data: practice, error: pracError },
+      { count: visitsCount, error: visError },
+      { count: evalCount, error: evError },
+      { data: culmination, error: culError },
+    ] = await Promise.all([
+      supabase
+        .from('t_professional_practices')
+        .select(`
+          PRACTICES_STATUS, CREATION_DATE, REGISTRATION_DATE,
+          START_DATE, END_DATE, STATUS
+        `)
+        .eq('PROFESSIONAL_PRACTICE_ID', id)
+        .single(),
+      supabase
+        .from('t_practice_visits')
+        .select('*', { count: 'exact', head: true })
+        .eq('PRACTICE_ID', id)
+        .eq('STATUS', 1),
+      supabase
+        .from('t_evaluation')
+        .select('*', { count: 'exact', head: true })
+        .eq('PROFESSIONAL_PRACTICE_ID', id),
+      supabase
+        .from('t_practice_culmination')
+        .select('STATUS, CERTIFICATE_NUMBER, CERTIFIED_AT')
+        .eq('PRACTICE_ID', id)
+        .maybeSingle(),
+    ]);
+
+    if (pracError || !practice) {
+      return res.status(404).json({ error: 'Práctica no encontrada' });
+    }
+
+    const status = practice.PRACTICES_STATUS;
+    const isTerminal = status === 3 || status === 4 || status === 5; // culminado, reprobado, retiro justificado
+    const isActive = status === 2 && !isTerminal;
+    const hasVisits = (visitsCount ?? 0) > 0;
+    const hasEvaluations = (evalCount ?? 0) > 0;
+    const hasCulmination = culmination && (culmination.STATUS === 1 || culmination.STATUS === 2);
+
+    const stages = [
+      {
+        key: 'preEnrollment',
+        label: 'Pre-inscripción',
+        completed: true,
+        current: false,
+        date: practice.REGISTRATION_DATE || practice.CREATION_DATE,
+        icon: 'FileText',
+      },
+      {
+        key: 'enrollment',
+        label: 'Inscripción',
+        completed: true,
+        current: status >= 2,
+        date: practice.CREATION_DATE,
+        icon: 'ClipboardCheck',
+      },
+      {
+        key: 'inProgress',
+        label: 'En Curso',
+        completed: status >= 2 && (isTerminal || hasVisits || hasEvaluations),
+        current: isActive && !hasVisits && !hasEvaluations,
+        date: practice.START_DATE,
+        icon: 'Activity',
+      },
+      {
+        key: 'visits',
+        label: 'Visitas',
+        completed: hasVisits && isTerminal,
+        current: isActive && hasVisits,
+        count: visitsCount ?? 0,
+        icon: 'MapPin',
+      },
+      {
+        key: 'evaluations',
+        label: 'Evaluaciones',
+        completed: hasEvaluations && isTerminal,
+        current: isActive && hasEvaluations,
+        count: evalCount ?? 0,
+        icon: 'ClipboardList',
+      },
+      {
+        key: 'culmination',
+        label: 'Culminación',
+        completed: hasCulmination,
+        current: false,
+        date: culmination?.CERTIFIED_AT || practice.END_DATE,
+        metadata: culmination
+          ? {
+              status: culmination.STATUS === 2 ? 'Certificado' : 'Aprobado',
+              certificateNumber: culmination.CERTIFICATE_NUMBER,
+            }
+          : null,
+        icon: 'Award',
+      },
+    ];
+
+    res.json({
+      practiceId: id,
+      currentStatusCode: status,
+      currentStatusLabel: PRACTICES_STATUS_LABELS[status] || 'Desconocido',
+      stages,
+    });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('[TrackingController] Error in getPracticeTimeline:', err);
+    res.status(500).json({ error: err.message || 'Error al obtener línea de tiempo' });
   }
 };
 

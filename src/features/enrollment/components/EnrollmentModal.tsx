@@ -223,9 +223,9 @@ export default function EnrollmentModal({
         
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = values.map(v => ({
-            // Para Nacionalidad usamos la abreviación (V, E)
-            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
-            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase()
+            // Para Nacionalidad usamos la abreviación (V, E, P)
+            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name,
+            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name
           }));
         });
         
@@ -720,7 +720,7 @@ export default function EnrollmentModal({
                       <Input
                         value={displayIdentificationNumber}
                         onChange={handleIdentificationNumberChange}
-                        placeholder="Número de cédula..."
+                        placeholder={idPrefix === "P" ? "Pasaporte (letras y números)" : "Número de cédula"}
                         error={!!errors.identificationNumber || !!preEnrollmentError}
                         className={cn(
                           "rounded-xl h-[48px] font-bold tracking-wider",

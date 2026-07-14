@@ -7,7 +7,8 @@ import {
   deleteTracking,
   restoreTracking,
   getTrackingStats,
-  getTrackingById
+  getTrackingById,
+  getPracticeTimeline
 } from '../controllers/tracking.controller.js';
 
 const router = Router();
@@ -17,6 +18,7 @@ router.use(requirePermission('tracking:*'));
 
 router.get('/', getTrackings);
 router.get('/stats', getTrackingStats);
+router.get('/:id/timeline', getPracticeTimeline);
 router.get('/:id', getTrackingById);
 router.post('/', createTracking);
 router.put('/:id', updateTracking);

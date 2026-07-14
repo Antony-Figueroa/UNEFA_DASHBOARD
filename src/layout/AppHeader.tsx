@@ -15,7 +15,7 @@ const AppHeader: React.FC = () => {
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerRef = useRef<HTMLElement>(null);
   const { user } = useAuth();
-  const { periodos } = usePeriods();
+  const { periodos } = usePeriods({ enabled: user?.role !== 4 });
   const isAuthenticated = !!user;
   const { open: openCommandPalette } = useCommandPalette();
 

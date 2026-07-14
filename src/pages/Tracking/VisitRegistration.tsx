@@ -281,7 +281,7 @@ export default function VisitRegistration() {
         </ComponentCard>
       ) : practiceInfo ? (
         <ComponentCard title="Información de la Práctica" className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="p-4 rounded-lg bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20">
               <p className="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 mb-1">Estudiante</p>
               <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{practiceInfo.studentName}</p>
@@ -500,6 +500,7 @@ export default function VisitRegistration() {
         onClose={() => setViewDialog({ isOpen: false, visit: null })}
         size="5xl"
         showCloseButton
+        className="max-w-full rounded-none min-h-screen max-h-full sm:max-w-5xl sm:rounded-2xl sm:min-h-0 sm:max-h-[95vh]"
       >
         <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalle de la Visita</ModalHeader>
         <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8">

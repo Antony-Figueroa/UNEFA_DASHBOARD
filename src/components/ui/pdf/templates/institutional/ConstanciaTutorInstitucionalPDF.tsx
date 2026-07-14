@@ -75,9 +75,11 @@ interface Props {
     periodo: { description: string; startDate: string; endDate: string } | null;
   };
   textos: Record<string, string>;
+  verificationHash?: string;
+  qrCodeDataUri?: string;
 }
 
-export function ConstanciaTutorInstitucionalPDF({ data, textos }: Props) {
+export function ConstanciaTutorInstitucionalPDF({ data, textos, verificationHash, qrCodeDataUri }: Props) {
   const fechaHoy = getFechaParts(null);
 
   const tutorName = formatNombreCompleto(data.tutor).toUpperCase();
@@ -98,7 +100,7 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos }: Props) {
   const firmaOrden = textos.firmaOrden || 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022';
 
   return (
-    <PDFLayout title="CONSTANCIA DE TUTOR INSTITUCIONAL">
+    <PDFLayout title="CONSTANCIA DE TUTOR INSTITUCIONAL" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
       {/* Fecha alineada a la derecha */}
       <Text style={styles.placeDate}>Guanare, {fechaHoy.dia} de {fechaHoy.mes} del {fechaHoy.anio}.</Text>
 

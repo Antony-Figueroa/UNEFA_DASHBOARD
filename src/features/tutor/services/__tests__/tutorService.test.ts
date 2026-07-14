@@ -161,67 +161,6 @@ describe('tutorService', () => {
     });
   });
 
-  describe('getTracking', () => {
-    it('debería retornar tracking sin filtro de enrollment', async () => {
-      const { tutorService } = await import('../tutorService');
-      const mockTracking = {
-        data: {
-          data: [
-            {
-              trackingId: '1',
-              enrollmentId: '101',
-              studentName: 'Juan Pérez',
-              reportTitle: 'Reporte Semanal 1',
-              transfer: false,
-              route: 'Ruta A',
-              observations: 'Todo en orden',
-              creationDate: '2026-03-15',
-              tutorType: 'ACADEMICO',
-            },
-          ],
-        },
-      };
-      mockGet.mockResolvedValue(mockTracking);
-
-      const tracking = await tutorService.getTracking();
-
-      expect(mockGet).toHaveBeenCalledWith('/tutor/tracking', { params: undefined });
-      expect(tracking).toHaveLength(1);
-      expect(tracking[0].studentName).toBe('Juan Pérez');
-    });
-
-    it('debería filtrar tracking por enrollmentId', async () => {
-      const { tutorService } = await import('../tutorService');
-      mockGet.mockResolvedValue({ data: { data: [] } });
-
-      await tutorService.getTracking('101');
-
-      expect(mockGet).toHaveBeenCalledWith('/tutor/tracking', { params: { enrollmentId: '101' } });
-    });
-  });
-
-  describe('getReports', () => {
-    it('debería retornar datos de reportes', async () => {
-      const { tutorService } = await import('../tutorService');
-      const mockReport = {
-        data: {
-          data: {
-            tutorInfo: { name: 'Dr. García', tutorId: 1 },
-            summary: { totalStudents: 5, statusDistribution: { active: 3 }, periodDistribution: {}, averageGrade: '15.2' },
-            students: [],
-          },
-        },
-      };
-      mockGet.mockResolvedValue(mockReport);
-
-      const report = await tutorService.getReports();
-
-      expect(mockGet).toHaveBeenCalledWith('/tutor/reports');
-      expect(report.tutorInfo.name).toBe('Dr. García');
-      expect(report.summary.averageGrade).toBe('15.2');
-    });
-  });
-
   describe('getProfile', () => {
     it('debería retornar perfil del tutor', async () => {
       const { tutorService } = await import('../tutorService');

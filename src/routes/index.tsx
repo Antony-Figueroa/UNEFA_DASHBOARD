@@ -17,15 +17,15 @@ const PasswordRecovery = lazy(() => import("../pages/AuthPages/PasswordRecovery"
 const UserProfiles = lazy(() => import("../pages/UserProfiles"));
 const UserManagementPage = lazy(() => import("../pages/Config/sections/admin/UsersPage"));
 const ListsPage = lazy(() => import("../pages/Config/sections/system/ListsPage"));
-const AuditPage = lazy(() => import("../pages/Config/sections/admin/AuditPage"));
+const AuditPage = lazy(() => import("../features/activity-logs/pages/AuditoriaPage"));
 const RolesPermissionsPage = lazy(() => import("../pages/Config/sections/admin/RolesPage"));
 const ParametersPage = lazy(() => import("../pages/Config/sections/system/ParametersPage"));
 const MaintenancePage = lazy(() => import("../pages/Config/sections/system/MaintenancePage"));
 const BackupsPage = lazy(() => import("../pages/Config/sections/system/BackupsPage"));
 const LandingConfigPage = lazy(() => import("../pages/Config/sections/customize/LandingConfigPage"));
-const RemindersPage = lazy(() => import("../pages/Config/sections/customize/RemindersPage"));
+const RemindersPage = lazy(() => import("../pages/Admin/Reminders/ReminderConfigPage"));
 const OrganizationPage = lazy(() => import("../pages/Config/sections/system/OrganizationPage"));
-const DashboardConfigurator = lazy(() => import("../pages/Config/sections/customize/DashboardPage"));
+const DashboardConfigurator = lazy(() => import("../pages/Dashboard/Configurator"));
 const NotificationsPage = lazy(() => import("../pages/Notifications/NotificationsPage"));
 const Reports = lazy(() => import("../pages/Reports/Reports"));
 const TestEvaluacionFinal = lazy(() => import("../pages/TestEvaluacionFinal"));
@@ -34,12 +34,9 @@ const Manuals = lazy(() => import("../pages/Manuals/Manuals"));
 
 const TutorDashboard = lazy(() => import("../pages/Tutor/TutorDashboard"));
 const TutorStudents = lazy(() => import("../pages/Tutor/TutorStudents"));
-const TutorTracking = lazy(() => import("../pages/Tutor/TutorTracking"));
 const TutorGrades = lazy(() => import("../pages/Tutor/TutorGrades"));
-const TutorReports = lazy(() => import("../pages/Tutor/TutorReports"));
 const TutorEvaluation = lazy(() => import("../pages/Tutor/Evaluations/TutorEvaluation"));
 const TutorProfile = lazy(() => import("../pages/Tutor/TutorProfile"));
-const TutorActivityLogs = lazy(() => import("../pages/Tutor/TutorActivityLogs"));
 
 import StudentLayout from "../layout/StudentLayout";
 const StudentRequests = lazy(() => import("../pages/Student/StudentRequests"));
@@ -216,26 +213,10 @@ export const AppRoutes = () => {
               }
             />
             <Route
-              path="/tutor/tracking"
-              element={
-                <ProtectedRoute allowedRoles={[3]}>
-                  <TutorTracking />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/tutor/grades"
               element={
                 <ProtectedRoute allowedRoles={[3]}>
                   <TutorGrades />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tutor/reports"
-              element={
-                <ProtectedRoute allowedRoles={[3]}>
-                  <TutorReports />
                 </ProtectedRoute>
               }
             />
@@ -255,31 +236,6 @@ export const AppRoutes = () => {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/tutor/activity-logs"
-              element={
-                <ProtectedRoute allowedRoles={[3]}>
-                  <TutorActivityLogs />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tutor/visits/:id"
-              element={
-                <ProtectedRoute allowedRoles={[3]}>
-                  <VisitRegistration />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tutor/activity-logs/:id"
-              element={
-                <ProtectedRoute allowedRoles={[3]}>
-                  <ActivityLogPage />
-                </ProtectedRoute>
-              }
-            />
-  
             {/* Student routes - wrapped in StudentLayout */}
             <Route element={<ProtectedRoute allowedRoles={[4]}><StudentLayout /></ProtectedRoute>}>
               <Route index path="/student" element={<Navigate to="/student/requests" replace />} />

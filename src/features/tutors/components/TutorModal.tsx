@@ -794,9 +794,9 @@ export default function TutorModal({
         
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = values.map(v => ({
-            // Para Nacionalidad usamos la abreviación (V, E) como valor y etiqueta
-            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
-            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase()
+            // Para Nacionalidad usamos la abreviación (V, E, P) como valor y etiqueta
+            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name,
+            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name
           }));
         });
         
@@ -1125,11 +1125,13 @@ export default function TutorModal({
                     {existingPerson.firstName} {existingPerson.lastName} —{' '}
                     {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
                   </p>
-                  {onEditExisting && (
-                    <button type="button" onClick={() => onEditExisting?.(null as any)} className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                      Editar esta persona
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setExistingPerson(null)}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                  >
+                    Continuar editando
+                  </button>
                 </div>
               </div>
             )}

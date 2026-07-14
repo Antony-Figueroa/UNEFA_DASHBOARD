@@ -16,10 +16,10 @@ export default function AddressCard({ address, onEdit, onDelete, onSetPrimary }:
 
   return (
     <div className={`relative rounded-lg border p-4 transition-all ${
-      isPrimary ? 'border-yellow-400 bg-yellow-50/50' : 'border-gray-200 bg-white'
-    }`}>
+      isPrimary ? 'border-warning-400 bg-warning-50/50' : 'border-border-light bg-bg-main'
+    } dark:border-border-dark dark:bg-bg-dark`}>
       {isPrimary && (
-        <span className="absolute -top-2 -right-2 flex h-6 items-center gap-1 rounded-full bg-yellow-400 px-2 text-xs font-semibold text-yellow-900 shadow-sm">
+        <span className="absolute -top-2 -right-2 flex h-6 items-center gap-1 rounded-full bg-warning-400 px-2 text-xs font-semibold text-warning-900 shadow-sm">
           <Star className="h-3 w-3" /> Principal
         </span>
       )}
@@ -30,12 +30,12 @@ export default function AddressCard({ address, onEdit, onDelete, onSetPrimary }:
         </div>
       )}
 
-      <p className="text-sm font-medium text-gray-900">{addr.streetAddress}</p>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm font-medium text-text-primary">{addr.streetAddress}</p>
+      <p className="text-sm text-text-secondary">
         {addr.parroquia}, {addr.municipio} &mdash; {addr.estado}
       </p>
       {addr.reference && (
-        <p className="mt-1 text-xs text-gray-400">Ref: {addr.reference}</p>
+        <p className="mt-1 text-xs text-text-tertiary">Ref: {addr.reference}</p>
       )}
 
       <div className="mt-3 flex gap-2">
@@ -43,7 +43,7 @@ export default function AddressCard({ address, onEdit, onDelete, onSetPrimary }:
           <button
             type="button"
             onClick={onSetPrimary}
-            className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-yellow-600 hover:bg-yellow-50 transition-colors"
+            className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-warning-600 hover:bg-warning-50 transition-colors"
             title="Establecer como principal"
           >
             <Star className="h-3.5 w-3.5" /> Principal
@@ -52,14 +52,14 @@ export default function AddressCard({ address, onEdit, onDelete, onSetPrimary }:
         <button
           type="button"
           onClick={onEdit}
-          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 transition-colors"
         >
           <Pencil className="h-3.5 w-3.5" /> Editar
         </button>
         <button
           type="button"
           onClick={onDelete}
-          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-error-600 hover:bg-error-50 transition-colors"
         >
           <Trash2 className="h-3.5 w-3.5" /> Eliminar
         </button>

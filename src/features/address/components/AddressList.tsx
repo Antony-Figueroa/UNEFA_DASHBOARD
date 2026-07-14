@@ -133,11 +133,11 @@ export default function AddressList({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+        <div className="flex items-center gap-2 text-sm font-medium text-text-primary">
           <MapPin className="h-4 w-4" />
           Direcciones Registradas
           {addresses.length > 0 && (
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+            <span className="rounded-full bg-bg-secondary px-2 py-0.5 text-xs text-text-secondary">
               {addresses.length}
             </span>
           )}
@@ -156,12 +156,12 @@ export default function AddressList({
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-4 text-sm text-gray-400">
+        <div className="flex items-center justify-center py-4 text-sm text-text-tertiary">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Cargando direcciones...
         </div>
       ) : addresses.length === 0 ? (
-        <p className="py-2 text-center text-sm text-gray-400">
+        <p className="py-2 text-center text-sm text-text-tertiary">
           No hay direcciones registradas. Agregue una dirección para mejorar la asignación de pasantías.
         </p>
       ) : (

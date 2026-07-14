@@ -245,6 +245,34 @@ export const getTrackingById = async (id: string): Promise<TrackingDetailDTO> =>
     }
 };
 
+// ── Timeline ──────────────────────────────────────────────────────────────
+
+export interface TimelineStage {
+  key: string;
+  label: string;
+  completed: boolean;
+  current: boolean;
+  date?: string | null;
+  count?: number;
+  icon: string;
+  metadata?: { status?: string; certificateNumber?: string } | null;
+}
+
+export interface PracticeTimelineData {
+  practiceId: string;
+  currentStatusCode: number;
+  currentStatusLabel: string;
+  stages: TimelineStage[];
+}
+
+/**
+ * Obtiene la línea de tiempo de una práctica profesional.
+ */
+export const getPracticeTimeline = async (id: string): Promise<PracticeTimelineData> => {
+  const response = await apiClient.get<PracticeTimelineData>(`${API_URL}/${id}/timeline`);
+  return response.data;
+};
+
 // --- CRUD Adapter ---
 export const getAll = getTrackings;
 export const create = createTracking;

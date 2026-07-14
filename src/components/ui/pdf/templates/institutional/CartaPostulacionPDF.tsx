@@ -55,9 +55,11 @@ interface Props {
     fechaValidacion?: string | null;
   };
   textos: Record<string, string>;
+  verificationHash?: string;
+  qrCodeDataUri?: string;
 }
 
-export function CartaPostulacionPDF({ data, textos }: Props) {
+export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeDataUri }: Props) {
   const fechaHoy = getFechaParts(null);
   const fechaPorDefecto = `${fechaHoy.dia} de ${fechaHoy.mes} de ${fechaHoy.anio}`;
   const fechaValidacion = data.fechaValidacion ?? fechaPorDefecto;
@@ -81,7 +83,7 @@ export function CartaPostulacionPDF({ data, textos }: Props) {
   });
 
   return (
-    <PDFLayout title="SOLICITUD DE CARTA DE POSTULACIÓN">
+    <PDFLayout title="SOLICITUD DE CARTA DE POSTULACIÓN" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
       {/* Cover letter opening — desde textos editables */}
       <Text style={styles.paragraph}>{cuerpo}</Text>
 

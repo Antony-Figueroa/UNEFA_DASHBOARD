@@ -65,6 +65,8 @@ export default function PeriodModal({
         defaultValues: {
             year: '',
             periodoTipo: '1',
+            startDate: undefined,
+            endDate: undefined,
         },
     });
 
@@ -832,8 +834,8 @@ export default function PeriodModal({
                         </div>
                     </div>
 
-                    {/* Accordion: Fechas por tipo */}
-                    {internshipTypes.length > 0 && (
+                    {/* Accordion: Fechas por tipo — oculto para periodos en curso/culminados */}
+                    {internshipTypes.length > 0 && !isInCurso && !isCulminado && (
                         <div className="mt-6 border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
                             <button
                                 type="button"

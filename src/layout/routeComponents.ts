@@ -49,11 +49,8 @@ export const routeComponents: Record<
   "/dashboard/configure": lazyPreload(() => import("../pages/Config/sections/customize/DashboardPage")),
   "/tutor": lazyPreload(() => import("../pages/Tutor/TutorDashboard")),
   "/tutor/students": lazyPreload(() => import("../pages/Tutor/TutorStudents")),
-  "/tutor/tracking": lazyPreload(() => import("../pages/Tutor/TutorTracking")),
   "/tutor/grades": lazyPreload(() => import("../pages/Tutor/TutorGrades")),
-  "/tutor/reports": lazyPreload(() => import("../pages/Tutor/TutorReports")),
   "/tutor/profile": lazyPreload(() => import("../pages/Tutor/TutorProfile")),
-  "/tutor/activity-logs": lazyPreload(() => import("../pages/Tutor/TutorActivityLogs")),
   "/student/requests": lazyPreload(() => import("../pages/Student/StudentRequests")),
   "/student/profile": lazyPreload(() => import("../pages/Student/StudentProfile")),
   "/student/documents": lazyPreload(() => import("../pages/Student/StudentDocuments")),
@@ -96,16 +93,6 @@ export const dynamicRoutePatterns: DynamicRoutePattern[] = [
     pattern: /^\/tutor\/evaluations\/(\d+)$/,
     key: "/tutor/evaluations/:enrollmentId",
     component: lazyPreload(() => import("../pages/Tutor/Evaluations/TutorEvaluation")),
-  },
-  {
-    pattern: /^\/tutor\/visits\/(\d+)$/,
-    key: "/tutor/visits/:id",
-    component: lazyPreload(() => import("../pages/Tracking/VisitRegistration")),
-  },
-  {
-    pattern: /^\/tutor\/activity-logs\/(\d+)$/,
-    key: "/tutor/activity-logs/:id",
-    component: lazyPreload(() => import("../pages/ActivityLogs/ActivityLogPage")),
   },
   {
     pattern: /^\/student\/activity-logs\/(\d+)$/,

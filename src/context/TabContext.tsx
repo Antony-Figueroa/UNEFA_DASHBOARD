@@ -23,6 +23,8 @@ interface StoredData {
   version: number;
   tabs: StoredTab[];
   activeTabId: string | null;
+  userId?: string | number;
+  userRole?: number;
 }
 
 // ponytail: session-only tab paths — close on page reload
@@ -32,12 +34,17 @@ function isSessionTab(path: string): boolean {
   return SESSION_TAB_PREFIXES.some(p => path.startsWith(p));
 }
 
-function loadTabs(): { tabs: Tab[]; activeTabId: string | null } | null {
+function loadTabs(userId?: string | number, userRole?: number): { tabs: Tab[]; activeTabId: string | null } | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data: StoredData = JSON.parse(raw);
     if (data.version !== STORAGE_VERSION) return null;
+    
+    // Si el usuario o el rol cambió, invalidamos las pestañas (evita que un Tutor herede pestañas de Admin)
+    if (userId && data.userId && data.userId !== userId) return null;
+    if (userRole && data.userRole && data.userRole !== userRole) return null;
+
     if (!Array.isArray(data.tabs) || data.tabs.length === 0) return null;
 
     const now = Date.now();
@@ -64,7 +71,7 @@ function loadTabs(): { tabs: Tab[]; activeTabId: string | null } | null {
   }
 }
 
-function saveTabs(tabs: Tab[], activeTabId: string | null): void {
+function saveTabs(tabs: Tab[], activeTabId: string | null, userId?: string | number, userRole?: number): void {
   try {
     const data: StoredData = {
       version: STORAGE_VERSION,
@@ -78,6 +85,8 @@ function saveTabs(tabs: Tab[], activeTabId: string | null): void {
         lastAccessedAt: t.lastAccessedAt,
       })),
       activeTabId,
+      userId,
+      userRole,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
@@ -114,16 +123,22 @@ function enforceMaxTabs(tabs: Tab[]): Tab[] {
 
 // ─── Provider ───────────────────────────────────────────────────────────────
 
-export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // ponytail: no restore tabs between sessions — always start at dashboard
-  const [tabs, setTabs] = useState<Tab[]>([createDefaultTab()]);
-  const [activeTabId, setActiveTabId] = useState<string | null>("dashboard");
+export const TabProvider: React.FC<{ children: React.ReactNode; userId?: string | number; userRole?: number }> = ({ children, userId, userRole }) => {
+  // ponytail: restore tabs between sessions, but scoped to the user and role
+  const [tabs, setTabs] = useState<Tab[]>(() => {
+    const loaded = loadTabs(userId, userRole);
+    return loaded ? loaded.tabs : [createDefaultTab()];
+  });
+  const [activeTabId, setActiveTabId] = useState<string | null>(() => {
+    const loaded = loadTabs(userId, userRole);
+    return loaded ? loaded.activeTabId : "dashboard";
+  });
 
   // ── Persist on every state change ──────────────────────────────────────
 
   useEffect(() => {
-    saveTabs(tabs, activeTabId);
-  }, [tabs, activeTabId]);
+    saveTabs(tabs, activeTabId, userId, userRole);
+  }, [tabs, activeTabId, userId, userRole]);
 
   // ── popstate (browser back/forward) ────────────────────────────────────
 

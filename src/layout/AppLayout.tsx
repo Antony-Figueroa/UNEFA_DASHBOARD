@@ -1,5 +1,6 @@
 import { SidebarProvider } from "../context/SidebarContext";
 import { useSidebar } from "../context/sidebar";
+import { useAuth } from "../context/auth";
 import { Navigate } from "react-router";
 import { useState, useEffect, useLayoutEffect, Suspense, useRef, memo, Component, ErrorInfo, ReactNode } from "react";
 import AppHeader from "./AppHeader";
@@ -240,14 +241,17 @@ const LayoutContent = () => {
   );
 };
 
-const AppLayout = () => (
-  <TabProvider>
-    <SidebarProvider>
-      <PageTitleProvider>
-        <LayoutContent />
-      </PageTitleProvider>
-    </SidebarProvider>
-  </TabProvider>
-);
+const AppLayout = () => {
+  const { user } = useAuth();
+  return (
+    <TabProvider userId={user?.id} userRole={user?.role}>
+      <SidebarProvider>
+        <PageTitleProvider>
+          <LayoutContent />
+        </PageTitleProvider>
+      </SidebarProvider>
+    </TabProvider>
+  );
+};
 
 export default AppLayout;

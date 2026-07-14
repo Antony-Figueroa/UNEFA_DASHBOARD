@@ -44,6 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error.response?.status !== 401 && error.response?.status !== 403) {
         console.error("[AuthContext] Error al verificar sesión:", error);
       }
+      localStorage.removeItem('unefa:tabs');
       setUser(null);
     } finally {
       setLoading(false);

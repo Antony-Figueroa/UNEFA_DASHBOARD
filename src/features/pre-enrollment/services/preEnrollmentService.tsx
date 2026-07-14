@@ -136,3 +136,65 @@ export const withdrawPreEnrollment = async (
   });
   invalidateCache(crudCachePrefix(API_URL));
 };
+
+/**
+ * Pre-submit sequential validation check.
+ * Returns whether the student can enroll in the selected practice type,
+ * with detailed info for cooldown, career completion, and retiro justificado modal.
+ */
+export interface CheckSequentialResult {
+  valid: boolean;
+  message?: string;
+  blockingReason?: 'cooldown' | 'career_completed' | 'retiro_justificado' | 'reprobado' | 'retirado' | null;
+  cooldownEndPeriodId?: number;
+  cooldownEndPeriodDesc?: string;
+  showChoiceModal?: boolean;
+  approvedPractices?: Array<{
+    internshipTypeName: string;
+    priority: number;
+    practicesStatus: number;
+    grade: number | null;
+  }>;
+  suggestedPracticeTypeId?: number;
+  suggestedPracticeTypeName?: string;
+}
+
+export const checkSequential = async (
+  identificationPrefix: string,
+  identificationNumber: string,
+  careerId: number,
+  internshipTypeId: number
+): Promise<CheckSequentialResult> => {
+  const response = await apiClient.post<CheckSequentialResult>(
+    `${API_URL}/check-sequential`,
+    { identificationPrefix, identificationNumber, careerId, internshipTypeId }
+  );
+  return response.data;
+};
+
+/**
+ * Practice history entry for a student across ALL periods.
+ */
+export interface PracticeHistoryEntry {
+  practiceId: number;
+  practicesStatus: number;
+  grade: number;
+  practiceType: string;
+  priority: number;
+  period: string;
+  careerId: number;
+  careerName: string;
+}
+
+/**
+ * Get full practice history for a student across ALL periods.
+ */
+export const getStudentPracticeHistory = async (
+  prefix: string,
+  ci: string
+): Promise<PracticeHistoryEntry[]> => {
+  const response = await apiClient.get<PracticeHistoryEntry[]>(
+    `/enrollments/student-history/${prefix}/${ci}`
+  );
+  return response.data;
+};

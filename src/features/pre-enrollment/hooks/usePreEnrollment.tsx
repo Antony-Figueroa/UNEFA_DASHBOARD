@@ -53,7 +53,7 @@ export const usePreEnrollment = () => {
    * @param justificationReason - Motivo (requerido para justificado)
    * @param withdrawComment - Comentario opcional
    */
-  const withdrawPreEnrollment = async (
+  const handleWithdrawPreEnrollment = async (
     practiceId: string,
     withdrawalType: 'justified' | 'unjustified',
     justificationReason: string,
@@ -294,7 +294,7 @@ const deletePreEnrollment = async (practiceId: string) => {
     editPreEnrollment,
     deletePreEnrollment,
     toggleStatus,
-    withdrawPreEnrollment,
+    withdrawPreEnrollment: handleWithdrawPreEnrollment,
     bulkToggleStatus,
     batchAddPreEnrollment,
     refreshPreEnrollments,

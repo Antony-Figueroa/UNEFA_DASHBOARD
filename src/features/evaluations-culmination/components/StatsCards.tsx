@@ -16,6 +16,7 @@ export interface GroupedMetaStats {
   total: number;
   completed: number;
   inProgress: number;
+  failed: number;
 }
 
 const colorClasses: Record<string, string> = {
@@ -83,6 +84,7 @@ export const StatsCardsGrid: React.FC<StatsCardsGridProps> = ({
         { title: 'Total Estudiantes', value: meta.total, color: 'default' as const },
         { title: 'Completados', value: meta.completed, color: 'success' as const },
         { title: 'En Progreso', value: meta.inProgress, color: 'warning' as const },
+        { title: 'Reprobados', value: meta.failed ?? 0, color: 'error' as const },
       ]
     : stats || [];
 
@@ -90,7 +92,7 @@ export const StatsCardsGrid: React.FC<StatsCardsGridProps> = ({
     2: 'grid-cols-2',
     3: 'grid-cols-1 sm:grid-cols-3',
     4: 'grid-cols-2 sm:grid-cols-4',
-  }[meta ? 3 : columns] || 'grid-cols-1 sm:grid-cols-3';
+  }[meta ? 4 : columns] || 'grid-cols-1 sm:grid-cols-3';
 
   return (
     <div className={`grid ${gridCols} gap-4 mb-6`}>

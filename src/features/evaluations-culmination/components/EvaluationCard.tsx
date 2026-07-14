@@ -6,7 +6,7 @@
  * Usa Framer Motion para expand/collapse animations.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Badge from '../../../components/ui/badge/Badge';
 import { EvaluationCell } from './EvaluationCell';
@@ -14,6 +14,8 @@ import { ActionDropdown } from './ActionDropdown';
 import { CheckCircleIcon } from '../../../icons';
 import type { PracticeWithEvaluations, EvaluationGroup } from '../types';
 import type { EvaluatorType } from '../../evaluations/types';
+import { evaluationService } from '../../evaluations/services/evaluationService';
+import { useSystemEvaluationConfig } from '../../evaluations/hooks/useSystemEvaluationConfig';
 import {
   getResultLabel,
 } from '../types';
@@ -242,7 +244,7 @@ export const EvaluationCard: React.FC<EvaluationCardProps> = ({
           {getStatusBadge(groupStatus)}
           {avgGradePercent && (
             <span className={`text-sm font-semibold hidden sm:inline ${getGradeColor(avgGrade, displayScale)}`}>
-              {avgGradePercent}%
+              {avgGrade?.toFixed(1)}/{displayScale} ({avgGradePercent}%)
             </span>
           )}
         </div>
@@ -341,6 +343,33 @@ const PracticeDetailRow: React.FC<PracticeDetailRowProps> = ({
   isOnlyPractice,
 }) => {
   const evaluationTypes: EvaluatorType[] = ['INSTITUCIONAL', 'ACADEMICO', 'COMITE'];
+
+  const { config } = useSystemEvaluationConfig();
+  const [weightedData, setWeightedData] = useState<{
+    INSTITUCIONAL: number | null;
+    ACADEMICO: number | null;
+    COMITE: number | null;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const status = await evaluationService.getDetailedPracticeStatus(practice.practiceId);
+        if (cancelled) return;
+        setWeightedData({
+          INSTITUCIONAL: status.evaluations?.INSTITUCIONAL?.completed
+            ? status.evaluations.INSTITUCIONAL.score : null,
+          ACADEMICO: status.evaluations?.ACADEMICO?.completed
+            ? status.evaluations.ACADEMICO.score : null,
+          COMITE: status.evaluations?.COMITE?.completed
+            ? status.evaluations.COMITE.score : null,
+        });
+      } catch { /* silent */ }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [practice.practiceId]);
 
   const handleEvaluate = useCallback(
     (type: EvaluatorType, existingEvalId?: number) => {
@@ -447,7 +476,7 @@ const PracticeDetailRow: React.FC<PracticeDetailRowProps> = ({
             </span>
           )}
           <span className={`text-sm font-semibold ${getGradeColor(practice.finalGrade, displayScale)}`}>
-            {finalGradePercent ? `${finalGradePercent}%` : '—'}
+            {finalGradePercent ? `${practice.finalGrade?.toFixed(1)}/${displayScale} (${finalGradePercent}%)` : '—'}
           </span>
           {!isReadOnly && rowActions.length > 0 && (
             <ActionDropdown actions={rowActions} />
@@ -476,12 +505,38 @@ const PracticeDetailRow: React.FC<PracticeDetailRowProps> = ({
           })}
         </div>
 
+          {/* ── Desglose Ponderado ── */}
+          {weightedData && (
+            <div className="mt-2 p-2.5 bg-gray-50 dark:bg-gray-750 rounded-lg text-xs space-y-1">
+              <div className="flex items-center justify-between text-text-secondary">
+                <span>Institucional (40%)</span>
+                <span className="font-medium">
+                  {weightedData.INSTITUCIONAL != null
+                    ? `${weightedData.INSTITUCIONAL.toFixed(1)}/${displayScale} → ${(weightedData.INSTITUCIONAL * (config.weights?.INSTITUCIONAL ?? 0.4)).toFixed(1)}`
+                    : 'Pendiente'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-text-secondary">
+                <span>Académico (30%)</span>
+                <span className="font-medium">
+                  {weightedData.ACADEMICO != null
+                    ? `${weightedData.ACADEMICO.toFixed(1)}/${displayScale} → ${(weightedData.ACADEMICO * (config.weights?.ACADEMICO ?? 0.3)).toFixed(1)}`
+                    : 'Pendiente'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-text-secondary">
+                <span>Comité (30%)</span>
+                <span className="font-medium">
+                  {weightedData.COMITE != null
+                    ? `${weightedData.COMITE.toFixed(1)}/${displayScale} → ${(weightedData.COMITE * (config.weights?.COMITE ?? 0.3)).toFixed(1)}`
+                    : 'Pendiente'}
+                </span>
+              </div>
+            </div>
+          )}
+
         {/* Detalles en grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-          <div>
-            <span className="text-text-tertiary uppercase font-medium">Horas</span>
-            <p className="text-text-primary">{practice.totalHours}h / {practice.hoursRequired ?? 360}h</p>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
           <div>
             <span className="text-text-tertiary uppercase font-medium">Estado</span>
             <p className="text-text-primary">{practice.practicesStatus || '—'}</p>

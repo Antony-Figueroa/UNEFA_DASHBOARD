@@ -25,7 +25,6 @@ import { StatsCardsGrid } from '../../features/evaluations-culmination/component
 import { EvaluationFilters } from '../../features/evaluations-culmination/components/EvaluationFilters';
 import { StudentCulminationRow } from '../../features/evaluations-culmination/components/StudentCulminationRow';
 import { EvaluationActions } from '../../features/evaluations-culmination/components/EvaluationActions';
-import { BulkExtensionModal } from '../../features/evaluations-culmination/components/BulkExtensionModal';
 import { AuditHistoryModal } from '../../features/evaluations-culmination/components/AuditHistoryModal';
 import { CommitteeModal } from '../../features/evaluations-culmination/components/CommitteeModal';
 import { CloseActasModal } from '../../features/evaluations-culmination/components/CloseActasModal';
@@ -57,6 +56,10 @@ export default function EvaluationsAndCulminationPage() {
   const tabsState = useTabs({ defaultTab: 'evaluations' });
   const { config: evalConfig } = useSystemEvaluationConfig();
   const [certificationExpandedCi, setCertificationExpandedCi] = useState<string | null>(null);
+  const [allEvalsModalOpen, setAllEvalsModalOpen] = useState(false);
+  const [allEvalsPracticeId, setAllEvalsPracticeId] = useState<number | null>(null);
+  const [allEvalsStudentName, setAllEvalsStudentName] = useState('');
+  const [allEvalsStudentCi, setAllEvalsStudentCi] = useState('');
 
   const toggleCertificationRow = useCallback((studentCi: string) => {
     setCertificationExpandedCi(prev => (prev === studentCi ? null : studentCi));
@@ -182,10 +185,10 @@ export default function EvaluationsAndCulminationPage() {
               certifying={hook.actionCertifying}
               isWithinGracePeriod={row.isWithinGracePeriod}
               onViewEvaluationDetails={(practiceId) => {
-                const practice = row.phases.find(p => p.practiceId === practiceId);
-                if (practice?.evaluationId) {
-                  hook.handleViewEvaluationDetails(practice.evaluationId, row.studentName, row.studentCi);
-                }
+                setAllEvalsPracticeId(practiceId);
+                setAllEvalsStudentName(row.studentName);
+                setAllEvalsStudentCi(row.studentCi);
+                setAllEvalsModalOpen(true);
               }}
               onViewAudit={(practiceId) => hook.handleViewAudit(practiceId)}
             />
@@ -225,6 +228,7 @@ export default function EvaluationsAndCulminationPage() {
             onToggle={() => toggleCertificationRow(row.studentCi)}
             onCertify={hook.certifyPracticeGrouped}
             onReverse={hook.reverseCulminationGrouped}
+            onDownloadPdf={hook.handleDownloadPdf}
             certifying={hook.actionCertifying}
             readOnly={true}
           />
@@ -304,7 +308,6 @@ export default function EvaluationsAndCulminationPage() {
                 isReadOnly={hook.isReadOnly}
                 onFreezeAll={hook.handleFreezeAll}
                 onExportExcel={hook.handleExportExcel}
-                onBulkExtension={hook.handleBulkExtension}
               />
             </div>
           )}
@@ -416,6 +419,14 @@ export default function EvaluationsAndCulminationPage() {
         evaluationId={hook.selectedEvaluationId}
         studentName={hook.selectedDetailStudentName}
         studentCi={hook.selectedDetailStudentCi}
+      />
+
+      <AllEvaluationsDetailModal
+        isOpen={allEvalsModalOpen}
+        onClose={() => { setAllEvalsModalOpen(false); setAllEvalsPracticeId(null); }}
+        practiceId={allEvalsPracticeId}
+        studentName={allEvalsStudentName}
+        studentCi={allEvalsStudentCi}
       />
 
       <StudentDetailModal
@@ -531,18 +542,6 @@ export default function EvaluationsAndCulminationPage() {
           )}
         </div>
       </UnifiedDialog>
-
-      {/* Bulk extension modal */}
-      <BulkExtensionModal
-        isOpen={hook.bulkExtensionOpen}
-        onClose={() => hook.setBulkExtensionOpen(false)}
-        onConfirm={hook.handleConfirmBulkExtension}
-        practices={hook.practices}
-        selectedIds={hook.bulkExtensionSelectedIds}
-        onSelectedIdsChange={hook.setBulkExtensionSelectedIds}
-        reason={hook.bulkExtensionReason}
-        onReasonChange={hook.setBulkExtensionReason}
-      />
 
       {/* Audit history modal */}
       <AuditHistoryModal

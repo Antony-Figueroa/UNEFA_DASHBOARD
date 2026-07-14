@@ -183,7 +183,9 @@ const mapDBToFrontend = (s: DBStudent) => {
     works: s.EMPLOYMENT === "SI" ? "SI" : "NO",
     enrollmentDate: s.REGISTRATION_DATE,
     status: s.STATUS === 1,
-    isInUse: (Array.isArray(s.t_professional_practices) && s.t_professional_practices.length > 0),
+    isInUse: (Array.isArray(s.t_professional_practices) && s.t_professional_practices.some(
+      (p: any) => p.PRACTICES_STATUS === PRACTICES_STATUS.INSCRITO || p.PRACTICES_STATUS === PRACTICES_STATUS.PRE_INSCRITO
+    )),
     hasActivePreEnrollment: (Array.isArray(s.t_professional_practices) && s.t_professional_practices.some(p => p.PRACTICES_STATUS === PRACTICES_STATUS.PRE_INSCRITO)),
     currentPracticeStatus: (Array.isArray(s.t_professional_practices) && s.t_professional_practices.length > 0)
       ? Math.max(...s.t_professional_practices.map(p => p.PRACTICES_STATUS))
@@ -219,16 +221,7 @@ export const getStudents = async (req: Request, res: Response) => {
 
   try {
     const result = await dbManager.withRetry(async (supabase) => {
-      // 1. Obtener IDs de estudiantes que tienen prácticas culminadas y aprobadas
-      const { data: excludedPractices } = await supabase
-        .from('t_professional_practices')
-        .select('STUDENTS_ID')
-        .eq('INTERNSHIP_STATUS', 2)
-        .eq('PRACTICES_STATUS', PRACTICES_STATUS.CULMINADO);
-
-      const excludedIds = (excludedPractices || []).map(p => p.STUDENTS_ID);
-
-      // 2. Búsqueda: resolver person_ids desde t_persons
+      // 1. Búsqueda: resolver person_ids desde t_persons
       let searchPersonIds: number[] | null = null;
       if (search) {
         const searchResults = await personService.searchPersons(search as string);
@@ -242,11 +235,6 @@ export const getStudents = async (req: Request, res: Response) => {
       let query = supabase
         .from(TABLE_NAME)
         .select(STUDENT_FULL_COLUMNS, { count: 'exact' });
-
-      // Excluir IDs con prácticas culminadas
-      if (excludedIds.length > 0) {
-        query = query.not('STUDENTS_ID', 'in', `(${excludedIds.join(',')})`);
-      }
 
       // Filtro por estado
       if (status !== undefined) {

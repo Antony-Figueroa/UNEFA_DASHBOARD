@@ -76,6 +76,7 @@ function createBasePractice(overrides: Partial<CulminatedPractice> = {}): Culmin
   return {
     PROFESSIONAL_PRACTICE_ID: 100,
     STUDENTS_ID: 10,
+    STUDENT_PERSON_ID: 1001,
     CAREER_ID: 20,
     INTERNSHIP_TYPE_ID: 30,
     PERIOD_ID: 40,
@@ -247,10 +248,11 @@ describe('triggerAutoPreEnrollment', () => {
           };
         }
         if (table === 't_professional_practices') {
-          // Duplicate check returns existing record
+          // Duplicate/active check returns existing record
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
+            in: vi.fn().mockReturnThis(),
             maybeSingle: vi.fn().mockResolvedValue({ data: { PROFESSIONAL_PRACTICE_ID: 888 }, error: null }),
           };
         }
@@ -314,10 +316,11 @@ describe('triggerAutoPreEnrollment', () => {
         if (table === 't_professional_practices') {
           practiceCallCount++;
           if (practiceCallCount === 1) {
-            // Duplicate check → no duplicate
+            // Duplicate/active check → no duplicate
             return {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
+              in: vi.fn().mockReturnThis(),
               maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
             };
           }
@@ -387,6 +390,7 @@ describe('triggerAutoPreEnrollment', () => {
             return {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
+              in: vi.fn().mockReturnThis(),
               maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
             };
           }
@@ -455,6 +459,7 @@ describe('triggerAutoPreEnrollment', () => {
             return {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
+              in: vi.fn().mockReturnThis(),
               maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
             };
           }
@@ -532,6 +537,7 @@ describe('triggerAutoPreEnrollment', () => {
             return {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
+              in: vi.fn().mockReturnThis(),
               maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
             };
           }
@@ -551,14 +557,15 @@ describe('triggerAutoPreEnrollment', () => {
 
     expect(insertPayload).not.toBeNull();
     expect(insertPayload.STUDENTS_ID).toBe(10);
+    expect(insertPayload.student_person_id).toBe(1001);
     expect(insertPayload.CAREER_ID).toBe(20);
     expect(insertPayload.PERIOD_ID).toBe(40);
     expect(insertPayload.SEMESTER).toBe('5');
     expect(insertPayload.SECTION).toBe('A');
     expect(insertPayload.REGIME).toBe('DIURNO');
     expect(insertPayload.ENROLLMENT).toBe('2024-001');
-    expect(insertPayload.INSTITUTION_ID).toBe(50);
-    expect(insertPayload.MANAGER_ID).toBe(60);
+    expect(insertPayload.INSTITUTION_ID).toBeNull();
+    expect(insertPayload.MANAGER_ID).toBeNull();
     expect(insertPayload.INTERNSHIP_TYPE_ID).toBe(31);
     expect(insertPayload.PRACTICES_STATUS).toBe(PRACTICES_STATUS.PRE_INSCRITO);
     expect(insertPayload.PREVIOUS_PRACTICE_ID).toBe(100);

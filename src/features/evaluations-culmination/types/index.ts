@@ -296,5 +296,5 @@ export interface StudentCulminationRowData {
 export interface CulminationGroupResponse {
   groups: StudentCulminationRowData[];
   stats: CulminationStats;
-  meta: { total: number; completed: number; inProgress: number; };
+  meta: { total: number; completed: number; inProgress: number; failed: number; };
 }

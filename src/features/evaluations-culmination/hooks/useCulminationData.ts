@@ -20,12 +20,12 @@ export interface UseCulminationDataReturn {
   loading: boolean;
   error: string | null;
   stats: CulminationStats;
-  meta: { total: number; completed: number; inProgress: number; };
+  meta: { total: number; completed: number; inProgress: number; failed: number; };
   refetch: () => Promise<void>;
 }
 
 const defaultStats: CulminationStats = { total: 0, pending: 0, approved: 0, certified: 0 };
-const defaultMeta = { total: 0, completed: 0, inProgress: 0 };
+const defaultMeta = { total: 0, completed: 0, inProgress: 0, failed: 0 };
 
 /**
  * Hook that manages data fetching for the grouped culmination view.
@@ -45,9 +45,23 @@ export const useCulminationData = (
     setError(null);
     try {
       const response = await evaluationsCulminationService.getCulminationGroups(filters);
-      setGroups(response.groups ?? []);
+      const fetchedGroups = response.groups ?? [];
+      setGroups(fetchedGroups);
       setStats(response.stats ?? defaultStats);
-      setMeta(response.meta ?? defaultMeta);
+
+      // Compute failed count from groups: a student is "reprobado"
+      // if they have at least one phase with status === 'failed'.
+      const failedCount = fetchedGroups.reduce((count, group) => {
+        const hasFailed = group.phases?.some(p => p.status === 'failed') ?? false;
+        return count + (hasFailed ? 1 : 0);
+      }, 0);
+
+      const apiMeta = response.meta ?? defaultMeta;
+      setMeta({
+        ...apiMeta,
+        failed: failedCount,
+        inProgress: Math.max(0, apiMeta.inProgress - failedCount),
+      });
     } catch (err) {
       console.error('[useCulminationData] Error fetching culmination groups:', err);
       setError('Error al cargar datos de culminación');

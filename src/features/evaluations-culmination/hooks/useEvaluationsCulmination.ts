@@ -190,7 +190,7 @@ export interface UseEvaluationsCulminationReturn {
   culminationGroupsLoading: boolean;
   culminationGroupsError: string | null;
   culminationGroupStats: CulminationStats;
-  culminationGroupsMeta: { total: number; completed: number; inProgress: number };
+  culminationGroupsMeta: { total: number; completed: number; inProgress: number; failed: number; };
   refetchCulminationGroups: () => Promise<void>;
 
   /** Filtros de culminación agrupada (useCulminationFilters) */
@@ -450,27 +450,6 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     }
   }, [fetchPractices]);
 
-  const handleGenerateCertificate = useCallback((practice: PracticeWithEvaluations) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Generar Certificado',
-      message: `¿Desea generar el certificado de prácticas para ${practice.studentName}?`,
-      onConfirm: async () => {
-        try {
-          const response = await evaluationsCulminationService.generateCertificate(practice.practiceId);
-          if (response.success) {
-            addToast({ ...TOAST.created('Certificado'), message: `Certificado creado exitosamente: ${response.certificate.number}` });
-            fetchPractices();
-          }
-        } catch (error) {
-          addToast(TOAST.createError('Certificado'));
-        } finally {
-          setConfirmDialog(null);
-        }
-      },
-    });
-  }, [fetchPractices]);
-
   const handleDownloadPdf = useCallback(async (practice: PracticeWithEvaluations) => {
     try {
       toast.loading('Generando PDF...', { id: 'pdf-download' });
@@ -511,6 +490,36 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
       addToast({ variant: "error", title: "Error al descargar", message: "Error al descargar el PDF" });
     }
   }, []);
+
+  const handleGenerateCertificate = useCallback((practice: PracticeWithEvaluations) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Generar Certificado',
+      message: `¿Desea generar el certificado de prácticas para ${practice.studentName}?`,
+      onConfirm: async () => {
+        try {
+          const response = await evaluationsCulminationService.generateCertificate(practice.practiceId);
+          if (response.success) {
+            addToast({ ...TOAST.created('Certificado'), message: `Certificado creado exitosamente: ${response.certificate.number}` });
+            fetchPractices();
+
+            // Auto-generate and download the PDF
+            const updatedPractice: PracticeWithEvaluations = {
+              ...practice,
+              culminationStatus: 'certified',
+              certificateNumber: response.certificate.number,
+              certifiedAt: response.certificate.generatedAt,
+            };
+            await handleDownloadPdf(updatedPractice);
+          }
+        } catch (error) {
+          addToast(TOAST.createError('Certificado'));
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
+  }, [fetchPractices, handleDownloadPdf]);
 
   // ─── Evaluation Modal Handlers ──────────────────────────
   const handleOpenEvaluation = useCallback(
@@ -783,6 +792,52 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     culminationData.refetch();
   }, [selectedPracticeIdsForCloseActas, culminationActions, fetchPractices, culminationData]);
 
+  /** Wrapper: certify + auto-download PDF */
+  const certifyPracticeGroupedWithPdf = useCallback(async (practiceId: number): Promise<boolean> => {
+    const result = await culminationActions.certifyPractice(practiceId);
+    if (result.success) {
+      // Find the practice in culmination groups to build PracticeWithEvaluations
+      const group = culminationData.groups.find(g =>
+        g.phases.some(p => p.practiceId === practiceId)
+      );
+      const phase = group?.phases.find(p => p.practiceId === practiceId);
+
+      if (group && phase) {
+        const practice: PracticeWithEvaluations = {
+          practiceId: phase.practiceId,
+          studentCi: group.studentCi,
+          studentName: group.studentName,
+          careerId: 0,
+          careerName: group.careerName,
+          minimumGrade: 10,
+          institutionId: 0,
+          institutionName: phase.institutionName,
+          periodId: group.periodId,
+          periodName: group.periodName,
+          practiceTypeId: phase.practiceTypeId,
+          practiceTypeName: phase.practiceTypeName,
+          startDate: '',
+          endDate: '',
+          totalHours: phase.hoursCompleted,
+          evaluationStatus: phase.evaluationStatus || 'completed',
+          evaluations: {
+            INSTITUCIONAL: { completed: true, score: 0, evaluatorName: '' },
+            ACADEMICO: { completed: true, score: 0, evaluatorName: '' },
+            COMITE: { completed: true, score: 0, evaluatorName: '' },
+          },
+          finalGrade: phase.grade,
+          culminationStatus: 'certified',
+          result: 'approved',
+          isFrozen: phase.isFrozen,
+          certificateNumber: result.certificate?.number,
+          certifiedAt: result.certificate?.generatedAt,
+        };
+        await handleDownloadPdf(practice);
+      }
+    }
+    return result.success;
+  }, [culminationActions, culminationData.groups, handleDownloadPdf]);
+
   const handleOpenCommittee = useCallback((practiceId: number, studentName: string) => {
     setCommitteeTarget({ practiceId, studentName });
     setCommitteeDialogOpen(true);
@@ -980,7 +1035,7 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     closeCulminationModal: culminationUI.closeModal,
     // Actions (useCulminationActions)
     approveCulminationGrouped: culminationActions.approveCulmination,
-    certifyPracticeGrouped: culminationActions.certifyPractice,
+    certifyPracticeGrouped: certifyPracticeGroupedWithPdf,
     reverseCulminationGrouped: culminationActions.reverseCulmination,
     bulkExtendGrouped: culminationActions.bulkExtend,
     actionApproving: culminationActions.approving,

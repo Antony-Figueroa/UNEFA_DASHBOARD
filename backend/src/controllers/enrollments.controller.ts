@@ -1224,3 +1224,65 @@ export const reclassifyWithdrawal = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, message: 'Error al reclasificar retiro' });
   }
 };
+
+/**
+ * Returns ALL practices for a student across ALL periods.
+ * Used by PreEnrollmentModal to show practice history.
+ */
+export const getStudentHistory = async (req: Request, res: Response) => {
+  try {
+    const { prefix, ci } = req.params;
+
+    const { data: student, error: studentError } = await dbManager.withRetry(async (supabase) => {
+      return await supabase
+        .from('t_student')
+        .select('STUDENTS_ID')
+        .eq('IDENTIFICATION_PREFIX', prefix)
+        .eq('IDENTIFICATION_NUMBER', ci)
+        .eq('STATUS', 1)
+        .maybeSingle();
+    }, 'getStudentHistory:findStudent');
+
+    if (studentError || !student) {
+      return res.json([]);
+    }
+
+    const { data, error } = await dbManager.withRetry(async (supabase) => {
+      return await supabase
+        .from(TABLE_NAME)
+        .select(`
+          PROFESSIONAL_PRACTICE_ID,
+          PRACTICES_STATUS,
+          GRADE,
+          STATUS,
+          INTERNSHIP_TYPE_ID,
+          PERIOD_ID,
+          CAREER_ID,
+          t_internship_type (NAME, PRIORITY),
+          t_internships_period (DESCRIPTION),
+          t_career (CAREER_NAME)
+        `)
+        .eq('STUDENTS_ID', student.STUDENTS_ID)
+        .eq('STATUS', 1)
+        .order('PROFESSIONAL_PRACTICE_ID', { ascending: true });
+    }, 'getStudentHistory:practices');
+
+    if (error) throw error;
+
+    const history = (data || []).map((p: any) => ({
+      practiceId: p.PROFESSIONAL_PRACTICE_ID,
+      practicesStatus: p.PRACTICES_STATUS,
+      grade: p.GRADE,
+      practiceType: p.t_internship_type?.NAME || '',
+      priority: p.t_internship_type?.PRIORITY ?? 0,
+      period: p.t_internships_period?.DESCRIPTION || '',
+      careerId: p.CAREER_ID,
+      careerName: p.t_career?.CAREER_NAME || '',
+    }));
+
+    res.json(history);
+  } catch (error) {
+    console.error('[Enrollments] Error getting student history:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener historial' });
+  }
+};

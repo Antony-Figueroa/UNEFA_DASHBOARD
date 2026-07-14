@@ -813,7 +813,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 </h4>
                 <div className="text-right">
                   <span className="text-sm text-gray-500 dark:text-gray-400">Promedio: </span>
-                  <span className="text-lg font-bold text-brand-500">{calculatedAverage}%</span>
+                  <span className="text-lg font-bold text-brand-500">{rawAverage.toFixed(1)}/{scoreRange.max} ({calculatedAverage}%)</span>
                 </div>
               </div>
 
@@ -864,7 +864,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                               }
                             }}
                             disabled={isFrozen}
-                            className={`w-14 px-2 py-1 text-center border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed ${getScoreInputClass(criterion.criteriaId)}`}
+                            className={`w-14 px-2 py-1 text-center border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white disabled:opacity-60 disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${getScoreInputClass(criterion.criteriaId)}`}
                           />
                           <span className="text-xs text-gray-400">/{scoreRange.max}</span>
                         </div>

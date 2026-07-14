@@ -21,7 +21,7 @@ export interface CloseActasFullResult {
 export interface UseCulminationActionsReturn {
   // Culmination actions
   approveCulmination: (practiceId: number) => Promise<boolean>;
-  certifyPractice: (practiceId: number) => Promise<boolean>;
+  certifyPractice: (practiceId: number) => Promise<{ success: boolean; certificate?: any }>;
   reverseCulmination: (practiceId: number, reason: string, resolutionNumber: string) => Promise<boolean>;
 
   // Close actas actions — returns full result data (not just boolean)
@@ -76,19 +76,19 @@ export const useCulminationActions = (
     }
   }, [onSuccess]);
 
-  const certifyPractice = useCallback(async (practiceId: number): Promise<boolean> => {
+  const certifyPractice = useCallback(async (practiceId: number): Promise<{ success: boolean; certificate?: any }> => {
     setCertifying(true);
     setError(null);
     try {
       const response = await evaluationsCulminationService.generateCertificate(practiceId);
       toast.success(response.message || 'Certificado generado exitosamente');
       onSuccess?.();
-      return true;
+      return { success: true, certificate: response.certificate };
     } catch (err: any) {
       const message = err?.message || 'Error al generar certificado';
       setError(message);
       toast.error(message);
-      return false;
+      return { success: false };
     } finally {
       setCertifying(false);
     }

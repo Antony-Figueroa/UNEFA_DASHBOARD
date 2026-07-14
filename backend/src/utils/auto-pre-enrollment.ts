@@ -20,7 +20,7 @@ const AUTO_PRE_ENROLL_MESSAGES: Record<string, string> = {
   career_auto_pre_enroll_disabled: 'Auto pre-inscripción deshabilitada para esta carrera',
   standalone_type: 'Tipo de práctica independiente — sin siguiente tipo',
   last_in_sequence: 'Último tipo de práctica en la secuencia',
-  duplicate_pre_enrollment: 'Ya existe una pre-inscripción para este tipo',
+  duplicate_pre_enrollment: 'Ya existe una práctica registrada para este tipo en el periodo',
   career_lookup_error: 'Error al consultar configuración de la carrera',
   type_lookup_error: 'Error al consultar tipo de práctica',
   career_types_error: 'Error al consultar tipos de la carrera',
@@ -35,6 +35,7 @@ const AUTO_PRE_ENROLL_MESSAGES: Record<string, string> = {
 export interface CulminatedPractice {
   PROFESSIONAL_PRACTICE_ID: number;
   STUDENTS_ID: number;
+  STUDENT_PERSON_ID: number;
   CAREER_ID: number;
   INTERNSHIP_TYPE_ID: number;
   PERIOD_ID: number;
@@ -171,14 +172,20 @@ export async function triggerAutoPreEnrollment(
       };
     }
 
-    // ── Guard 4: Check for duplicate pre-enrollment ─────────────────
+    // ── Guard 4: Check for duplicate or active practice ──────────────
+    // Block if student already has PRE_INSCRITO, INSCRITO, or CULMINADO
+    // for the same internship type in this period.
     const { data: existing, error: dupError } = await supabase
       .from('t_professional_practices')
       .select('PROFESSIONAL_PRACTICE_ID')
       .eq('STUDENTS_ID', practice.STUDENTS_ID)
       .eq('INTERNSHIP_TYPE_ID', nextType.INTERNSHIP_TYPE_ID)
       .eq('PERIOD_ID', practice.PERIOD_ID)
-      .eq('PRACTICES_STATUS', PRACTICES_STATUS.PRE_INSCRITO)
+      .in('PRACTICES_STATUS', [
+        PRACTICES_STATUS.PRE_INSCRITO,
+        PRACTICES_STATUS.INSCRITO,
+        PRACTICES_STATUS.CULMINADO,
+      ])
       .eq('STATUS', 1)
       .maybeSingle();
 
@@ -201,8 +208,11 @@ export async function triggerAutoPreEnrollment(
     }
 
     // ── Insert PRE_INSCRITO record ──────────────────────────────────
+    // ponytail: INSTITUTION_ID and MANAGER_ID intentionally null — student selects
+    // them during the enrollment flow, same as manual pre-inscription.
     const newPractice = {
       STUDENTS_ID: practice.STUDENTS_ID,
+      student_person_id: practice.STUDENT_PERSON_ID,
       CAREER_ID: practice.CAREER_ID,
       INTERNSHIP_TYPE_ID: nextType.INTERNSHIP_TYPE_ID,
       PERIOD_ID: practice.PERIOD_ID,
@@ -210,8 +220,8 @@ export async function triggerAutoPreEnrollment(
       SECTION: practice.SECTION,
       REGIME: practice.REGIME,
       ENROLLMENT: practice.ENROLLMENT,
-      INSTITUTION_ID: practice.INSTITUTION_ID,
-      MANAGER_ID: practice.MANAGER_ID,
+      INSTITUTION_ID: null,
+      MANAGER_ID: null,
       PRACTICES_STATUS: PRACTICES_STATUS.PRE_INSCRITO,
       PREVIOUS_PRACTICE_ID: practice.PROFESSIONAL_PRACTICE_ID,
       GRADE: 0,

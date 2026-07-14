@@ -12,14 +12,12 @@ interface EvaluationActionsProps {
   isReadOnly: boolean;
   onFreezeAll: () => void;
   onExportExcel: () => void;
-  onBulkExtension: () => void;
 }
 
 export const EvaluationActions: React.FC<EvaluationActionsProps> = ({
   isReadOnly,
   onFreezeAll,
   onExportExcel,
-  onBulkExtension,
 }) => {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
@@ -31,15 +29,6 @@ export const EvaluationActions: React.FC<EvaluationActionsProps> = ({
       >
         <DownloadIcon className="w-4 h-4 mr-2" />
         Exportar Excel
-      </Button>
-
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onBulkExtension}
-        disabled={isReadOnly}
-      >
-        Extensión Masiva
       </Button>
 
       <Button

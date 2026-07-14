@@ -3,7 +3,7 @@ import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
 import { sanitizeText } from '../utils/text-utils.js';
 import { PRACTICES_STATUS, PRACTICES_STATUS_LABELS } from '../constants/practice-status.constants.js';
-import { checkSequentialPrerequisite } from '../utils/sequential-validation.js';
+import { checkSequentialPrerequisite, checkPreEnrollmentEligibility } from '../utils/sequential-validation.js';
 import { auditStatusChange } from '../utils/audit-helpers.js';
 
 const TABLE_NAME = 't_professional_practices';
@@ -969,6 +969,66 @@ export const withdrawPreEnrollment = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Error al retirar pre-inscripción'
+    });
+  }
+};
+
+/**
+ * Pre-submit sequential validation check.
+ * Accepts identification (prefix + number) or direct studentsId.
+ * Returns eligibility status with detailed rules (cooldown, career completion, retiro justificado modal).
+ */
+export const checkSequential = async (req: Request, res: Response) => {
+  try {
+    const { identificationPrefix, identificationNumber, studentsId, careerId, internshipTypeId } = req.body;
+
+    if (!careerId || !internshipTypeId) {
+      res.status(400).json({
+        success: false,
+        message: 'Faltan parámetros: careerId, internshipTypeId'
+      });
+      return;
+    }
+
+    const result = await dbManager.withRetry(async (supabase) => {
+      let resolvedStudentsId = studentsId;
+
+      // Resolve studentsId from identification if not provided directly
+      if (!resolvedStudentsId && identificationPrefix && identificationNumber) {
+        const { data: student, error: studentError } = await supabase
+          .from('t_student')
+          .select('STUDENTS_ID')
+          .eq('IDENTIFICATION_PREFIX', identificationPrefix)
+          .eq('IDENTIFICATION_NUMBER', identificationNumber)
+          .eq('STATUS', 1)
+          .maybeSingle();
+
+        if (studentError || !student) {
+          return { valid: false, message: 'Estudiante no encontrado', blockingReason: 'Estudiante no encontrado' };
+        }
+        resolvedStudentsId = student.STUDENTS_ID;
+      }
+
+      if (!resolvedStudentsId) {
+        return { valid: false, message: 'Faltan parámetros: studentsId o identificationPrefix+identificationNumber', blockingReason: 'Parámetros incompletos' };
+      }
+
+      return await checkPreEnrollmentEligibility(supabase, {
+        studentsId: Number(resolvedStudentsId),
+        careerId: Number(careerId),
+        internshipTypeId: Number(internshipTypeId),
+      });
+    }, 'checkSequential');
+
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    console.error('[PreEnrollmentsController] Error checking sequential:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al validar secuencia'
     });
   }
 };

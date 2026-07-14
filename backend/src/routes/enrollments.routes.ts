@@ -9,6 +9,7 @@ import {
 const router = Router();
 
 router.get('/practices', requirePermission('enrollments:view'), enrollmentsController.getPracticesForEvaluation);
+router.get('/student-history/:prefix/:ci', requirePermission('enrollments:view'), enrollmentsController.getStudentHistory);
 router.get('/', requirePermission('enrollments:view'), enrollmentsController.getEnrollments);
 router.post('/', requirePermission('enrollments:create'), validateCreateEnrollmentPeriodWithTypeDates, enrollmentsController.createEnrollment);
 router.put('/:id', requirePermission('enrollments:edit'), validateUpdateEnrollmentPeriod, enrollmentsController.updateEnrollment);

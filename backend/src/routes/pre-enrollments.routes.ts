@@ -10,6 +10,7 @@ const router = Router();
 
 router.get('/', requirePermission('enrollments:view'), preEnrollmentsController.getPreEnrollments);
 router.get('/types-by-student', requirePermission('enrollments:view'), preEnrollmentsController.getTypesByStudent);
+router.post('/check-sequential', requirePermission('enrollments:view'), preEnrollmentsController.checkSequential);
 router.post('/', requirePermission('enrollments:create'), validateCreatePreEnrollmentPeriodWithTypeDates, preEnrollmentsController.createPreEnrollment);
 router.post('/batch', requirePermission('enrollments:create'), validateCreatePreEnrollmentPeriodWithTypeDates, preEnrollmentsController.batchCreatePreEnrollment);
 router.put('/:id', requirePermission('enrollments:edit'), validateUpdatePreEnrollmentPeriod, preEnrollmentsController.updatePreEnrollment);

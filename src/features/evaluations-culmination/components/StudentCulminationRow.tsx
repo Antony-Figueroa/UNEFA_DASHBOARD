@@ -11,8 +11,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PhaseStatusBadge } from './PhaseStatusBadge';
 import { ActionDropdown } from './ActionDropdown';
 import type { ActionItem } from './ActionDropdown';
-import { EyeIcon, ListIcon } from '../../../icons';
+import { EyeIcon, ListIcon, DownloadIcon } from '../../../icons';
 import type { StudentCulminationRowData, PhaseStatus } from '../types';
+import type { PracticeWithEvaluations } from '../types';
 
 interface StudentCulminationRowProps {
   row: StudentCulminationRowData;
@@ -23,6 +24,7 @@ interface StudentCulminationRowProps {
   onUnfreeze?: (practiceId: number) => void;
   onViewEvaluationDetails?: (practiceId: number) => void;
   onViewAudit?: (practiceId: number) => void;
+  onDownloadPdf?: (practice: PracticeWithEvaluations) => void;
   certifying: boolean;
   /** When true, shows grace period badge and enables unfreeze for REPROBADO */
   isWithinGracePeriod?: boolean;
@@ -65,6 +67,7 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
   onUnfreeze,
   onViewEvaluationDetails,
   onViewAudit,
+  onDownloadPdf,
   certifying,
   isWithinGracePeriod = false,
   readOnly = false,
@@ -96,6 +99,45 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
         });
       }
 
+      // Descargar PDF — cuando está certificado
+      if (phase.status === 'certified' && onDownloadPdf) {
+        actions.push({
+          label: 'Descargar PDF',
+          icon: <DownloadIcon className="w-4 h-4" />,
+          onClick: () => {
+            // Build a minimal PracticeWithEvaluations from PhaseStatus + row data
+            const practice: PracticeWithEvaluations = {
+              practiceId: phase.practiceId,
+              studentCi: row.studentCi,
+              studentName: row.studentName,
+              careerId: 0,
+              careerName: row.careerName,
+              minimumGrade: 10,
+              institutionId: 0,
+              institutionName: phase.institutionName,
+              periodId: row.periodId,
+              periodName: row.periodName,
+              practiceTypeId: phase.practiceTypeId,
+              practiceTypeName: phase.practiceTypeName,
+              startDate: '',
+              endDate: '',
+              totalHours: phase.hoursCompleted,
+              evaluationStatus: phase.evaluationStatus || 'completed',
+              evaluations: {
+                INSTITUCIONAL: { completed: true, score: 0, evaluatorName: '' },
+                ACADEMICO: { completed: true, score: 0, evaluatorName: '' },
+                COMITE: { completed: true, score: 0, evaluatorName: '' },
+              },
+              finalGrade: phase.grade,
+              culminationStatus: 'certified',
+              result: 'approved',
+              isFrozen: phase.isFrozen,
+            };
+            onDownloadPdf(practice);
+          },
+        });
+      }
+
       // Descongelar — reprobado dentro del período de gracia
       if (!readOnly && phase.status === 'failed' && isWithinGracePeriod && onUnfreeze) {
         actions.push({
@@ -116,7 +158,7 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
 
       return actions;
     },
-    [onViewEvaluationDetails, onViewAudit, onUnfreeze, isWithinGracePeriod, readOnly]
+    [onViewEvaluationDetails, onViewAudit, onDownloadPdf, onUnfreeze, isWithinGracePeriod, readOnly, row]
   );
 
   const handleCertify = useCallback(

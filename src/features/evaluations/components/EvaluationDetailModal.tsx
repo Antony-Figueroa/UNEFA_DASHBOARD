@@ -96,7 +96,8 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p className="text-xs font-bold uppercase text-text-tertiary mb-1">Puntaje Total</p>
                 <p className={`text-2xl font-bold ${getPctColor(((evaluation.totalScore / config.score.displayScale) * 100))}`}>
-                  {((evaluation.totalScore / config.score.displayScale) * 100).toFixed(1)}%
+                  {evaluation.totalScore.toFixed(1)}<span className="text-sm font-normal text-text-tertiary">/{config.score.displayScale}</span>
+                  <span className="ml-2 text-base">({((evaluation.totalScore / config.score.displayScale) * 100).toFixed(1)}%)</span>
                 </p>
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -141,8 +142,11 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`text-lg font-bold ${getPctColor(((item.score / config.score.max) * 100))}`}>
-                            {((item.score / config.score.max) * 100).toFixed(1)}%
+                          <span className={`text-sm font-bold ${getPctColor(((item.score / config.score.max) * 100))}`}>
+                            {item.score.toFixed(1)}<span className="font-normal text-text-tertiary">/{config.score.max}</span>
+                          </span>
+                          <span className="text-xs text-text-tertiary">
+                            ({((item.score / config.score.max) * 100).toFixed(0)}%)
                           </span>
                         </div>
                       </div>

@@ -184,16 +184,21 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
     // 2b. Obtener evaluaciones para calcular nota ponderada en vivo
     const { data: allEvaluations } = await supabase
       .from('t_evaluation')
-      .select('PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, TOTAL_SCORE')
+      .select('PROFESSIONAL_PRACTICE_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATION_ID')
       .eq('STATUS', 1)
       .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
 
     const evalMap = new Map<number, Record<string, number>>();
+    const evalIdMap = new Map<number, number>(); // practiceId → first evaluationId
     (allEvaluations || []).forEach((e: any) => {
       if (!evalMap.has(e.PROFESSIONAL_PRACTICE_ID)) {
         evalMap.set(e.PROFESSIONAL_PRACTICE_ID, {});
       }
       evalMap.get(e.PROFESSIONAL_PRACTICE_ID)![e.EVALUATOR_TYPE] = e.TOTAL_SCORE || 0;
+      // Store the first evaluation ID found per practice (for detail view)
+      if (!evalIdMap.has(e.PROFESSIONAL_PRACTICE_ID) && e.EVALUATION_ID) {
+        evalIdMap.set(e.PROFESSIONAL_PRACTICE_ID, e.EVALUATION_ID);
+      }
     });
 
     // 2c. Obtener reversals activos
@@ -224,6 +229,20 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
     const groupsMap = new Map<string, CulminationGroup>();
     const evalConfig = await getEvalConfig();
     const weights = evalConfig.weights;
+
+    // 4b. Obtener fechas de períodos para calcular isWithinGracePeriod
+    const uniquePeriodIds = [...new Set(practices.map((p: any) => p.PERIOD_ID).filter(Boolean))];
+    const periodDatesMap = new Map<number, { endDate: Date }>();
+    if (uniquePeriodIds.length > 0) {
+      const { data: periods } = await supabase
+        .from('t_internships_period')
+        .select('PERIOD_ID, END_DATE')
+        .in('PERIOD_ID', uniquePeriodIds);
+      (periods || []).forEach((per: any) => {
+        periodDatesMap.set(per.PERIOD_ID, { endDate: new Date(per.END_DATE) });
+      });
+    }
+    const now = new Date();
 
     practices.forEach((p: any) => {
       const practiceId = p.PROFESSIONAL_PRACTICE_ID;
@@ -359,6 +378,7 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
           evaluationStatus: p.evaluationStatus,
           institutionName: p.institutionName,
           hoursCompleted: p.totalHours,
+          evaluationId: evalIdMap.get(Number(p.id)) || undefined,
         };
       });
 
@@ -396,6 +416,15 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
       // Certificado info (del primer práctica que tenga)
       const certPractice = g.practices.find(p => p.certificateNumber);
 
+      // isWithinGracePeriod: si la fecha actual está dentro de la ventana de evaluación
+      const periodDates = periodDatesMap.get(g.periodId);
+      let isWithinGracePeriod = false;
+      if (periodDates) {
+        const graceDeadline = new Date(periodDates.endDate);
+        graceDeadline.setDate(graceDeadline.getDate() + evalConfig.evaluationWindowDays);
+        isWithinGracePeriod = now < graceDeadline;
+      }
+
       return {
         studentCi: g.studentCi,
         studentName: g.studentName,
@@ -410,6 +439,7 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
         certifiedAt: certPractice?.certifiedAt || null,
         totalPractices,
         completedPractices,
+        isWithinGracePeriod,
       };
     });
 

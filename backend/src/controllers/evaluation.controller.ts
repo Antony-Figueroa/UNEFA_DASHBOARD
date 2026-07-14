@@ -2057,7 +2057,7 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
     // Fetch all practices
     const { data: practices, error: practicesError } = await supabase
       .from('t_professional_practices')
-      .select('PROFESSIONAL_PRACTICE_ID, GRADE, PRACTICES_STATUS, FROZEN_AT, CAREER_ID, STUDENTS_ID, INTERNSHIP_TYPE_ID, PERIOD_ID, SEMESTER, SECTION, REGIME, ENROLLMENT, INSTITUTION_ID, MANAGER_ID')
+      .select('PROFESSIONAL_PRACTICE_ID, GRADE, PRACTICES_STATUS, FROZEN_AT, CAREER_ID, STUDENTS_ID, student_person_id, INTERNSHIP_TYPE_ID, PERIOD_ID, SEMESTER, SECTION, REGIME, ENROLLMENT')
       .in('PROFESSIONAL_PRACTICE_ID', normalizedIds);
 
     if (practicesError) throw practicesError;
@@ -2240,6 +2240,7 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
             const practiceData: CulminatedPractice = {
               PROFESSIONAL_PRACTICE_ID: practiceId,
               STUDENTS_ID: practice.STUDENTS_ID,
+              STUDENT_PERSON_ID: practice.student_person_id,
               CAREER_ID: practice.CAREER_ID,
               INTERNSHIP_TYPE_ID: practice.INTERNSHIP_TYPE_ID,
               PERIOD_ID: practice.PERIOD_ID,
@@ -2608,7 +2609,7 @@ async function updatePracticeGrade(practiceId: number): Promise<void> {
     // Obtener MINIMUM_GRADE de la carrera y PRACTICES_STATUS actual
     const { data: practice } = await supabase
       .from('t_professional_practices')
-      .select('CAREER_ID, PRACTICES_STATUS, STUDENTS_ID, INTERNSHIP_TYPE_ID, PERIOD_ID, SEMESTER, SECTION, REGIME, ENROLLMENT, INSTITUTION_ID, MANAGER_ID')
+      .select('CAREER_ID, PRACTICES_STATUS, STUDENTS_ID, student_person_id, INTERNSHIP_TYPE_ID, PERIOD_ID, SEMESTER, SECTION, REGIME, ENROLLMENT')
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
       .single();
 
@@ -2653,6 +2654,7 @@ async function updatePracticeGrade(practiceId: number): Promise<void> {
         const practiceData: CulminatedPractice = {
           PROFESSIONAL_PRACTICE_ID: practiceId,
           STUDENTS_ID: (practice as any).STUDENTS_ID,
+          STUDENT_PERSON_ID: (practice as any).student_person_id,
           CAREER_ID: (practice as any).CAREER_ID,
           INTERNSHIP_TYPE_ID: (practice as any).INTERNSHIP_TYPE_ID,
           PERIOD_ID: (practice as any).PERIOD_ID,

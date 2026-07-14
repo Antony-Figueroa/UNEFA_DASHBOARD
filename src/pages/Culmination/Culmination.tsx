@@ -152,6 +152,45 @@ export default function CulminationPage() {
           if (response.success) {
             addToast({ variant: "success", title: "Certificado generado", message: `Certificado generado: ${response.certificate.number}.` });
             fetchData();
+
+            // Auto-generate and download the PDF
+            try {
+              toast.loading("Generando PDF...", { id: "pdf-download" });
+
+              const pdfRecord = {
+                id: practice.id,
+                studentCi: group.studentCi,
+                studentName: group.studentName,
+                careerId: 0,
+                careerName: group.careerName,
+                institutionId: 0,
+                institutionName: practice.institutionName,
+                period: group.period,
+                practiceType: practice.practiceType,
+                startDate: "",
+                endDate: "",
+                totalHours: practice.totalHours,
+                status: "certified" as const,
+                certificateNumber: response.certificate.number,
+                certifiedAt: response.certificate.generatedAt,
+              };
+
+              const blob = await generateCertificatePDF(pdfRecord, response.certificate.number);
+
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `Certificado_${group.studentName.replace(/\s+/g, "_")}.pdf`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+
+              toast.success("PDF descargado exitosamente", { id: "pdf-download" });
+            } catch (pdfError) {
+              console.error("Error generating PDF after certification:", pdfError);
+              toast.error("Certificado creado pero error al generar PDF. Use el botón PDF para reintentar.", { id: "pdf-download" });
+            }
           }
         } catch (error) {
           addToast(TOAST.createError('certificado'));

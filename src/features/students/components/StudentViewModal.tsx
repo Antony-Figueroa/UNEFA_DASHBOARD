@@ -15,6 +15,7 @@ import { toTitleCase } from "../../../utils/textFormat";
 import AddressList from "../../address/components/AddressList";
 import { addressService } from "../../address/services/addressService";
 import type { GeoOptionsItem } from "../../address/types";
+import CareerHistorySection from "./CareerHistorySection";
 
 /**
  * Propiedades del componente StudentViewModal.
@@ -153,6 +154,12 @@ export default function StudentViewModal({
                             <p className="text-[11px] text-text-secondary dark:text-text-tertiary font-medium">{student.enrollmentDate}</p>
                         </div>
                     </div>
+
+                    {/* Career History */}
+                    <CareerHistorySection
+                        identificationPrefix={student.identificationPrefix}
+                        identificationNumber={student.identificationNumber}
+                    />
                 </div>
             </ModalBody>
             <ModalFooter className="shrink-0">

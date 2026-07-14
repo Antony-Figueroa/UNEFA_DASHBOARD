@@ -41,7 +41,7 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
       <div className="flex items-center justify-center gap-1">
         <span className="flex items-center gap-1 px-2 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-lg" title="Actas cerradas — evaluación congelada">
           <LockIcon className="w-3.5 h-3.5" />
-          <span className="font-medium">{((evaluation.score / displayScale) * 100).toFixed(1)}%</span>
+          <span className="font-medium">{evaluation.score.toFixed(1)}/{displayScale} ({((evaluation.score / displayScale) * 100).toFixed(0)}%)</span>
         </span>
       </div>
     );
@@ -71,7 +71,7 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
           title={`Editar - Evaluador: ${evaluation.evaluatorName}`}
         >
           <CheckCircleIcon className="w-4 h-4" />
-           <span>{((evaluation.score / displayScale) * 100).toFixed(1)}%</span>
+           <span>{evaluation.score.toFixed(1)}/{displayScale} ({((evaluation.score / displayScale) * 100).toFixed(0)}%)</span>
         </button>
       </div>
     );

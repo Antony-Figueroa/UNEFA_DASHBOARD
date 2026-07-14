@@ -24,7 +24,7 @@ import { getStudents } from "../../students/services/studentsService";
 import { getPeriods } from "../../periods/services/periodService";
 import { getInternshipTypes, getInternshipTypesByCareer } from "../../internship-types/services/internshipTypesService";
 import { getCareers } from "../../careers/services/careersService";
-import { getPreEnrollments, getCompletedPracticeTypes } from "../services/preEnrollmentService";
+import { getPreEnrollments, getCompletedPracticeTypes, checkSequential, getStudentPracticeHistory, CheckSequentialResult } from "../services/preEnrollmentService";
 import * as enrollmentService from "../../enrollment/services/enrollmentService";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import { unwrapData } from "../../../api/crudServiceFactory";
@@ -142,6 +142,24 @@ export default function PreEnrollmentModal({
 
   // State for sequential blocking reason display
   const [blockingInfo, setBlockingInfo] = useState<{ message: string; reason: string | null } | null>(null);
+
+  // Pre-submit sequential validation result
+  const [preSubmitSequential, setPreSubmitSequential] = useState<CheckSequentialResult | null>(null);
+  const [isCheckingSequential, setIsCheckingSequential] = useState(false);
+
+  // Retiro justificado choice modal state
+  const [showJustifiedChoiceModal, setShowJustifiedChoiceModal] = useState(false);
+  const [justifiedChoice, setJustifiedChoice] = useState<'continue' | 'restart' | null>(null);
+
+  // State for student practice history (previous practices in any career)
+  const [studentPracticeHistory, setStudentPracticeHistory] = useState<Array<{
+    practiceType: string;
+    period: string;
+    status: string;
+    statusCode: number;
+    grade: number;
+    careerName: string;
+  }>>([]);
 
   // Handle identification number input change with formatting (sin prefijo porque ya está en el select)
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -372,6 +390,7 @@ const clearStudentFields = useCallback(() => {
   const lookupStudent = useCallback(async (prefix: string, number: string) => {
     if (number.length < 5) {
       clearStudentFields();
+      setStudentPracticeHistory([]);
       return;
     }
     
@@ -387,11 +406,17 @@ const clearStudentFields = useCallback(() => {
       );
 
       const alreadyEnrolled = enrollments.find(
-        (e: any) => e.identificationPrefix === prefix && e.identificationNumber === number && e.status
+        (e: any) =>
+          e.identificationPrefix === prefix &&
+          e.identificationNumber === number &&
+          e.status &&
+          e.practicesStatus !== 0 &&   // Excluir RETIRADO (abandono)
+          e.practicesStatus !== 5      // Excluir RETIRO_JUSTIFICADO
       );
 
       if (alreadyEnrolled) {
         clearStudentFields();
+        setStudentPracticeHistory([]);
         const message = "El estudiante ya posee una inscripción activa. No puede pre-inscribirse.";
         setError("identificationNumber", {
           type: "manual",
@@ -406,7 +431,8 @@ const clearStudentFields = useCallback(() => {
 
       if (hasActivePreEnrollment) {
         clearStudentFields();
-        const message = "El estudiante ya posee una pre-inscripción activa.";
+        setStudentPracticeHistory([]);
+        const message = "El estudiante ya posee una pre-inscripción activa.";;
         setError("identificationNumber", {
           type: "manual",
           message,
@@ -419,9 +445,34 @@ if (student) {
         setValue("phone", student.phone || "", { shouldValidate: true, shouldDirty: true });
         setDisplayPhone(formatPhoneDisplay(student.phone || ""));
         clearErrors("identificationNumber");
+
+        // Populate practice history from ALL periods (new backend endpoint)
+        const STATUS_LABELS: Record<number, string> = {
+          0: 'Retirado (Abandono)',
+          1: 'Pre-inscrito',
+          2: 'Inscrito',
+          3: 'Culminado (Aprobado)',
+          4: 'Reprobado',
+          5: 'Retiro Justificado',
+        };
+        try {
+          const historyData = await getStudentPracticeHistory(prefix, number);
+          const history = historyData.map((p) => ({
+            practiceType: p.practiceType || '',
+            period: p.period || '',
+            status: STATUS_LABELS[p.practicesStatus] || `Estado ${p.practicesStatus}`,
+            statusCode: p.practicesStatus,
+            grade: p.grade ?? 0,
+            careerName: p.careerName || '',
+          }));
+          setStudentPracticeHistory(history);
+        } catch {
+          setStudentPracticeHistory([]);
+        }
       } else {
         clearStudentFields();
-        const message = "El estudiante no se encuentra registrado.";
+        setStudentPracticeHistory([]);
+        const message = "El estudiante no se encuentra registrado.";;
         setError("identificationNumber", {
           type: "manual",
           message,
@@ -430,6 +481,7 @@ if (student) {
     } catch (error) {
       console.error("[PreEnrollmentModal] Error al buscar estudiante:", error);
       clearStudentFields();
+      setStudentPracticeHistory([]);
     } finally {
       setIsSearching(false);
     }
@@ -571,8 +623,39 @@ if (student) {
     autoSelectPracticeType();
   }, [watchedCareerId, setValue, getValues]);
 
+  // Pre-submit sequential validation check
+  useEffect(() => {
+    const prefix = idPrefix || "V";
+    const number = idNumber?.replace(/\D/g, '') || "";
+    const selectedType = internshipTypesWithIds.find(
+      t => t.name.toUpperCase() === (watchedPracticeType || "").toUpperCase()
+    );
+
+    if (number.length >= 5 && watchedCareerId && selectedType?.id && !editingEntry) {
+      setIsCheckingSequential(true);
+      checkSequential(prefix, number, Number(watchedCareerId), selectedType.id)
+        .then(result => {
+          setPreSubmitSequential(result);
+          // If retiro justificado with multi-type career, show choice modal
+          if (result.showChoiceModal) {
+            setShowJustifiedChoiceModal(true);
+            setJustifiedChoice(null);
+          }
+        })
+        .catch(() => {
+          setPreSubmitSequential(null);
+        })
+        .finally(() => {
+          setIsCheckingSequential(false);
+        });
+    } else {
+      setPreSubmitSequential(null);
+    }
+  }, [idPrefix, idNumber, watchedCareerId, watchedPracticeType, internshipTypesWithIds, editingEntry]);
+
   useEffect(() => {
     if (isOpen) {
+      setPreSubmitSequential(null);
       if (editingEntry) {
         reset({
           identificationPrefix: editingEntry.identificationPrefix,
@@ -760,6 +843,118 @@ if (student) {
                 </div>
               </div>
             )}
+            {/* Student practice history */}
+            {studentPracticeHistory.length > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30 p-4 mb-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <svg className="h-5 w-5 text-amber-600 dark:text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-amber-800 dark:text-amber-200 mb-2">
+                      Historial de prácticas del estudiante
+                    </p>
+                    <div className="space-y-1.5">
+                      {studentPracticeHistory.map((p, idx) => {
+                        const isNegative = [0, 4, 5].includes(p.statusCode);
+                        const isPositive = p.statusCode === 3;
+                        return (
+                          <div key={idx} className="flex items-center gap-2 text-xs">
+                            <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
+                              isNegative
+                                ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                : isPositive
+                                  ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                            }`}>
+                              {isNegative ? '✗' : isPositive ? '✓' : '—'}
+                            </span>
+                            <span className="font-semibold text-text-primary dark:text-white">{p.practiceType}</span>
+                            <span className="text-text-tertiary">·</span>
+                            <span className="text-text-secondary dark:text-gray-400">{p.period}</span>
+                            {p.careerName && (
+                              <>
+                                <span className="text-text-tertiary">·</span>
+                                <span className="text-text-secondary dark:text-gray-400">{p.careerName}</span>
+                              </>
+                            )}
+                            <span className="text-text-tertiary">→</span>
+                            <span className={`font-medium ${
+                              isNegative
+                                ? 'text-red-600 dark:text-red-400'
+                                : isPositive
+                                  ? 'text-green-600 dark:text-green-400'
+                                  : 'text-text-secondary dark:text-gray-400'
+                            }`}>
+                              {p.status}
+                            </span>
+                            {p.grade > 0 && (
+                              <span className="text-text-tertiary">(Nota: {p.grade})</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Pre-submit sequential validation banner */}
+            {preSubmitSequential && !preSubmitSequential.valid && preSubmitSequential.blockingReason && (
+              <div className={`rounded-lg border p-4 mb-4 ${
+                preSubmitSequential.blockingReason === 'career_completed'
+                  ? 'border-purple-200 bg-purple-50 dark:border-purple-700 dark:bg-purple-950/30'
+                  : preSubmitSequential.blockingReason === 'retiro_justificado'
+                    ? 'border-blue-200 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30'
+                    : 'border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-950/30'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    {preSubmitSequential.blockingReason === 'career_completed' ? (
+                      <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                      </svg>
+                    ) : preSubmitSequential.blockingReason === 'retiro_justificado' ? (
+                      <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5 text-red-600 dark:text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-sm font-bold ${
+                      preSubmitSequential.blockingReason === 'career_completed'
+                        ? 'text-purple-800 dark:text-purple-200'
+                        : preSubmitSequential.blockingReason === 'retiro_justificado'
+                          ? 'text-blue-800 dark:text-blue-200'
+                          : 'text-red-800 dark:text-red-200'
+                    }`}>
+                      {preSubmitSequential.blockingReason === 'career_completed'
+                        ? 'Carrera completada'
+                        : preSubmitSequential.blockingReason === 'retiro_justificado'
+                          ? 'Retiro justificado'
+                          : preSubmitSequential.blockingReason === 'reprobado' || preSubmitSequential.blockingReason === 'retirado'
+                            ? 'Período de espera'
+                            : 'Validación secuencial'}
+                    </p>
+                    <p className={`text-xs mt-1 ${
+                      preSubmitSequential.blockingReason === 'career_completed'
+                        ? 'text-purple-700 dark:text-purple-300'
+                        : preSubmitSequential.blockingReason === 'retiro_justificado'
+                          ? 'text-blue-700 dark:text-blue-300'
+                          : 'text-red-700 dark:text-red-300'
+                    }`}>
+                      {preSubmitSequential.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               
               {/* Columna Izquierda: Identificación y Perfil */}
@@ -842,7 +1037,14 @@ if (student) {
                                 className="w-full px-5 py-3 text-left hover:bg-brand-50/50 dark:hover:bg-brand-500/10 transition-all border-b border-border-light/40 last:border-0 group"
                                   onClick={async () => {
                                     const enrollments = await enrollmentService.getEnrollments();
-                                    const alreadyEnrolled = enrollments.find(e => e.identificationPrefix === student.identificationPrefix && e.identificationNumber === student.identificationNumber && e.status);
+                                    const alreadyEnrolled = enrollments.find(
+                                      (e: any) =>
+                                        e.identificationPrefix === student.identificationPrefix &&
+                                        e.identificationNumber === student.identificationNumber &&
+                                        e.status &&
+                                        e.practicesStatus !== 0 &&   // Excluir RETIRADO (abandono)
+                                        e.practicesStatus !== 5      // Excluir RETIRO_JUSTIFICADO
+                                    );
                                     if (alreadyEnrolled) {
                                       addToast({ variant: "error", title: "Validación", message: "Estudiante con inscripción activa." });
                                       setError("identificationNumber", { type: "manual", message: "Ya inscrito." });
@@ -1142,7 +1344,10 @@ if (student) {
                 loading={isLoading} 
                 loadingText="Guardando..."
                 className="flex-1 sm:flex-none h-11 px-10 rounded-xl font-bold bg-brand-600 hover:bg-brand-700 transition-all duration-200" 
-                disabled={editingEntry ? !isDirty || !isValid : !isValid}
+                disabled={
+                  (editingEntry ? !isDirty || !isValid : !isValid) ||
+                  (preSubmitSequential !== null && !preSubmitSequential.valid && !!preSubmitSequential.blockingReason)
+                }
               >
                 {editingEntry ? "Actualizar Pre-Inscripción" : "Guardar Registro"}
               </Button>
@@ -1167,6 +1372,121 @@ if (student) {
       {...(editingEntry ? CONFIRM_MESSAGES.update('Pre-inscripción del estudiante') : CONFIRM_MESSAGES.create('Pre-inscripción del estudiante'))}
       isLoading={isLoading}
     />
+
+    {/* Retiro justificado choice modal */}
+    <UnifiedDialog
+      isOpen={showJustifiedChoiceModal}
+      onClose={() => {
+        setShowJustifiedChoiceModal(false);
+        setJustifiedChoice(null);
+        setPreSubmitSequential(null);
+      }}
+      onConfirm={() => {
+        setShowJustifiedChoiceModal(false);
+        // justifiedChoice is set by the user clicking one of the options
+      }}
+      variant="info"
+      title="Retiro Justificado - Elección de Práctica"
+      message=""
+      confirmText={justifiedChoice === 'continue' ? 'Continuar desde donde se retiró' : justifiedChoice === 'restart' ? 'Reiniciar secuencia' : 'Confirmar'}
+      cancelText="Cancelar"
+      isLoading={false}
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-text-secondary dark:text-gray-400">
+          Esta carrera tiene múltiples tipos de práctica. Elija si desea continuar desde donde se retiró o reiniciar la secuencia desde el inicio.
+        </p>
+
+        {/* Practice history table */}
+        {preSubmitSequential?.approvedPractices && preSubmitSequential.approvedPractices.length > 0 && (
+          <div className="rounded-lg border border-border-light dark:border-white/10 overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-white/5">
+                  <th className="px-3 py-2 text-left font-bold text-text-tertiary">Práctica</th>
+                  <th className="px-3 py-2 text-left font-bold text-text-tertiary">Estado</th>
+                  <th className="px-3 py-2 text-left font-bold text-text-tertiary">Nota</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-light dark:divide-white/5">
+                {preSubmitSequential.approvedPractices.map((p, idx) => {
+                  const isCompleted = p.practicesStatus === 3; // CULMINADO
+                  const isFailed = p.practicesStatus === 4; // REPROBADO
+                  const isWithdrawn = p.practicesStatus === 0 || p.practicesStatus === 5; // RETIRADO or RETIRO_JUSTIFICADO
+                  return (
+                    <tr key={idx} className={
+                      isCompleted ? 'bg-green-50/50 dark:bg-green-900/10' :
+                      isFailed ? 'bg-red-50/50 dark:bg-red-900/10' :
+                      isWithdrawn ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
+                    }>
+                      <td className="px-3 py-2 font-semibold text-text-primary dark:text-white">
+                        {p.internshipTypeName}
+                        <span className="ml-1 text-text-tertiary">(P{p.priority})</span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className={`font-medium ${
+                          isCompleted ? 'text-green-600 dark:text-green-400' :
+                          isFailed ? 'text-red-600 dark:text-red-400' :
+                          isWithdrawn ? 'text-amber-600 dark:text-amber-400' :
+                          'text-text-secondary dark:text-gray-400'
+                        }`}>
+                          {isCompleted ? 'Aprobada' : isFailed ? 'Reprobada' : isWithdrawn ? 'Retirada' : `Estado ${p.practicesStatus}`}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-text-secondary dark:text-gray-400">
+                        {p.grade != null && p.grade > 0 ? p.grade : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Choice buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setJustifiedChoice('continue')}
+            className={`p-3 rounded-xl border-2 text-left transition-all ${
+              justifiedChoice === 'continue'
+                ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/50'
+                : 'border-border-light dark:border-white/10 hover:border-blue-300 dark:hover:border-blue-600'
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-bold text-text-primary dark:text-white">Continuar</span>
+            </div>
+            <p className="text-[11px] text-text-secondary dark:text-gray-400">
+              Inscribir en la siguiente práctica de la secuencia ({preSubmitSequential?.suggestedPracticeTypeName || 'siguiente'})
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setJustifiedChoice('restart')}
+            className={`p-3 rounded-xl border-2 text-left transition-all ${
+              justifiedChoice === 'restart'
+                ? 'border-amber-500 bg-amber-50 dark:border-amber-400 dark:bg-amber-950/50'
+                : 'border-border-light dark:border-white/10 hover:border-amber-300 dark:hover:border-amber-600'
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.311-.311h1.43a.75.75 0 000-1.5H4.598a.75.75 0 00-.75.75v3.634a.75.75 0 001.5 0v-1.43l.311.311a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V3.75a.75.75 0 00-1.5 0V5.79l-.311-.31A7 7 0 003.298 8.574a.75.75 0 001.448.39 5.5 5.5 0 019.201-2.465l.311.31h-1.43a.75.75 0 000 1.5h3.634a.75.75 0 00.75-.75V2.498a.75.75 0 00-1.5 0v1.43l.311-.31z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-bold text-text-primary dark:text-white">Reiniciar</span>
+            </div>
+            <p className="text-[11px] text-text-secondary dark:text-gray-400">
+              Inscribir desde la primera práctica de la secuencia
+            </p>
+          </button>
+        </div>
+      </div>
+    </UnifiedDialog>
   </>
 );
 }

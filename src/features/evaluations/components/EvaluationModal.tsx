@@ -214,7 +214,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
 
     init();
     return () => { cancelled = true; };
-  }, [isOpen]); // solo al abrir
+  }, [isOpen, existingComiteMembers, committeeAssignments, practiceId]); // solo al abrir
 
   // ── Cuando cambia activeMember, cargar sus datos en el form ──
   useEffect(() => {
@@ -261,6 +261,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       setValue('evaluatorCi', data.evaluatorCi || '');
       setValue('observations', data.observations || '');
       setItemScores(scores);
+      setDataLoaded(true);
     } catch (error) {
       console.error('[EvaluationModal] Error loading member evaluation:', error);
     } finally {
@@ -273,6 +274,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     if (isOpen && evaluatorType) {
       setDataLoaded(false);
       setExistingData(null);
+      setInitialLoading(false);
+      setConfirmed(false);
       fetchCriteria(evaluatorType);
       // Reset session states when modal opens fresh
       setCompletionDismissed(false);
@@ -310,20 +313,29 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
 
   // Inicializar scores para el miembro activo en comité, o para creación normal
   useEffect(() => {
-    if (criteria.length === 0 || dataLoaded) return;
+    if (criteria.length === 0) return;
     setCriteriaLoaded(criteria);
 
     if (isComiteMode) {
       const member = comiteData[activeMember];
-      // Solo inicializar si el miembro no tiene scores cargados
-      if (!member || Object.keys(member.scores).length > 0) {
-        // Ya tiene datos cargados — marcar como listo sin sobrescribir
+      // Si el miembro no tiene datos, recién inicializar con midpoint
+      if (!member || Object.keys(member.scores).length === 0) {
+        if (!dataLoaded) {
+          const initial: Record<number, number> = {};
+          criteria.forEach(c => { initial[c.criteriaId] = midpoint; });
+          setItemScores(initial);
+        }
         setDataLoaded(true);
         return;
       }
+      // Ya tiene scores — marcar como listo sin sobrescribir
+      setDataLoaded(true);
+      return;
     }
 
-    // Crear scores iniciales con midpoint
+    if (dataLoaded) return;
+
+    // Crear scores iniciales con midpoint (modo no comité)
     const initial: Record<number, number> = {};
     criteria.forEach(c => { initial[c.criteriaId] = midpoint; });
     setItemScores(initial);
@@ -377,22 +389,29 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   };
 
   const switchMember = (idx: 1 | 2 | 3) => {
+    if (idx === activeMember) return;
     // Guardar datos del miembro actual antes de cambiar
     if (isComiteMode) {
       const current = getValues();
-      setComiteData(prev => ({
-        ...prev,
-        [activeMember]: {
-          ...prev[activeMember],
-          evaluatorName: current.evaluatorName,
-          evaluatorCi: current.evaluatorCi || '',
-          observations: current.observations || '',
-          scores: itemScores,
-        }
-      }));
+      setComiteData(prev => {
+        const updated = {
+          ...prev,
+          [activeMember]: {
+            ...prev[activeMember],
+            evaluatorName: current.evaluatorName,
+            evaluatorCi: current.evaluatorCi || '',
+            observations: current.observations || '',
+            scores: { ...itemScores },
+          }
+        };
+        // Usar callback para ejecutar el cambio de miembro DESPUÉS de actualizar comiteData
+        return updated;
+      });
     }
     setConfirmed(false);
     setDataLoaded(false);
+    // Forzar reconstrucción del estado interno: primero actualizar comiteData,
+    // luego cambiar activeMember para que el effect de sync lo procese
     setActiveMember(idx);
   };
 
@@ -856,47 +875,52 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
               </div>
             </div>
 
-            {/* Firma de responsabilidad */}
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-              <label className={`flex items-start gap-3 ${isFrozen ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+          </ModalBody>
+
+          <ModalFooter className="flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Firma de responsabilidad — visible siempre, fuera del scroll */}
+            <div className="flex-1 min-w-0">
+              <label className={`flex items-start gap-2 ${isFrozen ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
                 <input
                   type="checkbox"
                   checked={confirmed}
                   onChange={(e) => setConfirmed(e.target.checked)}
                   disabled={isFrozen}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500 disabled:opacity-60"
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500 disabled:opacity-60 shrink-0"
                 />
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">
                     Confirmo que las calificaciones ingresadas coinciden con el acta física firmada
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
                     Esta acción quedará registrada en la auditoría del sistema
                   </p>
                 </div>
               </label>
             </div>
-          </ModalBody>
 
-          <ModalFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={loading}
-            >
-              {isFrozen ? 'Cerrar' : 'Cancelar'}
-            </Button>
-            {!isFrozen && (
+            <div className="flex items-center gap-2 shrink-0">
               <Button
-                type="submit"
-                disabled={loading || criteriaLoaded.length === 0 || !confirmed}
-                loading={loading}
-                loadingText="Guardando..."
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={loading}
+                size="sm"
               >
-                {submitLabel}
+                {isFrozen ? 'Cerrar' : 'Cancelar'}
               </Button>
-            )}
+              {!isFrozen && (
+                <Button
+                  type="submit"
+                  disabled={loading || criteriaLoaded.length === 0 || !confirmed}
+                  loading={loading}
+                  loadingText="Guardando..."
+                  size="sm"
+                >
+                  {submitLabel}
+                </Button>
+              )}
+            </div>
           </ModalFooter>
         </form>
       )}

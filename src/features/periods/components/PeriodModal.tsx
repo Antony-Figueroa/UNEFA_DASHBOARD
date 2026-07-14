@@ -459,13 +459,13 @@ export default function PeriodModal({
         }, 100);
     }, [isOpen, existingPeriods, reset, setValue]);
 
-    // Auto-complete type dates ONCE on first load for NEW periods only
+    // Auto-complete type dates when main period dates change
     useEffect(() => {
-        if (autoCompleteDoneRef.current) return;
         if (!startDateValue || !endDateValue || isInitializing.current) return;
         if (internshipTypes.length === 0) return;
-        // Don't overwrite server data when editing
-        if (periodo) return;
+        
+        // Only prevent overwrite on initial load of edit mode (handled by isInitializing)
+        // If user manually changes dates during edit, we want to re-distribute
 
         const eightWeeksMs = 8 * 7 * 24 * 60 * 60 * 1000;
 
@@ -508,11 +508,9 @@ export default function PeriodModal({
         }
 
         if (Object.keys(updates).length > 0) {
-            setTypeDatesState(prev => ({ ...prev, ...updates }));
+            setTypeDatesState(updates); // Replace entirely to ensure sync with main dates
         }
-
-        autoCompleteDoneRef.current = true;
-    }, [startDateValue, endDateValue, internshipTypes, periodo]);
+    }, [startDateValue, endDateValue, internshipTypes]);
 
     /**
      * Maneja el envío del formulario, valida las fechas y llama a la función onSave.

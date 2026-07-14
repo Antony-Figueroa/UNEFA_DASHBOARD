@@ -886,14 +886,31 @@ export default function PeriodModal({
 
                                                             // Current type's own start (if user already picked one)
                                                             const ownStart = td?.startDate ? parseYmd(td.startDate) : null;
+                                                            
+                                                            // Find previous sequential type to prevent overlap
+                                                            let prevTypeEnd: Date | null = null;
+                                                            if (!isUnica) {
+                                                                const currentIndex = sequentialTypes.findIndex(t => t.id === type.id);
+                                                                if (currentIndex > 0) {
+                                                                    const prevType = sequentialTypes[currentIndex - 1];
+                                                                    const prevDates = typeDatesState[prevType.id];
+                                                                    if (prevDates?.endDate) {
+                                                                        prevTypeEnd = parseYmd(prevDates.endDate);
+                                                                    }
+                                                                }
+                                                            }
 
-                                                            // Relaxed constraints to prevent UI deadlocks (minDate >= maxDate)
-                                                            // Users can freely pick dates within the main period boundaries.
-                                                            // Strict overlap validation is handled on submit.
-                                                            const startMinDate = pStart ?? undefined;
+                                                            // Constraints
+                                                            // startMinDate must be after the previous type's end date
+                                                            const startMinDate = prevTypeEnd ?? pStart ?? undefined;
                                                             const startMaxDate = pEnd ?? undefined;
-                                                            const endMinDate = ownStart ?? pStart ?? undefined;
-                                                            const endMaxDate = pEnd ?? undefined;
+                                                            
+                                                            // Auto-calculate the business minimum end date based on type priority
+                                                            const minWeeks = isUnica ? 16 : 8;
+                                                            const businessMinEnd = ownStart ? new Date(ownStart.getTime() + minWeeks * 7 * 24 * 60 * 60 * 1000) : null;
+                                                            
+                                                            // endMinDate should respect the business rule minimum
+                                                            const endMinDate = businessMinEnd ?? startMinDate;
 
                                                             // Auto-update end when start changes (same as parent period behavior)
                                                             const handleStartChange = (dateStr: string) => {
@@ -923,8 +940,8 @@ export default function PeriodModal({
                                                                     } else {
                                                                         const [ey, em, ed] = currentEnd.split('-').map(Number);
                                                                         const endDt = new Date(ey, em - 1, ed, 12, 0, 0);
-                                                                        // Only auto-adjust if current end is before the new start
-                                                                        if (endDt.getTime() < newStart.getTime()) {
+                                                                        // Auto-adjust if current end is less than the business minimum
+                                                                        if (endDt.getTime() < minEnd.getTime()) {
                                                                             newEnd = fmt(minEnd);
                                                                         }
                                                                     }

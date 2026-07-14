@@ -27,6 +27,7 @@ import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { matchSearch } from "../../../utils/searchNormalizer";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Propiedades del componente InternshipTypeTable.
@@ -285,7 +286,7 @@ export default function InternshipTypeTable({
                       />
                     </TableCell>
                     <TableCell className="font-medium text-text-primary dark:text-white">
-                      {item.name}
+                      {toTitleCase(item.name)}
                     </TableCell>
                     <TableCell>
                       <Badge color="info" variant="light" className="font-bold">

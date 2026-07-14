@@ -15,6 +15,7 @@ import { InstitutionIndividualPDF } from "../../../components/ui/pdf/templates/i
 import { PlusCircle, User, AlertCircle, UserPlus, Search, ChevronDown } from "lucide-react";
 import { Dropdown } from "../../../components/ui/dropdown/Dropdown";
 import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Props for the InstitutionViewModal component.
@@ -139,7 +140,7 @@ export default function InstitutionViewModal({
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
                             <div className="sm:col-span-2">
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Nombre</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{institution.name}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{toTitleCase(institution.name)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">RIF</label>
@@ -165,11 +166,11 @@ export default function InstitutionViewModal({
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Empresa o Institución</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.institutionType}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(institution.institutionType)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipos de Práctica</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.practiceTypes?.join(", ") || "Sin asignar"}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(institution.practiceTypes?.join(", ")) || "Sin asignar"}</p>
                             </div>
 
 
@@ -185,7 +186,7 @@ export default function InstitutionViewModal({
                                                         <User className="size-3 text-blue-600 dark:text-blue-400" />
                                                     </div>
                                                     <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                                                        {resp.firstName} {resp.lastName}
+                                                        {toTitleCase(`${resp.firstName} ${resp.lastName}`)}
                                                         <span className="text-[10px] font-medium text-text-tertiary ml-2 italic">
                                                             ({resp.institutions?.find(inst => inst.institutionId === institution?.institutionId)?.cargo || 'Sin cargo'})
                                                         </span>
@@ -294,10 +295,14 @@ export default function InstitutionViewModal({
                 isOpen={reportModalOpen}
                 onClose={() => setReportModalOpen(false)}
                 title="Ficha de Empresa o Institución"
-                subtitle={`${institution.name} - ${institution.rif}`}
+                subtitle={`${toTitleCase(institution.name)} - ${institution.rif}`}
                 data={institution}
-                template={(data) => <InstitutionIndividualPDF data={data} />}
+                template={(data, verificationHash) => <InstitutionIndividualPDF data={data} verificationHash={verificationHash} />}
                 fileName={`institucion_${institution.rif?.replace(/-/g, '') || institution.institutionId}`}
+                verificationConfig={{
+                  docType: 'ficha-institucion',
+                  metadata: { institutionId: institution.institutionId },
+                }}
             />
         </Modal>
     );

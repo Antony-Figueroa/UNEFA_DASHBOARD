@@ -29,6 +29,7 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import { InstitutionalResponsible } from "../types";
 import { formatPhoneDisplay } from "../../../utils/inputFormat";
 import { matchSearch } from "../../../utils/searchNormalizer";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Props for the InstitutionalResponsibleTable component.
@@ -506,11 +507,11 @@ export default function InstitutionalResponsibleTable({
                     {`${(item.identificationPrefix || 'V').replace(/-/g, '')}-${String(item.identificationNumber).replace(/-/g, '')}`}
                   </TableCell>
                   <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">
-                    {[item.firstName, item.middleName, item.lastName, item.secondLastName].filter(Boolean).join(' ')}
+                    {toTitleCase([item.firstName, item.middleName, item.lastName, item.secondLastName].filter(Boolean).join(' '))}
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge color="primary" variant="light" size="sm" shape="rounded">
-                      {item.institutions?.map(inst => inst.institutionName).join(", ") || "Sin empresa o institución"}
+                      {toTitleCase(item.institutions?.map(inst => inst.institutionName).join(", ")) || "Sin empresa o institución"}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -520,7 +521,7 @@ export default function InstitutionalResponsibleTable({
                     </div>
                   </TableCell>
                   <TableCell className="text-text-secondary dark:text-text-tertiary text-sm">
-                    {item.title || "-"}
+                    {toTitleCase(item.title) || "-"}
                   </TableCell>
                   <TableCell className="text-center text-text-secondary dark:text-text-tertiary whitespace-nowrap text-sm">
                     {(() => {
@@ -568,7 +569,7 @@ export default function InstitutionalResponsibleTable({
           currentData.map((item) => {
             const rowId = item.responsibleId;
             const isExpanded = expandedRows.has(rowId);
-            const fullName = [item.firstName, item.middleName, item.lastName, item.secondLastName].filter(Boolean).join(' ');
+            const fullName = toTitleCase([item.firstName, item.middleName, item.lastName, item.secondLastName].filter(Boolean).join(' '));
 
             return (
               <div
@@ -604,7 +605,7 @@ export default function InstitutionalResponsibleTable({
                         </p>
                         <div className="flex justify-center w-full">
                           <Badge color="primary" variant="light" size="sm">
-                      {item.institutions?.map(inst => inst.institutionName).join(", ") || "Sin empresa o institución"}
+                      {toTitleCase(item.institutions?.map(inst => inst.institutionName).join(", ")) || "Sin empresa o institución"}
                           </Badge>
                         </div>
                       </div>
@@ -625,7 +626,7 @@ export default function InstitutionalResponsibleTable({
                             Título
                           </p>
                           <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">
-                            {item.title}
+                            {toTitleCase(item.title)}
                           </p>
                         </div>
                       )}

@@ -9,6 +9,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import Button from "../../../components/ui/button/Button";
 import { InternshipType } from "../types";
 import Badge from "../../../components/ui/badge/Badge";
+import { toTitleCase } from "../../../utils/textFormat";
 
 interface InternshipTypeViewModalProps {
   /** Indica si el modal está visible */
@@ -59,8 +60,8 @@ export default function InternshipTypeViewModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Nombre</label>
-                <p className="text-sm font-semibold text-text-primary dark:text-white/90 uppercase">
-                  {item.name}
+                <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                  {toTitleCase(item.name)}
                 </p>
               </div>
               <div>

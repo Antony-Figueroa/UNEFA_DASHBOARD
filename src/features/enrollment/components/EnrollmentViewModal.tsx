@@ -7,6 +7,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import Button from "../../../components/ui/button/Button";
 
 import { EnrollmentRowData } from "../types";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Props for the EnrollmentViewModal component.
@@ -52,7 +53,7 @@ export default function EnrollmentViewModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Nombre Completo</label>
-                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{item.studentName}</p>
+                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{toTitleCase(item.studentName)}</p>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Cédula / ID</label>
@@ -60,7 +61,7 @@ export default function EnrollmentViewModal({
               </div>
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Carrera</label>
-                <p className="text-sm font-bold text-text-primary dark:text-white/90">{item.careerName || "No asignada"}</p>
+                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(item.careerName) || "No asignada"}</p>
               </div>
             </div>
           </div>
@@ -78,7 +79,7 @@ export default function EnrollmentViewModal({
               </div>
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Práctica</label>
-                <p className="text-sm font-bold text-text-primary dark:text-white/90">{item.practiceType}</p>
+                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(item.practiceType)}</p>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Código de Matrícula</label>
@@ -96,11 +97,11 @@ export default function EnrollmentViewModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tutor Académico</label>
-                <p className="text-sm font-bold text-text-primary dark:text-white/90">{item.academicTutorName || "No asignado"}</p>
+                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(item.academicTutorName) || "No asignado"}</p>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tutor Metodológico</label>
-                <p className="text-sm font-bold text-text-primary dark:text-white/90">{item.methodologicalTutorName || "No asignado"}</p>
+                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(item.methodologicalTutorName) || "No asignado"}</p>
               </div>
             </div>
           </div>
@@ -114,11 +115,11 @@ export default function EnrollmentViewModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Institución</label>
-                <p className="text-sm font-bold text-text-primary dark:text-white/90">{item.institutionName || "No asignada"}</p>
+                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(item.institutionName) || "No asignada"}</p>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Responsable Institucional</label>
-                <p className="text-sm font-bold text-text-primary dark:text-white/90">{item.institutionResponsibleName || "No asignado"}</p>
+                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(item.institutionResponsibleName) || "No asignado"}</p>
               </div>
             </div>
           </div>

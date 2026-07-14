@@ -13,6 +13,7 @@ import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal"
 import { CareerIndividualPDF } from "../../../components/ui/pdf/templates/individual";
 
 import { InternshipTypeOption } from "../../internship-types/types";
+import { toTitleCase } from "../../../utils/textFormat";
 
 interface CareerViewModalProps {
   isOpen: boolean;
@@ -49,8 +50,8 @@ export default function CareerViewModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
               <div className="sm:col-span-2">
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Nombre de la Carrera</label>
-                <p className="text-sm font-semibold text-text-primary dark:text-white/90 uppercase">
-                  {career.careerName}
+                <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                  {toTitleCase(career.careerName)}
                 </p>
               </div>
               <div>
@@ -140,10 +141,14 @@ export default function CareerViewModal({
         isOpen={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
         title="Ficha de Carrera"
-        subtitle={`${career.careerName} - ${career.careerCode}`}
+        subtitle={`${toTitleCase(career.careerName)} - ${career.careerCode}`}
         data={career}
-        template={(data) => <CareerIndividualPDF data={data} />}
+        template={(data, verificationHash) => <CareerIndividualPDF data={data} verificationHash={verificationHash} />}
         fileName={`carrera_${career.careerCode}`}
+        verificationConfig={{
+          docType: 'ficha-carrera',
+          metadata: { careerCode: career.careerCode },
+        }}
       />
     </Modal>
   );

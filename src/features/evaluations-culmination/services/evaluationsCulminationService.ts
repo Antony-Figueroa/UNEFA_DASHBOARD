@@ -80,6 +80,8 @@ export interface AutoPreEnrollResultItem {
   nextType: string;
   created: boolean;
   message?: string;
+  createdPracticeId?: number;
+  existingPracticeId?: number;
 }
 
 /** Filters for culmination groups endpoint */

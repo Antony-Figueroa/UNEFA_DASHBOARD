@@ -418,10 +418,10 @@ export interface TimeoutCheckResult {
  */
 export const getTimeoutPreview = async (timeoutDays: number = 30): Promise<TimeoutPreviewResult> => {
   try {
-    const response = await apiClient.get<TimeoutPreviewResult>('/periods/timeout-preview', {
+    const response = await apiClient.get<{ success: boolean; data: TimeoutPreviewResult }>('/periodos/timeout-preview', {
       params: { timeoutDays },
     });
-    return response.data;
+    return response.data.data;
   } catch (error) {
     console.error('[periodService] Error fetching timeout preview:', error);
     throw error;
@@ -433,8 +433,13 @@ export const getTimeoutPreview = async (timeoutDays: number = 30): Promise<Timeo
  */
 export const executeTimeoutCheck = async (timeoutDays: number = 30): Promise<TimeoutCheckResult> => {
   try {
-    const response = await apiClient.post<TimeoutCheckResult>('/periods/check-timeouts', { timeoutDays });
-    return response.data;
+    const response = await apiClient.post<{ success: boolean; message?: string; data: TimeoutCheckResult }>('/periodos/check-timeouts', { timeoutDays });
+    const result = response.data.data;
+    // The backend message sits at the envelope level
+    if (response.data.message && !result.message) {
+      result.message = response.data.message;
+    }
+    return result;
   } catch (error) {
     console.error('[periodService] Error executing timeout check:', error);
     throw error;

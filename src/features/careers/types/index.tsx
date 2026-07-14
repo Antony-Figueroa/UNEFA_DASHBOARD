@@ -26,7 +26,7 @@ export interface Career {
   semester: string;
   /** Lista de identificadores de tipos de pasantía permitidos */
   internshipTypeIds?: string[];
-  /** Lista de prioridades de tipos de pasantía (0 = Única, 1 = Hospitalaria, 2 = Comunitaria) */
+  /** Lista de prioridades de tipos de pasantía (orden secuencial, el nombre viene del tipo) */
   internshipPriorities?: number[];
   /** Fecha en la que se registró la carrera en el sistema */
   creationDate: Date;

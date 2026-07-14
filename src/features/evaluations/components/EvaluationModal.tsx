@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +16,8 @@ import {
 import { useEvaluations } from '../hooks/useEvaluations';
 import { useSystemEvaluationConfig } from '../hooks/useSystemEvaluationConfig';
 import { evaluationService } from '../services/evaluationService';
+import { evaluationsCulminationService } from '../../evaluations-culmination/services/evaluationsCulminationService';
+import { CloseActasResultsModal } from '../../evaluations-culmination/components/CloseActasResultsModal';
 import { isSafeInput } from '../../../utils/inputValidation';
 import { searchPersons } from '../../persons/services/personService';
 import apiClient from '../../../api/apiClient';
@@ -111,6 +114,16 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   // Flow modal state — shows after save when more evaluations are pending
   const [showFlowModal, setShowFlowModal] = useState(false);
   const [flowNextStep, setFlowNextStep] = useState<{ type: EvaluatorType; memberIndex?: number } | null>(null);
+
+  // Close actas results modal state
+  const [showCloseActasResults, setShowCloseActasResults] = useState(false);
+  const [closeActasResults, setCloseActasResults] = useState<{
+    results: any[];
+    summary: { total: number; culminated: number; failed: number; skipped: number };
+    autoPreEnrollResults: any[];
+  } | null>(null);
+
+  const navigate = useNavigate();
 
   const handleSearchInput = async (q: string) => {
     setSearchQuery(q);
@@ -941,10 +954,19 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
         setShowCompletionModal(false);
       }}
       onConfirm={async () => {
-        // "Finalizar y Congelar" — freeze practice, then close and refresh
+        // "Finalizar y Congelar" — close actas via closeActas endpoint (includes auto pre-enrollment)
         setShowCompletionModal(false);
-        try { await evaluationService.freezeBatch([practiceId]); } catch { /* silent */ }
-        handleClose();
+        try {
+          const closeResult = await evaluationsCulminationService.closeActas([practiceId]);
+          if (closeResult?.data?.autoPreEnrollResults?.length > 0) {
+            setCloseActasResults(closeResult.data);
+            setShowCloseActasResults(true);
+          } else {
+            handleClose();
+          }
+        } catch {
+          handleClose();
+        }
       }}
       title={completionReason === 'committee' ? 'Comité Evaluador — Completo' : 'Evaluaciones — Completas'}
       message={
@@ -955,6 +977,17 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       confirmLabel="Finalizar y Congelar"
       cancelLabel="Continuar Editando"
       variant="success"
+    />
+
+    {/* Close actas results — shows auto pre-enrollment info */}
+    <CloseActasResultsModal
+      isOpen={showCloseActasResults}
+      onClose={() => {
+        setShowCloseActasResults(false);
+        setCloseActasResults(null);
+        handleClose();
+      }}
+      results={closeActasResults}
     />
     </>
   );

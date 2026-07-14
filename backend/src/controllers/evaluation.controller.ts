@@ -2119,6 +2119,8 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
       nextType: string;
       created: boolean;
       message?: string;
+      createdPracticeId?: number;
+      existingPracticeId?: number;
     }> = [];
 
     for (const practice of practices as any[]) {
@@ -2277,7 +2279,9 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
               studentName,
               nextType: nextTypeName,
               created: autoResult.created,
-              message: autoResult.reason || (autoResult.created ? 'Pre-inscripción creada exitosamente' : 'No se pudo crear pre-inscripción'),
+              message: autoResult.userMessage || autoResult.reason || (autoResult.created ? 'Pre-inscripción creada exitosamente' : 'No se pudo crear pre-inscripción'),
+              createdPracticeId: autoResult.createdPracticeId,
+              existingPracticeId: autoResult.existingPracticeId,
             });
           } catch (autoErr) {
             console.error('[AutoPreEnroll] Error in closeActas:', autoErr);
@@ -2288,6 +2292,8 @@ export const closeActas = async (req: AuthRequest, res: Response) => {
               nextType: '',
               created: false,
               message: autoErr instanceof Error ? autoErr.message : 'Error desconocido',
+              createdPracticeId: undefined,
+              existingPracticeId: undefined,
             });
           }
         }

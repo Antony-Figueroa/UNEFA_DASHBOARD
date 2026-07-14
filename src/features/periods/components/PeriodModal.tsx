@@ -100,7 +100,7 @@ export default function PeriodModal({
 
     // --- Type Dates Accordion State ---
     const [accordionOpen, setAccordionOpen] = useState(false);
-    const [internshipTypes, setInternshipTypes] = useState<Array<{ id: number; name: string }>>([]);
+    const [internshipTypes, setInternshipTypes] = useState<Array<{ id: number; name: string; priority: number }>>([]);
     const [typeDatesState, setTypeDatesState] = useState<Record<number, { startDate: string | null; endDate: string | null }>>({});
     const [coverageWarnings, setCoverageWarnings] = useState<string[]>([]);
     const [editingTypeDates, setEditingTypeDates] = useState(false);
@@ -129,19 +129,15 @@ export default function PeriodModal({
 
         const fetchTypes = async () => {
             try {
-                const response = await apiClient.get<Array<{ INTERNSHIP_TYPE_ID?: number; id?: number; NAME?: string; name?: string }>>('/internship-types');
+                const response = await apiClient.get<Array<{ INTERNSHIP_TYPE_ID?: number; id?: number; NAME?: string; name?: string; PRIORITY?: number; priority?: number }>>('/internship-types');
                 const types = response.data.map(dto => ({
                     id: dto.INTERNSHIP_TYPE_ID ?? dto.id ?? 0,
                     name: dto.NAME ?? dto.name ?? '',
+                    priority: dto.PRIORITY ?? dto.priority ?? 99,
                 })).filter(t => t.id > 0);
 
-                // Sort: Única → Hospitalaria → Comunitaria
-                const typeOrder: Record<string, number> = { UNICA: 0, HOSPITALARIA: 1, COMUNITARIA: 2 };
-                types.sort((a, b) => {
-                    const an = a.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '');
-                    const bn = b.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '');
-                    return (typeOrder[an] ?? 99) - (typeOrder[bn] ?? 99);
-                });
+                // Sort by PRIORITY (the only source of ordering — never by name)
+                types.sort((a, b) => a.priority - b.priority);
                 setInternshipTypes(types);
 
                 // Initialize type dates from existing periodo data
@@ -478,16 +474,15 @@ export default function PeriodModal({
         const start = new Date(startDateValue);
         const end = new Date(endDateValue);
 
-        const getTypeByName = (target: string) =>
-            internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === target);
-
-        const unicaType = getTypeByName('UNICA');
-        const hospType = getTypeByName('HOSPITALARIA');
-        const comuType = getTypeByName('COMUNITARIA');
+        // Use PRIORITY for ordering — never names
+        const unicaType = internshipTypes.find(t => t.priority === 0);
+        const sequentialTypes = internshipTypes
+            .filter(t => t.priority > 0)
+            .sort((a, b) => a.priority - b.priority);
 
         const updates: Record<number, { startDate: string; endDate: string }> = {};
 
-        // Única: full 16-week period
+        // Única (PRIORITY=0): full period
         if (unicaType) {
             updates[unicaType.id] = {
                 startDate: formatYmd(start),
@@ -495,22 +490,19 @@ export default function PeriodModal({
             };
         }
 
-        // Comunitaria: first 8 weeks
-        if (comuType) {
-            const comuEnd = new Date(start.getTime() + eightWeeksMs);
-            updates[comuType.id] = {
-                startDate: formatYmd(start),
-                endDate: formatYmd(comuEnd),
-            };
-        }
+        // Sequential types: split the period evenly by count
+        if (sequentialTypes.length > 0) {
+            const totalMs = end.getTime() - start.getTime();
+            const sliceMs = totalMs / sequentialTypes.length;
 
-        // Hospitalaria: second 8 weeks
-        if (hospType) {
-            const hospStart = new Date(start.getTime() + eightWeeksMs);
-            updates[hospType.id] = {
-                startDate: formatYmd(hospStart),
-                endDate: formatYmd(end),
-            };
+            sequentialTypes.forEach((type, index) => {
+                const sliceStart = new Date(start.getTime() + index * sliceMs);
+                const sliceEnd = new Date(start.getTime() + (index + 1) * sliceMs);
+                updates[type.id] = {
+                    startDate: formatYmd(sliceStart),
+                    endDate: formatYmd(sliceEnd),
+                };
+            });
         }
 
         if (Object.keys(updates).length > 0) {
@@ -576,17 +568,20 @@ export default function PeriodModal({
                     }
                 }
 
-                // ponytail: validate comunitaria < hospitalaria ordering
-                const hospType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'HOSPITALARIA');
-                const comuType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'COMUNITARIA');
-                if (hospType && comuType) {
-                    const hospDates = typeDatesState[hospType.id];
-                    const comuDates = typeDatesState[comuType.id];
-                    if (hospDates?.startDate && comuDates?.endDate) {
-                        const hospStart = parseYmd(hospDates.startDate);
-                        const comuEnd = parseYmd(comuDates.endDate);
-                        if (comuEnd.getTime() > hospStart.getTime()) {
-                            throw new Error('Comunitaria: la fecha de fin debe ser anterior a la fecha de inicio de Hospitalaria');
+                // Validate sequential ordering: each type must end before the next starts
+                const sortedSequential = internshipTypes
+                    .filter(t => t.priority > 0)
+                    .sort((a, b) => a.priority - b.priority);
+                for (let i = 0; i < sortedSequential.length - 1; i++) {
+                    const current = sortedSequential[i];
+                    const next = sortedSequential[i + 1];
+                    const currentDates = typeDatesState[current.id];
+                    const nextDates = typeDatesState[next.id];
+                    if (currentDates?.endDate && nextDates?.startDate) {
+                        const currentEnd = parseYmd(currentDates.endDate);
+                        const nextStart = parseYmd(nextDates.startDate);
+                        if (currentEnd.getTime() > nextStart.getTime()) {
+                            throw new Error(`${current.name}: la fecha de fin debe ser anterior a la fecha de inicio de ${next.name}`);
                         }
                     }
                 }
@@ -615,21 +610,24 @@ export default function PeriodModal({
                     );
                 }
             } else {
-                // ponytail: validate comunitaria < hospitalaria ordering (same as edit path)
-                const hospType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'HOSPITALARIA');
-                const comuType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'COMUNITARIA');
-                if (hospType && comuType) {
-                    const hospDates = typeDatesState[hospType.id];
-                    const comuDates = typeDatesState[comuType.id];
-                    if (hospDates?.startDate && comuDates?.endDate) {
-                        const parseYmd = (str: string): Date => {
+                // Validate sequential ordering: each type must end before the next starts
+                const sortedSeq = internshipTypes
+                    .filter(t => t.priority > 0)
+                    .sort((a, b) => a.priority - b.priority);
+                for (let i = 0; i < sortedSeq.length - 1; i++) {
+                    const current = sortedSeq[i];
+                    const next = sortedSeq[i + 1];
+                    const currentDates = typeDatesState[current.id];
+                    const nextDates = typeDatesState[next.id];
+                    if (currentDates?.endDate && nextDates?.startDate) {
+                        const parseYmd2 = (str: string): Date => {
                             const [y, m, d] = str.split('-').map(Number);
                             return new Date(y, m - 1, d, 12, 0, 0);
                         };
-                        const hospStart = parseYmd(hospDates.startDate);
-                        const comuEnd = parseYmd(comuDates.endDate);
-                        if (comuEnd.getTime() > hospStart.getTime()) {
-                            throw new Error('Comunitaria: la fecha de fin debe ser anterior a la fecha de inicio de Hospitalaria');
+                        const currentEnd = parseYmd2(currentDates.endDate);
+                        const nextStart = parseYmd2(nextDates.startDate);
+                        if (currentEnd.getTime() > nextStart.getTime()) {
+                            throw new Error(`${current.name}: la fecha de fin debe ser anterior a la fecha de inicio de ${next.name}`);
                         }
                     }
                 }
@@ -873,17 +871,6 @@ export default function PeriodModal({
                                                         {(() => {
                                                             const pStart = startDateValue ? new Date(startDateValue) : null;
                                                             const pEnd = endDateValue ? new Date(endDateValue) : null;
-                                                            const typeNameUpper = type.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '');
-                                                            const isUnica = typeNameUpper === 'UNICA';
-                                                            const isHospitalaria = typeNameUpper === 'HOSPITALARIA';
-                                                            const isComunitaria = typeNameUpper === 'COMUNITARIA';
-
-                                                            const eightWeeksMs = 8 * 7 * 24 * 60 * 60 * 1000;
-
-                                                            const hospType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'HOSPITALARIA');
-                                                            const comuType = internshipTypes.find(t => t.name.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/g, '') === 'COMUNITARIA');
-                                                            const hospTd = hospType ? typeDatesState[hospType.id] : null;
-                                                            const comuTd = comuType ? typeDatesState[comuType.id] : null;
 
                                                             const parseYmd = (str: string): Date | null => {
                                                                 const [y, m, d] = str.split('-').map(Number);
@@ -891,19 +878,30 @@ export default function PeriodModal({
                                                                 return new Date(y, m - 1, d, 12, 0, 0);
                                                             };
 
+                                                            // Use PRIORITY for all ordering — never names
+                                                            const isUnica = type.priority === 0;
+                                                            const sequentialTypes = internshipTypes
+                                                                .filter(t => t.priority > 0)
+                                                                .sort((a, b) => a.priority - b.priority);
+
                                                             // Current type's own start (if user already picked one)
                                                             const ownStart = td?.startDate ? parseYmd(td.startDate) : null;
 
-                                                            // startMinDate — Hospitalaria must start after Comunitaria ends
-                                                            const startMinDate = pStart && isHospitalaria && comuTd?.endDate
-                                                                ? (parseYmd(comuTd.endDate) ?? pStart)
+                                                            // startMinDate — must start after previous type ends
+                                                            const prevType = sequentialTypes.find(t => t.priority === type.priority - 1);
+                                                            const prevTd = prevType ? typeDatesState[prevType.id] : null;
+                                                            const startMinDate = pStart && !isUnica && prevTd?.endDate
+                                                                ? (parseYmd(prevTd.endDate) ?? pStart)
                                                                 : pStart;
 
                                                             // startMaxDate — all: end of parent period
                                                             const startMaxDate = pEnd ?? undefined;
 
-                                                            // endMinDate — at least start + 8/16w (same as parent: end >= start + min duration)
-                                                            const weeksForType = isUnica ? 16 : 8;
+                                                            // endMinDate — at least equal share of the period
+                                                            const sliceWeeks = sequentialTypes.length > 0
+                                                                ? Math.ceil(16 / sequentialTypes.length)
+                                                                : 8;
+                                                            const weeksForType = isUnica ? 16 : sliceWeeks;
                                                             const endMinDate = (() => {
                                                                 if (!pStart) return undefined;
                                                                 const base = ownStart ?? pStart;
@@ -911,9 +909,11 @@ export default function PeriodModal({
                                                                 return min;
                                                             })();
 
-                                                            // endMaxDate — Comunitaria must end before Hospitalaria starts, others: pEnd
-                                                            const endMaxDate = pEnd && isComunitaria && hospTd?.startDate
-                                                                ? (parseYmd(hospTd.startDate) ?? pEnd)
+                                                            // endMaxDate — must end before next type starts
+                                                            const nextType = sequentialTypes.find(t => t.priority === type.priority + 1);
+                                                            const nextTd = nextType ? typeDatesState[nextType.id] : null;
+                                                            const endMaxDate = pEnd && !isUnica && nextTd?.startDate
+                                                                ? (parseYmd(nextTd.startDate) ?? pEnd)
                                                                 : pEnd;
 
                                                             // Auto-update end when start changes (same as parent period behavior)

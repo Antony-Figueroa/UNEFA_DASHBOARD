@@ -30,11 +30,6 @@ export const CloseActasResultsModal: React.FC<CloseActasResultsModalProps> = ({
   const created = autoPreEnrollResults.filter(r => r.created);
   const failed = autoPreEnrollResults.filter(r => !r.created);
 
-  const handleExportToEnrollment = () => {
-    onClose();
-    navigate('/enrollment');
-  };
-
   return (
     <UnifiedDialog
       isOpen={isOpen}
@@ -85,6 +80,7 @@ export const CloseActasResultsModal: React.FC<CloseActasResultsModalProps> = ({
                       <th className="px-3 py-2">Estudiante</th>
                       <th className="px-3 py-2">Siguiente Tipo</th>
                       <th className="px-3 py-2 text-center">Estado</th>
+                      <th className="px-3 py-2 text-right">Acción</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -104,6 +100,20 @@ export const CloseActasResultsModal: React.FC<CloseActasResultsModalProps> = ({
                             Creada
                           </span>
                         </td>
+                        <td className="px-3 py-2 text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              onClose();
+                              navigate('/pre-enrollment', {
+                                state: { highlightPracticeId: item.createdPracticeId },
+                              });
+                            }}
+                          >
+                            Ir a Inscripción
+                          </Button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -118,6 +128,7 @@ export const CloseActasResultsModal: React.FC<CloseActasResultsModalProps> = ({
                     <tr className="text-left text-text-tertiary text-xs uppercase bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                       <th className="px-3 py-2">Estudiante</th>
                       <th className="px-3 py-2">Motivo</th>
+                      <th className="px-3 py-2 text-right">Acción</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -132,25 +143,30 @@ export const CloseActasResultsModal: React.FC<CloseActasResultsModalProps> = ({
                         <td className="px-3 py-2 text-xs text-text-tertiary">
                           {item.message || 'No creado'}
                         </td>
+                        <td className="px-3 py-2 text-right">
+                          {item.existingPracticeId ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                onClose();
+                                navigate('/pre-enrollment', {
+                                  state: { highlightPracticeId: item.existingPracticeId },
+                                });
+                              }}
+                            >
+                              Ver Pre-inscripción
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-text-tertiary">—</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Export action */}
-        {created.length > 0 && (
-          <div className="flex justify-end pt-2 border-t border-border-default dark:border-border-dark">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportToEnrollment}
-            >
-              Exportar a Inscripción
-            </Button>
           </div>
         )}
       </div>

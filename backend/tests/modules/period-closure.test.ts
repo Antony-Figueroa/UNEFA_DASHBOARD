@@ -50,7 +50,7 @@ function chainMock(defaultData: unknown = null, defaultError: unknown = null) {
 
 const mockFromFn = vi.fn();
 
-vi.mock('../../backend/src/lib/db-manager.js', () => ({
+vi.mock('../../src/lib/db-manager.js', () => ({
   dbManager: {
     getConnection: vi.fn(() => ({ from: mockFromFn })),
     withRetry: vi.fn(async (fn: any) => {
@@ -60,33 +60,33 @@ vi.mock('../../backend/src/lib/db-manager.js', () => ({
   },
 }));
 
-vi.mock('../../backend/src/services/backup.service.js', () => ({
+vi.mock('../../src/services/backup.service.js', () => ({
   backupService: {
     createBackup: vi.fn().mockResolvedValue({ id: 'backup-123' }),
   },
 }));
 
-vi.mock('../../backend/src/lib/cache-manager.js', () => ({
+vi.mock('../../src/lib/cache-manager.js', () => ({
   cacheManager: {
     deleteByPrefix: vi.fn(),
   },
 }));
 
-vi.mock('../../backend/src/utils/audit-helpers.js', () => ({
+vi.mock('../../src/utils/audit-helpers.js', () => ({
   auditCreate: vi.fn(),
   auditUpdate: vi.fn(),
   auditStatusChange: vi.fn(),
 }));
 
-vi.mock('../../backend/src/services/period-type-dates.service.js', () => ({
+vi.mock('../../src/services/period-type-dates.service.js', () => ({
   isFeatureEnabled: vi.fn(() => false),
   getTypeDatesByPeriod: vi.fn(),
 }));
 
 // --- Imports ---
 
-import { getPendingPractices, closePeriodWithDecisions } from '../../backend/src/controllers/period-closure.controller.js';
-import { PRACTICES_STATUS, PERIOD_STATUS } from '../../backend/src/constants/practice-status.constants.js';
+import { getPendingPractices, closePeriodWithDecisions } from '../../src/controllers/period-closure.controller.js';
+import { PRACTICES_STATUS, PERIOD_STATUS } from '../../src/constants/practice-status.constants.js';
 
 // --- Tests ---
 

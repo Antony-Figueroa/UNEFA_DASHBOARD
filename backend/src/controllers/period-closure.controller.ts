@@ -385,7 +385,7 @@ export const closePeriodWithDecisions = async (req: AuthRequest, res: Response) 
 
       // Audit period close
       try {
-        await auditStatusChange(req, 't_internships_period', id, Number(PERIOD_STATUS.EN_CURSO), Number(PERIOD_STATUS.CULMINADO));
+        await auditStatusChange(req, 't_internships_period', String(id), Number(PERIOD_STATUS.EN_CURSO), Number(PERIOD_STATUS.CULMINADO));
       } catch (auditError) {
         console.error('[Audit] Error auditing period close:', auditError);
       }

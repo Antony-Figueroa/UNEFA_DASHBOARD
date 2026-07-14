@@ -911,6 +911,7 @@ export default function PeriodModal({
                                                             
                                                             // endMinDate should respect the business rule minimum
                                                             const endMinDate = businessMinEnd ?? startMinDate;
+                                                            const endMaxDate = pEnd ?? undefined;
 
                                                             // Auto-update end when start changes (same as parent period behavior)
                                                             const handleStartChange = (dateStr: string) => {

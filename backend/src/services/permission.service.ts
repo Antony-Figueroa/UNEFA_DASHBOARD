@@ -23,6 +23,11 @@ class PermissionService {
    * separadas que son más robustas y no dependen del schema cache.
    */
   async getPermissionsByRole(roleId: number): Promise<string[]> {
+    if (roleId == null || !Number.isFinite(roleId)) {
+      console.warn(`[PermissionService] getPermissionsByRole called with invalid roleId: ${roleId}`);
+      return [];
+    }
+
     return await dbManager.withRetry(async (supabase) => {
       // 1. Obtener los IDs de permisos asignados al rol
       const { data: rolePerms, error: rpError } = await supabase

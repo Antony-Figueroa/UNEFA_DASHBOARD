@@ -534,7 +534,7 @@ export default function TutorTable({
                                     <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary">
                                         {formatPhoneDisplay(t.phone)}
                                     </TableCell>
-                                    <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary uppercase">
+                                    <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary lowercase">
                                         {t.email}
                                     </TableCell>
                                     <TableCell className="table-cell text-right">
@@ -630,7 +630,7 @@ export default function TutorTable({
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center uppercase">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo Electrónico</p>
-                                                <p className="text-sm text-text-secondary dark:text-text-secondary font-medium truncate w-full max-w-62.5 uppercase">{t.email}</p>
+                                                <p className="text-sm text-text-secondary dark:text-text-secondary font-medium truncate w-full max-w-62.5 lowercase">{t.email}</p>
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Teléfono</p>

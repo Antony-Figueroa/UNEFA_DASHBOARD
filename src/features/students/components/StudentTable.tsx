@@ -655,7 +655,7 @@ export default function StudentTable({
                                     <TableCell className="table-cell">
                                         <StatusBadge status={s.currentPracticeStatus ?? null} />
                                     </TableCell>
-                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{s.email}</TableCell>
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary lowercase">{s.email}</TableCell>
                                     <TableCell className="table-cell text-right relative">
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
@@ -743,7 +743,7 @@ export default function StudentTable({
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo Electrónico</p>
-                                                <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">{s.email}</p>
+                                                <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium truncate w-full max-w-62.5 lowercase">{s.email}</p>
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Teléfono</p>

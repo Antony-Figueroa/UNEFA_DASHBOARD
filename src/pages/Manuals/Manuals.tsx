@@ -194,7 +194,7 @@ export default function ManualsPage() {
         </div>
 
         <ComponentCard title="Recursos Adicionales">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <a href="#" className="flex items-center gap-4 p-4 rounded-lg border border-border-light dark:border-white/10 hover:border-brand-300 dark:hover:border-brand-700 transition-colors">
               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-500/10">
                 <svg className="w-5 h-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -216,18 +216,6 @@ export default function ManualsPage() {
               <div>
                 <h3 className="font-medium text-text-primary dark:text-text-emphasis">Soporte Técnico</h3>
                 <p className="text-xs text-text-tertiary">Contacta al equipo de soporte</p>
-              </div>
-            </a>
-
-            <a href="#" className="flex items-center gap-4 p-4 rounded-lg border border-border-light dark:border-white/10 hover:border-brand-300 dark:hover:border-brand-700 transition-colors">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-warning-50 dark:bg-warning-500/10">
-                <svg className="w-5 h-5 text-warning-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-medium text-text-primary dark:text-text-emphasis">Video Tutoriales</h3>
-                <p className="text-xs text-text-tertiary">Aprende con videos paso a paso</p>
               </div>
             </a>
           </div>

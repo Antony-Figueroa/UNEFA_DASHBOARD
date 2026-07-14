@@ -515,7 +515,7 @@ export default function InstitutionalResponsibleTable({
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="text-text-primary dark:text-white/90 text-sm">{item.email}</span>
+                      <span className="text-text-primary dark:text-white/90 text-sm lowercase">{item.email}</span>
                       <span className="text-text-tertiary dark:text-text-secondary text-xs mt-0.5">{formatPhoneDisplay(item.phone)}</span>
                     </div>
                   </TableCell>
@@ -612,7 +612,7 @@ export default function InstitutionalResponsibleTable({
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
                           Contacto
                         </p>
-                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">
+                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium truncate w-full max-w-62.5 lowercase">
                           {item.email}
                         </p>
                         <p className="text-xs text-text-secondary dark:text-text-secondary mt-1">

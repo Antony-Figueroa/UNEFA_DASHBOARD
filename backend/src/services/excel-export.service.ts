@@ -348,13 +348,16 @@ function addLogos(workbook: Workbook, ws: Worksheet, totalCols: number): void {
 
 function findLogoPaths(): { logo: string; escudo: string } | null {
   const candidates = [
-    // Desde backend/src/services/ o backend/dist/services/
+    // 1) backend/public/ — self-contained, works in ALL deployments (Render, Docker, local)
+    path.resolve(__dirname, '../../public/logo-nuevo.png'),
+    path.resolve(__dirname, '../../public/unefa-img/Escudo.png'),
+    // 2) Project root public/ — works when backend runs from repo root
     path.resolve(__dirname, '../../../public/logo-nuevo.png'),
     path.resolve(__dirname, '../../../public/unefa-img/Escudo.png'),
-    // Fallback desde backend/
+    // 3) Fallback desde backend/
     path.resolve(process.cwd(), '../public/logo-nuevo.png'),
     path.resolve(process.cwd(), '../public/unefa-img/Escudo.png'),
-    // Fallback directo
+    // 4) Fallback directo
     path.resolve(process.cwd(), 'public/logo-nuevo.png'),
     path.resolve(process.cwd(), 'public/unefa-img/Escudo.png'),
   ];

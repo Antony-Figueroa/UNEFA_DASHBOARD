@@ -26,6 +26,7 @@ import { withdrawPractice, reclassifyWithdrawal } from '../../enrollment/service
 import { useAuth } from '../../../context/auth';
 import { matchSearch } from '../../../utils/searchNormalizer';
 import { generateCertificatePDF } from '../../../components/ui/pdf/templates/CertificatePDF';
+import { reportsService } from '../../reports/services/reportsService';
 // Sub-hooks for grouped culmination view
 import { useCulminationData } from './useCulminationData';
 import { useCulminationFilters } from './useCulminationFilters';
@@ -459,26 +460,15 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     try {
       toast.loading('Generando PDF...', { id: 'pdf-download' });
 
-      const blob = await generateCertificatePDF(
-        {
-          id: String(practice.practiceId),
-          studentCi: practice.studentCi,
-          studentName: practice.studentName,
-          careerId: practice.careerId,
-          careerName: practice.careerName,
-          institutionId: practice.institutionId,
-          institutionName: practice.institutionName,
-          period: practice.periodName,
-          practiceType: practice.practiceTypeName,
-          startDate: practice.startDate,
-          endDate: practice.endDate,
-          totalHours: practice.totalHours,
-          status: practice.culminationStatus,
-          certificateNumber: practice.certificateNumber,
-          certifiedAt: practice.certifiedAt,
-        },
-        practice.certificateNumber || 'N/A'
-      );
+      const data = await reportsService.getDocumentData('evaluacion-consolidada', practice.practiceId);
+
+      if (!data.evaluacionFinal || data.evaluacionFinal.notaFinal === null) {
+        addToast({ variant: 'error', title: 'Error al generar PDF', message: 'Evaluaciones incompletas, no se puede generar el certificado' });
+        toast.dismiss('pdf-download');
+        return;
+      }
+
+      const blob = await generateCertificatePDF(data, data.textos || {});
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');

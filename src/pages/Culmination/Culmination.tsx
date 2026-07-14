@@ -24,6 +24,7 @@ import { culminationService, CulminationGroup, CulminationPractice, CulminationM
 import { evaluationsCulminationService } from "../../features/evaluations-culmination/services/evaluationsCulminationService";
 import Label from "../../components/form/Label";
 import { generateCertificatePDF } from "../../components/ui/pdf/templates/CertificatePDF";
+import { reportsService } from "../../features/reports/services/reportsService";
 import { useToast } from "../../context/toast";
 import { TOAST } from "../../components/ui/dialog/DialogConfig";
 import { matchSearch } from "../../utils/searchNormalizer";
@@ -157,36 +158,25 @@ export default function CulminationPage() {
             try {
               toast.loading("Generando PDF...", { id: "pdf-download" });
 
-              const pdfRecord = {
-                id: practice.id,
-                studentCi: group.studentCi,
-                studentName: group.studentName,
-                careerId: 0,
-                careerName: group.careerName,
-                institutionId: 0,
-                institutionName: practice.institutionName,
-                period: group.period,
-                practiceType: practice.practiceType,
-                startDate: "",
-                endDate: "",
-                totalHours: practice.totalHours,
-                status: "certified" as const,
-                certificateNumber: response.certificate.number,
-                certifiedAt: response.certificate.generatedAt,
-              };
+              const data = await reportsService.getDocumentData('evaluacion-consolidada', Number(practice.id));
 
-              const blob = await generateCertificatePDF(pdfRecord, response.certificate.number);
+              if (!data.evaluacionFinal || data.evaluacionFinal.notaFinal === null) {
+                addToast({ variant: 'error', title: 'Error al generar PDF', message: 'Evaluaciones incompletas, no se puede generar el certificado' });
+                toast.dismiss("pdf-download");
+              } else {
+                const blob = await generateCertificatePDF(data, data.textos || {});
 
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = `Certificado_${group.studentName.replace(/\s+/g, "_")}.pdf`;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `Certificado_${group.studentName.replace(/\s+/g, "_")}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
 
-              toast.success("PDF descargado exitosamente", { id: "pdf-download" });
+                toast.success("PDF descargado exitosamente", { id: "pdf-download" });
+              }
             } catch (pdfError) {
               console.error("Error generating PDF after certification:", pdfError);
               toast.error("Certificado creado pero error al generar PDF. Use el botón PDF para reintentar.", { id: "pdf-download" });
@@ -246,25 +236,15 @@ export default function CulminationPage() {
     try {
       toast.loading("Generando PDF...", { id: "pdf-download" });
 
-      const pdfRecord = {
-        id: practice.id,
-        studentCi: group.studentCi,
-        studentName: group.studentName,
-        careerId: 0,
-        careerName: group.careerName,
-        institutionId: 0,
-        institutionName: practice.institutionName,
-        period: group.period,
-        practiceType: practice.practiceType,
-        startDate: "",
-        endDate: "",
-        totalHours: practice.totalHours,
-        status: (practice.culminationStatus === "certified" ? "certified" : "approved") as "approved" | "certified",
-        certificateNumber: practice.certificateNumber,
-        certifiedAt: practice.certifiedAt,
-      };
+      const data = await reportsService.getDocumentData('evaluacion-consolidada', Number(practice.id));
 
-      const blob = await generateCertificatePDF(pdfRecord, practice.certificateNumber || "N/A");
+      if (!data.evaluacionFinal || data.evaluacionFinal.notaFinal === null) {
+        addToast({ variant: 'error', title: 'Error al generar PDF', message: 'Evaluaciones incompletas, no se puede generar el certificado' });
+        toast.dismiss("pdf-download");
+        return;
+      }
+
+      const blob = await generateCertificatePDF(data, data.textos || {});
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

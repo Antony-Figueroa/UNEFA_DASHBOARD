@@ -174,4 +174,4 @@ async function ensurePasswordKey(userId: number) {
   console.log(`[KEY] Password hash stored for USER_ID=${userId}`);
 }
 
-main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+main().then(() => { process.exitCode = 0; }).catch(e => { console.error(e); process.exitCode = 1; });

@@ -56,24 +56,7 @@ Sin otro particular,`,
   acta_validacion: {
     cuerpo: `Quienes suscriben, Tutor Académico, Tutor Evaluador Especialista y Tutor Metodológico hacemos constar que el informe de Prácticas Profesionales de la carrera: {{carrera}}, presentado por el (la) bachiller: {{estudianteNombreCompleto}}, C.I. N° {{estudianteCi}}, está apto, revisado y aprobado para ser entregado a la coordinación de Prácticas Profesionales en los lapsos establecidos para tal fin, por lo que está autorizado para defensa y demás fines consiguientes.
 
-Sin otro particular,
-
-DOCENTE                    FIRMA                    OBSERVACIONES
-Tutor Académico           ____________________      ____________________
-
-
-
-Tutor Evaluador           ____________________      ____________________
-Especialista
-
-
-
-Tutor Metodológico        ____________________      ____________________
-
-
-
-Conforme Pasante: {{estudianteNombreCompleto}}
-Fecha: {{fechaValidacion}}`,
+Sin otro particular,`,
   },
   evaluacion_final: {
     encabezado: 'Se presenta la Evaluación Final de las Prácticas Profesionales realizadas por el(la) estudiante {{estudianteNombreCompleto}}, titular de la C.I. {{estudianteCi}}, de la carrera {{carrera}}, en la institución {{institucionNombre}}, durante el período comprendido entre {{fechaInicio}} y {{fechaFin}}.',

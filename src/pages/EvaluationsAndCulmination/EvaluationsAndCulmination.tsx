@@ -29,6 +29,7 @@ import { AuditHistoryModal } from '../../features/evaluations-culmination/compon
 import { CommitteeModal } from '../../features/evaluations-culmination/components/CommitteeModal';
 import { CloseActasModal } from '../../features/evaluations-culmination/components/CloseActasModal';
 import { CloseActasResultsModal } from '../../features/evaluations-culmination/components/CloseActasResultsModal';
+import { AllEvaluationsDetailModal } from '../../features/evaluations-culmination/components/AllEvaluationsDetailModal';
 
 import { useEvaluationsCulmination } from '../../features/evaluations-culmination/hooks/useEvaluationsCulmination';
 import { Tabs } from '../../components/ui/tabs/Tabs';

@@ -149,7 +149,10 @@ vi.mock('../../../hooks/useTabs', () => ({
 }));
 
 vi.mock('../../../features/evaluations/hooks/useSystemEvaluationConfig', () => ({
-  useSystemEvaluationConfig: () => ({ config: { score: { displayScale: 10 } }, loading: false }),
+  useSystemEvaluationConfig: () => ({
+    config: { score: { min: 1, max: 10, displayScale: 10 }, weights: { INSTITUCIONAL: 0.40, ACADEMICO: 0.30, COMITE: 0.30 } },
+    loading: false,
+  }),
 }));
 
 const SAMPLE_PRACTICES = [

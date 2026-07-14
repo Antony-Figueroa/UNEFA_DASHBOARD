@@ -107,7 +107,12 @@ vi.mock('../../../features/evaluations-culmination/components/AuditHistoryModal'
 vi.mock('../../../features/evaluations-culmination/components/CommitteeModal', () => ({ CommitteeModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/CloseActasModal', () => ({ CloseActasModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/CloseActasResultsModal', () => ({ CloseActasResultsModal: () => null }));
-vi.mock('../../../features/evaluations/hooks/useSystemEvaluationConfig', () => ({ useSystemEvaluationConfig: () => ({ config: null, loading: false }) }));
+vi.mock('../../../features/evaluations/hooks/useSystemEvaluationConfig', () => ({
+  useSystemEvaluationConfig: () => ({
+    config: { score: { min: 1, max: 10, displayScale: 20 }, weights: { INSTITUCIONAL: 0.40, ACADEMICO: 0.30, COMITE: 0.30 } },
+    loading: false,
+  }),
+}));
 vi.mock('../../../features/evaluations-culmination/components/PhaseStatusBadge', () => ({ PhaseStatusBadge: () => <span data-testid="phase-status-badge" /> }));
 vi.mock('../../../features/evaluations-culmination/components/StudentCulminationRow', () => ({
   StudentCulminationRow: ({ row, onCertify }: any) => (
@@ -357,7 +362,10 @@ vi.mock('../../../hooks/useTabs', () => ({
 
 // Mock useSystemEvaluationConfig
 vi.mock('../../../features/evaluations/hooks/useSystemEvaluationConfig', () => ({
-  useSystemEvaluationConfig: () => ({ config: { score: { displayScale: 20 } }, loading: false }),
+  useSystemEvaluationConfig: () => ({
+    config: { score: { min: 1, max: 10, displayScale: 20 }, weights: { INSTITUCIONAL: 0.40, ACADEMICO: 0.30, COMITE: 0.30 } },
+    loading: false,
+  }),
 }));
 
 let mockHookInstance: any;

@@ -432,10 +432,20 @@ export const getStudentRequests = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.userId;
     const supabase = dbManager.getConnection();
 
+    const { data: userData, error: userError } = await supabase
+      .from('t_user')
+      .select('PERSON_ID')
+      .eq('USER_ID', userId)
+      .single();
+
+    if (userError || !userData) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
     const { data: student } = await supabase
       .from('t_students')
       .select('STUDENTS_ID')
-      .eq('USER_ID', userId)
+      .eq('person_id', userData.PERSON_ID)
       .single();
 
     if (!student) {
@@ -675,11 +685,21 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
     }
 
     // Find student's person record
-    const { data: student, error: studentError } = await supabase
-      .from('t_students')
+    const { data: userData, error: userError } = await supabase
+      .from('t_user')
       .select('PERSON_ID')
       .eq('USER_ID', userId)
       .single();
+
+    if (userError || !userData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    const student = { PERSON_ID: userData.PERSON_ID };
+    const studentError = null;
 
     if (studentError || !student) {
       return res.status(404).json({
@@ -705,7 +725,7 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
         MILITARY_RANK, EMPLOYMENT, STATUS, REGISTRATION_DATE,
         t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birthdate, address, marital_status)
       `)
-      .eq('USER_ID', userId)
+      .eq('person_id', student.PERSON_ID)
       .single();
 
     if (!updated) {
@@ -841,10 +861,20 @@ export const createStudentRequest = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const { data: userData, error: userError } = await supabase
+      .from('t_user')
+      .select('PERSON_ID')
+      .eq('USER_ID', userId)
+      .single();
+
+    if (userError || !userData) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
     const { data: student } = await supabase
       .from('t_students')
       .select('STUDENTS_ID, person_id')
-      .eq('USER_ID', userId)
+      .eq('person_id', userData.PERSON_ID)
       .single();
 
     if (!student) {

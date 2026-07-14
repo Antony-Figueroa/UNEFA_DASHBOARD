@@ -205,19 +205,22 @@ export const generateTemplate = async (config: TemplateConfig): Promise<Buffer> 
     'TIPO_ESTUDIANTE', 'RANGO_MILITAR', 'TRABAJA'
   ];
 
-  // Obtener valores por defecto de la config
+  // Valores de referencia
   const pref = config.prefixes[0]?.abbreviation || 'V';
-  const sex = config.sexes[0]?.abbreviation || 'M';
+  const defaultSex = config.sexes[0]?.abbreviation || 'M';
   const civil = config.civilStatuses[0]?.name || 'SOLTERO';
   const phonePref = config.phonePrefixes[0]?.abbreviation || '0412';
-  const tipo = config.studentTypes[0]?.abbreviation || '';
+  const tipo = config.studentTypes[0]?.abbreviation || 'CIV';
 
-  const example = [
-    pref, '12345678', 'Juan', '', 'Pérez', '', sex, '2010-01-15', civil, phonePref, '3456789',
-    'email@ejemplo.com', '', tipo, '', 'NO'
+  // Datos de prueba variados — el usuario los reemplaza con los suyos
+  const rows = [
+    [pref, '12345678', 'Juan',   'Carlos',  'Pérez',   'González', 'M', '2006-03-15', civil, phonePref, '3456789', 'juan.perez@ejemplo.com',   'Av. Principal, Caracas',      tipo, '',    'NO'],
+    [pref, '23456789', 'María',  'José',    'López',   'Rodríguez', 'F', '2005-08-22', civil, '0414',    '5678901',  'maria.lopez@ejemplo.com',  'Calle 5, Maracaibo',           'MIL', 'CNEL', 'NO'],
+    [pref, '34567890', 'Pedro',  'Antonio', 'Martínez','',          'M', '2004-11-10', civil, '0424',    '6789012',  'pedro.martinez@ejemplo.com','Urb. Las Flores, Valencia',     tipo, '',     'SI'],
+    [pref, '45678901', 'Ana',    'Isabel',  'García',  'Torres',    'F', '2006-01-30', civil, '0416',    '7890123',  'ana.garcia@ejemplo.com',    'Calle 10, Barquisimeto',        tipo, '',     'NO'],
   ];
 
-  const sheet = XLSX.utils.aoa_to_sheet([headers, example]);
+  const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   
   sheet['!cols'] = [
     { wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
@@ -253,29 +256,44 @@ export const parseExcelFile = async (buffer: Buffer): Promise<StudentImportRow[]
   // Headers disponibles
   const headers = Object.keys(rawData[0]).map(h => h.trim().toUpperCase());
   
-  // Mapeo de headers
+  // Mapeo de headers - usa exact match o startsWith para evitar colisiones (ej: PREFIJO_CI contiene CI)
   const getHeader = (names: string[]): string => {
-    return Object.keys(rawData[0]).find(h => 
-      names.some(n => h.trim().toUpperCase().includes(n))
-    ) || '';
+    const keys = Object.keys(rawData[0]).map(k => k.trim().toUpperCase());
+    // 1. Exact match
+    for (const name of names) {
+      const idx = keys.findIndex(k => k === name.toUpperCase());
+      if (idx >= 0) return Object.keys(rawData[0])[idx];
+    }
+    // 2. StartsWith match (e.g., "PREFIJO_CI" starts with "PREFIJO")
+    for (const name of names) {
+      const idx = keys.findIndex(k => k.startsWith(name.toUpperCase()));
+      if (idx >= 0) return Object.keys(rawData[0])[idx];
+    }
+    // 3. EndsWith match (e.g., "CEDULA" ends with "CI" - but avoid "PREFIJO_CI" ending with "CI")
+    for (const name of names) {
+      const upperName = name.toUpperCase();
+      const idx = keys.findIndex(k => k.endsWith(upperName) && k.length > upperName.length);
+      if (idx >= 0) return Object.keys(rawData[0])[idx];
+    }
+    return '';
   };
 
   const headerMap = {
-    prefixCi: getHeader(['PREFIJO', 'PREFIJO_CI']),
-    cedula: getHeader(['CEDULA', 'CI']),
-    firstName: getHeader(['PRIMER', 'NOMBRE']),
-    middleName: getHeader(['SEGUNDO', 'NOMBRE']),
+    prefixCi: getHeader(['PREFIJO_CI', 'PREFIJO']),
+    cedula: getHeader(['CEDULA']),
+    firstName: getHeader(['PRIMER_NOMBRE', 'PRIMER', 'NOMBRE']),
+    middleName: getHeader(['SEGUNDO_NOMBRE', 'SEGUNDO', 'NOMBRE']),
     lastName: getHeader(['APELLIDO']),
-    secondLastName: getHeader(['SEGUNDO', 'APELLIDO']),
+    secondLastName: getHeader(['SEGUNDO_APELLIDO', 'SEGUNDO', 'APELLIDO']),
     sex: getHeader(['SEXO', 'GENERO']),
-    birthDate: getHeader(['NACIMIENTO', 'FECHA']),
-    civilStatus: getHeader(['CIVIL', 'ESTADO']),
-    phonePrefix: getHeader(['PREFIJO', 'TELEFONO']),
+    birthDate: getHeader(['FECHA_NACIMIENTO', 'NACIMIENTO', 'FECHA']),
+    civilStatus: getHeader(['ESTADO_CIVIL', 'CIVIL', 'ESTADO']),
+    phonePrefix: getHeader(['PREFIJO_TELEFONO', 'PREFIJO', 'TELEFONO']),
     phoneNumber: getHeader(['TELEFONO']),
     email: getHeader(['CORREO', 'EMAIL']),
     address: getHeader(['DIRECCION', 'DIRECCIÓN']),
-    studentType: getHeader(['TIPO', 'ESTUDIANTE']),
-    militaryRank: getHeader(['RANGO', 'MILITAR']),
+    studentType: getHeader(['TIPO_ESTUDIANTE', 'TIPO', 'ESTUDIANTE']),
+    militaryRank: getHeader(['RANGO_MILITAR', 'RANGO', 'MILITAR']),
     works: getHeader(['TRABAJA', 'TRABAJ'])
   };
 
@@ -387,11 +405,13 @@ export const validateRow = (
     messages.push('Correo electrónico inválido');
   }
   
-  // 6. Tipo estudiante
-  const validTypes = config.studentTypes.map(t => (t.abbreviation || t.name).toUpperCase());
-  const typeValue = row.studentType?.toUpperCase() || '';
-  if (config.studentTypes.length > 0 && !validTypes.includes(typeValue)) {
-    messages.push(`Tipo inválido. Usar: ${validTypes.join(', ')}`);
+  // 6. Tipo estudiante (opcional, por defecto CIV)
+  if (row.studentType) {
+    const typeResult = normalizeValue(row.studentType, config.studentTypes);
+    if (!typeResult.matched && config.studentTypes.length > 0) {
+      const validTypes = config.studentTypes.map(t => (t.abbreviation || t.name).toUpperCase());
+      messages.push(`Tipo inválido. Usar: ${[...new Set(validTypes)].join(', ')}`);
+    }
   }
   
   // 7. Trabaja

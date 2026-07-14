@@ -243,6 +243,17 @@ export const getResultLabel = (result: PracticeResult): string => {
   }
 };
 
+// ── Evaluation Group Types (PR 3) ────────────────────────────────────────
+
+/** Grupo de prácticas por estudiante + carrera */
+export interface EvaluationGroup {
+  studentCi: string;
+  studentName: string;
+  careerId: number;
+  careerName: string;
+  practices: PracticeWithEvaluations[];
+}
+
 // ── Culmination Redesign Types (PR 1) ────────────────────────────────────
 
 /** Phase status for each practice within a student group */
@@ -258,6 +269,8 @@ export interface PhaseStatus {
   evaluationStatus: string | null;
   institutionName: string;
   hoursCompleted: number;
+  /** ID de la evaluación asociada (para ver detalles) */
+  evaluationId?: number;
 }
 
 /** One row in the grouped culmination table */
@@ -275,6 +288,8 @@ export interface StudentCulminationRowData {
   certifiedAt: string | null;
   totalPractices: number;
   completedPractices: number;
+  /** Indica si el estudiante está dentro del período de gracia para descongelar/re-evaluar */
+  isWithinGracePeriod?: boolean;
 }
 
 /** API response shape for grouped culmination data */

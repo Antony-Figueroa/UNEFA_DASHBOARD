@@ -9,7 +9,10 @@
 import React, { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PhaseStatusBadge } from './PhaseStatusBadge';
-import type { StudentCulminationRowData } from '../types';
+import { ActionDropdown } from './ActionDropdown';
+import type { ActionItem } from './ActionDropdown';
+import { EyeIcon, ListIcon } from '../../../icons';
+import type { StudentCulminationRowData, PhaseStatus } from '../types';
 
 interface StudentCulminationRowProps {
   row: StudentCulminationRowData;
@@ -18,9 +21,13 @@ interface StudentCulminationRowProps {
   onCertify: (practiceId: number) => Promise<boolean>;
   onReverse: (practiceId: number, reason: string, resolutionNumber: string) => Promise<boolean>;
   onUnfreeze?: (practiceId: number) => void;
+  onViewEvaluationDetails?: (practiceId: number) => void;
+  onViewAudit?: (practiceId: number) => void;
   certifying: boolean;
   /** When true, shows grace period badge and enables unfreeze for REPROBADO */
   isWithinGracePeriod?: boolean;
+  /** When true, hides all action buttons and the expand chevron (certification view) */
+  readOnly?: boolean;
 }
 
 const FINAL_STATUS_COLORS: Record<string, string> = {
@@ -56,13 +63,61 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
   onToggle,
   onCertify,
   onUnfreeze,
+  onViewEvaluationDetails,
+  onViewAudit,
   certifying,
   isWithinGracePeriod = false,
+  readOnly = false,
 }) => {
   const numPhases = row.phases.length;
   const isFirstApproved =
     row.phases.length > 0 &&
     (row.phases[0].status === 'approved' || row.phases[0].status === 'certified');
+
+  const buildPhaseActions = useCallback(
+    (phase: PhaseStatus, _index: number): ActionItem[] => {
+      const actions: ActionItem[] = [];
+
+      // Ver Evaluación — cuando existe calificación
+      if (phase.grade != null && onViewEvaluationDetails) {
+        actions.push({
+          label: 'Ver Evaluación',
+          icon: <EyeIcon className="w-4 h-4" />,
+          onClick: () => onViewEvaluationDetails(phase.practiceId),
+        });
+      }
+
+      // Auditoría — cuando aprobado o certificado
+      if ((phase.status === 'approved' || phase.status === 'certified') && onViewAudit) {
+        actions.push({
+          label: 'Auditoría',
+          icon: <ListIcon className="w-4 h-4" />,
+          onClick: () => onViewAudit(phase.practiceId),
+        });
+      }
+
+      // Descongelar — reprobado dentro del período de gracia
+      if (!readOnly && phase.status === 'failed' && isWithinGracePeriod && onUnfreeze) {
+        actions.push({
+          label: 'Descongelar',
+          className: 'text-amber-600 dark:text-amber-400',
+          onClick: () => onUnfreeze(phase.practiceId),
+        });
+      }
+
+      // Descongelar — congelado (cualquier estado salvo failed)
+      if (!readOnly && phase.isFrozen && onUnfreeze && phase.status !== 'failed') {
+        actions.push({
+          label: 'Descongelar',
+          className: 'text-amber-600 dark:text-amber-400',
+          onClick: () => onUnfreeze(phase.practiceId),
+        });
+      }
+
+      return actions;
+    },
+    [onViewEvaluationDetails, onViewAudit, onUnfreeze, isWithinGracePeriod, readOnly]
+  );
 
   const handleCertify = useCallback(
     (e: React.MouseEvent) => {
@@ -85,14 +140,16 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* Expand/Collapse icon */}
-          <svg
-            className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7l-7 7" />
-          </svg>
+          {!readOnly && (
+            <svg
+              className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7l-7 7" />
+            </svg>
+          )}
 
           {/* Student name and CI */}
           <div className="min-w-0">
@@ -209,33 +266,10 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
                               Bloqueada
                             </span>
                           ) : (
-                            <div className="flex items-center justify-center gap-2">
-                              {phase.status === 'approved' && (
-                                <span className="text-xs text-green-600 font-medium">Aprobado</span>
-                              )}
-                              {phase.status === 'failed' && isWithinGracePeriod && onUnfreeze && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); onUnfreeze(phase.practiceId); }}
-                                  className="px-3 py-1 text-xs font-medium rounded-md bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors border border-amber-200"
-                                >
-                                  Descongelar
-                                </button>
-                              )}
-                              {phase.status === 'pending' && (
-                                <span className="text-xs text-text-tertiary italic">En progreso</span>
-                              )}
-                              {phase.status === 'certified' && (
-                                <span className="text-xs text-green-600">Certificado</span>
-                              )}
-                              {phase.isFrozen && onUnfreeze && phase.status !== 'failed' && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); onUnfreeze(phase.practiceId); }}
-                                  className="px-3 py-1 text-xs font-medium rounded-md bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors border border-amber-200"
-                                >
-                                  Descongelar
-                                </button>
-                              )}
-                            </div>
+                            <ActionDropdown
+                              actions={buildPhaseActions(phase, index)}
+                              disabled={readOnly}
+                            />
                           )}
                         </td>
                       </tr>
@@ -253,7 +287,7 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
                     finalStatusLabel={row.finalStatusLabel}
                   />
                 </div>
-                {row.canCertify && (
+                {!readOnly && row.canCertify && (
                   <button
                     onClick={handleCertify}
                     disabled={certifying}

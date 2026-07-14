@@ -43,7 +43,6 @@ vi.mock('../../../features/evaluations-culmination/components/EvaluationActions'
 vi.mock('../../../features/evaluations-culmination/components/BulkExtensionModal', () => ({ BulkExtensionModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/AuditHistoryModal', () => ({ AuditHistoryModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/CommitteeModal', () => ({ CommitteeModal: () => null }));
-vi.mock('../../../features/evaluations-culmination/components/CertificationView', () => ({ CertificationView: () => <div data-testid="certification-view" /> }));
 vi.mock('../../../features/evaluations-culmination/components/CloseActasModal', () => ({ CloseActasModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/CloseActasResultsModal', () => ({ CloseActasResultsModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/PhaseStatusBadge', () => ({ PhaseStatusBadge: () => <span data-testid="phase-status-badge" /> }));

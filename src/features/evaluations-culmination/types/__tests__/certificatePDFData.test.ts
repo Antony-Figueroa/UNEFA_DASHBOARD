@@ -69,7 +69,7 @@ describe('CertificatePDFData type', () => {
       evaluacionFinal: null,
     };
 
-    expectTypeOf(data.evaluacionFinal).toBeNull();
+    expectTypeOf(data.evaluacionFinal).toBeNullable();
   });
 
   it('allows null institucion and null periodo', () => {
@@ -95,7 +95,7 @@ describe('CertificatePDFData type', () => {
       },
     };
 
-    expectTypeOf(data.institucion).toBeNull();
-    expectTypeOf(data.periodo).toBeNull();
+    expectTypeOf(data.institucion).toBeNullable();
+    expectTypeOf(data.periodo).toBeNullable();
   });
 });

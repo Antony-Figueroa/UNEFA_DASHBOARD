@@ -16,6 +16,7 @@ import {
   EvaluationStats,
   CulminationStats,
   StudentCulminationRowData,
+  EvaluationStatus,
 } from '../types';
 import type { EvaluatorType } from '../../evaluations/types';
 import { evaluationsCulminationService } from '../services/evaluationsCulminationService';
@@ -819,7 +820,7 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
           startDate: '',
           endDate: '',
           totalHours: phase.hoursCompleted,
-          evaluationStatus: phase.evaluationStatus || 'completed',
+           evaluationStatus: (phase.evaluationStatus || 'completed') as EvaluationStatus,
           evaluations: {
             INSTITUCIONAL: { completed: true, score: 0, evaluatorName: '' },
             ACADEMICO: { completed: true, score: 0, evaluatorName: '' },

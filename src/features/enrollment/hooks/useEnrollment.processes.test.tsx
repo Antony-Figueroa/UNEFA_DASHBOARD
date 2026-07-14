@@ -295,14 +295,22 @@ describe('useEnrollment — Procesos de Inscripción', () => {
       const { useCrud } = await import('../../../hooks/useCrud');
       vi.mocked(useCrud).mockReturnValueOnce({
         data: [],
+        filteredData: [],
         status: 'success',
         loadingAction: false,
         error: null,
+        searchTerm: '',
+        setSearchTerm: vi.fn(),
         refresh: mockRefresh,
         createItem: vi.fn(),
         updateItem: mockUpdateItem,
         deleteItem: vi.fn(),
         toggleItemStatus: vi.fn(),
+        bulkDelete: vi.fn(),
+        bulkRestore: vi.fn(),
+        pagination: undefined,
+        setPage: undefined,
+        setLimit: undefined,
       });
 
       const { result } = renderHook(() => useEnrollment());
@@ -334,14 +342,22 @@ describe('useEnrollment — Procesos de Inscripción', () => {
       const { useCrud } = await import('../../../hooks/useCrud');
       vi.mocked(useCrud).mockReturnValueOnce({
         data: [],
+        filteredData: [],
         status: 'success',
         loadingAction: false,
         error: null,
+        searchTerm: '',
+        setSearchTerm: vi.fn(),
         refresh: mockRefresh,
         createItem: vi.fn(),
         updateItem: mockUpdateItem,
         deleteItem: vi.fn(),
         toggleItemStatus: vi.fn(),
+        bulkDelete: vi.fn(),
+        bulkRestore: vi.fn(),
+        pagination: undefined,
+        setPage: undefined,
+        setLimit: undefined,
       });
 
       const { result } = renderHook(() => useEnrollment());
@@ -368,14 +384,22 @@ describe('useEnrollment — Procesos de Inscripción', () => {
       const { useCrud } = await import('../../../hooks/useCrud');
       vi.mocked(useCrud).mockReturnValueOnce({
         data: [],
+        filteredData: [],
         status: 'success',
         loadingAction: false,
         error: null,
+        searchTerm: '',
+        setSearchTerm: vi.fn(),
         refresh: mockRefresh,
         createItem: vi.fn(),
         updateItem: mockUpdateItem,
         deleteItem: vi.fn(),
         toggleItemStatus: vi.fn(),
+        bulkDelete: vi.fn(),
+        bulkRestore: vi.fn(),
+        pagination: undefined,
+        setPage: undefined,
+        setLimit: undefined,
       });
 
       const { result } = renderHook(() => useEnrollment());

@@ -194,9 +194,6 @@ const UserModal: React.FC<UserModalProps> = ({
     }
   }, [user, setValue]);
 
-  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
-  const [pendingData, setPendingData] = useState<UserFormOutput | null>(null);
-
   const {
     showConfirmation,
     handleCloseAttempt,
@@ -207,7 +204,7 @@ const UserModal: React.FC<UserModalProps> = ({
   /**
    * Maneja el envío del formulario.
    */
-  const onSubmit = (data: any) => {
+  const onSubmit = async (data: any) => {
     // Prevenir envío si hay conflicto de CI detectado
     if (errors.userCi?.type === "manual") {
       addToast({
@@ -239,39 +236,29 @@ const UserModal: React.FC<UserModalProps> = ({
       return;
     }
 
-    setPendingData(validatedData);
-    setShowSaveConfirm(true);
-  };
-
-  const handleConfirmSave = async () => {
-    if (!pendingData) return;
-    
     try {
       if (user) {
         const payload: UpdateUserPayload = {
           id: user.id,
-          name: pendingData.name,
-          surname: pendingData.surname,
-          email: pendingData.email,
-          role: pendingData.role,
-          status: pendingData.status
+          name: validatedData.name,
+          surname: validatedData.surname,
+          email: validatedData.email,
+          role: validatedData.role,
+          status: validatedData.status
         };
         await onSave(payload);
       } else {
         const payload: CreateUserPayload = {
-          userCi: pendingData.userCi,
-          name: pendingData.name,
-          surname: pendingData.surname,
-          email: pendingData.email,
-          role: pendingData.role
+          userCi: validatedData.userCi,
+          name: validatedData.name,
+          surname: validatedData.surname,
+          email: validatedData.email,
+          role: validatedData.role
         };
         await onSave(payload);
       }
     } catch (error) {
       console.error("Error al guardar usuario:", error);
-    } finally {
-      setShowSaveConfirm(false);
-      setPendingData(null);
     }
   };
 
@@ -470,14 +457,6 @@ const UserModal: React.FC<UserModalProps> = ({
       {...SYSTEM_DIALOGS.closeWithoutSaving}
     />
 
-    <UnifiedDialog
-      isOpen={showSaveConfirm}
-      onClose={() => setShowSaveConfirm(false)}
-      onConfirm={handleConfirmSave}
-      variant="confirm"
-      {...(user ? CONFIRM_MESSAGES.update('Usuario') : CONFIRM_MESSAGES.create('Usuario'))}
-      isLoading={isSubmitting}
-    />
     </>
   );
 };

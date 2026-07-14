@@ -197,6 +197,7 @@ export interface ImportValidationRow {
     name: string;
   };
   age?: number;
+  originalRow?: any;
 }
 
 export interface ImportValidationResponse {
@@ -260,6 +261,47 @@ export const executeImport = async (file: File, confirmed: boolean = false): Pro
     return response.data;
   } catch (error: any) {
     console.error("[studentsService] Error al ejecutar importación:", error);
+    return {
+      success: false,
+      created: 0,
+      updated: 0,
+      failed: 0,
+      results: []
+    };
+  }
+};
+
+/**
+ * Valida un arreglo de filas JSON de estudiantes.
+ * @param rows - Arreglo de filas a validar.
+ * @returns Resultado de validación.
+ */
+export const validateImportJson = async (rows: any[]): Promise<ImportValidationResponse> => {
+  try {
+    const response = await apiClient.post(`${API_URL}/import/validate-json`, { rows });
+    return response.data;
+  } catch (error: any) {
+    console.error("[studentsService] Error al validar importación JSON:", error);
+    return {
+      valid: false,
+      rows: [],
+      summary: { total: 0, validCount: 0, warningCount: 0, errorCount: 0 }
+    };
+  }
+};
+
+/**
+ * Ejecuta la importación desde un arreglo de filas JSON.
+ * @param rows - Arreglo de filas a importar.
+ * @param confirmed - Indica si el usuario confirmó las advertencias.
+ * @returns Resultado de importación.
+ */
+export const executeImportJson = async (rows: any[], confirmed: boolean = false): Promise<ImportExecuteResponse> => {
+  try {
+    const response = await apiClient.post(`${API_URL}/import/execute-json`, { rows, confirmed });
+    return response.data;
+  } catch (error: any) {
+    console.error("[studentsService] Error al ejecutar importación JSON:", error);
     return {
       success: false,
       created: 0,

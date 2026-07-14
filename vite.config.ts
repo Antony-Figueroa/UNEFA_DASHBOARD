@@ -44,17 +44,6 @@ export default defineConfig(() => {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,pdf,doc}"],
           globIgnores: ["docs/**"],
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB (react-pdf.browser.js is ~2.2 MB)
-          runtimeCaching: [
-            {
-              urlPattern: /^https?:\/\/.*\/api\/.*/i,
-              handler: "NetworkOnly",
-              options: {
-                precacheFallback: {
-                  fallbackURL: "/",
-                },
-              },
-            },
-          ],
         },
       }),
     ],

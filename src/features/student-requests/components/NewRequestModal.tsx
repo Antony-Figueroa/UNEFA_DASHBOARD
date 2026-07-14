@@ -50,7 +50,6 @@ export const NewRequestModal = ({
 }: NewRequestModalProps) => {
   const [newRequest, setNewRequest] = useState<NewRequestFormData>(INITIAL_REQUEST);
   const [reassignmentData, setReassignmentData] = useState<ReassignmentFormData>(INITIAL_REASSIGNMENT);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const selectedType = useMemo(
     () => requestTypes.find(t => t.id === parseInt(newRequest.typeId)),
@@ -64,11 +63,6 @@ export const NewRequestModal = ({
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    setShowConfirmDialog(true);
-  };
-
-  const handleConfirmSubmit = () => {
-    setShowConfirmDialog(false);
     onSubmit(newRequest, reassignmentData);
   };
 
@@ -164,13 +158,6 @@ export const NewRequestModal = ({
       </ModalFooter>
     </Modal>
 
-    <UnifiedDialog
-      isOpen={showConfirmDialog}
-      onClose={() => setShowConfirmDialog(false)}
-      onConfirm={handleConfirmSubmit}
-      {...CONFIRM_MESSAGES.create('la solicitud')}
-      isLoading={submitting}
-    />
     </>
   );
 };

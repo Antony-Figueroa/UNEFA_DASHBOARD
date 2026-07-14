@@ -97,8 +97,6 @@ export default function InternshipTypeModal({
   const isInitializing = useRef(false);
 
   const { addToast } = useToast();
-  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
-  const [pendingData, setPendingData] = useState<InternshipTypeFormData | null>(null);
 
   const {
     handleSubmit,
@@ -150,24 +148,14 @@ export default function InternshipTypeModal({
   /**
    * Manejador de envío del formulario.
    */
-  const onSubmit = (data: InternshipTypeFormData) => {
-    setPendingData(data);
-    setShowSaveConfirmation(true);
-  };
-
-  const handleConfirmSave = async () => {
-    if (!pendingData) return;
-    
+  const onSubmit = async (data: InternshipTypeFormData) => {
     try {
       await onSave({
-        name: pendingData.name.toUpperCase(),
-        priority: Number(pendingData.priority),
+        name: data.name.toUpperCase(),
+        priority: Number(data.priority),
         status: editingItem?.status ?? true,
         hoursRequired: editingItem?.hoursRequired ?? 360,
       });
-      
-      setShowSaveConfirmation(false);
-      setPendingData(null);
     } catch (error) {
       console.error("[InternshipTypeModal] Error al guardar:", error);
       addToast({
@@ -291,17 +279,6 @@ export default function InternshipTypeModal({
         onConfirm={confirmClose}
         variant="warning"
         {...SYSTEM_DIALOGS.closeWithoutSaving}
-      />
-      <UnifiedDialog
-        isOpen={showSaveConfirmation}
-        onClose={() => {
-          setShowSaveConfirmation(false);
-          setPendingData(null);
-        }}
-        onConfirm={handleConfirmSave}
-        variant="confirm"
-        {...(editingItem ? CONFIRM_MESSAGES.update('Tipo de práctica profesional') : CONFIRM_MESSAGES.create('Tipo de práctica profesional'))}
-        isLoading={isLoading}
       />
     </>
   );

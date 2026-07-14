@@ -67,6 +67,7 @@ export interface ValidationResult {
     name: string;
   };
   age?: number;
+  originalRow?: StudentImportRow;
 }
 
 /**
@@ -278,13 +279,12 @@ export const parseExcelFile = async (buffer: Buffer): Promise<StudentImportRow[]
     works: getHeader(['TRABAJA', 'TRABAJ'])
   };
 
-  // Validar headers requeridos
-  const required = [headerMap.prefixCi, headerMap.cedula, headerMap.firstName, headerMap.lastName, 
-                  headerMap.sex, headerMap.birthDate, headerMap.email];
+  // Validar headers requeridos mínimos
+  const required = [headerMap.cedula, headerMap.firstName];
   const missing = required.filter(h => !h);
   
   if (missing.length > 0) {
-    throw new Error(`Faltan columnas requeridas: ${missing.join(', ')}`);
+    throw new Error('Faltan columnas requeridas básicas (Cédula o Primer Nombre)');
   }
 
   // Mapear filas
@@ -416,9 +416,12 @@ export const validateRow = (
     }
   }
   
+  const errorMessages = messages.filter(m => !m.includes('existe pero está INACTIVA') && !m.includes('ya registrada'));
+  const warningMessages = messages.filter(m => m.includes('existe pero está INACTIVA') || m.includes('ya registrada'));
+  
   return {
     rowNumber: row.rowNumber,
-    status: messages.filter(m => m.includes('inválida') || m.includes('requerida') || m.includes('debe')).length > 0 ? 'error' : 'warning',
+    status: errorMessages.length > 0 ? 'error' : (warningMessages.length > 0 ? 'warning' : 'valid'),
     cedula: fullCedula,
     fullName,
     messages: messages.filter(m => m),
@@ -427,7 +430,8 @@ export const validateRow = (
     birthDate: row.birthDate,
     email: row.email,
     existingStudent: existingInfo,
-    age
+    age,
+    originalRow: row
   };
 };
 

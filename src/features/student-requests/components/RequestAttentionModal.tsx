@@ -42,7 +42,6 @@ export const RequestAttentionModal = ({
     response: '',
     reassignmentOverride: {}
   });
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const typeName = request?.typeName || '';
   const reassignmentData = request?.reassignmentData;
@@ -78,11 +77,6 @@ export const RequestAttentionModal = ({
   };
 
   const handleSubmit = () => {
-    setShowConfirmDialog(true);
-  };
-
-  const handleConfirmSubmit = () => {
-    setShowConfirmDialog(false);
     onSubmit(formData);
   };
 
@@ -204,13 +198,6 @@ export const RequestAttentionModal = ({
       </ModalFooter>
     </Modal>
 
-    <UnifiedDialog
-      isOpen={showConfirmDialog}
-      onClose={() => setShowConfirmDialog(false)}
-      onConfirm={handleConfirmSubmit}
-      {...CONFIRM_MESSAGES.update('la solicitud')}
-      isLoading={saving}
-    />
     </>
   );
 };

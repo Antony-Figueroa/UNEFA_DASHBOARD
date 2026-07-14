@@ -112,8 +112,8 @@ const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ pendingCount, onTasksClic
               </div>
             </div>
 
-            {/* Pending Tasks Button */}
-            {onTasksClick && (
+            {/* Pending Tasks Button (oculto para estudiantes) */}
+            {onTasksClick && user?.role !== 4 && (
               <motion.button
                 onClick={onTasksClick}
                 className="relative flex items-center justify-center size-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-colors"

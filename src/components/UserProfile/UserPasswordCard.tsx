@@ -113,20 +113,7 @@ export default function UserPasswordCard() {
     setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
-  const onSubmit = (data: ChangePasswordFormData) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: "Confirmar cambio",
-      message: "¿Cambiar su contraseña? Deberá iniciar sesión nuevamente.",
-      variant: "warning",
-      onConfirm: () => {
-        setConfirmDialog(null);
-        executeChange(data);
-      }
-    });
-  };
-
-  const executeChange = async (data: ChangePasswordFormData) => {
+  const onSubmit = async (data: ChangePasswordFormData) => {
     setLoading(true);
     try {
       const result = await authService.changePassword(user!.id, data.newPassword, undefined, undefined, data.currentPassword);

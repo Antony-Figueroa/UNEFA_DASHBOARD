@@ -15,7 +15,8 @@ import {
   XCircle,
   FileTextIcon,
   RotateCw,
-  X
+  X,
+  Edit2
 } from "lucide-react";
 import Button from "../../../components/ui/button/Button";
 import {
@@ -27,14 +28,15 @@ import {
 import Badge from "../../../components/ui/badge/Badge";
 import {
   validateImport,
-  executeImport,
+  validateImportJson,
+  executeImportJson,
   downloadTemplate,
   ImportValidationRow,
   ImportExecuteResponse
 } from "../services/studentsService";
 
 /** Estados del proceso de importación */
-type ImportStep = "upload" | "validating" | "preview" | "executing" | "result";
+type ImportStep = "upload" | "validating" | "preview" | "editing" | "executing" | "result";
 
 /** Estados de fila en la preview */
 type RowStatus = "valid" | "warning" | "error";
@@ -64,6 +66,7 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
   const [validationRows, setValidationRows] = useState<ImportValidationRow[]>([]);
   const [importResult, setImportResult] = useState<ImportExecuteResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editingRow, setEditingRow] = useState<any | null>(null);
   
   // Loading states
   const [isValidating, setIsValidating] = useState(false);
@@ -113,14 +116,15 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
   }, []);
 
   const handleConfirmImport = useCallback(async () => {
-    if (!file) return;
+    if (validationRows.length === 0) return;
 
     setIsExecuting(true);
     setStep("executing");
 
     try {
       const confirmed = hasWarnings;
-      const result = await executeImport(file, confirmed);
+      const rawRows = validationRows.map(r => r.originalRow);
+      const result = await executeImportJson(rawRows, confirmed);
       
       setImportResult(result);
       setStep("result");
@@ -135,7 +139,29 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
     } finally {
       setIsExecuting(false);
     }
-  }, [file, hasWarnings, onImportComplete]);
+  }, [validationRows, hasWarnings, onImportComplete]);
+
+  const handleSaveEdit = async (updatedRow: any) => {
+    setIsValidating(true);
+    setError(null);
+    try {
+      const rawRows = validationRows.map(r => r.rowNumber === updatedRow.rowNumber ? updatedRow : r.originalRow);
+      const result = await validateImportJson(rawRows);
+      
+      if (!result.valid && result.rows.length === 0) {
+        setError("Error al validar datos");
+      }
+      
+      setValidationRows(result.rows);
+      setStep('preview');
+      setEditingRow(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error desconocido";
+      setError("Error al re-validar: " + message);
+    } finally {
+      setIsValidating(false);
+    }
+  };
 
   const handleDownloadTemplate = useCallback(async () => {
     setIsDownloading(true);
@@ -162,6 +188,7 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
     setValidationRows([]);
     setImportResult(null);
     setError(null);
+    setEditingRow(null);
     setStep("upload");
   }, []);
 
@@ -341,6 +368,7 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
                 <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Nacimiento</th>
                 <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Email</th>
                 <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Estado</th>
+                <th className="px-2 py-2 text-right font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -357,6 +385,16 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
                   <td className="px-2 py-2 whitespace-nowrap">{row.birthDate || ''}</td>
                   <td className="px-2 py-2 max-w-[200px] truncate" title={row.email}>{row.email || ''}</td>
                   <td className="px-2 py-2">{getStatusBadge(row.status)}</td>
+                  <td className="px-2 py-2 text-right">
+                    {(row.status === 'error' || row.status === 'warning') && row.originalRow && (
+                      <button 
+                        onClick={() => { setEditingRow(row.originalRow); setStep('editing'); }}
+                        className="text-primary hover:text-primary-focus inline-flex items-center gap-1 text-xs"
+                      >
+                        <Edit2 className="w-3 h-3" /> Editar
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -380,6 +418,191 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
       )}
     </div>
   );
+
+  const renderEditing = () => {
+    if (!editingRow) return null;
+    
+    // Encontrar los mensajes de error de esta fila para mostrarlos
+    const rowValidation = validationRows.find(r => r.rowNumber === editingRow.rowNumber);
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b pb-2">
+          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
+            Corregir Fila {editingRow.rowNumber}
+          </h3>
+          <Button variant="ghost" size="sm" onClick={() => { setStep('preview'); setEditingRow(null); }}>
+            Volver
+          </Button>
+        </div>
+        
+        {rowValidation && rowValidation.messages.length > 0 && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3 text-sm text-red-700 dark:text-red-300">
+            <p className="font-semibold mb-1">Problemas detectados:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              {rowValidation.messages.map((msg, i) => (
+                <li key={i}>{msg}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1">
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Cédula Prefijo</label>
+            <select
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              value={editingRow.cedulaPrefix || 'V'}
+              onChange={e => setEditingRow({...editingRow, cedulaPrefix: e.target.value})}
+            >
+              <option value="V">V</option>
+              <option value="E">E</option>
+              <option value="J">J</option>
+              <option value="P">P</option>
+              <option value="G">G</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Cédula Número</label>
+            <input
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              value={editingRow.cedulaNumber || ''}
+              onChange={e => setEditingRow({...editingRow, cedulaNumber: e.target.value})}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Primer Nombre</label>
+            <input
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              value={editingRow.firstName || ''}
+              onChange={e => setEditingRow({...editingRow, firstName: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Segundo Nombre</label>
+            <input
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              value={editingRow.middleName || ''}
+              onChange={e => setEditingRow({...editingRow, middleName: e.target.value})}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Primer Apellido</label>
+            <input
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              value={editingRow.lastName || ''}
+              onChange={e => setEditingRow({...editingRow, lastName: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Segundo Apellido</label>
+            <input
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              value={editingRow.secondLastName || ''}
+              onChange={e => setEditingRow({...editingRow, secondLastName: e.target.value})}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Sexo (M/F)</label>
+            <input
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              value={editingRow.sex || ''}
+              onChange={e => setEditingRow({...editingRow, sex: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Fecha Nacimiento</label>
+            <input
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              placeholder="YYYY-MM-DD"
+              value={editingRow.birthDate || ''}
+              onChange={e => setEditingRow({...editingRow, birthDate: e.target.value})}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Estado Civil</label>
+            <input
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              placeholder="Soltero, Casado..."
+              value={editingRow.civilStatus || ''}
+              onChange={e => setEditingRow({...editingRow, civilStatus: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Correo Electrónico</label>
+            <input
+              type="email"
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              value={editingRow.email || ''}
+              onChange={e => setEditingRow({...editingRow, email: e.target.value})}
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <div className="w-1/3">
+              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Pref. Telf</label>
+              <input
+                className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                placeholder="0412"
+                value={editingRow.phonePrefix || ''}
+                onChange={e => setEditingRow({...editingRow, phonePrefix: e.target.value})}
+              />
+            </div>
+            <div className="w-2/3">
+              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Teléfono</label>
+              <input
+                className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                placeholder="1234567"
+                value={editingRow.phoneNumber || ''}
+                onChange={e => setEditingRow({...editingRow, phoneNumber: e.target.value})}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Tipo Estudiante</label>
+            <input
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              placeholder="CIV, MIL..."
+              value={editingRow.studentType || ''}
+              onChange={e => setEditingRow({...editingRow, studentType: e.target.value})}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rango Militar</label>
+            <input
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              placeholder="(Opcional)"
+              value={editingRow.militaryRank || ''}
+              onChange={e => setEditingRow({...editingRow, militaryRank: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Trabaja (SI/NO)</label>
+            <input
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+              value={editingRow.works || ''}
+              onChange={e => setEditingRow({...editingRow, works: e.target.value})}
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Dirección</label>
+            <textarea
+              rows={2}
+              className="w-full border rounded-md p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white resize-none"
+              value={editingRow.address || ''}
+              onChange={e => setEditingRow({...editingRow, address: e.target.value})}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Render step: result
   const renderResult = () => {
@@ -473,6 +696,7 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
       <ModalBody>
         {step === "upload" && renderUpload()}
         {(step === "validating" || step === "preview") && renderPreview()}
+        {step === "editing" && renderEditing()}
         {step === "executing" && (
           <div className="text-center py-8">
             <RotateCw className="w-12 h-12 mx-auto text-primary animate-spin mb-4" />
@@ -505,6 +729,18 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
               {hasWarnings ? "Importar con Advertencias" : "Importar"}
             </Button>
           </>
+        )}
+
+        {step === "editing" && (
+          <Button 
+            variant="primary" 
+            onClick={() => handleSaveEdit(editingRow)}
+            disabled={isValidating}
+          >
+            {isValidating ? (
+              <><RotateCw className="w-4 h-4 mr-2 animate-spin" /> Validando...</>
+            ) : "Guardar y Validar"}
+          </Button>
         )}
 
         {step === "result" && (

@@ -157,7 +157,7 @@ export default function VisitModal({
   allowMultipleVisitsPerDay,
   maxVisitsPerDay
 }: VisitModalProps) {
-  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+
   const [pendingData, setPendingData] = useState<VisitFormData | null>(null);
   const [displayHours, setDisplayHours] = useState('');
   const formatHoursDisplay = (hours: number): string => {
@@ -277,7 +277,6 @@ export default function VisitModal({
   // Cleanup cuando se cierra el modal
   useEffect(() => {
     if (!isOpen) {
-      setConfirmSaveOpen(false);
       setPendingData(null);
       setDisplayHours('');
       setIsAddValueModalOpen(false);
@@ -533,7 +532,7 @@ export default function VisitModal({
     return { valid: true };
   };
 
-  const onSubmitForm = (data: VisitFormData) => {
+  const onSubmitForm = async (data: VisitFormData) => {
     // Validar rango de fechas
     const dateValidation = validateDateRange(data.visitDate);
     if (!dateValidation.valid) {
@@ -601,37 +600,27 @@ export default function VisitModal({
       }
     }
 
-    setPendingData(data);
-    setConfirmSaveOpen(true);
-  };
-
-  const handleConfirmSave = async () => {
-    if (!pendingData) return;
-
     const basePayload = {
       practiceId,
-      visitDate: new Date(pendingData.visitDate).toISOString(),
-      visitType: pendingData.visitType,
-      visitCase: pendingData.visitCase,
-      hoursWorked: pendingData.hoursWorked,
-      activitiesPerformed: pendingData.activitiesPerformed,
-      observations: pendingData.observations || '',
-      recommendations: pendingData.recommendations || ''
+      visitDate: new Date(data.visitDate).toISOString(),
+      visitType: data.visitType,
+      visitCase: data.visitCase,
+      hoursWorked: data.hoursWorked,
+      activitiesPerformed: data.activitiesPerformed,
+      observations: data.observations || '',
+      recommendations: data.recommendations || ''
     };
 
     const payload: CreateVisitPayload | UpdateVisitPayload = isEditing
       ? basePayload
       : tutorMode
         ? basePayload  // tutor mode: backend asigna tutor desde JWT
-        : { ...basePayload, tutorId: parseInt(pendingData.tutorId!) };
-
-    setConfirmSaveOpen(false);
+        : { ...basePayload, tutorId: parseInt(data.tutorId!) };
     
     const success = await onSubmit(payload);
     if (success) {
       onClose();
     }
-    // NOTA: el mensaje de error real lo muestra useVisits (toast.error) desde el hook
   };
 
   const handleClose = () => {
@@ -975,32 +964,6 @@ export default function VisitModal({
         </ModalFooter>
       </Modal>
 
-      {/* Dialog de confirmación para guardar */}
-      <UnifiedDialog
-        isOpen={confirmSaveOpen}
-        onClose={() => setConfirmSaveOpen(false)}
-        title={isEditing ? CONFIRM_MESSAGES.update('Visita').title : CONFIRM_MESSAGES.create('Visita').title}
-        message={
-          <div className="space-y-2">
-            <p className="text-sm text-text-secondary">
-              {isEditing 
-                ? CONFIRM_MESSAGES.update('Visita').message
-                : CONFIRM_MESSAGES.create('Visita').message}
-            </p>
-            {pendingData && (
-              <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm space-y-1">
-                <p><strong>Fecha:</strong> {new Date(pendingData.visitDate).toLocaleString('es-VE')}</p>
-                <p><strong>Tipo:</strong> {visitTypeOptions.find(t => t.value === pendingData.visitType)?.label || pendingData.visitType}</p>
-                <p><strong>Caso:</strong> {visitCaseOptions.find(c => c.value === pendingData.visitCase)?.label || pendingData.visitCase}</p>
-                <p><strong>Horas:</strong> {pendingData.hoursWorked}</p>
-              </div>
-            )}
-          </div>
-        }
-        confirmLabel={isEditing ? CONFIRM_MESSAGES.update('Visita').confirmLabel : CONFIRM_MESSAGES.create('Visita').confirmLabel}
-        variant="confirm"
-        onConfirm={handleConfirmSave}
-      />
 
       {/* Dialog de confirmación para cerrar sin guardar */}
       <UnifiedDialog

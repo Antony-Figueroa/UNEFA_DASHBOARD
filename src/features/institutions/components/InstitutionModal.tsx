@@ -401,8 +401,6 @@ export default function InstitutionModal({
     confirmClose,
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
-  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
-  const [pendingSave, setPendingSave] = useState<CreateInstitutionPayload | UpdateInstitutionPayload | null>(null);
 
   const TAB_IDS = ['identificacion', 'contacto', 'configuracion'] as const;
   const TAB_FIELDS: Record<string, string[]> = {
@@ -735,7 +733,7 @@ export default function InstitutionModal({
     }
   }, [editingInst, isOpen, reset, optionsTipoPractica, careerOptions, internshipTypeOptions]);
 
-  const onSubmit = (data: InstFormData) => {
+  const onSubmit = async (data: InstFormData) => {
     const commonData = {
       rif: `${data.rifPrefix}-${data.rifNumber}`.toUpperCase(),
       name: data.name.toUpperCase(),
@@ -746,12 +744,22 @@ export default function InstitutionModal({
       status: editingInst?.status ?? true,
       fiscalAddress: inlineAddress.streetAddress ? `${inlineAddress.streetAddress}${inlineAddress.reference ? ` - ${inlineAddress.reference}` : ''}` : editingInst?.fiscalAddress || '',
     };
-    if (editingInst) {
-      setPendingSave({ ...(commonData as any), institutionId: editingInst.institutionId } as UpdateInstitutionPayload);
-    } else {
-      setPendingSave(commonData as CreateInstitutionPayload);
+    
+    try {
+      if (editingInst) {
+        await onSave({ ...(commonData as any), institutionId: editingInst.institutionId } as UpdateInstitutionPayload);
+      } else {
+        await onSave(commonData as CreateInstitutionPayload);
+      }
+    } catch (saveError) {
+      console.error("[InstitutionModal] Error al guardar:", saveError);
+      // NO cerrar el modal ni limpiar el formulario - el usuario debe poder reintentar
+      addToast({
+        variant: "error",
+        title: "Error al guardar",
+        message: "No se pudo guardar la empresa o institución. Por favor verifique los datos e intente de nuevo."
+      });
     }
-    setConfirmSaveOpen(true);
   };
 
   const handleFormSubmit = handleSubmit(onSubmit, onFormError);
@@ -1232,33 +1240,7 @@ export default function InstitutionModal({
       </ModalFooter>
     </Modal>
 
-    {confirmSaveOpen && (
-      <UnifiedDialog
-        isOpen={confirmSaveOpen}
-        onClose={() => setConfirmSaveOpen(false)}
-         onConfirm={async () => {
-          if (pendingSave) {
-            try {
-              const result = await onSave(pendingSave);
-              setConfirmSaveOpen(false);
-            } catch (saveError) {
-              console.error("[InstitutionModal] Error al guardar:", saveError);
-              // NO cerrar el modal ni limpiar el formulario - el usuario debe poder reintentar
-              addToast({
-                variant: "error",
-                title: "Error al guardar",
-                message: "No se pudo guardar la empresa o institución. Por favor verifique los datos e intente de nuevo."
-              });
-            }
-          } else {
-            setConfirmSaveOpen(false);
-          }
-        }}
-        variant="confirm"
-        {...(editingInst ? CONFIRM_MESSAGES.update('Empresa o Institución') : CONFIRM_MESSAGES.create('Empresa o Institución'))}
-        isLoading={isLoading}
-      />
-    )}
+
 
     {/* Modal para seleccionar responsable existente */}
     <InstitutionalResponsibleSelectModal

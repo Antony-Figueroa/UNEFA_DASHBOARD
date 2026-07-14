@@ -107,17 +107,6 @@ describe('EvaluationActions', () => {
     expect(onExportExcel).toHaveBeenCalledTimes(1);
   });
 
-  it('should call onBulkExtension when Extensión Masiva is clicked', async () => {
-    const user = userEvent.setup();
-    const onBulkExtension = vi.fn();
-
-    render(<EvaluationActions {...defaultProps} onBulkExtension={onBulkExtension} />, { wrapper });
-
-    await user.click(screen.getByText('Extensión Masiva'));
-
-    expect(onBulkExtension).toHaveBeenCalledTimes(1);
-  });
-
   it('should call onFreezeAll when Cerrar Actas is clicked', async () => {
     const user = userEvent.setup();
     const onFreezeAll = vi.fn();
@@ -132,14 +121,12 @@ describe('EvaluationActions', () => {
   it('should not call handlers when buttons are disabled', async () => {
     const user = userEvent.setup();
     const onExportExcel = vi.fn();
-    const onBulkExtension = vi.fn();
     const onFreezeAll = vi.fn();
 
     render(
       <EvaluationActions
         isReadOnly={true}
         onExportExcel={onExportExcel}
-        onBulkExtension={onBulkExtension}
         onFreezeAll={onFreezeAll}
       />,
       { wrapper }
@@ -147,7 +134,6 @@ describe('EvaluationActions', () => {
 
     // userEvent.click does not fire on disabled buttons, but let's verify no calls
     expect(onExportExcel).not.toHaveBeenCalled();
-    expect(onBulkExtension).not.toHaveBeenCalled();
     expect(onFreezeAll).not.toHaveBeenCalled();
   });
 });

@@ -183,7 +183,7 @@ describe('useCulminationActions', () => {
 
     const { result } = renderHook(() => useCulminationActions());
 
-    let promise: Promise<boolean>;
+    let promise: Promise<{ success: boolean; certificate?: any }>;
     act(() => {
       promise = result.current.certifyPractice(42);
     });

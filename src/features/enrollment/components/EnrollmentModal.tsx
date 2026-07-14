@@ -589,14 +589,7 @@ export default function EnrollmentModal({
    */
   const onSubmit = (data: EnrollmentFormData) => {
     if (preEnrollmentError) return;
-    setPendingData(data);
-    setShowConfirmDialog(true);
-  };
-
-  const handleConfirmSave = () => {
-    if (!pendingData) return;
-    const data = pendingData;
-
+    
     const academicTutor = tutors.find(t => t.tutorId === data.academicTutorId);
     const methodologicalTutor = tutors.find(t => t.tutorId === data.methodologicalTutorId);
     const institution = institutions.find(i => i.institutionId === data.institutionId);
@@ -631,9 +624,6 @@ export default function EnrollmentModal({
         status: true,
       } as CreateEnrollmentPayload);
     }
-    
-    setShowConfirmDialog(false);
-    setPendingData(null);
   };
 
 
@@ -1209,17 +1199,7 @@ export default function EnrollmentModal({
       {...SYSTEM_DIALOGS.closeWithoutSaving}
     />
 
-    <UnifiedDialog
-      isOpen={showConfirmDialog}
-      onClose={() => {
-        setShowConfirmDialog(false);
-        setPendingData(null);
-      }}
-      onConfirm={handleConfirmSave}
-      variant="confirm"
-      {...(editingEntry ? CONFIRM_MESSAGES.update('Inscripción del estudiante') : CONFIRM_MESSAGES.create('Inscripción del estudiante'))}
-      isLoading={isLoading}
-    />
+
 
 
   </>

@@ -623,9 +623,7 @@ export default function InstitutionalResponsibleModal({
     confirmClose,
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
-  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [confirmSaving, setConfirmSaving] = useState(false);
-  const [pendingSave, setPendingSave] = useState<CreateInstitutionalResponsiblePayload | UpdateInstitutionalResponsiblePayload | null>(null);
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -826,7 +824,7 @@ export default function InstitutionalResponsibleModal({
     * Handles form submission. Formats the data and calls the onSave callback.
     * @param data - The validated form data.
     */
-  const onSubmit = (data: RespFormData) => {
+  const onSubmit = async (data: RespFormData) => {
     const { phonePrefix, phoneNumber, institutions, ...rest } = data;
     const commonData = {
       ...rest,
@@ -844,12 +842,33 @@ export default function InstitutionalResponsibleModal({
       institutions: institutions, // Array de objetos { institutionId, cargo }
       status: editingResp?.status ?? true,
     };
-    if (editingResp) {
-      setPendingSave({ ...(commonData as any), responsibleId: editingResp.responsibleId } as UpdateInstitutionalResponsiblePayload);
-    } else {
-      setPendingSave(commonData as CreateInstitutionalResponsiblePayload);
+
+    if (confirmSaving) return;
+    setConfirmSaving(true);
+    
+    try {
+      if (editingResp) {
+        await onSave({ ...(commonData as any), responsibleId: editingResp.responsibleId } as UpdateInstitutionalResponsiblePayload);
+      } else {
+        await onSave(commonData as CreateInstitutionalResponsiblePayload);
+      }
+      
+      addToast({
+        variant: "success",
+        title: editingResp ? "Actualizado" : "Guardado",
+        message: editingResp ? "Responsable actualizado exitosamente" : "Responsable guardado exitosamente"
+      });
+    } catch (error: any) {
+      console.error("[InstitutionalResponsibleModal] Error guardando:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "No se pudo guardar el responsable";
+      addToast({
+        variant: "error",
+        title: "Error",
+        message: errorMessage
+      });
+    } finally {
+      setConfirmSaving(false);
     }
-    setConfirmSaveOpen(true);
   };
 
   const handleFormSubmit = handleSubmit(onSubmit, onFormError);
@@ -1312,41 +1331,6 @@ onChange={(val) => {
         </ModalFooter>
       </Modal>
 
-    {confirmSaveOpen && (
-      <UnifiedDialog
-        isOpen={confirmSaveOpen}
-        onClose={() => !confirmSaving && setConfirmSaveOpen(false)}
-        onConfirm={async () => {
-          if (confirmSaving) return;
-          setConfirmSaving(true);
-          try {
-            if (pendingSave) {
-              await onSave(pendingSave);
-              addToast({
-                variant: "success",
-                title: editingResp ? "Actualizado" : "Guardado",
-                message: editingResp ? "Responsable actualizado exitosamente" : "Responsable guardado exitosamente"
-              });
-            }
-          } catch (error: any) {
-            console.error("[InstitutionalResponsibleModal] Error guardando:", error);
-            const errorMessage = error?.response?.data?.message || error?.message || "No se pudo guardar el responsable";
-            addToast({
-              variant: "error",
-              title: "Error",
-              message: errorMessage
-            });
-            return;
-          } finally {
-            setConfirmSaving(false);
-            setConfirmSaveOpen(false);
-          }
-        }}
-        variant="confirm"
-        {...(editingResp ? CONFIRM_MESSAGES.update('Responsable institucional') : CONFIRM_MESSAGES.create('Responsable institucional'))}
-        isLoading={confirmSaving}
-      />
-    )}
 
     <UnifiedDialog
       isOpen={showConfirmation}

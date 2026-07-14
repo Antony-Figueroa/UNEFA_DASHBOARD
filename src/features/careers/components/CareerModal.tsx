@@ -276,10 +276,6 @@ export default function CareerModal({
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
 
-  // Estado para la confirmación de guardado
-  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
-  const [pendingData, setPendingData] = useState<CareerFormData | null>(null);
-
   useEffect(() => {
     if (isOpen) {
       isInitializing.current = true;
@@ -329,25 +325,17 @@ export default function CareerModal({
     }
   }, [lastCreatedInternshipTypeId, onConsumeLastCreatedInternshipType, setValue, getValues]);
 
-  const onSubmit = (data: CareerFormData) => {
-    setPendingData(data);
-    setShowSaveConfirmation(true);
-  };
-
-  const handleConfirmSave = async () => {
-    if (pendingData) {
-      await onSave({
-        careerName: pendingData.careerName.toUpperCase(),
-        careerCode: pendingData.careerCode.toUpperCase(),
-        careerAbbreviation: pendingData.careerAbbreviation.toUpperCase(),
-        careerType: pendingData.careerType,
-        semester: pendingData.semester,
-        internshipTypeIds: pendingData.internshipTypeIds || [],
-        minimumGrade: Number(pendingData.minimumGrade),
-        status: editingCareer?.status ?? 1,
-      } as Omit<Career, "careerId" | "creationDate">);
-      setShowSaveConfirmation(false);
-    }
+  const onSubmit = async (data: CareerFormData) => {
+    await onSave({
+      careerName: data.careerName.toUpperCase(),
+      careerCode: data.careerCode.toUpperCase(),
+      careerAbbreviation: data.careerAbbreviation.toUpperCase(),
+      careerType: data.careerType,
+      semester: data.semester,
+      internshipTypeIds: data.internshipTypeIds || [],
+      minimumGrade: Number(data.minimumGrade),
+      status: editingCareer?.status ?? 1,
+    } as Omit<Career, "careerId" | "creationDate">);
   };
 
   // Cleanup cuando se cierra el modal
@@ -659,15 +647,6 @@ export default function CareerModal({
         {...SYSTEM_DIALOGS.closeWithoutSaving}
       />
 
-      <UnifiedDialog
-        isOpen={showSaveConfirmation}
-        onClose={() => setShowSaveConfirmation(false)}
-        onConfirm={handleConfirmSave}
-        variant="confirm"
-        {...(editingCareer ? CONFIRM_MESSAGES.update('Carrera') : CONFIRM_MESSAGES.create('Carrera'))}
-        cancelLabel="Cancelar"
-        isLoading={isLoading}
-      />
     </>
   );
 }

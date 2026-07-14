@@ -1388,8 +1388,8 @@ if (student) {
       variant="info"
       title="Retiro Justificado - Elección de Práctica"
       message=""
-      confirmText={justifiedChoice === 'continue' ? 'Continuar desde donde se retiró' : justifiedChoice === 'restart' ? 'Reiniciar secuencia' : 'Confirmar'}
-      cancelText="Cancelar"
+      confirmLabel={justifiedChoice === 'continue' ? 'Continuar desde donde se retiró' : justifiedChoice === 'restart' ? 'Reiniciar secuencia' : 'Confirmar'}
+      cancelLabel="Cancelar"
       isLoading={false}
     >
       <div className="space-y-4">

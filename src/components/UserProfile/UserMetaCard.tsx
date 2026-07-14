@@ -81,38 +81,29 @@ export default function UserMetaCard() {
   };
 
   const onSubmit = async (data: ProfileFormData) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: "Confirmar cambios",
-      message: "¿Está seguro que desea guardar los cambios?",
-      variant: "confirm",
-      onConfirm: async () => {
-        setConfirmDialog(null);
-        setSaving(true);
-        try {
-          const result = await authService.updateProfile({
-            name: data.name.trim(),
-            surname: data.surname.trim(),
-            email: data.email.trim(),
-            secondName: data.secondName || undefined,
-            secondSurname: data.secondSurname || undefined,
-            phoneNumber: data.phoneNumber || undefined,
-          });
+    setSaving(true);
+    try {
+      const result = await authService.updateProfile({
+        name: data.name.trim(),
+        surname: data.surname.trim(),
+        email: data.email.trim(),
+        secondName: data.secondName || undefined,
+        secondSurname: data.secondSurname || undefined,
+        phoneNumber: data.phoneNumber || undefined,
+      });
 
-          if (result.success) {
-            await checkAuth();
-            addToast(TOAST.updated('Perfil'));
-            closeModal();
-          } else {
-            addToast(result.message ? { ...TOAST.updateError('Perfil'), message: result.message } : TOAST.updateError('Perfil'));
-          }
-        } catch {
-          addToast({ variant: "error", title: "Error de Conexión", message: "No se pudo establecer conexión con el servidor." });
-        } finally {
-          setSaving(false);
-        }
-      },
-    });
+      if (result.success) {
+        await checkAuth();
+        addToast(TOAST.updated('Perfil'));
+        closeModal();
+      } else {
+        addToast(result.message ? { ...TOAST.updateError('Perfil'), message: result.message } : TOAST.updateError('Perfil'));
+      }
+    } catch {
+      addToast({ variant: "error", title: "Error de Conexión", message: "No se pudo establecer conexión con el servidor." });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const initials = user

@@ -11,7 +11,8 @@ import {
   normalizeValue,
   validateRow as validateRowFn,
   TemplateConfig,
-  ValidationResult
+  ValidationResult,
+  StudentImportRow
 } from '../services/excel-parser.service.js';
 import { supabase } from '../lib/supabase.js';
 import { cacheManager } from '../lib/cache-manager.js';
@@ -212,7 +213,8 @@ export const validateImport = async (req: AuthRequest, res: Response) => {
           status: 'error',
           cedula: `${row.cedulaPrefix}-${row.cedulaNumber}`,
           fullName: `${row.firstName} ${row.lastName}`,
-          messages: ['Cédula duplicada en el mismo archivo Excel']
+          messages: ['Cédula duplicada en el mismo archivo Excel'],
+          originalRow: row
         });
         continue;
       }
@@ -516,5 +518,294 @@ export const getTemplate = async (req: AuthRequest, res: Response) => {
   } catch (error: any) {
     console.error('[StudentsImport] Error al generar plantilla:', error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Controlador: Valida un arreglo de filas JSON sin guardar
+ */
+export const validateImportJson = async (req: AuthRequest, res: Response) => {
+  try {
+    const rows: StudentImportRow[] = req.body.rows;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      res.status(400).json({ valid: false, message: 'El arreglo de filas está vacío o no es válido' });
+      return;
+    }
+    
+    const config = await getTemplateConfig();
+    const cedulas = rows.map(r => `${r.cedulaPrefix}-${r.cedulaNumber}`);
+    const existingStudents = await getExistingStudents(cedulas);
+    const duplicates = findDuplicateCedulas(rows);
+    const validationResults: ValidationResult[] = [];
+    
+    for (const row of rows) {
+      if (duplicates.has(`${row.cedulaPrefix}-${row.cedulaNumber}`)) {
+        validationResults.push({
+          rowNumber: row.rowNumber,
+          status: 'error',
+          cedula: `${row.cedulaPrefix}-${row.cedulaNumber}`,
+          fullName: `${row.firstName} ${row.lastName}`,
+          messages: ['Cédula duplicada en los datos'],
+          originalRow: row
+        });
+        continue;
+      }
+      
+      const result = validateRowFn(row, config, existingStudents);
+      validationResults.push(result);
+    }
+    
+    const summary = {
+      total: validationResults.length,
+      validCount: validationResults.filter(r => r.status === 'valid').length,
+      warningCount: validationResults.filter(r => r.status === 'warning').length,
+      errorCount: validationResults.filter(r => r.status === 'error').length
+    };
+    
+    res.json({
+      valid: summary.errorCount === 0,
+      rows: validationResults,
+      summary
+    });
+    
+  } catch (error: any) {
+    console.error('[StudentsImport] Error en validación JSON:', error);
+    res.status(500).json({ valid: false, message: error.message });
+  }
+};
+
+/**
+ * Controlador: Ejecuta la importación desde un arreglo de filas JSON
+ */
+export const executeImportJson = async (req: AuthRequest, res: Response) => {
+  try {
+    const rows: StudentImportRow[] = req.body.rows;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      res.status(400).json({ success: false, message: 'El arreglo de filas está vacío o no es válido' });
+      return;
+    }
+    
+    const confirmed = req.body.confirmed === true || req.body.confirmed === 'true';
+    const config = await getTemplateConfig();
+    const cedulas = rows.map(r => `${r.cedulaPrefix}-${r.cedulaNumber}`);
+    const existingStudents = await getExistingStudents(cedulas);
+    const duplicates = findDuplicateCedulas(rows);
+    const validationResults: ValidationResult[] = [];
+    
+    for (const row of rows) {
+      if (duplicates.has(`${row.cedulaPrefix}-${row.cedulaNumber}`)) {
+        validationResults.push({
+          rowNumber: row.rowNumber,
+          status: 'error',
+          cedula: `${row.cedulaPrefix}-${row.cedulaNumber}`,
+          fullName: `${row.firstName} ${row.lastName}`,
+          messages: ['Cédula duplicada en los datos'],
+          originalRow: row
+        });
+        continue;
+      }
+      
+      const result = validateRowFn(row, config, existingStudents);
+      
+      if (result.status === 'error') {
+        validationResults.push(result);
+        continue;
+      }
+      
+      if (result.status === 'warning' && !confirmed) {
+        validationResults.push(result);
+        continue;
+      }
+      
+      const fullCedula = `${row.cedulaPrefix}-${row.cedulaNumber}`;
+      const existing = existingStudents.get(fullCedula);
+      const phone = row.phonePrefix && row.phoneNumber
+        ? `${row.phonePrefix}-${row.phoneNumber}`
+        : null;
+      
+      if (row.email) {
+        const existingPersonCi = existing
+          ? await personService.getPersonByCi(fullCedula)
+          : null;
+        const emailCheck = await personService.validateUniqueEmail(
+          row.email,
+          existingPersonCi?.personId
+        );
+        if (!emailCheck.available) {
+          validationResults.push({
+            rowNumber: row.rowNumber,
+            status: 'error',
+            cedula: fullCedula,
+            fullName: `${row.firstName} ${row.lastName}`,
+            messages: [`El correo ${row.email} ya está registrado por otra persona`],
+            originalRow: row
+          });
+          continue;
+        }
+      }
+      
+      if (existing) {
+        // Actualizar estudiante existente
+        const dbData = mapToDbRecord(row, config);
+
+        const { data: studentRecord } = await supabase
+          .from(TABLE_NAME)
+          .select('person_id')
+          .eq('STUDENTS_ID', existing.studentId)
+          .single();
+
+        if (studentRecord?.person_id) {
+          await supabase
+            .from('t_persons')
+            .update({
+              first_name: sanitizeText(row.firstName) ?? '',
+              middle_name: sanitizeText(row.middleName) || null,
+              last_name: sanitizeText(row.lastName) ?? '',
+              second_last_name: sanitizeText(row.secondLastName) || null,
+              email: row.email,
+              phone: phone,
+              gender: row.sex,
+              birthdate: row.birthDate,
+              address: row.address || null,
+              marital_status: row.civilStatus || null
+            })
+            .eq('person_id', studentRecord.person_id);
+        }
+
+        const { error: updateError } = await supabase
+          .from(TABLE_NAME)
+          .update({
+            STUDENT_TYPE: dbData.STUDENT_TYPE,
+            MILITARY_RANK: dbData.MILITARY_RANK,
+            EMPLOYMENT: dbData.EMPLOYMENT
+          })
+          .eq('STUDENTS_ID', existing.studentId);
+        
+        if (updateError) {
+          validationResults.push({
+            rowNumber: row.rowNumber,
+            status: 'error',
+            cedula: fullCedula,
+            fullName: `${row.firstName} ${row.lastName}`,
+            messages: ['Error al actualizar: ' + updateError.message],
+            originalRow: row
+          });
+        } else {
+          try {
+            await auditCreate(req, 't_students', { ...dbData, ci: fullCedula }, STUDENT_COLUMNS_TO_AUDIT, existing.studentId);
+          } catch { /* silent */ }
+
+          validationResults.push({
+            rowNumber: row.rowNumber,
+            status: 'valid',
+            cedula: fullCedula,
+            fullName: `${row.firstName} ${row.lastName}`,
+            existingStudent: existing,
+            messages: ['Estudiante actualizado exitosamente'],
+            originalRow: row
+          });
+        }
+      } else {
+        // Crear nuevo estudiante
+        const dbData = mapToDbRecord(row, config);
+        
+        const personData = {
+          ci: fullCedula,
+          firstName: sanitizeText(row.firstName) ?? '',
+          middleName: sanitizeText(row.middleName) || null,
+          lastName: sanitizeText(row.lastName) ?? '',
+          secondLastName: sanitizeText(row.secondLastName) || null,
+          email: row.email,
+          phone: phone,
+          gender: row.sex,
+          birthDate: row.birthDate,
+          address: row.address || null,
+          maritalStatus: row.civilStatus || null,
+          status: 1
+        };
+
+        let personId: number;
+        try {
+          const person = await personService.findOrCreatePerson(personData);
+          personId = person.personId;
+        } catch (pError: any) {
+          if (pError?.code === '23505' || (pError?.message && pError.message.includes('email'))) {
+            validationResults.push({
+              rowNumber: row.rowNumber,
+              status: 'error',
+              cedula: fullCedula,
+              fullName: `${row.firstName} ${row.lastName}`,
+              messages: ['El correo ya está registrado. Intentá de nuevo.'],
+              originalRow: row
+            });
+          } else {
+            validationResults.push({
+              rowNumber: row.rowNumber,
+              status: 'error',
+              cedula: fullCedula,
+              fullName: `${row.firstName} ${row.lastName}`,
+              messages: ['Error al crear registro de persona: ' + (pError?.message || 'Error desconocido')],
+              originalRow: row
+            });
+          }
+          continue;
+        }
+        
+        const { data: insertData, error: insertError } = await supabase
+          .from(TABLE_NAME)
+          .insert([{
+            person_id: personId,
+            ...dbData
+          }])
+          .select('STUDENTS_ID');
+        
+        if (insertError) {
+          validationResults.push({
+            rowNumber: row.rowNumber,
+            status: 'error',
+            cedula: fullCedula,
+            fullName: `${row.firstName} ${row.lastName}`,
+            messages: ['Error al crear: ' + insertError.message],
+            originalRow: row
+          });
+        } else {
+          const newStudentId = (insertData?.[0] as any)?.STUDENTS_ID;
+          
+          try {
+            await auditCreate(req, 't_students', { ...dbData, ci: fullCedula }, STUDENT_COLUMNS_TO_AUDIT, newStudentId);
+          } catch { /* silent */ }
+
+          validationResults.push({
+            rowNumber: row.rowNumber,
+            status: 'valid',
+            cedula: fullCedula,
+            fullName: `${row.firstName} ${row.lastName}`,
+            messages: ['Estudiante creado exitosamente'],
+            originalRow: row
+          });
+        }
+      }
+    }
+    
+    const summary = {
+      total: validationResults.length,
+      validCount: validationResults.filter(r => r.status === 'valid').length,
+      warningCount: validationResults.filter(r => r.status === 'warning').length,
+      errorCount: validationResults.filter(r => r.status === 'error').length
+    };
+    
+    cacheManager.deleteByPrefix(CACHE_PREFIX);
+    
+    res.json({
+      success: summary.errorCount === 0,
+      created: validationResults.filter(r => r.status === 'valid' && !r.existingStudent).length,
+      updated: validationResults.filter(r => r.status === 'valid' && r.existingStudent).length,
+      failed: summary.errorCount,
+      results: validationResults
+    });
+    
+  } catch (error: any) {
+    console.error('[StudentsImport] Error en ejecución JSON:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

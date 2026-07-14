@@ -12,7 +12,7 @@ import { PhaseStatusBadge } from './PhaseStatusBadge';
 import { ActionDropdown } from './ActionDropdown';
 import type { ActionItem } from './ActionDropdown';
 import { EyeIcon, ListIcon, DownloadIcon } from '../../../icons';
-import type { StudentCulminationRowData, PhaseStatus } from '../types';
+import type { StudentCulminationRowData, PhaseStatus, EvaluationStatus } from '../types';
 import type { PracticeWithEvaluations } from '../types';
 
 interface StudentCulminationRowProps {
@@ -122,7 +122,7 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
               startDate: '',
               endDate: '',
               totalHours: phase.hoursCompleted,
-              evaluationStatus: phase.evaluationStatus || 'completed',
+               evaluationStatus: (phase.evaluationStatus || 'completed') as EvaluationStatus,
               evaluations: {
                 INSTITUCIONAL: { completed: true, score: 0, evaluatorName: '' },
                 ACADEMICO: { completed: true, score: 0, evaluatorName: '' },

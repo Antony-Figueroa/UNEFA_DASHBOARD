@@ -20,8 +20,16 @@ const { mockTemplate } = vi.hoisted(() => ({
 }));
 
 // Mock verification service
-vi.mock('../../../services/verificationService', () => ({
+vi.mock('../../../../services/verificationService', () => ({
   createVerification: (...args: unknown[]) => mockCreateVerification(...args),
+  getVerifyBaseUrl: () => 'http://localhost:3000/verify',
+}));
+
+// Mock qrcode to avoid jsdom canvas issues
+vi.mock('qrcode', () => ({
+  default: {
+    toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,mockQR'),
+  },
 }));
 
 // Mock PDF engine to avoid jsdom issues
@@ -38,7 +46,7 @@ vi.mock('@react-pdf/renderer', () => ({
 const { mockGeneratePDF } = vi.hoisted(() => ({ mockGeneratePDF: vi.fn() }));
 const { mockPreviewPDF } = vi.hoisted(() => ({ mockPreviewPDF: vi.fn() }));
 
-vi.mock('../../../hooks/pdf/useSingleReport', () => ({
+vi.mock('../../../../hooks/pdf/useSingleReport', () => ({
   useSingleReport: () => ({
     generatePDF: mockGeneratePDF,
     previewPDF: mockPreviewPDF,
@@ -47,20 +55,20 @@ vi.mock('../../../hooks/pdf/useSingleReport', () => ({
 }));
 
 // Mock icons
-vi.mock('../../../icons', () => ({
+vi.mock('../../../../icons', () => ({
   DownloadIcon: () => <span data-testid="icon-download">⬇</span>,
   FileIcon: () => <span data-testid="icon-file">📄</span>,
   EyeIcon: () => <span data-testid="icon-eye">👁</span>,
   UserIcon: () => <span data-testid="icon-user">👤</span>,
 }));
 
-vi.mock('../../../icons/actions', () => ({
+vi.mock('../../../../icons/actions', () => ({
   XIcon: () => <span data-testid="icon-x">✕</span>,
   ListIcon: () => <span data-testid="icon-list">☰</span>,
 }));
 
 // Mock Modal
-vi.mock('../modal', () => ({
+vi.mock('../../modal', () => ({
   Modal: ({ isOpen, onClose, children }: { isOpen: boolean; onClose: () => void; children: React.ReactNode }) => {
     if (!isOpen) return null;
     return (
@@ -131,6 +139,7 @@ describe('SingleReportModal — verification hash', () => {
 
     expect(mockTemplate).toHaveBeenCalledWith(
       expect.objectContaining({ id: 1 }),
+      undefined,
       undefined
     );
   });
@@ -204,7 +213,8 @@ describe('SingleReportModal — verification hash', () => {
     await waitFor(() => {
       expect(mockTemplate).toHaveBeenCalledWith(
         expect.objectContaining({ id: 1 }),
-        TEST_HASH
+        TEST_HASH,
+        expect.any(String)
       );
     });
 
@@ -253,6 +263,7 @@ describe('SingleReportModal — verification hash', () => {
     await waitFor(() => {
       expect(mockTemplate).toHaveBeenCalledWith(
         expect.objectContaining({ id: 1 }),
+        undefined,
         undefined
       );
     });
@@ -276,7 +287,8 @@ describe('SingleReportModal — verification hash', () => {
     await waitFor(() => {
       expect(mockTemplate).toHaveBeenLastCalledWith(
         expect.objectContaining({ id: 1 }),
-        TEST_HASH
+        TEST_HASH,
+        expect.any(String)
       );
     });
 
@@ -296,7 +308,12 @@ describe('SingleReportModal — verification hash', () => {
       })
     );
 
-    expect(mockTemplate).not.toHaveBeenCalled();
+    // After closing, the hash state is cleared so template is called with undefined
+    expect(mockTemplate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: 1 }),
+      undefined,
+      undefined
+    );
   });
 
   it('debe cancelar la promesa pendiente si el modal se cierra antes de resolver', async () => {

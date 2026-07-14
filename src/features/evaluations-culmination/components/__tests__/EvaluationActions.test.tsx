@@ -50,18 +50,16 @@ describe('EvaluationActions', () => {
     isReadOnly: false,
     onFreezeAll: vi.fn(),
     onExportExcel: vi.fn(),
-    onBulkExtension: vi.fn(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should render all three buttons', () => {
+  it('should render all buttons', () => {
     render(<EvaluationActions {...defaultProps} />, { wrapper });
 
     expect(screen.getByText('Exportar Excel')).toBeInTheDocument();
-    expect(screen.getByText('Extensión Masiva')).toBeInTheDocument();
     expect(screen.getByText('Cerrar Actas')).toBeInTheDocument();
   });
 
@@ -76,11 +74,9 @@ describe('EvaluationActions', () => {
     render(<EvaluationActions {...defaultProps} isReadOnly={true} />, { wrapper });
 
     const exportBtn = screen.getByText('Exportar Excel').closest('button');
-    const extensionBtn = screen.getByText('Extensión Masiva').closest('button');
     const freezeBtn = screen.getByText('Cerrar Actas').closest('button');
 
     expect(exportBtn).toBeDisabled();
-    expect(extensionBtn).toBeDisabled();
     expect(freezeBtn).toBeDisabled();
   });
 
@@ -88,11 +84,9 @@ describe('EvaluationActions', () => {
     render(<EvaluationActions {...defaultProps} isReadOnly={false} />, { wrapper });
 
     const exportBtn = screen.getByText('Exportar Excel').closest('button');
-    const extensionBtn = screen.getByText('Extensión Masiva').closest('button');
     const freezeBtn = screen.getByText('Cerrar Actas').closest('button');
 
     expect(exportBtn).not.toBeDisabled();
-    expect(extensionBtn).not.toBeDisabled();
     expect(freezeBtn).not.toBeDisabled();
   });
 

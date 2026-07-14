@@ -229,7 +229,7 @@ describe('useEvaluationsCulmination — sub-hook composition (PR 2b)', () => {
       total: 1, pending: 0, approved: 1, certified: 0,
     });
     expect(result.current.culminationGroupsMeta).toEqual({
-      total: 1, completed: 1, inProgress: 0,
+      total: 1, completed: 1, inProgress: 0, failed: 0,
     });
     expect(result.current.culminationGroupsError).toBeNull();
   });

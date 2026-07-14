@@ -98,7 +98,7 @@ describe('useCulminationData', () => {
     });
 
     expect(result.current.stats).toEqual({ total: 1, pending: 0, approved: 1, certified: 0 });
-    expect(result.current.meta).toEqual({ total: 1, completed: 1, inProgress: 0 });
+    expect(result.current.meta).toEqual({ total: 1, completed: 1, inProgress: 0, failed: 0 });
   });
 
   it('sets error on fetch failure', async () => {

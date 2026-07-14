@@ -242,7 +242,7 @@ describe('StudentCulminationRow', () => {
     expect(badges).toHaveLength(defaultProps.row.phases.length);
   });
 
-  it('shows Descongelar button for frozen phase when onUnfreeze provided', () => {
+  it('shows Descongelar action in dropdown for frozen phase when onUnfreeze provided', () => {
     const frozenRow = createBaseRow({
       phases: [
         {
@@ -264,6 +264,11 @@ describe('StudentCulminationRow', () => {
     render(
       <StudentCulminationRow {...defaultProps} row={frozenRow} isExpanded={true} onUnfreeze={onUnfreeze} />
     );
+
+    // Open the ActionDropdown to see the menu items
+    const dropdownTrigger = document.querySelector('button[aria-haspopup="menu"]');
+    expect(dropdownTrigger).toBeInTheDocument();
+    fireEvent.click(dropdownTrigger!);
 
     const unfreezeBtn = screen.getByText('Descongelar');
     expect(unfreezeBtn).toBeInTheDocument();
@@ -317,6 +322,10 @@ describe('StudentCulminationRow', () => {
     render(
       <StudentCulminationRow {...defaultProps} row={frozenRow} isExpanded={true} onUnfreeze={onUnfreeze} />
     );
+
+    // Open the ActionDropdown first
+    const dropdownTrigger = document.querySelector('button[aria-haspopup="menu"]');
+    fireEvent.click(dropdownTrigger!);
 
     fireEvent.click(screen.getByText('Descongelar'));
     expect(onUnfreeze).toHaveBeenCalledWith(100);

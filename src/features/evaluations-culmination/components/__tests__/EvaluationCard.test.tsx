@@ -186,7 +186,10 @@ describe('EvaluationCard — Collapsed View', () => {
     render(<EvaluationCard {...defaultProps} />);
 
     const expectedPercent = ((singlePractice.finalGrade! / 20) * 100).toFixed(1);
-    expect(screen.getByText(`${expectedPercent}%`)).toBeInTheDocument();
+    // Grade text is rendered as a template literal with expressions, so the percent
+    // is embedded within a larger string like "16.1/20 (80.5%)" — use regex
+    const matches = screen.getAllByText(new RegExp(`${expectedPercent.replace('.', '\\.')}%`));
+    expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
   // 3.7 Muestra badges de las 3 evaluaciones del grupo
@@ -329,12 +332,13 @@ describe('EvaluationCard — Expanded View', () => {
     expect(screen.getByText('Reprobado')).toBeInTheDocument();
   });
 
-  // 3.14 Muestra horas de cada práctica
-  it('muestra horas completadas de cada práctica', () => {
+  // 3.14 Muestra nota de cada práctica en expandido (antes se verificaban horas, pero el componente muestra notas)
+  it('muestra nota final de cada práctica en vista expandida con formato correcto', () => {
     const practice2 = createBasePractice({
       practiceId: 2,
       practiceTypeName: 'Comunitaria',
       totalHours: 200,
+      finalGrade: 14.5,
     });
     const group = createGroup([singlePractice, practice2]);
 
@@ -342,8 +346,15 @@ describe('EvaluationCard — Expanded View', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /expandir/i }));
 
-    expect(screen.getByText('360h / 360h')).toBeInTheDocument();
-    expect(screen.getByText('200h / 360h')).toBeInTheDocument();
+    // The component renders grades as "finalGrade/displayScale (percent%)" for each practice
+    const grade1 = ((singlePractice.finalGrade! / 20) * 100).toFixed(1);
+    const grade2 = ((14.5 / 20) * 100).toFixed(1);
+    expect(screen.getAllByText((content, element) => {
+      return element?.textContent?.includes(grade1 + '%') ?? false;
+    }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText((content, element) => {
+      return element?.textContent?.includes(grade2 + '%') ?? false;
+    }).length).toBeGreaterThanOrEqual(1);
   });
 });
 

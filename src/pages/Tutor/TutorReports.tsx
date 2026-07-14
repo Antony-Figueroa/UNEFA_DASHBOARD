@@ -124,67 +124,65 @@ export default function TutorReports() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ComponentCard title="Distribución por Estado">                {reportData?.summary.statusDistribution &&
-                  (Object.entries(reportData.summary.statusDistribution) as [string, number][]).map(([status, count]) => {
-                  const total = reportData.summary.totalStudents;
-                  const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-                  
-                  const colorMap: Record<string, "success" | "info" | "warning" | "error" | "light"> = {
-                    "Activo": "success",
-                    "Completado": "info",
-                    "Pre-inscrito": "warning",
-                    "Suspendido": "error"
-                  };
-                  
-                  return (
-                    <div key={status} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge color={colorMap[status] || "light"} size="sm">
-                          {status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-brand-500 rounded-full"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                        <span className="text-sm text-text-secondary w-16 text-right">
-                          {count} ({percentage}%)
-                        </span>
-                      </div>
+          <ComponentCard title="Distribución por Estado">
+            {reportData?.summary.statusDistribution &&
+              (Object.entries(reportData.summary.statusDistribution) as [string, number][]).map(([status, count]) => {
+                const total = reportData.summary.totalStudents;
+                const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+
+                const colorMap: Record<string, "success" | "info" | "warning" | "error" | "light"> = {
+                  "Activo": "success",
+                  "Completado": "info",
+                  "Pre-inscrito": "warning",
+                  "Suspendido": "error"
+                };
+
+                return (
+                  <div key={status} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge color={colorMap[status] || "light"} size="sm">
+                        {status}
+                      </Badge>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-brand-500 rounded-full"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-text-secondary w-16 text-right">
+                        {count} ({percentage}%)
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
           </ComponentCard>
 
-          <ComponentCard title="Distribución por Período">                {reportData?.summary.periodDistribution &&
-                  (Object.entries(reportData.summary.periodDistribution) as [string, number][]).map(([period, count]) => {
-                  const total = reportData.summary.totalStudents;
-                  const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-                  
-                  return (
-                    <div key={period} className="flex items-center justify-between">
-                      <span className="text-sm font-medium truncate max-w-[150px]">{period || "Sin período"}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-blue-500 rounded-full"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                        <span className="text-sm text-text-secondary w-12 text-right">
-                          {count}
-                        </span>
+          <ComponentCard title="Distribución por Período">
+            {reportData?.summary.periodDistribution &&
+              (Object.entries(reportData.summary.periodDistribution) as [string, number][]).map(([period, count]) => {
+                const total = reportData.summary.totalStudents;
+                const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+
+                return (
+                  <div key={period} className="flex items-center justify-between">
+                    <span className="text-sm font-medium truncate max-w-[150px]">{period || "Sin período"}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full"
+                          style={{ width: `${percentage}%` }}
+                        />
                       </div>
+                      <span className="text-sm text-text-secondary w-12 text-right">
+                        {count}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  </div>
+                );
+              })}
           </ComponentCard>
         </div>
 

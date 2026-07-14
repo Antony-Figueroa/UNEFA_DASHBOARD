@@ -7,6 +7,7 @@
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import { PreEnrollmentRowData } from "../types";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Propiedades del componente PreEnrollmentViewModal.
@@ -49,7 +50,7 @@ export default function PreEnrollmentViewModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Nombre Completo</label>
-                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{item.studentName}</p>
+                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{toTitleCase(item.studentName)}</p>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Cédula / ID</label>
@@ -71,7 +72,7 @@ export default function PreEnrollmentViewModal({
               </div>
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Práctica</label>
-                <p className="text-sm font-bold text-text-primary dark:text-white/90">{item.practiceType}</p>
+                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(item.practiceType)}</p>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Código de Matrícula</label>

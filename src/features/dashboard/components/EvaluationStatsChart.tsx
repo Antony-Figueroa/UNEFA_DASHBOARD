@@ -88,7 +88,7 @@ const EvaluationStatsChart: React.FC<EvaluationStatsChartProps> = ({ pending, co
         const seriesData = w.globals.series[seriesIndex];
         const value = extractValueFromSeries(seriesData, dataPointIndex);
         
-        const icon = dataPointIndex === 0 ? '✅' : '⏳';
+        const icon = '';
         
         return generateTooltipHTML({
           label: label || 'Sin estado',
@@ -103,28 +103,23 @@ const EvaluationStatsChart: React.FC<EvaluationStatsChartProps> = ({ pending, co
     stroke: {
       width: 0,
     },
-    states: {
-      hover: {
-        filter: { type: 'lighten' }
-      }
-    }
   };
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
+      <div className="flex min-h-[360px] flex-col rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
         <Skeleton height={24} width="50%" className="mb-4" />
-        <Skeleton height={200} className="rounded-xl" />
+        <Skeleton height={200} className="rounded-xl flex-1" />
       </div>
     );
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900"
-    >
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex min-h-[360px] flex-col rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900"
+      >
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <motion.div 
@@ -135,7 +130,7 @@ const EvaluationStatsChart: React.FC<EvaluationStatsChartProps> = ({ pending, co
           <FiClipboard className="size-5 text-white" />
         </motion.div>
         <div>
-          <h3 className="text-base font-bold text-gray-900 dark:text-white">
+          <h3 className="text-base font-bold text-text-primary">
             Evaluaciones
           </h3>
           <p className="text-xs text-text-secondary dark:text-text-tertiary">
@@ -146,14 +141,14 @@ const EvaluationStatsChart: React.FC<EvaluationStatsChartProps> = ({ pending, co
 
       {/* Chart */}
       {total === 0 ? (
-        <div className="text-center py-8">
-          <div className="size-14 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-3">
-            <FiClipboard className="size-6 text-gray-400" />
+        <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+          <div className="size-14 rounded-xl bg-bg-secondary dark:bg-gray-800 flex items-center justify-center mx-auto mb-3">
+            <FiClipboard className="size-6 text-text-tertiary" />
           </div>
-          <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          <h4 className="text-sm font-medium text-text-secondary dark:text-gray-400">
             Sin evaluaciones registradas
           </h4>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-text-tertiary mt-1">
             Las evaluaciones aparecerán al calificar prácticas
           </p>
         </div>
@@ -163,14 +158,14 @@ const EvaluationStatsChart: React.FC<EvaluationStatsChartProps> = ({ pending, co
             options={options}
             series={series}
             type="donut"
-            height={220}
+            height={240}
           />
         </div>
       )}
 
       {/* Stats */}
       {total > 0 && (
-        <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+        <div className="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-border-light dark:border-border-dark">
           <div className="text-center p-3 rounded-xl bg-success-50 dark:bg-success-500/10 border border-success-100 dark:border-success-800/30">
             <div className="flex items-center justify-center gap-1.5 mb-1">
               <FiCheckCircle className="size-4 text-success-500" />

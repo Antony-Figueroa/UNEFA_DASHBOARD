@@ -21,6 +21,7 @@ import { TutorIndividualPDF, TutorCertificatePDF } from "../../../components/ui/
 import InputField from "../../../components/form/input/InputField";
 import Label from "../../../components/form/Label";
 import FlatpickrDatePicker from "../../../components/form/FlatpickrDatePicker";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Props for the TutorViewModal component.
@@ -100,19 +101,19 @@ export default function TutorViewModal({
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Primer Nombre</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{tutor.firstName}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{toTitleCase(tutor.firstName)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Segundo Nombre</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{tutor.middleName || "-"}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{toTitleCase(tutor.middleName) || "-"}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Primer Apellido</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{tutor.lastName}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{toTitleCase(tutor.lastName)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Segundo Apellido</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{tutor.secondLastName || "-"}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{toTitleCase(tutor.secondLastName) || "-"}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Cédula / ID</label>
@@ -120,7 +121,7 @@ export default function TutorViewModal({
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Sexo</label>
-                                <p className="text-sm text-text-primary dark:text-white/90 uppercase">{tutor.sex}</p>
+                                <p className="text-sm text-text-primary dark:text-white/90">{toTitleCase(tutor.sex)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Teléfono</label>
@@ -128,7 +129,7 @@ export default function TutorViewModal({
                             </div>
                             <div className="sm:col-span-2 md:col-span-1">
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Email</label>
-                                <p className="text-sm text-text-primary dark:text-white/90 break-all uppercase">{tutor.email}</p>
+                                <p className="text-sm text-text-primary dark:text-white/90 break-all">{tutor.email}</p>
                             </div>
                         </div>
                     </div>
@@ -157,31 +158,31 @@ export default function TutorViewModal({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Título</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{tutor.profession}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(tutor.profession)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Grado de Instrucción</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{tutor.titulo}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(tutor.titulo)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Condición</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{tutor.condition}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(tutor.condition)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Dedicación</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{tutor.dedication}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(tutor.dedication)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Categoría</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{tutor.category}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(tutor.category)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Práctica</label>
                                 <div className="flex flex-wrap gap-1">
                                     {tutor.practiceTypes && tutor.practiceTypes.length > 0 ? (
                                         tutor.practiceTypes.map((pt, i) => (
-                                            <Badge key={i} color={getProfessionColor(pt)} variant="light" size="sm" className="uppercase">
-                                                {pt}
+                                            <Badge key={i} color={getProfessionColor(pt)} variant="light" size="sm">
+                                                {toTitleCase(pt)}
                                             </Badge>
                                         ))
                                     ) : (
@@ -201,9 +202,9 @@ export default function TutorViewModal({
                                                     color="info" 
                                                     variant="light" 
                                                     size="md" 
-                                                    className="uppercase w-full justify-start py-2 px-4 h-auto text-left"
+                                                    className="w-full justify-start py-2 px-4 h-auto text-left"
                                                 >
-                                                    {career ? career.careerName : `ID: ${id}`}
+                                                    {career ? toTitleCase(career.careerName) : `ID: ${id}`}
                                                 </Badge>
                                             );
                                         })
@@ -269,16 +270,20 @@ export default function TutorViewModal({
                 isOpen={reportModalOpen}
                 onClose={() => setReportModalOpen(false)}
                 title="Ficha de Tutor Académico"
-                subtitle={`${tutor.firstName} ${tutor.lastName} - ${tutor.identificationPrefix}-${tutor.identificationNumber}`}
+                subtitle={`${toTitleCase(tutor.firstName + ' ' + tutor.lastName)} - ${tutor.identificationPrefix}-${tutor.identificationNumber}`}
                 data={tutor}
-                template={(data) => <TutorIndividualPDF data={data} />}
+                template={(data, verificationHash) => <TutorIndividualPDF data={data} verificationHash={verificationHash} />}
                 fileName={`tutor_${tutor.identificationNumber}`}
+                verificationConfig={{
+                  docType: 'ficha-tutor-academico',
+                  metadata: { tutorId: tutor.tutorId },
+                }}
             />
             <SingleReportModal
                 isOpen={constancyModalOpen}
                 onClose={() => setConstancyModalOpen(false)}
                 title="Constancia de Tutor Académico"
-                subtitle={`${tutor.firstName} ${tutor.lastName}`}
+                subtitle={`${toTitleCase(tutor.firstName + ' ' + tutor.lastName)}`}
                 data={tutor}
                 template={(data) => (
                     <TutorCertificatePDF 

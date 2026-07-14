@@ -22,6 +22,7 @@ import {
 import toast from 'react-hot-toast';
 import { useToast } from '@/context/toast';
 import { TOAST } from '@/components/ui/dialog/DialogConfig';
+import { toTitleCase } from '../../../utils/textFormat';
 import {
   StudentDetail,
   ReportOptions,
@@ -184,12 +185,12 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
               <UserIcon className="w-8 h-8 text-brand-600 dark:text-brand-400" />
             </div>
             <div className="flex-1">
-              <h3 className="text-xl font-semibold text-text-primary dark:text-text-emphasis">{detail.student.studentName}</h3>
+              <h3 className="text-xl font-semibold text-text-primary dark:text-text-emphasis">{toTitleCase(detail.student.studentName)}</h3>
               <p className="text-base text-text-secondary">C.I: {detail.student.studentCi}</p>
             </div>
             <div className="text-right">
               <Badge color="success" variant="light" className="text-sm px-4 py-2">
-                {detail.student.careerName}
+                {toTitleCase(detail.student.careerName)}
               </Badge>
             </div>
           </div>
@@ -200,9 +201,9 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           {/* Información de la práctica */}
           <InfoCard title="Datos de la Práctica">
             <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-              <InfoRow label="Período Académico" value={detail.practice.periodName} />
-              <InfoRow label="Tipo de Práctica" value={detail.practice.practiceTypeName} />
-              <InfoRow label="Institución" value={detail.practice.institutionName} />
+              <InfoRow label="Período Académico" value={toTitleCase(detail.practice.periodName)} />
+              <InfoRow label="Tipo de Práctica" value={toTitleCase(detail.practice.practiceTypeName)} />
+              <InfoRow label="Institución" value={toTitleCase(detail.practice.institutionName)} />
               <InfoRow label="Fecha de Inicio" value={formatDate(detail.practice.startDate)} />
               <InfoRow label="Horas Totales" value={`${detail.practice.totalHours}h`} highlight />
               <InfoRow 
@@ -474,7 +475,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>
-      <ModalHeader className="shrink-0 pt-6 px-6 sm:px-10">Detalles del Estudiante: {studentName}</ModalHeader>
+      <ModalHeader className="shrink-0 pt-6 px-6 sm:px-10">Detalles del Estudiante: {toTitleCase(studentName)}</ModalHeader>
       <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-10 py-6">
         <div className="max-w-6xl mx-auto space-y-4">
           {/* Tabs mejorados */}

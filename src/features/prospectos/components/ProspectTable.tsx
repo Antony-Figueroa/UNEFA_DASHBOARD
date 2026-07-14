@@ -1,6 +1,7 @@
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../../../components/ui/table";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { ProspectListItem } from "../types";
+import { toTitleCase } from "../../../utils/textFormat";
 
 interface ProspectTableProps {
   items: ProspectListItem[];
@@ -59,7 +60,7 @@ export function ProspectTable({
               <TableCell>
                 <span className="font-medium text-text-primary dark:text-text-emphasis">
                   {item.student
-                    ? `${item.student.name} ${item.student.surname}`
+                    ? toTitleCase(`${item.student.name} ${item.student.surname}`)
                     : "Sin datos"}
                 </span>
               </TableCell>

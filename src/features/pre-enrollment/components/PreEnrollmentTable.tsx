@@ -18,6 +18,7 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { maskIdentification } from "../../../utils/maskData";
 import { matchSearch } from "../../../utils/searchNormalizer";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Representa una opción de filtrado en la tabla.
@@ -715,7 +716,7 @@ export default function PreEnrollmentTable({
                                         {s.identificationPrefix}-{s.identificationNumber}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
-                                        {s.studentName}
+                                        {toTitleCase(s.studentName)}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.period}
@@ -792,8 +793,8 @@ export default function PreEnrollmentTable({
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="flex items-center justify-between w-full">
                                         <div className="flex-1 text-center">
-                                            <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8 uppercase">
-                                                {s.studentName}
+                                            <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8">
+                                                {toTitleCase(s.studentName)}
                                             </h3>
                                             <p className="text-xs text-text-secondary mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>

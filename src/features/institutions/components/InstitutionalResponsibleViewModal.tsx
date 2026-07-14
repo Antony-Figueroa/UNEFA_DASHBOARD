@@ -9,6 +9,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import Button from "../../../components/ui/button/Button";
 
 import { InstitutionalResponsible } from "../types";
+import { toTitleCase } from "../../../utils/textFormat";
 import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
 import { InstitutionalResponsiblePDF } from "../../../components/ui/pdf/templates/individual";
 
@@ -77,7 +78,7 @@ export default function InstitutionalResponsibleViewModal({
               <div className="sm:col-span-2">
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Nombres Completos</label>
                 <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                  {responsible.firstName} {responsible.middleName} {responsible.lastName} {responsible.secondLastName}
+                  {toTitleCase(`${responsible.firstName} ${responsible.middleName} ${responsible.lastName} ${responsible.secondLastName}`)}
                 </p>
               </div>
               <div>
@@ -113,7 +114,7 @@ export default function InstitutionalResponsibleViewModal({
                 <div className="sm:col-span-2">
                   <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Título</label>
                   <p className="text-sm font-bold text-text-primary dark:text-white/90">
-                    {responsible.title}
+                    {toTitleCase(responsible.title)}
                   </p>
                 </div>
               )}
@@ -125,11 +126,11 @@ export default function InstitutionalResponsibleViewModal({
                       <div key={inst.institutionId || index} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                         <div className="flex-1">
                           <p className="text-sm font-bold text-text-primary dark:text-white/90">
-                            {inst.institutionName || "Empresa o Institución sin nombre"}
+                            {toTitleCase(inst.institutionName) || "Empresa o Institución sin nombre"}
                           </p>
                           {inst.cargo && (
                             <p className="text-xs text-text-secondary dark:text-text-tertiary mt-1">
-                              <span className="font-semibold">Cargo:</span> {inst.cargo}
+                              <span className="font-semibold">Cargo:</span> {toTitleCase(inst.cargo)}
                             </p>
                           )}
                         </div>
@@ -188,10 +189,14 @@ export default function InstitutionalResponsibleViewModal({
         isOpen={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
         title="Ficha de Responsable Institucional"
-        subtitle={`${responsible.firstName} ${responsible.lastName} - ${responsible.identificationPrefix}-${responsible.identificationNumber}`}
+        subtitle={`${toTitleCase(responsible.firstName + ' ' + responsible.lastName)} - ${responsible.identificationPrefix}-${responsible.identificationNumber}`}
         data={responsible}
-        template={(data) => <InstitutionalResponsiblePDF data={data} />}
+        template={(data, verificationHash) => <InstitutionalResponsiblePDF data={data} verificationHash={verificationHash} />}
         fileName={`responsable_${responsible.identificationNumber}`}
+        verificationConfig={{
+          docType: 'ficha-responsable-institucional',
+          metadata: { responsibleId: responsible.responsibleId },
+        }}
       />
     </Modal>
   );

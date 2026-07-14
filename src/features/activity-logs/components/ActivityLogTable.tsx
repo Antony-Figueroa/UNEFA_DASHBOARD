@@ -2,6 +2,7 @@ import Badge from '../../../components/ui/badge/Badge';
 import type { BadgeColor } from '../../../components/ui/badge/Badge';
 import Button from '../../../components/ui/button/Button';
 import { ActivityLog } from '../types';
+import { toTitleCase } from '../../../utils/textFormat';
 import { EditIcon, TrashIcon, EyeIcon, CheckCircleIcon } from '../../../icons/actions';
 
 interface ActivityLogTableProps {
@@ -82,7 +83,7 @@ export default function ActivityLogTable({
               <tr key={log.activityLogId} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                 {showStudent && (
                   <td className="py-3 px-4">
-                    <div className="font-medium">{log.studentName || 'Estudiante'}</div>
+                    <div className="font-medium">{toTitleCase(log.studentName) || 'Estudiante'}</div>
                     <div className="text-xs text-gray-500">{log.studentCi}</div>
                   </td>
                 )}

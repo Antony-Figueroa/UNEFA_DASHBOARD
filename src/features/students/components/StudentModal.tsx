@@ -913,8 +913,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         militaryRank: validatedData.militaryRank,
         works: validatedData.works as Student["works"],
       };
-      if (editingStudent) {
-        setPendingSave({ ...(studentData as any), studentId: editingStudent.studentId } as UpdateStudentPayload);
+      // Si existe como estudiante O se está editando → modo UPDATE con studentId
+      const targetStudentId = existingStudent?.studentId || editingStudent?.studentId;
+      if (targetStudentId) {
+        setPendingSave({ ...(studentData as any), studentId: targetStudentId } as UpdateStudentPayload);
       } else {
         setPendingSave(studentData);
       }
@@ -951,13 +953,13 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="student-form" onSubmit={handleSubmit(onSubmit, scrollToFirstError)} className="space-y-8 w-full">
-          {existingStudent && (
-            <div className="flex items-center space-x-3 p-3 bg-info-50 dark:bg-info-500/10 border border-info-200 dark:border-info-500/20 rounded-lg mb-4">
-              <svg className="h-5 w-5 text-info-700 dark:text-info-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+{existingStudent && (
+            <div className="flex items-center space-x-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg mb-4">
+              <svg className="h-5 w-5 text-warning-700 dark:text-warning-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.492-1.646-1.742-2.98l5.58-9.92zM11 13a1 1 0 10-2 0v-3a1 1 0 112 0v3zm-1-8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
               </svg>
-              <span className="text-sm font-medium text-info-700 dark:text-info-400">
-                Persona ya registrada — datos precargados. Puedes modificarlos antes de guardar.
+              <span className="text-sm font-medium text-warning-700 dark:text-warning-400">
+                Ya existe como estudiante — datos cargados. Guardar actualizará el registro.
               </span>
             </div>
           )}
@@ -975,17 +977,6 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
             onTabChange={tabsState.setActiveTab}
           />
 
-          {existingStudent && (
-            <div className="flex items-center space-x-3 p-3 bg-info-50 dark:bg-info-500/10 border border-info-200 dark:border-info-500/20 rounded-lg mb-4">
-              <svg className="h-5 w-5 text-info-700 dark:text-info-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-              </svg>
-              <span className="text-sm font-medium text-info-700 dark:text-info-400">
-                Persona ya registrada — datos precargados. Podés modificarlos antes de guardar.
-              </span>
-            </div>
-          )}
-
           {/* ======================== Identificación ======================== */}
           <div hidden={tabsState.activeTab !== 'identificacion'} role="tabpanel">
             {existingPerson && (
@@ -996,11 +987,13 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                     {existingPerson.firstName} {existingPerson.lastName} —{' '}
                     {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
                   </p>
-                  {onEditExisting && (
-                    <button type="button" onClick={() => onEditExisting?.(null as any)} className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                      Editar esta persona
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setExistingPerson(false)}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                  >
+                    Continuar editando
+                  </button>
                 </div>
               </div>
             )}

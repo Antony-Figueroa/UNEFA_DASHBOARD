@@ -25,6 +25,7 @@ import {
 } from "../../../icons/actions";
 import { TrackingRowData } from "../types";
 import { matchSearch } from "../../../utils/searchNormalizer";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Propiedades del componente TrackingTable.
@@ -293,13 +294,13 @@ export default function TrackingTable({
                                     {item.studentIdNumber}
                                 </TableCell>
                                 <TableCell className="text-text-secondary dark:text-text-tertiary">
-                                    {item.studentName}
+                                    {toTitleCase(item.studentName)}
                                 </TableCell>
                                 <TableCell className="text-text-secondary dark:text-text-tertiary">
-                                    {item.careerName || "-"}
+                                    {toTitleCase(item.careerName) || "-"}
                                 </TableCell>
                                 <TableCell className="text-text-secondary dark:text-text-tertiary max-w-xs truncate">
-                                    {item.reportTitle}
+                                    {toTitleCase(item.reportTitle)}
                                 </TableCell>
                                 <TableCell className="text-center">
                                     {onVisitRegistration && (

@@ -17,6 +17,7 @@ import { generateMatricula } from "../../../utils/matricula";
 import { maskIdentification } from "../../../utils/maskData";
 import { cn } from "../../../utils/cn";
 import { matchSearch } from "../../../utils/searchNormalizer";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Interface for filter options used in select inputs.
@@ -655,30 +656,30 @@ export default function EnrollmentTable({
                                 >
                                     <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
                                         <div className="flex flex-col">
-                                            <span>{s.studentName}</span>
+                                            <span>{toTitleCase(s.studentName)}</span>
                                             <span className="text-xs text-text-tertiary">{s.identificationPrefix}-{s.identificationNumber}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
-                                        {s.careerName || "No asignada"}
+                                        {toTitleCase(s.careerName) || "No asignada"}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {computeMatricula(s) || "—"}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
-                                        {s.academicTutorName}
+                                        {toTitleCase(s.academicTutorName)}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.methodologicalTutorName}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
-                                        {s.institutionName}
+                                        {toTitleCase(s.institutionName)}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.institutionResponsibleName}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
-                                        {s.practiceType}
+                                        {toTitleCase(s.practiceType)}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.period}
@@ -729,8 +730,8 @@ export default function EnrollmentTable({
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="flex items-center justify-between w-full">
                                         <div className="flex-1 text-center">
-                                            <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8 uppercase">
-                                                {s.studentName}
+                                            <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8">
+                                                {toTitleCase(s.studentName)}
                                             </h3>
                                             <p className="text-xs text-text-tertiary mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>
@@ -750,19 +751,19 @@ export default function EnrollmentTable({
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                                             <div className="flex flex-col items-center col-span-2">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Carrera</p>
-                                                <p className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight">{s.careerName || "No asignada"}</p>
+                                                <p className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight">{toTitleCase(s.careerName) || "No asignada"}</p>
                                             </div>
                                             <div className="flex flex-col items-center col-span-2">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Institución</p>
-                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.institutionName}</p>
+                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{toTitleCase(s.institutionName)}</p>
                                             </div>
                                             <div className="flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Tutor Académico</p>
-                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium text-center line-clamp-2">{s.academicTutorName}</p>
+                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium text-center line-clamp-2">{toTitleCase(s.academicTutorName)}</p>
                                             </div>
                                             <div className="flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Tipo Práctica</p>
-                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.practiceType}</p>
+                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{toTitleCase(s.practiceType)}</p>
                                             </div>
                                             <div className="flex flex-col items-center col-span-2">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Período</p>

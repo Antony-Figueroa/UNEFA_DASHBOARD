@@ -61,7 +61,7 @@ interface TooltipOptions {
  * Uses the same styling as RegistrationStatsChart for visual consistency.
  */
 export const generateTooltipHTML = (options: TooltipOptions): string => {
-  const { label, count, unit = '', icon = '📊', items = [], maxItems = 10 } = options;
+  const { label, count, unit = '', icon = '', items = [], maxItems = 10 } = options;
   
   const countStr = `${count} ${unit}${count !== 1 ? 's' : ''}`;
   
@@ -71,26 +71,26 @@ export const generateTooltipHTML = (options: TooltipOptions): string => {
     const displayItems = items.slice(0, maxItems);
     itemsHTML = displayItems.map((item, i) => {
       const subtitle = item.subtitle ? ` — ${item.subtitle}` : '';
-      return `<div style="padding: 3px 8px; font-size: 11px; color: #475569; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 6px;">
-        <span style="color: #94a3b8; font-weight: 600; min-width: 16px;">${i + 1}.</span>
+      return `<div style="padding: 3px 8px; font-size: 11px; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border-light); display: flex; align-items: center; gap: 6px;">
+        <span style="color: var(--color-text-tertiary); font-weight: 600; min-width: 16px;">${i + 1}.</span>
         <span style="font-weight: 500;">${item.name}</span>
-        ${subtitle ? `<span style="color: #94a3b8; font-size: 10px;">${subtitle}</span>` : ''}
+        ${subtitle ? `<span style="color: var(--color-text-tertiary); font-size: 10px;">${subtitle}</span>` : ''}
       </div>`;
     }).join('');
     
     // Add "more" indicator if there are more items
     if (items.length > maxItems) {
-      itemsHTML += `<div style="padding: 4px 8px; font-size: 10px; color: #94a3b8; text-align: center; font-style: italic;">+ ${items.length - maxItems} más...</div>`;
+      itemsHTML += `<div style="padding: 4px 8px; font-size: 10px; color: var(--color-text-tertiary); text-align: center; font-style: italic;">+ ${items.length - maxItems} más...</div>`;
     }
   } else {
-    itemsHTML = `<div style="padding: 6px 8px; font-size: 11px; color: #94a3b8; text-align: center;">Sin detalles disponibles</div>`;
+    itemsHTML = `<div style="padding: 6px 8px; font-size: 11px; color: var(--color-text-tertiary); text-align: center;">Sin detalles disponibles</div>`;
   }
   
   return `
-    <div style="font-family: Outfit, sans-serif; font-size: 11px; font-weight: 600; color: #1f2937; padding: 6px 8px; border-bottom: 1px solid #f1f5f9; background: #f8fafc;">
+    <div style="font-family: Outfit, sans-serif; font-size: 11px; font-weight: 600; color: var(--color-text-primary); padding: 6px 8px; border-bottom: 1px solid var(--color-border-light); background: var(--color-bg-secondary);">
       ${icon} ${label || 'Sin etiqueta'}
     </div>
-    <div style="font-family: Outfit, sans-serif; font-size: 11px; font-weight: 600; color: #054F94; padding: 4px 8px; background: #eff6ff; border-bottom: 1px solid #f1f5f9;">
+    <div style="font-family: Outfit, sans-serif; font-size: 11px; font-weight: 600; color: var(--color-brand-600); padding: 4px 8px; background: var(--color-brand-50); border-bottom: 1px solid var(--color-border-light);">
       ${countStr}
     </div>
     ${itemsHTML}

@@ -2,6 +2,7 @@ import Badge from '../../../components/ui/badge/Badge';
 import Button from '../../../components/ui/button/Button';
 import { STATUS_COLORS, STATUS_LABELS, formatRequestDate } from '../utils/requestUtils';
 import type { AdminRequest, RequestStatus } from '../types';
+import { toTitleCase } from '../../../utils/textFormat';
 
 interface AdminRequestsTableProps {
   requests: AdminRequest[];
@@ -58,7 +59,7 @@ export const AdminRequestsTable = ({ requests, loading, onAttend }: AdminRequest
             <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <td className="px-4 py-4">
                 <div>
-                  <p className="font-medium">{request.studentName}</p>
+                  <p className="font-medium">{toTitleCase(request.studentName)}</p>
                   <p className="text-sm text-text-secondary">{request.studentCi}</p>
                 </div>
               </td>
@@ -68,10 +69,10 @@ export const AdminRequestsTable = ({ requests, loading, onAttend }: AdminRequest
                     ↔
                   </span>
                 )}
-                {request.typeName}
+                {toTitleCase(request.typeName)}
               </td>
               <td className="px-4 py-4">
-                <p className="max-w-xs truncate">{request.subject}</p>
+                <p className="max-w-xs truncate">{toTitleCase(request.subject)}</p>
               </td>
               <td className="px-4 py-4 text-text-secondary text-sm">
                 {formatRequestDate(request.createdAt)}

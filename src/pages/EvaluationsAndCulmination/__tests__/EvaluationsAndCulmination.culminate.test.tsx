@@ -105,7 +105,6 @@ vi.mock('../../../features/evaluations-culmination/components/EvaluationActions'
 vi.mock('../../../features/evaluations-culmination/components/BulkExtensionModal', () => ({ BulkExtensionModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/AuditHistoryModal', () => ({ AuditHistoryModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/CommitteeModal', () => ({ CommitteeModal: () => null }));
-vi.mock('../../../features/evaluations-culmination/components/CertificationView', () => ({ CertificationView: () => <div data-testid="certification-view" /> }));
 vi.mock('../../../features/evaluations-culmination/components/CloseActasModal', () => ({ CloseActasModal: () => null }));
 vi.mock('../../../features/evaluations-culmination/components/CloseActasResultsModal', () => ({ CloseActasResultsModal: () => null }));
 vi.mock('../../../features/evaluations/hooks/useSystemEvaluationConfig', () => ({ useSystemEvaluationConfig: () => ({ config: null, loading: false }) }));
@@ -428,7 +427,10 @@ describe('EvaluationsAndCulmination — Culminate flow', () => {
     const Page = await getPage();
     render(<Page />);
 
-    // Culminar appears in both desktop and mobile dropdowns — use getAllBy
+    // Expand the card to show ActionDropdown (hidden when collapsed)
+    const cardHeader = screen.getByTestId('card-header');
+    fireEvent.click(cardHeader);
+
     const culminarBtns = screen.getAllByTestId('action-Culminar');
     expect(culminarBtns.length).toBeGreaterThanOrEqual(1);
     const culminarTexts = screen.getAllByText('Culminar');
@@ -600,10 +602,20 @@ describe('EvaluationsAndCulmination — Culminate flow', () => {
     const Page = await getPage();
     render(<Page />);
 
-    // Culminar appears in both desktop and mobile dropdowns — pick the first
+    // Expand the card first so ActionDropdown is rendered
+    const cardHeader = screen.getByTestId('card-header');
+    fireEvent.click(cardHeader);
+
+    // ActionDropdown should be rendered after expanding
+    screen.getByTestId('action-dropdown');
     const culminarBtns = screen.getAllByTestId('action-Culminar');
+    expect(culminarBtns.length).toBeGreaterThanOrEqual(1);
+
     fireEvent.click(culminarBtns[0]);
-    expect(handleApproveMock).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => {
+      expect(handleApproveMock).toHaveBeenCalledTimes(1);
+    });
     expect(handleApproveMock).toHaveBeenCalledWith(
       expect.objectContaining({ practiceId: 1 }),
     );

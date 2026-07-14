@@ -347,3 +347,81 @@ describe('StudentCulminationRow', () => {
     expect(screen.queryByText('Descongelar')).not.toBeInTheDocument();
   });
 });
+
+// ── readOnly behavior (spec-3) ────────────────────────────────
+
+describe('StudentCulminationRow — readOnly', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('hides "Certificar" button when readOnly=true even if canCertify=true', () => {
+    const certifiableRow = createBaseRow({ canCertify: true });
+    render(
+      <StudentCulminationRow
+        {...defaultProps}
+        row={certifiableRow}
+        isExpanded={true}
+        readOnly={true}
+      />
+    );
+    expect(screen.queryByRole('button', { name: /certificar/i })).not.toBeInTheDocument();
+  });
+
+  it('hides "Descongelar" button for failed phase in grace period when readOnly=true', () => {
+    const failedRow = createBaseRow({
+      phases: [
+        {
+          practiceId: 100,
+          practiceTypeId: 1,
+          practiceTypeName: 'Hospitalaria',
+          priority: 1,
+          status: 'failed',
+          statusLabel: 'Reprobada',
+          grade: 10,
+          isFrozen: false,
+          evaluationStatus: 'completed',
+          institutionName: 'Hospital Central',
+          hoursCompleted: 360,
+        },
+      ],
+    });
+    const onUnfreeze = vi.fn();
+    render(
+      <StudentCulminationRow
+        {...defaultProps}
+        row={failedRow}
+        isExpanded={true}
+        readOnly={true}
+        isWithinGracePeriod={true}
+        onUnfreeze={onUnfreeze}
+      />
+    );
+    expect(screen.queryByText('Descongelar')).not.toBeInTheDocument();
+  });
+
+  it('does not expose onReverse action in UI when readOnly=true', () => {
+    render(
+      <StudentCulminationRow
+        {...defaultProps}
+        isExpanded={true}
+        readOnly={true}
+      />
+    );
+    // Verify no reverse-related interactive elements exist
+    expect(screen.queryByRole('button', { name: /revertir/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reverse/i })).not.toBeInTheDocument();
+  });
+
+  it('hides expand chevron SVG when readOnly=true', () => {
+    render(
+      <StudentCulminationRow
+        {...defaultProps}
+        readOnly={true}
+      />
+    );
+    const rowHeader = screen.getByTestId('row-header');
+    const svg = rowHeader.querySelector('svg');
+    expect(svg).not.toBeInTheDocument();
+  });
+});

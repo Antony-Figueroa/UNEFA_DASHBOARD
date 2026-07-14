@@ -5,45 +5,42 @@
  * Incluye acciones de administrador (retiro, extensión, congelar, auditoría).
  */
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
 import Button from '../../components/ui/button/Button';
-import Badge from '../../components/ui/badge/Badge';
 import CustomSelect from '../../components/form/CustomSelect';
-import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from '../../components/ui/table';
+import { Pagination } from '../../components/ui/table';
 import { EmptyState } from '../../components/ui/table/EmptyState';
 import { TableSkeleton } from '../../components/ui/skeleton';
 import UnifiedDialog from '../../components/ui/dialog/UnifiedDialog';
-import { DownloadIcon, CheckCircleIcon, EyeIcon } from '../../icons';
-import { ActionDropdown, type ActionItem } from '../../features/evaluations-culmination/components/ActionDropdown';
+import { DownloadIcon } from '../../icons';
 import { StudentDetailModal } from '../../features/student-detail/components/StudentDetailModal';
 import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
 import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
-import { EvaluationCell } from '../../features/evaluations-culmination/components/EvaluationCell';
+import { EvaluationCard } from '../../features/evaluations-culmination/components/EvaluationCard';
 import { useSystemEvaluationConfig } from '../../features/evaluations/hooks/useSystemEvaluationConfig';
 import { StatsCardsGrid } from '../../features/evaluations-culmination/components/StatsCards';
 import { EvaluationFilters } from '../../features/evaluations-culmination/components/EvaluationFilters';
 import { StudentCulminationRow } from '../../features/evaluations-culmination/components/StudentCulminationRow';
-import { CertificationView } from '../../features/evaluations-culmination/components/CertificationView';
-import { PhaseStatusBadge } from '../../features/evaluations-culmination/components/PhaseStatusBadge';
 import { EvaluationActions } from '../../features/evaluations-culmination/components/EvaluationActions';
 import { BulkExtensionModal } from '../../features/evaluations-culmination/components/BulkExtensionModal';
 import { AuditHistoryModal } from '../../features/evaluations-culmination/components/AuditHistoryModal';
 import { CommitteeModal } from '../../features/evaluations-culmination/components/CommitteeModal';
 import { CloseActasModal } from '../../features/evaluations-culmination/components/CloseActasModal';
 import { CloseActasResultsModal } from '../../features/evaluations-culmination/components/CloseActasResultsModal';
+import { AllEvaluationsDetailModal } from '../../features/evaluations-culmination/components/AllEvaluationsDetailModal';
 import { useEvaluationsCulmination } from '../../features/evaluations-culmination/hooks/useEvaluationsCulmination';
 import { Tabs } from '../../components/ui/tabs/Tabs';
 import { useTabs } from '../../hooks/useTabs';
 import type { EvaluatorType } from '../../features/evaluations/types';
 import type { PracticeWithEvaluations } from '../../features/evaluations-culmination/types';
 import {
-  getResultLabel,
   RESULT_OPTIONS,
   CULMINATION_STATUS_OPTIONS,
 } from '../../features/evaluations-culmination/types';
+import { groupByStudentCareer } from '../../features/evaluations-culmination/utils/groupByStudentCareer';
 
 // ─── Tabs ─────────────────────────────────────────────────
 const EVAL_TABS = [
@@ -53,54 +50,17 @@ const EVAL_TABS = [
 ];
 
 // ─── Helpers ──────────────────────────────────────────────
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case 'completed':
-      return (
-        <Badge color="success" variant="light">
-          <CheckCircleIcon className="w-4 h-4 mr-1" />
-          Completo
-        </Badge>
-      );
-    case 'partial':
-      return (
-        <Badge color="warning" variant="light">
-          Parcial
-        </Badge>
-      );
-    default:
-      return (
-        <Badge color="light" variant="light">
-          Pendiente
-        </Badge>
-      );
-  }
-};
-
-const getResultBadge = (result: string) => {
-  const color = result === 'approved' ? 'success' : result === 'failed' ? 'error' : 'light';
-  return (
-    <Badge color={color} variant="light">
-      {getResultLabel(result as any)}
-    </Badge>
-  );
-};
-
-const getCulminationBadge = (status: string) => {
-  const color = status === 'certified' ? 'primary' : status === 'approved' ? 'success' : 'warning';
-  const label = status === 'certified' ? 'Certificado' : status === 'approved' ? 'Aprobado' : 'Pendiente';
-  return (
-    <Badge color={color} variant="light" shape="rounded">
-      {label}
-    </Badge>
-  );
-};
 
 // ─── Page Component ───────────────────────────────────────
 export default function EvaluationsAndCulminationPage() {
   const hook = useEvaluationsCulmination();
   const tabsState = useTabs({ defaultTab: 'evaluations' });
   const { config: evalConfig } = useSystemEvaluationConfig();
+  const [certificationExpandedCi, setCertificationExpandedCi] = useState<string | null>(null);
+
+  const toggleCertificationRow = useCallback((studentCi: string) => {
+    setCertificationExpandedCi(prev => (prev === studentCi ? null : studentCi));
+  }, []);
 
   // Refrescar datos al volver a la pestaña de Evaluaciones
   useEffect(() => {
@@ -144,192 +104,46 @@ export default function EvaluationsAndCulminationPage() {
   // Estado de filtros activos
   const hasActiveFilters = Object.keys(hook.filters).length > 0;
 
-  /** Returns Tailwind text color class based on grade value (1-10 scale) */
-  const getGradeColor = (grade: number | null | undefined): string => {
-    if (grade == null) return 'text-text-tertiary';
-    if (grade >= 9) return 'text-success-600 dark:text-success-400';
-    if (grade >= 7) return 'text-text-primary dark:text-text-emphasis';
-    if (grade >= 6) return 'text-warning-600 dark:text-warning-400';
-    return 'text-error-600 dark:text-error-400';
+  // ─── Render: Evaluations tab (agrupado por estudiante+carrera) ──
+  const renderEvaluationsTab = () => {
+    // Agrupar prácticas paginadas por studentCi + careerId
+    const groups = groupByStudentCareer(paginatedData);
+
+    return (
+      <>
+        <div className="space-y-2">
+          {groups.map(group => (
+            <EvaluationCard
+              key={`${group.studentCi}-${group.careerId}`}
+              group={group}
+              displayScale={evalConfig.score.displayScale}
+              onEvaluate={(p, type, evalId) => hook.handleOpenEvaluation(p, type, evalId)}
+              onViewDetails={(id) => hook.handleViewEvaluationDetails(id, '', '')}
+              onApprove={hook.handleApprove}
+              onOpenCommittee={hook.handleOpenCommittee}
+              onGrantExtension={hook.handleGrantExtension}
+              onRevokeExtension={hook.handleRevokeExtension}
+              onViewAudit={hook.handleViewAudit}
+              onUnfreeze={hook.handleUnfreeze}
+              isReadOnly={hook.isReadOnly}
+            />
+          ))}
+        </div>
+
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={hook.currentPage}
+            totalPages={totalPages}
+            totalItems={activeList.length}
+            itemsPerPage={hook.itemsPerPage}
+            onPageChange={hook.setCurrentPage}
+            onItemsPerPageChange={(items) => { hook.setItemsPerPage(items); hook.setCurrentPage(1); }}
+            itemsPerPageOptions={[10, 25, 50]}
+          />
+        )}
+      </>
+    );
   };
-
-  // ─── Render: Evaluations tab ────────────────────────────
-  const renderEvaluationsTab = () => (
-    <>
-      <div className="overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableCell isHeader>Estudiante</TableCell>
-              <TableCell isHeader>Período</TableCell>
-              <TableCell isHeader>Carrera</TableCell>
-              <TableCell isHeader>Tipo</TableCell>
-              <TableCell isHeader className="text-center">Institucional (40%)</TableCell>
-              <TableCell isHeader className="text-center">Académica (30%)</TableCell>
-              <TableCell isHeader className="text-center">Comité (30%)</TableCell>
-              <TableCell isHeader className="text-center">Nota Final</TableCell>
-              <TableCell isHeader className="text-center">Estado</TableCell>
-              {!hook.isReadOnly && <TableCell isHeader className="text-center">Acciones</TableCell>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedData.map(practice => {
-              // Evaluaciones siempre editables. Solo isFrozen (actas cerradas) bloquea.
-              return (
-              <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
-                <TableCell>
-                  <div className="font-medium text-text-primary dark:text-text-emphasis">
-                    {practice.studentName}
-                  </div>
-                  <div className="text-xs text-text-tertiary">{practice.studentCi}</div>
-                </TableCell>
-                <TableCell className="text-text-secondary">{practice.periodName}</TableCell>
-                <TableCell className="text-text-secondary">{practice.careerName}</TableCell>
-                <TableCell className="text-text-secondary">{practice.practiceTypeName}</TableCell>
-                <TableCell className="text-center">
-                  <EvaluationCell
-                    evaluation={practice.evaluations.INSTITUCIONAL}
-                    evaluatorType="INSTITUCIONAL"
-                    onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
-                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id, practice.studentName, practice.studentCi)}
-                    displayScale={evalConfig.score.displayScale}
-                    isFrozen={practice.isFrozen}
-                  />
-                </TableCell>
-                <TableCell className="text-center">
-                  <EvaluationCell
-                    evaluation={practice.evaluations.ACADEMICO}
-                    evaluatorType="ACADEMICO"
-                    onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
-                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id, practice.studentName, practice.studentCi)}
-                    displayScale={evalConfig.score.displayScale}
-                    isFrozen={practice.isFrozen}
-                  />
-                </TableCell>
-                <TableCell className="text-center">
-                  <EvaluationCell
-                    evaluation={practice.evaluations.COMITE}
-                    evaluatorType="COMITE"
-                    onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
-                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id, practice.studentName, practice.studentCi)}
-                    displayScale={evalConfig.score.displayScale}
-                    isFrozen={practice.isFrozen}
-                  />
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className="text-lg font-bold text-brand-500">
-                    {practice.finalGrade != null ? `${((practice.finalGrade / evalConfig.score.displayScale) * 100).toFixed(1)}%` : '-'}
-                  </span>
-                </TableCell>
-                <TableCell className="text-center">
-                  {getStatusBadge(practice.evaluationStatus)}
-                </TableCell>
-                {!hook.isReadOnly && (
-                  <TableCell className="text-center">
-                    <ActionDropdown actions={[
-                      // Culminar — solo si evaluaciones completas, aprobado, y pendiente de culminar
-                      ...(practice.evaluationStatus === 'completed' && practice.result === 'approved' && practice.culminationStatus === 'pending'
-                        ? [{ label: 'Culminar', onClick: () => hook.handleApprove(practice), className: 'text-success-600 dark:text-success-400' }]
-                        : []),
-                      // Gestionar Comité — oculto si culminada
-                      ...(practice.practicesStatusCode !== 'CULMINADO'
-                        ? [{ label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) }]
-                        : []),
-                      // Otorgar Extensión — solo si no tiene extensión y no está culminada
-                      ...(!practice.extensionGranted && practice.practicesStatusCode !== 'CULMINADO'
-                        ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
-                        : []),
-                      // Revocar Extensión — solo si tiene extensión y no está culminada
-                      ...(practice.extensionGranted && practice.practicesStatusCode !== 'CULMINADO'
-                        ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
-                        : []),
-                      // Ver Auditoría — siempre visible
-                      { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
-                      // Descongelar — si está congelado O si es reprobado (para permitir nueva evaluación)
-                      ...(practice.isFrozen || practice.practicesStatusCode === 'REPROBADO'
-                        ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
-                        : []),
-                    ]} />
-                  </TableCell>
-                )}
-              </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-      {/* Mobile cards */}
-      <div className="md:hidden flex flex-col gap-4 mb-4">
-        {paginatedData.map(practice => (
-          <div key={practice.practiceId} className="bg-white dark:bg-gray-800 rounded-lg border border-border-default dark:border-border-dark p-4">
-            <div className="flex justify-between items-start mb-3">
-              <div className="min-w-0">
-                <p className="font-medium text-text-primary dark:text-text-emphasis truncate">{practice.studentName}</p>
-                <p className="text-xs text-text-tertiary">{practice.studentCi}</p>
-              </div>
-              {getStatusBadge(practice.evaluationStatus)}
-            </div>
-            <div className="space-y-1 text-xs text-text-secondary mb-3">
-              <p><span className="font-medium">Carrera:</span> {practice.careerName}</p>
-              <p><span className="font-medium">Período:</span> {practice.periodName}</p>
-              <p><span className="font-medium">Tipo:</span> {practice.practiceTypeName}</p>
-            </div>
-            <div className="flex justify-between items-center mb-2 text-sm">
-              <span className="text-text-secondary">Institucional:</span>
-              <span className={`font-medium ${getGradeColor(practice.evaluations.INSTITUCIONAL.score)}`}>{practice.evaluations.INSTITUCIONAL.score != null ? practice.evaluations.INSTITUCIONAL.score.toFixed(1) : '—'}</span>
-            </div>
-            <div className="flex justify-between items-center mb-2 text-sm">
-              <span className="text-text-secondary">Académica:</span>
-              <span className={`font-medium ${getGradeColor(practice.evaluations.ACADEMICO.score)}`}>{practice.evaluations.ACADEMICO.score != null ? practice.evaluations.ACADEMICO.score.toFixed(1) : '—'}</span>
-            </div>
-            <div className="flex justify-between items-center mb-2 text-sm">
-              <span className="text-text-secondary">Comité:</span>
-              <span className={`font-medium ${getGradeColor(practice.evaluations.COMITE.score)}`}>{practice.evaluations.COMITE.score != null ? practice.evaluations.COMITE.score.toFixed(1) : '—'}</span>
-            </div>
-            <div className="flex justify-between items-center mb-3 text-sm">
-              <span className="text-text-secondary font-medium">Promedio:</span>
-              <span className={`font-semibold ${getGradeColor(practice.finalGrade)}`}>{practice.finalGrade != null ? practice.finalGrade.toFixed(1) : '—'}</span>
-            </div>
-            <div className="pt-3 border-t border-border-default dark:border-border-dark flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)} className="flex-1">
-                <EyeIcon className="w-4 h-4" /> Ver
-              </Button>
-              {!hook.isReadOnly && (
-                <ActionDropdown actions={[
-                  ...(practice.evaluationStatus === 'completed' && practice.result === 'approved' && practice.culminationStatus === 'pending'
-                    ? [{ label: 'Culminar', onClick: () => hook.handleApprove(practice), className: 'text-success-600 dark:text-success-400' }]
-                    : []),
-                  { label: 'Gestionar Comité', onClick: () => hook.handleOpenCommittee(practice.practiceId, practice.studentName) },
-                  ...(!practice.extensionGranted
-                    ? [{ label: 'Otorgar Extensión', onClick: () => hook.handleGrantExtension(practice.practiceId, practice.studentName) }]
-                    : []),
-                  ...(practice.extensionGranted
-                    ? [{ label: 'Revocar Extensión', onClick: () => hook.handleRevokeExtension(practice.practiceId) }]
-                    : []),
-                  { label: 'Ver Auditoría', onClick: () => hook.handleViewAudit(practice.practiceId) },
-                  ...(practice.isFrozen || practice.practicesStatusCode === 'REPROBADO'
-                    ? [{ label: 'Descongelar', onClick: () => hook.handleUnfreeze(practice.practiceId) }]
-                    : []),
-                ]} />
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={hook.currentPage}
-          totalPages={totalPages}
-          totalItems={activeList.length}
-          itemsPerPage={hook.itemsPerPage}
-          onPageChange={hook.setCurrentPage}
-          onItemsPerPageChange={(items) => { hook.setItemsPerPage(items); hook.setCurrentPage(1); }}
-          itemsPerPageOptions={[10, 25, 50]}
-        />
-      )}
-    </>
-  );
 
   // ─── Render: Culmination tab (redesign: grouped rows) ───
   const renderCulminationTab = () => {
@@ -366,6 +180,14 @@ export default function EvaluationsAndCulminationPage() {
               onCertify={hook.certifyPracticeGrouped}
               onReverse={hook.reverseCulminationGrouped}
               certifying={hook.actionCertifying}
+              isWithinGracePeriod={row.isWithinGracePeriod}
+              onViewEvaluationDetails={(practiceId) => {
+                const practice = row.phases.find(p => p.practiceId === practiceId);
+                if (practice?.evaluationId) {
+                  hook.handleViewEvaluationDetails(practice.evaluationId, row.studentName, row.studentCi);
+                }
+              }}
+              onViewAudit={(practiceId) => hook.handleViewAudit(practiceId)}
             />
           ))}
         </div>
@@ -375,24 +197,39 @@ export default function EvaluationsAndCulminationPage() {
 
   // ─── Render: Certification tab ──────────────────────────
   const renderCertificationTab = () => {
-    const handleCertifyBatch = async (studentCis: string[]) => {
-      const groups = hook.culminationGroups;
-      for (const ci of studentCis) {
-        const group = groups.find((g) => g.studentCi === ci);
-        if (group && group.phases.length > 0) {
-          // Use the first phase's practiceId — backend handles N sequential types
-          await hook.certifyPracticeGrouped(group.phases[0].practiceId);
-        }
-      }
-    };
+    // Filtrar solo estudiantes certificados
+    const certifiedGroups = hook.culminationGroups.filter(
+      (group) => group.certificateNumber != null
+    );
+
+    if (hook.culminationGroupsLoading) {
+      return <TableSkeleton columns={1} rows={4} />;
+    }
+
+    if (certifiedGroups.length === 0) {
+      return (
+        <EmptyState
+          title="No hay registros de certificación"
+          description="Los registros certificados aparecerán aquí."
+        />
+      );
+    }
 
     return (
-      <CertificationView
-        groups={hook.culminationGroups}
-        loading={hook.culminationGroupsLoading}
-        onCertify={handleCertifyBatch}
-        certifying={hook.actionCertifying}
-      />
+      <div className="space-y-2">
+        {certifiedGroups.map((row) => (
+          <StudentCulminationRow
+            key={row.studentCi}
+            row={row}
+            isExpanded={certificationExpandedCi === row.studentCi}
+            onToggle={() => toggleCertificationRow(row.studentCi)}
+            onCertify={hook.certifyPracticeGrouped}
+            onReverse={hook.reverseCulminationGrouped}
+            certifying={hook.actionCertifying}
+            readOnly={true}
+          />
+        ))}
+      </div>
     );
   };
 
@@ -402,7 +239,9 @@ export default function EvaluationsAndCulminationPage() {
       return <TableSkeleton columns={tabsState.activeTab === 'evaluations' ? (hook.isReadOnly ? 9 : 10) : 7} rows={10} />;
     }
 
-    if (hook.filteredPractices.length === 0) {
+    // Para la pestaña de certificación, no mostrar el empty state general
+    // porque usa culminationGroups, no filteredPractices
+    if (tabsState.activeTab !== 'certification' && hook.filteredPractices.length === 0) {
       return (
         <EmptyState
           title="No se encontraron prácticas"

@@ -88,6 +88,9 @@ async function main() {
   // 3. Insert password in t_user_key
   await ensurePasswordKey(u.USER_ID);
 
+  // 4. Assign admin role in t_user_roles
+  await assignAdminRole(u.USER_ID);
+
   console.log(`[DONE] User ready — CI=${ADMIN_CI} / Password=${ADMIN_PASSWORD}`);
 }
 
@@ -110,6 +113,29 @@ async function cleanupOldRecords() {
     }
     console.log('[CLEANUP] Removed old records with CI=00000000');
   }
+}
+
+const ADMIN_ROLE_ID = 1; // Admin role in t_roles
+
+async function assignAdminRole(userId: number) {
+  const { data: existing } = await supabase
+    .from('t_user_roles')
+    .select('ID_USER')
+    .eq('ID_USER', userId)
+    .eq('ID_ROLES', ADMIN_ROLE_ID)
+    .maybeSingle();
+
+  if (existing) {
+    console.log(`[ROLE] Admin role already assigned for USER_ID=${userId}`);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('t_user_roles')
+    .insert({ ID_USER: userId, ID_ROLES: ADMIN_ROLE_ID });
+
+  if (error) { console.error('[ROLE] ERROR:', error.message); return; }
+  console.log(`[ROLE] Admin role (ID_ROLES=${ADMIN_ROLE_ID}) assigned to USER_ID=${userId}`);
 }
 
 async function ensurePasswordKey(userId: number) {
@@ -148,4 +174,4 @@ async function ensurePasswordKey(userId: number) {
   console.log(`[KEY] Password hash stored for USER_ID=${userId}`);
 }
 
-main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+main().then(() => { process.exitCode = 0; }).catch(e => { console.error(e); process.exitCode = 1; });

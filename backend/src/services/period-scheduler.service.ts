@@ -45,6 +45,7 @@ const autoInactivateExpiredPreEnrollments = async () => {
         .select(`
           PROFESSIONAL_PRACTICE_ID,
           PERIOD_ID,
+          CREATION_DATE,
           t_internships_period!inner(START_DATE, ENROLLMENT_GRACE_DAYS)
         `)
         .eq('PRACTICES_STATUS', 1) // PRE_INSCRITO
@@ -63,9 +64,16 @@ const autoInactivateExpiredPreEnrollments = async () => {
       for (const pre of preEnrollments) {
         const period = pre.t_internships_period as unknown as { START_DATE: string; ENROLLMENT_GRACE_DAYS?: number };
         if (!period) continue;
-        const startDate = new Date(period.START_DATE);
         const graceDays = period.ENROLLMENT_GRACE_DAYS ?? 21;
-        const deadline = new Date(startDate);
+
+        // Auto-created pre-enrollments (from sequential culmination) use their own
+        // CREATION_DATE as reference, not the period START_DATE — they're generated
+        // late in the period so the period-based deadline would expire instantly.
+        const graceStart = (pre as any).CREATION_DATE
+          ? new Date((pre as any).CREATION_DATE)
+          : new Date(period.START_DATE);
+
+        const deadline = new Date(graceStart);
         deadline.setDate(deadline.getDate() + graceDays);
         if (now > deadline) {
           toInactivate.push(pre.PROFESSIONAL_PRACTICE_ID);

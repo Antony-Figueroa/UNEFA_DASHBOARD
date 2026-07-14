@@ -199,13 +199,13 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
     // 2c. Obtener reversals activos
     const { data: reversals } = await supabase
       .from('t_culmination_reversals')
-      .select('PROFESSIONAL_PRACTICE_ID, REASON, RESOLUTION_NUMBER, CREATED_AT')
-      .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+      .select('PRACTICE_ID, REASON, RESOLUTION_NUMBER, CREATED_AT')
+      .in('PRACTICE_ID', practiceIds)
       .eq('STATUS', 1);
 
     const reversalMap = new Map<number, any>();
     (reversals || []).forEach((r: any) => {
-      reversalMap.set(r.PROFESSIONAL_PRACTICE_ID, r);
+      reversalMap.set(r.PRACTICE_ID, r);
     });
 
     // 3. Obtener horas totales por práctica
@@ -930,8 +930,8 @@ export const reverseCulmination = async (req: AuthRequest, res: Response) => {
     // 2. Verificar que no tenga ya un reversal activo
     const { data: existingReversal } = await supabase
       .from('t_culmination_reversals')
-      .select('CULMINATION_REVERSAL_ID')
-      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .select('REVERSAL_ID')
+      .eq('PRACTICE_ID', practiceId)
       .eq('STATUS', 1)
       .maybeSingle();
 
@@ -944,10 +944,10 @@ export const reverseCulmination = async (req: AuthRequest, res: Response) => {
     const { error: insertError } = await supabase
       .from('t_culmination_reversals')
       .insert({
-        PROFESSIONAL_PRACTICE_ID: parseInt(practiceId),
+        PRACTICE_ID: parseInt(practiceId),
         REASON: reason.trim(),
         RESOLUTION_NUMBER: resolutionNumber.trim(),
-        USER_ID: userId,
+        REVERSED_BY: userId,
         STATUS: 1
       });
 

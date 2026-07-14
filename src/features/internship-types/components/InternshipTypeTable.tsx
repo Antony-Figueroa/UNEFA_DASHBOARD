@@ -97,14 +97,11 @@ export default function InternshipTypeTable({
 
   /**
    * Mapea el valor numérico de prioridad a su etiqueta descriptiva.
+   * Priority is only an ordering number — display it as such.
    */
   const getPriorityLabel = (priority: number) => {
-    switch (priority) {
-      case 0: return "Único";
-      case 1: return "Hospitalaria";
-      case 2: return "Comunitaria";
-      default: return String(priority);
-    }
+    if (priority === 0) return "Único (sin secuencia)";
+    return `#${priority}`;
   };
 
   /**
@@ -290,7 +287,7 @@ export default function InternshipTypeTable({
                     </TableCell>
                     <TableCell>
                       <Badge color="info" variant="light" className="font-bold">
-                        {item.priority} - {getPriorityLabel(item.priority)}
+                        {getPriorityLabel(item.priority)}
                       </Badge>
                     </TableCell>
                     <TableCell>

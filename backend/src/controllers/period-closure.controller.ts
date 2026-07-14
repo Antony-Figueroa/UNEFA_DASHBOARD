@@ -106,7 +106,7 @@ export const getPendingPractices = async (req: Request, res: Response) => {
     // Fetch all active practices in this period
     const { data: practices, error: practicesError } = await supabase
       .from('t_professional_practices')
-      .select('PROFESSIONAL_PRACTICE_ID, PRACTICES_STATUS, PERSON_ID, CAREER_ID')
+      .select('PROFESSIONAL_PRACTICE_ID, PRACTICES_STATUS, student_person_id, CAREER_ID')
       .eq('PERIOD_ID', id)
       .eq('STATUS', 1);
 
@@ -136,7 +136,7 @@ export const getPendingPractices = async (req: Request, res: Response) => {
         const { data: person } = await supabase
           .from('t_person')
           .select('FIRST_NAME, MIDDLE_NAME, LAST_NAME, SECOND_LAST_NAME, ID_CARD')
-          .eq('PERSON_ID', p.PERSON_ID)
+          .eq('PERSON_ID', p.student_person_id)
           .single();
         if (person) {
           const parts = [person.FIRST_NAME, person.MIDDLE_NAME, person.LAST_NAME, person.SECOND_LAST_NAME].filter(Boolean);

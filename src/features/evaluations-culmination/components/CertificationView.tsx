@@ -262,7 +262,7 @@ export const CertificationView: React.FC<CertificationViewProps> = ({
                       key={phase.practiceId}
                       className="text-center px-4 py-3 font-medium text-text-tertiary text-xs uppercase tracking-wider"
                     >
-                      {phase.practiceTypeName === 'Hospitalaria' ? 'Hosp.' : phase.practiceTypeName}
+                      {phase.practiceTypeName}
                     </th>
                   ))}
                   {/* Fill remaining columns if some rows have more phases */}

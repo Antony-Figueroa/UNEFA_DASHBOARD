@@ -104,14 +104,17 @@ export async function checkSequentialPrerequisite(supabase: any, params: SeqChec
     return { valid: true };
   }
 
-  // 4. Tipos con PRIORIDAD MENOR (anteriores en la secuencia, excluyendo standalone PRIORITY=0)
-  const prerequisiteIds = (typePriorities as Array<{ INTERNSHIP_TYPE_ID: number; PRIORITY: number }>)
+  // 4. Tipo INMEDIATAMENTE ANTERIOR en la secuencia (excluyendo standalone PRIORITY=0)
+  //    Convención estricta: cada priority solo se inscribe si el anterior está CULMINADO+APROBADO
+  const immediatePrereq = (typePriorities as Array<{ INTERNSHIP_TYPE_ID: number; PRIORITY: number }>)
     .filter((t: any) => t.PRIORITY > 0 && t.PRIORITY < currentType.PRIORITY)
-    .map((t: any) => t.INTERNSHIP_TYPE_ID);
+    .sort((a: any, b: any) => b.PRIORITY - a.PRIORITY)[0]; // highest PRIORITY < current
 
-  if (prerequisiteIds.length === 0) {
+  if (!immediatePrereq) {
     return { valid: true };
   }
+
+  const prerequisiteIds = [immediatePrereq.INTERNSHIP_TYPE_ID];
 
   // 5. Obtener nota mínima de la carrera
   const { data: career } = await supabase
@@ -123,13 +126,13 @@ export async function checkSequentialPrerequisite(supabase: any, params: SeqChec
 
   // 6. Verificar si el estudiante tiene ALGUNA práctica anterior (priority menor)
   //    CULMINADA + APROBADA (GRADE >= minimum) y sin reversal activo
-  const { data: completedPrerequisite } = await supabase
+  const { data: completedPrerequisite, error: prereqError } = await supabase
     .from('t_professional_practices')
     .select(`
       PROFESSIONAL_PRACTICE_ID,
       GRADE,
       t_culmination_reversals!left (
-        CULMINATION_REVERSAL_ID
+        REVERSAL_ID
       )
     `)
     .eq('STUDENTS_ID', studentsId)
@@ -137,6 +140,11 @@ export async function checkSequentialPrerequisite(supabase: any, params: SeqChec
     .in('INTERNSHIP_TYPE_ID', prerequisiteIds)
     .eq('PRACTICES_STATUS', PRACTICES_STATUS.CULMINADO)
     .eq('STATUS', 1);
+
+  if (prereqError) {
+    console.error('[checkSequentialPrerequisite] Error querying prerequisites:', prereqError);
+    return { valid: false, message: 'Error al validar prerrequisitos secuenciales.' };
+  }
 
   // Filtrar: solo cuentan las CULMINADO que:
   //   a) No tienen reversal activo

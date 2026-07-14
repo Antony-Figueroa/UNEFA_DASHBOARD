@@ -20,6 +20,7 @@ import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { useLists } from "../../lists/hooks/useLists";
+import { getInternshipTypes } from "../../internship-types/services/internshipTypesService";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
@@ -228,6 +229,9 @@ export default function InstitutionModal({
   const [savedDisplayRifNumber, setSavedDisplayRifNumber] = useState<string>("");
   const [savedDisplayPhoneNumber, setSavedDisplayPhoneNumber] = useState<string>("");
 
+  // Fallback: fetch internship types from API when internshipTypeOptions prop is empty
+  const [fallbackTypes, setFallbackTypes] = useState<{ id: number; name: string }[]>([]);
+
   // Determinar si los campos deben estar deshabilitados (todos menos RIF)
   const isFormDisabled = rifDuplicateStatus === 'rejected' || isLoading;
 
@@ -270,6 +274,15 @@ export default function InstitutionModal({
   // State for tabs in the form
   const tabsState = useTabs({ defaultTab: 'identificacion' });
   useEffect(() => { if (isOpen) tabsState.setActiveTab('identificacion'); }, [isOpen]);
+
+  // Fetch internship types from API when prop is empty (fallback for name→ID mapping)
+  useEffect(() => {
+    if (isOpen && (!internshipTypeOptions || internshipTypeOptions.length === 0) && fallbackTypes.length === 0) {
+      getInternshipTypes()
+        .then(types => setFallbackTypes(types.map(t => ({ id: t.id, name: t.name }))))
+        .catch(() => {});
+    }
+  }, [isOpen, internshipTypeOptions, fallbackTypes.length]);
 
   // State for duplicate detection
   const [isCheckingRif, setIsCheckingRif] = useState(false);
@@ -463,23 +476,20 @@ export default function InstitutionModal({
       }));
     }
     
-    // Fallback: usar lista dinámica (TIPO DE PRACTICA de t_list)
+    // Fallback: usar lista dinámica (TIPO DE PRACTICA de t_list) + lookup dinámico desde la API
     const baseOptions = (optionsTipoPractica || []);
     
     return baseOptions.map(opt => {
       const normalizedValue = opt.value.toUpperCase();
-      
-      // Normalizar valores para el formulario - mantener separados (en mayúsculas igual que en Carrera)
-      if (normalizedValue === 'ÚNICA' || normalizedValue === 'UNICA') {
-        return { value: '1', label: 'ÚNICA' };
-      } else if (normalizedValue === 'HOSPITALARIA') {
-        return { value: '2', label: 'HOSPITALARIA' };
-      } else if (normalizedValue === 'COMUNITARIA') {
-        return { value: '3', label: 'COMUNITARIA' };
+      // Lookup dinámico: encontrar el tipo por nombre desde los datos fetcheados
+      const match = fallbackTypes.find(t => t.name.toUpperCase() === normalizedValue);
+      if (match) {
+        return { value: String(match.id), label: match.name.toUpperCase() };
       }
+      // Si no se encuentra en la API, pasar el valor crudo (el backend lo resolverá)
       return { value: opt.value, label: opt.label.toUpperCase() };
     }).filter(Boolean) as { value: string; label: string }[];
-  }, [internshipTypeOptions, optionsTipoPractica]);
+  }, [internshipTypeOptions, optionsTipoPractica, fallbackTypes]);
 
   // Observar el tipo de práctica seleccionado para filtrar carreras
   const selectedInternshipType = watch("internshipTypeId");

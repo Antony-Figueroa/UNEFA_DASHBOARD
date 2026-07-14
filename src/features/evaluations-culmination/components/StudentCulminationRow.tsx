@@ -204,7 +204,7 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
                           {isLocked ? (
                             <span
                               className="text-xs text-text-tertiary italic"
-                              title="Debe aprobar HOSPITALARIA antes"
+                              title={`Debe aprobar ${row.phases[index - 1]?.practiceTypeName || 'la práctica anterior'} antes`}
                             >
                               Bloqueada
                             </span>

@@ -37,12 +37,8 @@ export default function InternshipTypeViewModal({
    * Mapea el valor numérico de prioridad a su etiqueta descriptiva.
    */
   const getPriorityLabel = (priority: number) => {
-    switch (priority) {
-      case 0: return "Único";
-      case 1: return "Hospitalaria";
-      case 2: return "Comunitaria";
-      default: return String(priority);
-    }
+    if (priority === 0) return "Único (sin secuencia)";
+    return `#${priority}`;
   };
 
   return (
@@ -67,7 +63,7 @@ export default function InternshipTypeViewModal({
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Prioridad</label>
                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                  {item.priority} - {getPriorityLabel(item.priority)}
+                  {getPriorityLabel(item.priority)}
                 </p>
               </div>
             </div>

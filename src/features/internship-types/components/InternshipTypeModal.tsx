@@ -70,12 +70,13 @@ type InternshipTypeFormData = z.infer<ReturnType<typeof createInternshipTypeSche
 
 /**
  * Opciones de prioridad para los tipos de práctica.
- * Determina el orden de importancia o ejecución.
+ * Priority is an ordering number only — names come from the type itself.
  */
 const priorityOptions = [
-  { value: "0", label: "0 (Único)" },
-  { value: "1", label: "1 (Hospitalaria)" },
-  { value: "2", label: "2 (Comunitaria)" },
+  { value: "0", label: "0 — Único (sin secuencia)" },
+  { value: "1", label: "1 — Primera en secuencia" },
+  { value: "2", label: "2 — Segunda en secuencia" },
+  { value: "3", label: "3 — Tercera en secuencia" },
 ];
 
 /**

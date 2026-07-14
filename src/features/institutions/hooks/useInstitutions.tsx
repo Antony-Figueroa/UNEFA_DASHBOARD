@@ -18,19 +18,12 @@ const INSTITUTION_LABELS: Record<string, string> = {
 };
 
 /**
- * Maps technical internshipTypeId values to human-readable practice type names.
- * Ensures toast notifications show descriptive names instead of raw IDs.
+ * Enriches institution data with human-readable practice type name.
+ * Uses practiceType from the API when available; falls back to generic label.
  */
-const PRACTICE_TYPE_MAP: Record<string, string> = {
-  "1": "ORDINARIA / ÚNICA",
-  "2": "HOSPITALARIA",
-  "3": "COMUNITARIA",
-};
-
 const humanizeInstitutionData = (inst: any) => {
   const id = String(inst.internshipTypeId ?? "");
   const humanType =
-    PRACTICE_TYPE_MAP[id] ||
     inst.practiceType ||
     (id ? `Tipo ${id}` : "No asignado");
 

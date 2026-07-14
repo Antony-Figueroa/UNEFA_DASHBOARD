@@ -174,7 +174,7 @@ export default function EvaluationsAndCulminationPage() {
           </TableHeader>
           <TableBody>
             {paginatedData.map(practice => {
-              const isTerminal = practice.practicesStatusCode === 'CULMINADO' || practice.practicesStatusCode === 'REPROBADO';
+              // Evaluaciones siempre editables. Solo isFrozen (actas cerradas) bloquea.
               return (
               <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
                 <TableCell>
@@ -194,8 +194,6 @@ export default function EvaluationsAndCulminationPage() {
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id, practice.studentName, practice.studentCi)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
-                    readOnly={isTerminal}
-                    practiceStatusCode={practice.practicesStatusCode}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -206,8 +204,6 @@ export default function EvaluationsAndCulminationPage() {
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id, practice.studentName, practice.studentCi)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
-                    readOnly={isTerminal}
-                    practiceStatusCode={practice.practicesStatusCode}
                   />
                 </TableCell>
                 <TableCell className="text-center">
@@ -218,8 +214,6 @@ export default function EvaluationsAndCulminationPage() {
                     onViewDetails={(id) => hook.handleViewEvaluationDetails(id, practice.studentName, practice.studentCi)}
                     displayScale={evalConfig.score.displayScale}
                     isFrozen={practice.isFrozen}
-                    readOnly={isTerminal}
-                    practiceStatusCode={practice.practicesStatusCode}
                   />
                 </TableCell>
                 <TableCell className="text-center">

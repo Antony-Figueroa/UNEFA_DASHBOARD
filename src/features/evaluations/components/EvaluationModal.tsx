@@ -99,8 +99,14 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const [existingData, setExistingData] = useState<EvaluationWithDetails | null>(null);
   const [initialLoading, setInitialLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  // Tracks whether the user has already dismissed the completion dialog ("Continuar Editando")
+  // so it does not reappear on every subsequent save during the same editing session.
+  const [completionDismissed, setCompletionDismissed] = useState(false);
+  // Tracks the evaluation ID returned by the backend after the first save.
+  // Needed so subsequent saves use update instead of create (prevents duplicates).
+  const [savedEvaluationId, setSavedEvaluationId] = useState<number | undefined>(undefined);
   const isComiteMode = evaluatorType === 'COMITE';
-  const isEditing = !isComiteMode && !!evaluationId;
+  const isEditing = !isComiteMode && (!!(savedEvaluationId) || !!evaluationId);
   const isTutorEvaluator = evaluatorType !== 'COMITE';
 
   // Buscar reemplazo de evaluador
@@ -268,6 +274,9 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       setDataLoaded(false);
       setExistingData(null);
       fetchCriteria(evaluatorType);
+      // Reset session states when modal opens fresh
+      setCompletionDismissed(false);
+      setSavedEvaluationId(undefined);
     }
   }, [isOpen, evaluatorType, fetchCriteria]);
 
@@ -432,7 +441,9 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     }
 
     let result;
-    const targetEvalId = isComiteMode ? comiteData[activeMember]?.evaluationId : evaluationId;
+    const targetEvalId = isComiteMode
+      ? comiteData[activeMember]?.evaluationId
+      : (savedEvaluationId || evaluationId);
     if (targetEvalId) {
       result = await updateEvaluation(targetEvalId, payload);
     } else {
@@ -473,13 +484,22 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
           return;
         }
         // All 3 committee members done — fall through to completion check below
+      } else {
+        // Non-committee: store the returned evaluation ID so subsequent saves
+        // use update instead of create (prevents duplicates after "Continuar Editando")
+        const returnedId = (result && typeof result !== 'boolean')
+          ? (result.evaluationId || (result as any).id)
+          : undefined;
+        if (returnedId) {
+          setSavedEvaluationId(returnedId);
+        }
       }
 
       // After any save (all committee members done OR non-committee create/edit),
       // check if ALL evaluation types are now complete
       try {
         const status = await evaluationService.getDetailedPracticeStatus(practiceId);
-        if (status.evaluationStatus === 'completed') {
+        if (status.evaluationStatus === 'completed' && !completionDismissed) {
           setCompletionReason(isComiteMode ? 'committee' : 'all');
           setShowCompletionModal(true);
         } else if (onNavigateToNext) {
@@ -495,7 +515,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
             onClose();
           }
         } else {
-          // Not all evaluations complete — close modal and refresh list (old behavior)
+          // Either all complete but user already dismissed the dialog,
+          // or evaluations not yet complete — just close and refresh
           reset();
           setConfirmed(false);
           onClose();
@@ -950,7 +971,9 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     <UnifiedDialog
       isOpen={showCompletionModal}
       onClose={() => {
-        // "Continuar Editando" — solo cerrar el dialog, mantener el modal principal abierto
+        // "Continuar Editando" — mark as dismissed so it does not reappear
+        // on the next save during this editing session; keep modal open
+        setCompletionDismissed(true);
         setShowCompletionModal(false);
       }}
       onConfirm={async () => {

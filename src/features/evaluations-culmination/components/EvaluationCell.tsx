@@ -23,10 +23,6 @@ interface EvaluationCellProps {
   displayScale: number;
   /** Si la práctica completa está congelada (actas cerradas), solo permite ver detalles */
   isFrozen?: boolean;
-  /** Si la práctica está culminada o reprobada, solo permite ver detalles (sin editar/crear) */
-  readOnly?: boolean;
-  /** Código de estado de la práctica para mostrar badge informativo */
-  practiceStatusCode?: string;
 }
 
 export const EvaluationCell: React.FC<EvaluationCellProps> = ({
@@ -36,14 +32,10 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
   onViewDetails,
   displayScale,
   isFrozen = false,
-  readOnly = false,
-  practiceStatusCode,
 }) => {
-  // Modo solo lectura (culminada, reprobada) o congelada: solo ver detalles
-  const isReadOnly = isFrozen || readOnly;
-  const isReprobada = practiceStatusCode === 'REPROBADO';
+  // Solo isFrozen (actas cerradas) bloquea edición
 
-  // Congelada: muestra badge con candado
+  // Congelada + completada: badge con candado
   if (isFrozen && evaluation.completed) {
     return (
       <div className="flex items-center justify-center gap-1">
@@ -55,45 +47,18 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
     );
   }
 
-  // Reprobada: muestra badge rojo con lock — resultado no definitivo hasta cierre
-  if (isReprobada) {
-    return (
-      <div className="flex items-center justify-center gap-1">
-        <span
-          className="flex items-center gap-1 px-2 py-1.5 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg"
-          title="Práctica reprobada — sin resultado definitivo hasta cierre del período"
-        >
-          <LockIcon className="w-3.5 h-3.5" />
-          <span className="font-medium">
-            {evaluation.completed
-              ? `${((evaluation.score / displayScale) * 100).toFixed(1)}%`
-              : 'Reprobada'}
-          </span>
-        </span>
-      </div>
-    );
-  }
-
-  // Culminada o congelada sin evaluaciones: mostrar puntaje sin editar
-  if (isReadOnly && evaluation.completed) {
-    return (
-      <div className="flex items-center justify-center gap-1">
-        <span className="inline-flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-green-700 dark:text-green-400">
-          {((evaluation.score / displayScale) * 100).toFixed(1)}%
-        </span>
-      </div>
-    );
-  }
-
-  if (isReadOnly) {
+  // Congelada sin evaluación completa: pendiente sin crear
+  if (isFrozen) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500">
         <TimeIcon className="w-4 h-4" />
         <span>Pendiente</span>
+        <LockIcon className="w-3 h-3" />
       </span>
     );
   }
 
+  // Evaluación completada: botón editable (verde con score)
   if (evaluation.completed) {
     return (
       <div className="flex items-center justify-center gap-1">
@@ -112,17 +77,7 @@ export const EvaluationCell: React.FC<EvaluationCellProps> = ({
     );
   }
 
-  // Pendiente — si congelada, no permite crear
-  if (isFrozen) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500">
-        <TimeIcon className="w-4 h-4" />
-        <span>Pendiente</span>
-        <LockIcon className="w-3 h-3" />
-      </span>
-    );
-  }
-
+  // Pendiente — botón para crear
   return (
     <button
       onClick={(e) => {

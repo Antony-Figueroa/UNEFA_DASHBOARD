@@ -28,7 +28,6 @@ import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { AddressCoincidencePanel } from "../../address/components/AddressCoincidencePanel";
 
-import * as enrollmentService from "../services/enrollmentService";
 import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";
 import { unwrapData } from "../../../api/crudServiceFactory";
@@ -376,11 +375,14 @@ export default function EnrollmentModal({
     setIsSearching(true);
     setPreEnrollmentError(null);
     try {
-      const [students, preEnrollments, careerData, enrollments] = await Promise.all([
+      // Nota: La validación de inscripción activa (INSCRITO) y secuencia la maneja
+      // el backend en createEnrollment. El frontend NO debe checkear contra la lista
+      // de inscripciones aquí porque el cache del endpoint puede tener datos stale
+      // después de una culminación (el cache no se invalida al cambiar PRACTICES_STATUS).
+      const [students, preEnrollments, careerData] = await Promise.all([
         getStudents(),
         getPreEnrollments(),
         getCareers(),
-        enrollmentService.getEnrollments(),
       ]);
 
       const student = unwrapData(students.data).find(
@@ -390,20 +392,6 @@ export default function EnrollmentModal({
       const preEnrollment = unwrapData(preEnrollments).find(
         (p: PreEnrollment) => p.identificationPrefix === prefix && p.identificationNumber === number && p.status
       );
-
-      // Verificar si ya tiene una inscripción ACTIVA (INSCRITO) — no confundir con CULMINADO
-      // practicesStatus: 2 = INSCRITO (el único que bloquea nueva inscripción)
-      const activeEnrollment = enrollments.find(
-        (e) => e.identificationPrefix === prefix && e.identificationNumber === number && e.practicesStatus === 2
-      );
-
-      if (activeEnrollment) {
-        setPreEnrollmentError("El estudiante ya posee una inscripción activa (INSCRITO). No puede proceder.");
-        return;
-      }
-
-      // NOTA: No bloqueamos por inscripciones culminadas — el backend valida la secuencia
-      // Un estudiante puede tener prácticas culminadas y aún así inscribir la siguiente
 
       // Verificar pre-inscripción activa
       if (!preEnrollment) {

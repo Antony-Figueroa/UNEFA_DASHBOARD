@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Efecto inicial: Verificar autenticación al cargar la aplicación
   useEffect(() => {
     // Rutas públicas que no requieren verificación inmediata (mejora performance y evita cold-starts)
-    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password', '/nosotros', '/carreras', '/pasantias'];
+    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password', '/nosotros', '/carreras', '/pasantias', '/validar'];
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
 
     if (publicPaths.includes(currentPath)) {

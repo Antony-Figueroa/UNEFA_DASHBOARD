@@ -7,7 +7,7 @@
  * @version 2.0.0
  */
 
-import { BrowserRouter as Router } from "react-router";
+import { BrowserRouter as Router, useLocation } from "react-router";
 import { AppRoutes } from "./routes";
 import ToastContainer from "./components/ui/toast/ToastContainer";
 import ScrollToTop from "./components/common/ScrollToTop";
@@ -24,6 +24,7 @@ import { useAuth } from "./context/auth";
  */
 function AppContent() {
   const { user } = useAuth();
+  const location = useLocation();
 
   // Activar renovación automática de sesión cuando el usuario está autenticado
   useSessionRefresh();
@@ -31,8 +32,8 @@ function AppContent() {
   useCommandPaletteEvents();
   return (
     <>
-      {/* Solo mostrar botón IA si el usuario está autenticado */}
-      {user && <IAButton />}
+      {/* Solo mostrar botón IA si el usuario está autenticado y no está en la página de validación */}
+      {user && location.pathname !== '/validar' && <IAButton />}
       <AppRoutes />
     </>
   );

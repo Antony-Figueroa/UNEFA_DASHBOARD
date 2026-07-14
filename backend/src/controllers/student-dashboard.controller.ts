@@ -101,7 +101,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
     // Primero obtener el person_id del usuario
     const { data: userData, error: userError } = await supabase
       .from('t_user')
-      .select('PERSON_ID')
+      .select('person_id')
       .eq('USER_ID', userId)
       .single();
 
@@ -112,7 +112,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const personId = userData.PERSON_ID;
+    const personId = userData.person_id;
 
     // Luego buscar el estudiante por person_id
     const { data: studentData, error: studentError } = await supabase
@@ -311,7 +311,7 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
     // Primero obtener el person_id del usuario
     const { data: userData, error: userError } = await supabase
       .from('t_user')
-      .select('PERSON_ID')
+      .select('person_id')
       .eq('USER_ID', userId)
       .single();
 
@@ -322,7 +322,7 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const personId = userData.PERSON_ID;
+    const personId = userData.person_id;
 
     const { data: student, error } = await supabase
       .from('t_students')
@@ -434,7 +434,7 @@ export const getStudentRequests = async (req: AuthRequest, res: Response) => {
 
     const { data: userData, error: userError } = await supabase
       .from('t_user')
-      .select('PERSON_ID')
+      .select('person_id')
       .eq('USER_ID', userId)
       .single();
 
@@ -445,7 +445,7 @@ export const getStudentRequests = async (req: AuthRequest, res: Response) => {
     const { data: student } = await supabase
       .from('t_students')
       .select('STUDENTS_ID')
-      .eq('person_id', userData.PERSON_ID)
+      .eq('person_id', userData.person_id)
       .single();
 
     if (!student) {
@@ -504,7 +504,7 @@ export const getStudentTracking = async (req: AuthRequest, res: Response) => {
     // Primero obtener el person_id del usuario
     const { data: userData, error: userError } = await supabase
       .from('t_user')
-      .select('PERSON_ID')
+      .select('person_id')
       .eq('USER_ID', userId)
       .single();
 
@@ -512,7 +512,7 @@ export const getStudentTracking = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
     }
 
-    const personId = userData.PERSON_ID;
+    const personId = userData.person_id;
 
     const { data: studentData } = await supabase
       .from('t_students')
@@ -687,7 +687,7 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
     // Find student's person record
     const { data: userData, error: userError } = await supabase
       .from('t_user')
-      .select('PERSON_ID')
+      .select('person_id')
       .eq('USER_ID', userId)
       .single();
 
@@ -698,7 +698,7 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const student = { PERSON_ID: userData.PERSON_ID };
+    const student = { person_id: userData.person_id };
     const studentError = null;
 
     if (studentError || !student) {
@@ -712,7 +712,7 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
     const { error: updateError } = await supabase
       .from('t_persons')
       .update(updates)
-      .eq('PERSON_ID', student.PERSON_ID);
+      .eq('person_id', student.person_id);
 
     if (updateError) throw updateError;
 
@@ -725,7 +725,7 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
         MILITARY_RANK, EMPLOYMENT, STATUS, REGISTRATION_DATE,
         t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birthdate, address, marital_status)
       `)
-      .eq('person_id', student.PERSON_ID)
+      .eq('person_id', student.person_id)
       .single();
 
     if (!updated) {
@@ -863,7 +863,7 @@ export const createStudentRequest = async (req: AuthRequest, res: Response) => {
 
     const { data: userData, error: userError } = await supabase
       .from('t_user')
-      .select('PERSON_ID')
+      .select('person_id')
       .eq('USER_ID', userId)
       .single();
 
@@ -874,7 +874,7 @@ export const createStudentRequest = async (req: AuthRequest, res: Response) => {
     const { data: student } = await supabase
       .from('t_students')
       .select('STUDENTS_ID, person_id')
-      .eq('person_id', userData.PERSON_ID)
+      .eq('person_id', userData.person_id)
       .single();
 
     if (!student) {

@@ -271,11 +271,6 @@ const ValidCard = ({ result, formattedDate, today }: {
           <span className="font-semibold text-text-secondary">{today}</span>{" "}
           por el sistema oficial de la Coordinación de Prácticas Profesionales de la UNEFA.
         </p>
-        {result.hash && (
-          <p className="mt-1.5 text-[10px] text-text-tertiary font-mono">
-            Hash: <span className="text-unefa-blue dark:text-brand-400">{result.hash}</span>
-          </p>
-        )}
       </div>
     </div>
   </CardBase>

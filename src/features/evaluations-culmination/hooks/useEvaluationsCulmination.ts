@@ -87,7 +87,9 @@ export interface UseEvaluationsCulminationReturn {
   selectedEvaluationId: number | null;
   selectedDetailStudentName: string;
   selectedDetailStudentCi: string;
-  handleViewEvaluationDetails: (evaluationId: number, studentName?: string, studentCi?: string) => void;
+  selectedDetailCareerName: string;
+  selectedDetailPracticeTypeName: string;
+  handleViewEvaluationDetails: (evaluationId: number, studentName?: string, studentCi?: string, careerName?: string, practiceTypeName?: string) => void;
   handleCloseDetailModal: () => void;
 
   /** Modal de detalle de estudiante */
@@ -258,6 +260,8 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
   const [selectedDetailStudentName, setSelectedDetailStudentName] = useState('');
   const [selectedDetailStudentCi, setSelectedDetailStudentCi] = useState('');
+  const [selectedDetailCareerName, setSelectedDetailCareerName] = useState('');
+  const [selectedDetailPracticeTypeName, setSelectedDetailPracticeTypeName] = useState('');
 
   const [studentDetailOpen, setStudentDetailOpen] = useState(false);
   const [selectedStudentPracticeId, setSelectedStudentPracticeId] = useState<number | null>(null);
@@ -594,10 +598,12 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
   );
 
   // ─── Detail Modal Handlers ──────────────────────────────
-  const handleViewEvaluationDetails = useCallback((evaluationId: number, studentName?: string, studentCi?: string) => {
+  const handleViewEvaluationDetails = useCallback((evaluationId: number, studentName?: string, studentCi?: string, careerName?: string, practiceTypeName?: string) => {
     setSelectedEvaluationId(evaluationId);
     setSelectedDetailStudentName(studentName || '');
     setSelectedDetailStudentCi(studentCi || '');
+    setSelectedDetailCareerName(careerName || '');
+    setSelectedDetailPracticeTypeName(practiceTypeName || '');
     setDetailModalOpen(true);
   }, []);
 
@@ -606,6 +612,8 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     setSelectedEvaluationId(null);
     setSelectedDetailStudentName('');
     setSelectedDetailStudentCi('');
+    setSelectedDetailCareerName('');
+    setSelectedDetailPracticeTypeName('');
   }, []);
 
   // ─── Student Detail Modal Handlers ──────────────────────
@@ -930,6 +938,8 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
     selectedEvaluationId,
     selectedDetailStudentName,
     selectedDetailStudentCi,
+    selectedDetailCareerName,
+    selectedDetailPracticeTypeName,
     handleViewEvaluationDetails,
     handleCloseDetailModal,
     studentDetailOpen,

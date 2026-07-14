@@ -6,6 +6,7 @@ import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 import { checkSequentialPrerequisite } from '../utils/sequential-validation.js';
 import { getEvalConfig, calculateWeightedGrade } from '../services/evaluation-config.service.js';
 import { auditCreate } from '../utils/audit-helpers.js';
+import { triggerAutoPreEnrollment, type CulminatedPractice } from '../utils/auto-pre-enrollment.js';
 
 // ── Tipos ─────────────────────────────────────────────────────────────────
 
@@ -482,11 +483,19 @@ export const approveCulmination = async (req: Request, res: Response) => {
       .select(`
         PROFESSIONAL_PRACTICE_ID,
         STUDENTS_ID,
+        student_person_id,
         CAREER_ID,
         INTERNSHIP_TYPE_ID,
         PRACTICES_STATUS,
         EVALUATION_STATUS,
         GRADE,
+        PERIOD_ID,
+        SEMESTER,
+        SECTION,
+        REGIME,
+        ENROLLMENT,
+        INSTITUTION_ID,
+        MANAGER_ID,
         t_internship_type (
           HOURS_REQUIRED
         )
@@ -583,6 +592,30 @@ export const approveCulmination = async (req: Request, res: Response) => {
       .update({ PRACTICES_STATUS: PRACTICES_STATUS.CULMINADO })
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
 
+    // 5b. Auto-pre-inscribe next internship type in sequence
+    let autoPreEnrollResult: { created: boolean; reason?: string; userMessage?: string } | null = null;
+    try {
+      const practiceData: CulminatedPractice = {
+        PROFESSIONAL_PRACTICE_ID: parseInt(practiceId),
+        STUDENTS_ID: (practice as any).STUDENTS_ID,
+        STUDENT_PERSON_ID: (practice as any).student_person_id,
+        CAREER_ID: (practice as any).CAREER_ID,
+        INTERNSHIP_TYPE_ID: (practice as any).INTERNSHIP_TYPE_ID,
+        PERIOD_ID: (practice as any).PERIOD_ID,
+        SEMESTER: (practice as any).SEMESTER,
+        SECTION: (practice as any).SECTION,
+        REGIME: (practice as any).REGIME,
+        ENROLLMENT: (practice as any).ENROLLMENT,
+        INSTITUTION_ID: (practice as any).INSTITUTION_ID ?? null,
+        MANAGER_ID: (practice as any).MANAGER_ID ?? null,
+        GRADE: grade,
+      };
+      autoPreEnrollResult = await triggerAutoPreEnrollment(supabase, practiceData, req);
+    } catch (autoErr) {
+      console.error('[Culmination] AutoPreEnroll error:', autoErr);
+      // Non-fatal — don't block culmination
+    }
+
     // 6. Audit log
     try {
       await auditCreate(req, 't_professional_practices', {
@@ -597,7 +630,11 @@ export const approveCulmination = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Culminación aprobada exitosamente'
+      message: 'Culminación aprobada exitosamente',
+      autoPreEnroll: autoPreEnrollResult ? {
+        created: autoPreEnrollResult.created,
+        message: autoPreEnrollResult.userMessage || autoPreEnrollResult.reason || (autoPreEnrollResult.created ? 'Pre-inscripción del siguiente tipo creada' : 'Sin siguiente tipo en secuencia'),
+      } : null,
     });
 
   } catch (error) {

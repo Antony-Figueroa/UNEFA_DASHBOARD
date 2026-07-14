@@ -425,3 +425,99 @@ describe('StudentCulminationRow — readOnly', () => {
     expect(svg).not.toBeInTheDocument();
   });
 });
+
+// ── Task 1.1 + 1.3: ActionDropdown enabled in readOnly + certified ──────
+
+describe('StudentCulminationRow — ActionDropdown in readOnly + certified phase', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const certifiedRow: StudentCulminationRowData = {
+    studentCi: '12345678',
+    studentName: 'Juan Pérez',
+    careerName: 'Ing. Enfermería',
+    periodId: 1,
+    periodName: '2024-2',
+    phases: [
+      {
+        practiceId: 100,
+        practiceTypeId: 1,
+        practiceTypeName: 'Hospitalaria',
+        priority: 1,
+        status: 'certified',
+        statusLabel: 'Certificada',
+        grade: 16,
+        isFrozen: false,
+        evaluationStatus: 'completed',
+        institutionName: 'Hospital Central',
+        hoursCompleted: 360,
+      },
+    ],
+    finalStatus: 'approved',
+    finalStatusLabel: 'Aprobado',
+    canCertify: false,
+    certificateNumber: 'CERT-001',
+    certifiedAt: '2024-06-01',
+    totalPractices: 1,
+    completedPractices: 1,
+  };
+
+  it('ActionDropdown trigger button is NOT disabled when readOnly=true and phase is certified', () => {
+    const onDownloadPdf = vi.fn();
+    render(
+      <StudentCulminationRow
+        {...defaultProps}
+        row={certifiedRow}
+        isExpanded={true}
+        readOnly={true}
+        onDownloadPdf={onDownloadPdf}
+      />
+    );
+
+    const triggerBtn = screen.getByRole('button', { name: '' , hidden: true });
+    // The three-dots button has aria-haspopup="menu"
+    const dropdownBtn = document.querySelector('button[aria-haspopup="menu"]');
+    expect(dropdownBtn).toBeInTheDocument();
+    expect(dropdownBtn).not.toBeDisabled();
+  });
+
+  it('mutating actions (Certificar, Revertir, Descongelar) are NOT shown when readOnly=true', () => {
+    const certifiedRowWithFailed = {
+      ...certifiedRow,
+      phases: [
+        ...certifiedRow.phases,
+        {
+          practiceId: 200,
+          practiceTypeId: 2,
+          practiceTypeName: 'Comunitaria',
+          priority: 2,
+          status: 'approved' as const,
+          statusLabel: 'Aprobada',
+          grade: 15,
+          isFrozen: true,
+          evaluationStatus: 'completed',
+          institutionName: 'Centro de Salud',
+          hoursCompleted: 360,
+        },
+      ],
+    };
+
+    render(
+      <StudentCulminationRow
+        {...defaultProps}
+        row={certifiedRowWithFailed}
+        isExpanded={true}
+        readOnly={true}
+        onDownloadPdf={vi.fn()}
+        isWithinGracePeriod={true}
+        onUnfreeze={vi.fn()}
+      />
+    );
+
+    // Mutating actions should NOT appear as standalone buttons in the row
+    expect(screen.queryByRole('button', { name: /certificar/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Revertir')).not.toBeInTheDocument();
+    expect(screen.queryByText('Descongelar')).not.toBeInTheDocument();
+  });
+});

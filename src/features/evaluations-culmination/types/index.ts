@@ -298,3 +298,27 @@ export interface CulminationGroupResponse {
   stats: CulminationStats;
   meta: { total: number; completed: number; inProgress: number; failed: number; };
 }
+
+// ── Certificate PDF Types ──────────────────────────────────────────────
+
+/** Data shape for CertificatePDF — mirrors reportsService.getDocumentData('evaluacion-consolidada') */
+export interface CertificatePDFData {
+  practiceId: number;
+  estudiante: {
+    ci: string;
+    primerNombre: string;
+    segundoNombre?: string;
+    primerApellido: string;
+    segundoApellido?: string;
+  };
+  carrera: { nombre: string };
+  institucion: { nombre: string } | null;
+  periodo: { description: string; startDate: string; endDate: string } | null;
+  practica: { startDate: string; endDate: string; grade: number };
+  evaluacionFinal: {
+    weights: { institucional: number; academico: number; comite: number };
+    parciales: { institucional: number | null; academico: number | null; comite: number | null };
+    notaFinal: number;
+  } | null;
+  certificateNumber?: string;
+}

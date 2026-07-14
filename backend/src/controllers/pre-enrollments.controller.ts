@@ -995,11 +995,11 @@ export const checkSequential = async (req: Request, res: Response) => {
 
       // Resolve studentsId from identification if not provided directly
       if (!resolvedStudentsId && identificationPrefix && identificationNumber) {
+        const fullCI = `${identificationPrefix}-${identificationNumber}`;
         const { data: student, error: studentError } = await supabase
-          .from('t_student')
-          .select('STUDENTS_ID')
-          .eq('IDENTIFICATION_PREFIX', identificationPrefix)
-          .eq('IDENTIFICATION_NUMBER', identificationNumber)
+          .from('t_students')
+          .select('STUDENTS_ID, t_persons!inner(ci)')
+          .eq('t_persons.ci', fullCI)
           .eq('STATUS', 1)
           .maybeSingle();
 

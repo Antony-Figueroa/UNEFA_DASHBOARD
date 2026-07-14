@@ -64,6 +64,11 @@ interface EvaluationModalProps {
    * y el paso actual no completa todas las evaluaciones.
    */
   onNavigateToNext?: (type: EvaluatorType, memberIndex?: number) => void;
+  /** Información del estudiante para identificación en el modal */
+  studentName?: string;
+  studentCi?: string;
+  careerName?: string;
+  practiceTypeName?: string;
 }
 
 interface ComiteMemberData {
@@ -85,6 +90,10 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   onSuccess,
   isFrozen = false,
   onNavigateToNext,
+  studentName,
+  studentCi,
+  careerName,
+  practiceTypeName,
 }) => {
   const { criteria, fetchCriteria, createEvaluation, updateEvaluation, loading, error: submitError } = useEvaluations();
   const { config } = useSystemEvaluationConfig();
@@ -661,6 +670,39 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
         </div>
       )}
 
+      {/* Student identification header */}
+      {(studentName || studentCi || careerName || practiceTypeName) && (
+        <div className="mx-4 mt-3 p-4 bg-brand-50 dark:bg-brand-500/10 rounded-lg border border-brand-200 dark:border-brand-500/20">
+          <p className="text-xs font-bold uppercase text-brand-600 dark:text-brand-400 mb-2">Estudiante Evaluado</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+            {studentName && (
+              <div>
+                <span className="text-xs text-text-tertiary">Nombre</span>
+                <p className="text-sm font-semibold text-text-primary dark:text-text-emphasis">{studentName}</p>
+              </div>
+            )}
+            {studentCi && (
+              <div>
+                <span className="text-xs text-text-tertiary">Cédula</span>
+                <p className="text-sm font-medium text-text-primary dark:text-text-emphasis">{studentCi}</p>
+              </div>
+            )}
+            {careerName && (
+              <div>
+                <span className="text-xs text-text-tertiary">Carrera</span>
+                <p className="text-sm font-medium text-text-primary dark:text-text-emphasis">{careerName}</p>
+              </div>
+            )}
+            {practiceTypeName && (
+              <div>
+                <span className="text-xs text-text-tertiary">Tipo de Práctica</span>
+                <p className="text-sm font-medium text-text-primary dark:text-text-emphasis">{practiceTypeName}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {initialLoading ? (
         <ModalBody>
           <div className="flex justify-center py-12">
@@ -989,6 +1031,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       }}
       nextType={flowNextStep?.type ?? 'INSTITUCIONAL'}
       nextMemberIndex={flowNextStep?.memberIndex}
+      studentName={studentName}
     />
 
     {/* Completion modal — all evaluation types complete */}

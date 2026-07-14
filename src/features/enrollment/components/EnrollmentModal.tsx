@@ -391,27 +391,21 @@ export default function EnrollmentModal({
         (p: PreEnrollment) => p.identificationPrefix === prefix && p.identificationNumber === number && p.status
       );
 
-      // Verificar si ya tiene una inscripción activa
+      // Verificar si ya tiene una inscripción ACTIVA (INSCRITO) — no confundir con CULMINADO
+      // practicesStatus: 2 = INSCRITO (el único que bloquea nueva inscripción)
       const activeEnrollment = enrollments.find(
-        (e) => e.identificationPrefix === prefix && e.identificationNumber === number && e.status === true
+        (e) => e.identificationPrefix === prefix && e.identificationNumber === number && e.practicesStatus === 2
       );
 
       if (activeEnrollment) {
-        setPreEnrollmentError("El estudiante ya posee una inscripción activa. No puede proceder.");
+        setPreEnrollmentError("El estudiante ya posee una inscripción activa (INSCRITO). No puede proceder.");
         return;
       }
 
-      // Verificar si tiene inscripción culminada (inactiva pero con código)
-      const culminatedEnrollment = enrollments.find(
-        (e) => e.identificationPrefix === prefix && e.identificationNumber === number && e.enrollmentCode
-      );
+      // NOTA: No bloqueamos por inscripciones culminadas — el backend valida la secuencia
+      // Un estudiante puede tener prácticas culminadas y aún así inscribir la siguiente
 
-      if (culminatedEnrollment) {
-        setPreEnrollmentError("El estudiante ya posee una inscripción culminada. No es posible registrar una nueva inscripción.");
-        return;
-      }
-
-      // Verificar pre-inscripción activa solo si no tiene inscripción previa
+      // Verificar pre-inscripción activa
       if (!preEnrollment) {
         setPreEnrollmentError("El estudiante no posee una pre-inscripción activa. No puede proceder.");
         setStudentPersonId(null);

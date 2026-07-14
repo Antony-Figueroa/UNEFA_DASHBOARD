@@ -310,7 +310,6 @@ export const StudentCulminationRow: React.FC<StudentCulminationRowProps> = ({
                           ) : (
                             <ActionDropdown
                               actions={buildPhaseActions(phase, index)}
-                              disabled={readOnly}
                             />
                           )}
                         </td>

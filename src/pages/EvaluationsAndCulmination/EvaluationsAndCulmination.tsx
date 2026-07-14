@@ -410,6 +410,10 @@ export default function EvaluationsAndCulminationPage() {
               evaluatorName: m.evaluatorName,
             })) || []
           }
+          studentName={hook.selectedPracticeForEval.studentName}
+          studentCi={hook.selectedPracticeForEval.studentCi}
+          careerName={hook.selectedPracticeForEval.careerName}
+          practiceTypeName={hook.selectedPracticeForEval.practiceTypeName}
         />
         </>
       )}
@@ -420,6 +424,8 @@ export default function EvaluationsAndCulminationPage() {
         evaluationId={hook.selectedEvaluationId}
         studentName={hook.selectedDetailStudentName}
         studentCi={hook.selectedDetailStudentCi}
+        careerName={hook.selectedDetailCareerName}
+        practiceTypeName={hook.selectedDetailPracticeTypeName}
       />
 
       <AllEvaluationsDetailModal

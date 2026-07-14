@@ -887,34 +887,13 @@ export default function PeriodModal({
                                                             // Current type's own start (if user already picked one)
                                                             const ownStart = td?.startDate ? parseYmd(td.startDate) : null;
 
-                                                            // startMinDate — must start after previous type ends
-                                                            const prevType = sequentialTypes.find(t => t.priority === type.priority - 1);
-                                                            const prevTd = prevType ? typeDatesState[prevType.id] : null;
-                                                            const startMinDate = pStart && !isUnica && prevTd?.endDate
-                                                                ? (parseYmd(prevTd.endDate) ?? pStart)
-                                                                : pStart;
-
-                                                            // startMaxDate — all: end of parent period
+                                                            // Relaxed constraints to prevent UI deadlocks (minDate >= maxDate)
+                                                            // Users can freely pick dates within the main period boundaries.
+                                                            // Strict overlap validation is handled on submit.
+                                                            const startMinDate = pStart ?? undefined;
                                                             const startMaxDate = pEnd ?? undefined;
-
-                                                            // endMinDate — at least equal share of the period
-                                                            const sliceWeeks = sequentialTypes.length > 0
-                                                                ? Math.ceil(16 / sequentialTypes.length)
-                                                                : 8;
-                                                            const weeksForType = isUnica ? 16 : sliceWeeks;
-                                                            const endMinDate = (() => {
-                                                                if (!pStart) return undefined;
-                                                                const base = ownStart ?? pStart;
-                                                                const min = new Date(base.getTime() + weeksForType * 7 * 24 * 60 * 60 * 1000);
-                                                                return min;
-                                                            })();
-
-                                                            // endMaxDate — must end before next type starts
-                                                            const nextType = sequentialTypes.find(t => t.priority === type.priority + 1);
-                                                            const nextTd = nextType ? typeDatesState[nextType.id] : null;
-                                                            const endMaxDate = pEnd && !isUnica && nextTd?.startDate
-                                                                ? (parseYmd(nextTd.startDate) ?? pEnd)
-                                                                : pEnd;
+                                                            const endMinDate = ownStart ?? pStart ?? undefined;
+                                                            const endMaxDate = pEnd ?? undefined;
 
                                                             // Auto-update end when start changes (same as parent period behavior)
                                                             const handleStartChange = (dateStr: string) => {
@@ -931,6 +910,8 @@ export default function PeriodModal({
                                                                     const currentEnd = prev[type.id]?.endDate;
                                                                     const [y, m, d] = ymd.split('-').map(Number);
                                                                     const newStart = new Date(y, m - 1, d, 12, 0, 0);
+                                                                    
+                                                                    // Default to 8 weeks for sequential, 16 for unica if not set
                                                                     const wft = isUnica ? 16 : 8;
                                                                     const minEnd = new Date(newStart.getTime() + wft * 7 * 24 * 60 * 60 * 1000);
                                                                     const fmt = (dt: Date): string =>
@@ -942,7 +923,8 @@ export default function PeriodModal({
                                                                     } else {
                                                                         const [ey, em, ed] = currentEnd.split('-').map(Number);
                                                                         const endDt = new Date(ey, em - 1, ed, 12, 0, 0);
-                                                                        if (endDt.getTime() < minEnd.getTime()) {
+                                                                        // Only auto-adjust if current end is before the new start
+                                                                        if (endDt.getTime() < newStart.getTime()) {
                                                                             newEnd = fmt(minEnd);
                                                                         }
                                                                     }

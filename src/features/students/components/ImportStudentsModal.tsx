@@ -36,7 +36,7 @@ import {
 } from "../services/studentsService";
 
 /** Estados del proceso de importación */
-type ImportStep = "upload" | "validating" | "preview" | "editing" | "executing" | "result";
+type ImportStep = "upload" | "preview" | "editing" | "executing" | "result";
 
 /** Estados de fila en la preview */
 type RowStatus = "valid" | "warning" | "error";
@@ -93,7 +93,7 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
     setFile(excelFile);
     setError(null);
     setIsValidating(true);
-    setStep("validating");
+    // nos quedamos en "upload" con el spinner del dropzone hasta que termine
 
     try {
       const result = await validateImport(excelFile);
@@ -109,7 +109,7 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Error desconocido";
       setError("Error al validar el archivo: " + message);
-      setStep("upload");
+      // se queda en "upload" con el error visible
     } finally {
       setIsValidating(false);
     }
@@ -123,7 +123,12 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
 
     try {
       const confirmed = hasWarnings;
-      const rawRows = validationRows.map(r => r.originalRow);
+      const rawRows = validationRows.map(r => r.originalRow).filter(Boolean);
+      if (rawRows.length === 0) {
+        setError("No hay datos válidos para importar");
+        setStep("upload");
+        return;
+      }
       const result = await executeImportJson(rawRows, confirmed);
       
       setImportResult(result);
@@ -145,7 +150,9 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
     setIsValidating(true);
     setError(null);
     try {
-      const rawRows = validationRows.map(r => r.rowNumber === updatedRow.rowNumber ? updatedRow : r.originalRow);
+      const rawRows = validationRows
+        .map(r => r.rowNumber === updatedRow.rowNumber ? updatedRow : r.originalRow)
+        .filter(Boolean);
       const result = await validateImportJson(rawRows);
       
       if (!result.valid && result.rows.length === 0) {
@@ -695,7 +702,7 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
 
       <ModalBody>
         {step === "upload" && renderUpload()}
-        {(step === "validating" || step === "preview") && renderPreview()}
+        {step === "preview" && renderPreview()}
         {step === "editing" && renderEditing()}
         {step === "executing" && (
           <div className="text-center py-8">
@@ -715,7 +722,7 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
           </>
         )}
 
-        {(step === "validating" || step === "preview") && (
+        {step === "preview" && (
           <>
             <Button variant="ghost" onClick={handleReset}>
               <X className="w-4 h-4 mr-2" />

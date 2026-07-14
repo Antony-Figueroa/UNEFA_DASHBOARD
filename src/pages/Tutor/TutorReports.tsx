@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import tutorService, { TutorReportData } from "../../features/tutor/services/tutorService";
+import tutorService from "../../features/tutor/services/tutorService";
+import type { TutorReportData } from "../../features/tutor/services/tutorService";
 import Badge from "../../components/ui/badge/Badge";
 import { FileText, Users, TrendingUp, Calendar } from "lucide-react";
 
@@ -123,10 +124,8 @@ export default function TutorReports() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ComponentCard title="Distribución por Estado">
-            {reportData?.summary.statusDistribution && (
-              <div className="space-y-3">
-                {Object.entries(reportData.summary.statusDistribution).map(([status, count]) => {
+          <ComponentCard title="Distribución por Estado">                {reportData?.summary.statusDistribution &&
+                  (Object.entries(reportData.summary.statusDistribution) as [string, number][]).map(([status, count]) => {
                   const total = reportData.summary.totalStudents;
                   const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
                   
@@ -162,10 +161,8 @@ export default function TutorReports() {
             )}
           </ComponentCard>
 
-          <ComponentCard title="Distribución por Período">
-            {reportData?.summary.periodDistribution && (
-              <div className="space-y-3">
-                {Object.entries(reportData.summary.periodDistribution).map(([period, count]) => {
+          <ComponentCard title="Distribución por Período">                {reportData?.summary.periodDistribution &&
+                  (Object.entries(reportData.summary.periodDistribution) as [string, number][]).map(([period, count]) => {
                   const total = reportData.summary.totalStudents;
                   const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
                   
@@ -208,7 +205,7 @@ export default function TutorReports() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-light dark:divide-border-dark">
-                {reportData?.students.map((student, index) => (
+                {reportData?.students.map((student: { studentName: string; studentCi: string; careerName: string; institutionName: string; period: string; status: string; grade: number }, index: number) => (
                   <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                     <td className="px-4 py-4">
                       <div>

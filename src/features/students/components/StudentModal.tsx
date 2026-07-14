@@ -305,6 +305,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           const studentData = result.student;
           setExistingStudent(studentData);
           setExistingPerson(false);
+          setViewOnlyMode(true);
           // Parse phone number into prefix and local
           let phonePrefix = "";
           let phoneNumber = "";
@@ -419,22 +420,23 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
             const result = await getStudentByCi(fullCi);
             if (result?.student) {
               // Estudiante ya existe → precargar datos (form editable)
-              const studentData = result.student;
-              setExistingStudent(studentData);
-              setExistingPerson(false);
+          const studentData = result.student;
+          setExistingStudent(studentData);
+          setExistingPerson(false);
+          setViewOnlyMode(true);
 
-              // Parse phone
-              let phonePrefix = "";
-              let phoneNumber = "";
-              if (studentData.phone) {
-                const cleanPhone = studentData.phone.replace(/[-\s]/g, "");
-                if (cleanPhone.length >= 4) {
-                  phonePrefix = cleanPhone.substring(0, 4);
-                  phoneNumber = cleanPhone.substring(4);
-                }
-              }
+          // Parse phone
+          let phonePrefix = "";
+          let phoneNumber = "";
+          if (studentData.phone) {
+            const cleanPhone = studentData.phone.replace(/[-\s]/g, "");
+            if (cleanPhone.length >= 4) {
+              phonePrefix = cleanPhone.substring(0, 4);
+              phoneNumber = cleanPhone.substring(4);
+            }
+          }
 
-              // Pre-fill ALL form fields (person + student-specific)
+          // Pre-fill ALL form fields (person + student-specific)
               setValue("identificationPrefix", studentData.identificationPrefix || "V");
               setDisplayIdentificationNumber(
                 formatCedulaDisplay(studentData.identificationNumber || ""),
@@ -954,12 +956,12 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="student-form" onSubmit={handleSubmit(onSubmit, scrollToFirstError)} className="space-y-8 w-full">
 {existingStudent && (
-            <div className="flex items-center space-x-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg mb-4">
-              <svg className="h-5 w-5 text-warning-700 dark:text-warning-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.492-1.646-1.742-2.98l5.58-9.92zM11 13a1 1 0 10-2 0v-3a1 1 0 112 0v3zm-1-8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+            <div className="flex items-center space-x-3 p-3 bg-info-50 dark:bg-info-500/10 border border-info-200 dark:border-info-500/20 rounded-lg mb-4">
+              <svg className="h-5 w-5 text-info-700 dark:text-info-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
               </svg>
-              <span className="text-sm font-medium text-warning-700 dark:text-warning-400">
-                Ya existe como estudiante — datos cargados. Guardar actualizará el registro.
+              <span className="text-sm font-medium text-info-700 dark:text-info-400">
+                Estudiante ya registrado — datos precargados.
               </span>
             </div>
           )}
@@ -981,20 +983,11 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           <div hidden={tabsState.activeTab !== 'identificacion'} role="tabpanel">
             {existingPerson && (
               <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-600 dark:bg-yellow-900/20 mb-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                    <strong>Persona existente:</strong>{' '}
-                    {existingPerson.firstName} {existingPerson.lastName} —{' '}
-                    {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setExistingPerson(false)}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400"
-                  >
-                    Continuar editando
-                  </button>
-                </div>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  <strong>Persona existente:</strong>{' '}
+                  {existingPerson.firstName} {existingPerson.lastName} —{' '}
+                  {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
+                </p>
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1432,7 +1425,11 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          {existingStudent ? (
+          {existingStudent && viewOnlyMode ? (
+            <Button variant="primary" onClick={() => onEditExisting?.(existingStudent)} className="w-full sm:w-auto min-h-12 shadow-none">
+              Editar
+            </Button>
+          ) : existingStudent ? (
             <Button 
               type="submit" 
               form="student-form" 

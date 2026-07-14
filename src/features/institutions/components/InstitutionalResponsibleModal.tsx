@@ -225,6 +225,7 @@ export default function InstitutionalResponsibleModal({
         if (result?.responsible) {
           // Responsable ya existe → precargar datos (form editable)
           setExistingResponsible(result.responsible);
+          setViewOnlyMode(true);
           fillFormWithExistingData(result.responsible);
         } else if (result?.person) {
           // Persona existe (estudiante, tutor, etc.) pero no como responsable → pre-cargar datos
@@ -493,20 +494,20 @@ export default function InstitutionalResponsibleModal({
           const prefix = watch("identificationPrefix") || 'V';
           const fullCi = `${prefix}-${digitsOnly}`;
           try {
-            const result = await getResponsibleByCi(fullCi);
-            if (result?.responsible) {
-              setExistingResponsible(result.responsible);
-              fillFormWithExistingData(result.responsible);
-            } else if (result?.person) {
-              setExistingResponsible(null);
-              setExistingPerson(true);
-              setViewOnlyMode(false);
-              preFillFromPersonData(result.person);
-            } else {
-              setExistingResponsible(null);
-              setExistingPerson(false);
-              setViewOnlyMode(false);
-            }
+            const result = await getResponsibleByCi(fullCi);              if (result?.responsible) {
+                setExistingResponsible(result.responsible);
+                setViewOnlyMode(true);
+                fillFormWithExistingData(result.responsible);
+              } else if (result?.person) {
+                setExistingResponsible(null);
+                setExistingPerson(true);
+                setViewOnlyMode(false);
+                preFillFromPersonData(result.person);
+              } else {
+                setExistingResponsible(null);
+                setExistingPerson(false);
+                setViewOnlyMode(false);
+              }
           } catch (err) {
             console.error("[InstitutionalResponsibleModal] Error checking CI on blur:", err);
           } finally {
@@ -860,14 +861,6 @@ export default function InstitutionalResponsibleModal({
      onClose();
    };
 
-// Handle clicking the "Editar Registro" button to edit existing responsible
-    const handleEditExisting = () => {
-      // Salir del modo viewOnly para permitir edición
-      setViewOnlyMode(false);
-      setExistingResponsible(null);
-      setExistingPerson(false);
-    };
-
   return (
     <>
       <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} size="5xl" showCloseButton modalId={modalId}>
@@ -887,7 +880,7 @@ export default function InstitutionalResponsibleModal({
                     <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                   </svg>
                   <span className="text-sm font-medium text-info-700 dark:text-info-400">
-                    Persona ya registrada — datos precargados. Puedes modificarlos antes de guardar.
+                    Responsable ya registrado — datos precargados.
                   </span>
                 </div>
               )}
@@ -901,26 +894,18 @@ export default function InstitutionalResponsibleModal({
               {...tabsState.tabProps}
               variant="modal"
               className="mb-6"
+              onTabChange={tabsState.setActiveTab}
             />
 
             {/* ======================== Identificación ======================== */}
             <div hidden={tabsState.activeTab !== 'identificacion'} role="tabpanel">
               {existingPerson && (
                 <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-600 dark:bg-yellow-900/20 mb-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                      <strong>Persona existente:</strong>{' '}
-                      {existingPerson.firstName} {existingPerson.lastName} —{' '}
-                      {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setExistingPerson(false)}
-                      className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400"
-                    >
-                      Continuar editando
-                    </button>
-                  </div>
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <strong>Persona existente:</strong>{' '}
+                    {existingPerson.firstName} {existingPerson.lastName} —{' '}
+                    {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
+                  </p>
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1285,7 +1270,11 @@ onChange={(val) => {
              >
                Cancelar
              </Button>
-              {editingResp ? (
+              {existingResponsible && viewOnlyMode ? (
+                <Button variant="primary" type="button" className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold" onClick={() => onEditExisting?.(existingResponsible)}>
+                  Editar
+                </Button>
+              ) : editingResp ? (
                  <Button 
                    variant="primary" 
                    type="button"

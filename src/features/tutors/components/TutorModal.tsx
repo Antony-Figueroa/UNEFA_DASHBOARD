@@ -447,6 +447,8 @@ export default function TutorModal({
           const tutorData = result.tutor;
           setExistingTutor(tutorData);
           setExistingPerson(null);
+          setViewOnlyMode(true);
+          clearErrors("identificationNumber");
 
           const areaCode = tutorData.phone ? tutorData.phone.substring(0, 4) : "";
           const phoneNumber = tutorData.phone ? tutorData.phone.substring(4) : "";
@@ -531,12 +533,14 @@ export default function TutorModal({
           const fullCi = `${prefix}-${digitsOnly}`;
           try {
             const result = await getTutorByCi(fullCi);
-            if (result?.tutor) {
-              const tutorData = result.tutor;
-              setExistingTutor(tutorData);
-              setExistingPerson(null);
+        if (result?.tutor) {
+          const tutorData = result.tutor;
+          setExistingTutor(tutorData);
+          setExistingPerson(null);
+          setViewOnlyMode(true);
+          clearErrors("identificationNumber");
 
-              const areaCode = tutorData.phone ? tutorData.phone.substring(0, 4) : "";
+          const areaCode = tutorData.phone ? tutorData.phone.substring(0, 4) : "";
               const phoneNumber = tutorData.phone ? tutorData.phone.substring(4) : "";
 
               setValue("identificationPrefix", tutorData.identificationPrefix || 'V');
@@ -1084,9 +1088,9 @@ export default function TutorModal({
       >
         <ModalHeader>
           <span className="text-xl font-semibold text-text-primary dark:text-white/90">
-            {MODAL_CONFIG.titleByMode(editingTutor || existingTutor, `Tutor ${tutorType === "methodological" ? "Metodológico" : "Académico"}`)}
+            {MODAL_CONFIG.titleByMode(editingTutor || existingTutor, 'Tutor')}
           </span>
-          <p className="text-sm text-text-secondary">{MODAL_CONFIG.descriptionByMode(editingTutor || existingTutor, `tutor ${tutorType === "methodological" ? "metodológico" : "académico"}`)}</p>
+          <p className="text-sm text-text-secondary">{MODAL_CONFIG.descriptionByMode(editingTutor || existingTutor, 'tutor')}</p>
 
         </ModalHeader>
 
@@ -1098,7 +1102,7 @@ export default function TutorModal({
                 <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
               </svg>
               <span className="text-sm font-medium text-info-700 dark:text-info-400">
-                Persona ya registrada — datos precargados. Puedes modificarlos antes de guardar.
+                Persona ya registrada — datos precargados.
               </span>
             </div>
           )}
@@ -1119,20 +1123,11 @@ export default function TutorModal({
           <div hidden={tabsState.activeTab !== 'identificacion'} role="tabpanel">
             {existingPerson && (
               <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-600 dark:bg-yellow-900/20 mb-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                    <strong>Persona existente:</strong>{' '}
-                    {existingPerson.firstName} {existingPerson.lastName} —{' '}
-                    {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setExistingPerson(null)}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400"
-                  >
-                    Continuar editando
-                  </button>
-                </div>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  <strong>Persona existente:</strong>{' '}
+                  {existingPerson.firstName} {existingPerson.lastName} —{' '}
+                  {existingPerson.identificationPrefix}-{existingPerson.identificationNumber}
+                </p>
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1558,28 +1553,25 @@ export default function TutorModal({
       </ModalBody>
 
         <ModalFooter className="sticky-footer">
-          {!viewOnlyMode && (
-            <>
-              <Button
-                variant="outline"
-                onClick={handleCloseAttempt}
-                disabled={isLoading || confirmSaving}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleFormSubmit}
-                loading={isLoading || confirmSaving}
-                loadingText="Guardando..."
-                disabled={!allRequiredFilled || !isDirty || isLoading || confirmSaving}
-              >
-                {editingTutor || existingTutor ? 'Guardar Cambios' : 'Guardar Tutor'}
-              </Button>
-            </>
-          )}
-          {viewOnlyMode && (
-            <Button variant="outline" onClick={handleClose}>
-              Cerrar
+          <Button
+            variant="outline"
+            onClick={viewOnlyMode ? handleClose : handleCloseAttempt}
+            disabled={isLoading || confirmSaving}
+          >
+            Cancelar
+          </Button>
+          {viewOnlyMode && existingTutor ? (
+            <Button variant="primary" onClick={() => onEditExisting?.(existingTutor)}>
+              Editar
+            </Button>
+          ) : (
+            <Button
+              onClick={handleFormSubmit}
+              loading={isLoading || confirmSaving}
+              loadingText="Guardando..."
+              disabled={!allRequiredFilled || !isDirty || isLoading || confirmSaving}
+            >
+              {editingTutor || existingTutor ? 'Guardar Cambios' : 'Guardar Tutor'}
             </Button>
           )}
         </ModalFooter>

@@ -69,6 +69,32 @@ export interface TutorProfile {
 
 const API_URL = "/tutor";
 
+export interface TutorReportData {
+  summary: {
+    totalStudents: number;
+    averageGrade: string;
+    periodDistribution: Record<string, number>;
+    statusDistribution: Record<string, number>;
+  };
+  tutorInfo: {
+    name: string;
+  };
+  students: Array<{
+    studentName: string;
+    studentCi: string;
+    careerName: string;
+    institutionName: string;
+    period: string;
+    status: string;
+    grade: number;
+  }>;
+}
+
+export interface ActivityLogsResponse {
+  data: any[];
+  total?: number;
+}
+
 export const tutorService = {
   getDashboard: async (): Promise<TutorDashboardStats> => {
     const response = await apiClient.get(`${API_URL}/dashboard`);
@@ -107,8 +133,19 @@ export const tutorService = {
     return response.data;
   },
 
+  getActivityLogs: async (params?: { limit?: number }): Promise<ActivityLogsResponse> => {
+    const response = await apiClient.get(`${API_URL}/activity-logs`, { params });
+    return response.data;
+  },
+
   createActivityLog: async (payload: any): Promise<any> => {
     const response = await apiClient.post(`${API_URL}/activity-logs`, payload);
+    return response.data;
+  },
+
+  // ── Reports ───────────────────────────────────
+  getReports: async (): Promise<TutorReportData> => {
+    const response = await apiClient.get(`${API_URL}/reports`);
     return response.data;
   }
 };

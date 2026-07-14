@@ -408,7 +408,7 @@ export const closePeriodWithDecisions = async (req: AuthRequest, res: Response) 
       success: true,
       message: 'Período cerrado exitosamente',
       data: {
-        periodId: Number(id),
+        periodId: Number(id as string),
         totalPractices: result.totalPractices,
         frozenEvaluations: result.frozenEvaluations,
         decisionsApplied: result.decisionsApplied,

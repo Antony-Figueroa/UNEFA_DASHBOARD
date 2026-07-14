@@ -98,7 +98,7 @@ const TutorDistributionChart: React.FC<TutorDistributionChartProps> = ({ data, l
           label: label || 'Sin tutor',
           count: value,
           unit: 'estudiante',
-          icon: '👨‍🏫',
+          icon: '',
         });
       },
       style: { fontSize: '11px', fontFamily: 'Outfit, sans-serif' },
@@ -109,19 +109,19 @@ const TutorDistributionChart: React.FC<TutorDistributionChartProps> = ({ data, l
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
+      <div className="flex min-h-[360px] flex-col rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
         <Skeleton height={24} width="50%" className="mb-4" />
-        <Skeleton height={150} className="rounded-xl" />
+        <Skeleton height={150} className="rounded-xl flex-1" />
       </div>
     );
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900"
-    >
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex min-h-[360px] flex-col rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900"
+      >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -133,7 +133,7 @@ const TutorDistributionChart: React.FC<TutorDistributionChartProps> = ({ data, l
             <FiUserCheck className="size-5 text-white" />
           </motion.div>
           <div>
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">
+            <h3 className="text-base font-bold text-text-primary">
               Tutores
             </h3>
             <p className="text-xs text-text-secondary dark:text-text-tertiary">
@@ -150,14 +150,14 @@ const TutorDistributionChart: React.FC<TutorDistributionChartProps> = ({ data, l
 
       {/* Chart or Empty State */}
       {data.length === 0 || total === 0 ? (
-        <div className="text-center py-8">
-          <div className="size-14 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-3">
-            <FiUser className="size-6 text-gray-400" />
+        <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+          <div className="size-14 rounded-xl bg-bg-secondary dark:bg-gray-800 flex items-center justify-center mx-auto mb-3">
+            <FiUser className="size-6 text-text-tertiary" />
           </div>
-          <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          <h4 className="text-sm font-medium text-text-secondary dark:text-gray-400">
             Sin tutores asignados
           </h4>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-text-tertiary mt-1">
             Los tutores aparecerán al asignar prácticas
           </p>
         </div>
@@ -167,11 +167,11 @@ const TutorDistributionChart: React.FC<TutorDistributionChartProps> = ({ data, l
             options={options}
             series={[{ data: series }]}
             type="bar"
-            height={Math.max(data.length * 40, 150)}
+            height={Math.min(Math.max(data.length * 40, 150), 240)}
           />
           
           {/* Legend */}
-          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+          <div className="mt-auto pt-3 border-t border-border-light dark:border-border-dark">
             <div className="grid grid-cols-2 gap-2">
               {data.slice(0, 4).map((tutor, i) => (
                 <div key={i} className="flex items-center gap-2 text-xs">
@@ -179,10 +179,10 @@ const TutorDistributionChart: React.FC<TutorDistributionChartProps> = ({ data, l
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: tutorColors[i % tutorColors.length] }}
                   />
-                  <span className="text-gray-600 dark:text-gray-400 truncate">
+                  <span className="text-text-secondary truncate">
                     {tutor.tutorName}
                   </span>
-                  <span className="font-semibold text-gray-900 dark:text-white ml-auto">
+                  <span className="font-semibold text-text-primary ml-auto">
                     {tutor.count}
                   </span>
                 </div>

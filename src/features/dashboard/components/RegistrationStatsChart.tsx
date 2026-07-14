@@ -54,7 +54,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
   const options: ApexOptions = {
     chart: {
       type: 'area',
-      height: 320,
+      height: 300,
       toolbar: { show: false },
       zoom: { enabled: false },
       fontFamily: 'Outfit, system-ui, sans-serif',
@@ -159,7 +159,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
           label: formattedDate,
           count,
           unit: 'registro',
-          icon: '📅',
+          icon: '',
           items,
           maxItems: 15,
         });
@@ -205,7 +205,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="h-full w-full rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900"
+          className="flex min-h-[420px] w-full flex-col rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900"
       >
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -236,7 +236,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="h-full w-full rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900"
+      className="flex min-h-[420px] w-full flex-col rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900"
     >
       {/* Header */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
@@ -250,7 +250,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
             <FiTrendingUp className="size-5 text-white" />
           </motion.div>
           <div>
-            <h3 className="text-base font-bold text-gray-900 dark:text-white tracking-tight">
+            <h3 className="text-base font-bold text-text-primary tracking-tight">
               Registro de Estudiantes
             </h3>
             <p className="text-xs text-text-secondary dark:text-text-tertiary">
@@ -262,7 +262,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
         <div className="flex items-center gap-2">
           {/* Total Counter */}
           <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md bg-brand-50 dark:bg-brand-500/10">
-            <FiCalendar className="size-3 text-brand-600 dark:text-brand-400" />
+            <FiCalendar className="size-3 text-brand-500" />
             <span className="text-xs font-bold text-brand-600 dark:text-brand-400">
               {totalRegistrations}
             </span>
@@ -274,7 +274,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
               ? 'bg-success-50 dark:bg-success-500/10'
               : stats.trend < 0
                 ? 'bg-error-50 dark:bg-error-500/10'
-                : 'bg-gray-50 dark:bg-gray-800'
+                : 'bg-bg-secondary dark:bg-gray-800'
           }`}>
             <span className={getTrendColor()}>{getTrendIcon()}</span>
             <span className={`text-xs font-bold ${getTrendColor()}`}>
@@ -304,7 +304,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
       </div>
 
       {/* Chart or Empty State */}
-      <div className="h-72">
+      <div className="flex-1 min-h-[280px]">
         {loading ? (
           <Skeleton height={280} className="rounded-xl" />
         ) : data.length === 0 ? (
@@ -350,7 +350,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
 
       {/* Quick Stats */}
       {data.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+        <div className="grid grid-cols-3 gap-2 mt-auto pt-3 border-t border-border-light dark:border-border-dark">
           <div className="text-center p-2 rounded-lg bg-brand-50/50 dark:bg-brand-500/5">
             <div className="flex items-center justify-center gap-1 mb-1">
               <FiLayers className="size-3 text-brand-500" />
@@ -365,12 +365,12 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
             </div>
             <span className="text-lg font-bold text-success-600 dark:text-success-400">{stats.max}</span>
           </div>
-          <div className="text-center p-2 rounded-lg bg-gray-50/50 dark:bg-gray-800/50">
+          <div className="text-center p-2 rounded-lg bg-bg-secondary/50 dark:bg-gray-800/50">
             <div className="flex items-center justify-center gap-1 mb-1">
-              <FiActivity className="size-3 text-gray-400" />
-              <span className="text-[9px] font-medium text-gray-500">MÍNIMO</span>
+              <FiActivity className="size-3 text-text-tertiary" />
+              <span className="text-[9px] font-medium text-text-secondary">MÍNIMO</span>
             </div>
-            <span className="text-lg font-bold text-gray-500 dark:text-gray-400">{stats.min}</span>
+            <span className="text-lg font-bold text-text-secondary dark:text-gray-400">{stats.min}</span>
           </div>
         </div>
       )}

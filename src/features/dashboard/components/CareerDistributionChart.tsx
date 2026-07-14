@@ -78,12 +78,12 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
+      <div className="flex min-h-[420px] flex-col rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
         <div className="flex items-center justify-between mb-5">
           <Skeleton height={24} width={180} />
           <Skeleton height={32} width={100} />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 flex-1">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <Skeleton key={i} height={100} className="rounded-lg" />
           ))}
@@ -95,31 +95,31 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
   // Empty state
   if (data.length === 0) {
     return (
-      <div className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
+    <div className="flex min-h-[420px] flex-col rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
         <div className="flex items-center gap-3 mb-5">
           <div className="flex items-center justify-center size-9 rounded-xl bg-brand-50 dark:bg-brand-500/10">
             <FiBookOpen className="size-4 text-brand-600 dark:text-brand-400" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-              Distribución por Carrera
-            </h3>
+              <h3 className="text-base font-semibold text-text-primary">
+                Distribución por Carrera
+              </h3>
             <p className="text-xs text-text-secondary dark:text-text-tertiary">
               Sin datos disponibles
             </p>
           </div>
         </div>
-        <div className="h-64 flex flex-col items-center justify-center text-center p-6 rounded-xl bg-gray-50/50 dark:bg-gray-800/30 border border-dashed border-gray-200 dark:border-gray-700">
-          <div className="size-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-            <FiBookOpen className="size-6 text-gray-400" />
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 rounded-xl bg-bg-secondary/50 dark:bg-gray-800/30 border border-dashed border-border-light dark:border-border-dark">
+          <div className="size-14 rounded-2xl bg-bg-secondary dark:bg-gray-800 flex items-center justify-center mb-4">
+            <FiBookOpen className="size-6 text-text-tertiary" />
           </div>
-          <h4 className="text-base font-semibold text-gray-600 dark:text-gray-400 mb-2">
+          <h4 className="text-base font-semibold text-text-secondary mb-2">
             Sin carreras registradas
           </h4>
-          <p className="text-sm text-gray-500 dark:text-gray-500 max-w-sm mx-auto">
+          <p className="text-sm text-text-secondary max-w-sm mx-auto">
             Las carreras y su distribución aparecerán aquí cuando se agreguen al sistema
           </p>
-          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-text-tertiary">
             <span className="w-2 h-2 rounded-full bg-gray-300 animate-pulse" />
             <span>Esperando datos...</span>
           </div>
@@ -211,15 +211,15 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
             label: label || 'Sin carrera',
             count: 0,
             unit: 'estudiantes',
-            icon: '🎓',
-          });
-        }
-        
-        return generateTooltipHTML({
-          label: label || 'Sin carrera',
-          count: value,
-          unit: 'estudiantes',
-          icon: '🎓',
+          icon: '',
+        });
+      }
+      
+      return generateTooltipHTML({
+        label: label || 'Sin carrera',
+        count: value,
+        unit: 'estudiantes',
+        icon: '',
         });
       },
       style: { fontSize: '11px', fontFamily: 'Outfit, sans-serif' },
@@ -239,7 +239,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
     chart: {
       type: 'bar',
       toolbar: { show: false },
-      fontFamily: 'Inter, system-ui, sans-serif',
+      fontFamily: 'Outfit, system-ui, sans-serif',
     },
     plotOptions: {
       bar: {
@@ -321,7 +321,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
           label: label || 'Sin carrera',
           count: value,
           unit: 'estudiantes',
-          icon: '🎓',
+          icon: '',
         });
       },
       style: { fontSize: '11px', fontFamily: 'Outfit, sans-serif' },
@@ -347,7 +347,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
             <FiBookOpen className="size-5 text-white" />
           </motion.div>
           <div>
-            <h3 className="text-base font-bold text-gray-900 dark:text-white tracking-tight">
+            <h3 className="text-base font-bold text-text-primary tracking-tight">
               Distribución por Carrera
             </h3>
             <p className="text-xs text-text-secondary dark:text-text-tertiary">
@@ -357,7 +357,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
         </div>
         
         {/* View Toggle - Compact */}
-        <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-gray-100 dark:bg-gray-800">
+        <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-bg-secondary dark:bg-gray-800">
           <button
             onClick={() => setViewType('donut')}
             className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-all ${
@@ -370,11 +370,11 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
           </button>
           <button
             onClick={() => setViewType('bar')}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-all ${
-              viewType === 'bar'
-                ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-            }`}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                viewType === 'bar'
+                  ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
+                  : 'text-text-secondary hover:text-text-primary dark:text-gray-400'
+              }`}
           >
             <FiBarChart2 className="size-3" />
           </button>
@@ -398,7 +398,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
                 options={donutOptions}
                 series={donutSeries}
                 type="donut"
-                height={320}
+                height={260}
               />
             </div>
             
@@ -410,7 +410,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all hover:shadow-sm"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-border-light dark:border-gray-700 hover:bg-bg-secondary dark:hover:bg-gray-800/50 transition-all hover:shadow-sm"
                 >
                   <div
                     className="size-4 rounded-full flex-shrink-0 shadow-sm"
@@ -418,11 +418,11 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
                   />
                   <span className="text-base">{getCareerIcon(i)}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    <p className="text-sm font-semibold text-text-primary truncate">
                       {career.careerName}
                     </p>
                     <div className="flex items-center gap-1 mt-0.5">
-                      <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div className="flex-1 h-1.5 bg-bg-secondary dark:bg-gray-700 rounded-full overflow-hidden">
                         <motion.div 
                           initial={{ width: 0 }}
                           animate={{ width: `${career.percentage}%` }}
@@ -434,7 +434,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
                     </div>
                   </div>
                   <div className="text-right min-w-[60px]">
-                    <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    <span className="text-sm font-bold text-text-primary">
                       {career.studentCount}
                     </span>
                     <p className="text-[9px] text-text-secondary dark:text-text-tertiary">
@@ -464,7 +464,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
                 </span>
                 <span className="text-[10px] text-brand-500">est.</span>
               </div>
-              <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
+              <div className="h-6 w-px bg-border-light dark:bg-border-dark" />
               <span className="text-xs font-medium text-text-secondary dark:text-text-tertiary">
                 {data.length} carreras registradas
               </span>
@@ -474,11 +474,11 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
               options={barOptions}
               series={barSeries}
               type="bar"
-              height={Math.max(data.length * 45, 250)}
+              height={Math.min(Math.max(data.length * 40, 200), 260)}
             />
             
             {/* Quick stats - Enhanced */}
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <div className="mt-auto pt-4 border-t border-border-light dark:border-border-dark">
               <div className="grid grid-cols-4 gap-3">
                 <div className="text-center p-3 rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-800/20 border border-brand-100 dark:border-brand-800">
                   <p className="text-lg font-bold text-brand-600 dark:text-brand-400">

@@ -107,7 +107,7 @@ const InstitutionDistributionChart: React.FC<InstitutionDistributionChartProps> 
           label: label || 'Sin institución',
           count: value,
           unit: 'estudiante',
-          icon: '🏢',
+          icon: '',
         });
       },
       style: { fontSize: '11px', fontFamily: 'Outfit, sans-serif' },
@@ -115,30 +115,25 @@ const InstitutionDistributionChart: React.FC<InstitutionDistributionChartProps> 
     },
     stroke: {
       width: 2,
-      colors: ['#fff'],
+      colors: ['var(--color-bg-primary, #fff)'],
     },
-    states: {
-      hover: {
-        filter: { type: 'lighten' }
-      }
-    }
   };
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
+      <div className="flex min-h-[360px] flex-col rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
         <Skeleton height={24} width="50%" className="mb-4" />
-        <Skeleton height={200} className="rounded-xl" />
+        <Skeleton height={200} className="rounded-xl flex-1" />
       </div>
     );
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900"
-    >
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex min-h-[360px] flex-col rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900"
+      >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -150,7 +145,7 @@ const InstitutionDistributionChart: React.FC<InstitutionDistributionChartProps> 
             <FiHome className="size-5 text-white" />
           </motion.div>
           <div>
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">
+            <h3 className="text-base font-bold text-text-primary">
               Instituciones
             </h3>
             <p className="text-xs text-text-secondary dark:text-text-tertiary">
@@ -167,14 +162,14 @@ const InstitutionDistributionChart: React.FC<InstitutionDistributionChartProps> 
 
       {/* Chart or Empty State */}
       {data.length === 0 || total === 0 ? (
-        <div className="text-center py-8">
-          <div className="size-14 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-3">
-            <FiHome className="size-6 text-gray-400" />
+        <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+          <div className="size-14 rounded-xl bg-bg-secondary dark:bg-gray-800 flex items-center justify-center mx-auto mb-3">
+            <FiHome className="size-6 text-text-tertiary" />
           </div>
-          <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          <h4 className="text-sm font-medium text-text-secondary dark:text-gray-400">
             Sin instituciones asignadas
           </h4>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-text-tertiary mt-1">
             Las instituciones aparecerán al asignar prácticas
           </p>
         </div>
@@ -184,35 +179,35 @@ const InstitutionDistributionChart: React.FC<InstitutionDistributionChartProps> 
             options={options}
             series={chartData.map(d => d.count)}
             type="donut"
-            height={250}
+            height={240}
           />
         </div>
       )}
 
       {/* Top Institutions Summary */}
       {data.length > 0 && total > 0 && (
-        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+        <div className="mt-auto pt-3 border-t border-border-light dark:border-border-dark">
           <div className="flex flex-wrap gap-2">
             {data.slice(0, 3).map((inst, i) => (
               <div 
                 key={i}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-bg-secondary dark:bg-gray-800 border border-border-light dark:border-border-dark"
               >
                 <div 
                   className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: institutionColors[i % institutionColors.length] }}
                 />
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate max-w-[100px]">
+                <span className="text-xs font-medium text-text-primary dark:text-gray-300 truncate max-w-[100px]">
                   {inst.institutionName}
                 </span>
-                <span className="text-xs font-bold text-gray-900 dark:text-white">
+                <span className="text-xs font-bold text-text-primary dark:text-white">
                   {inst.count}
                 </span>
               </div>
             ))}
             {data.length > 3 && (
-              <div className="flex items-center px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-                <span className="text-xs text-gray-500">+{data.length - 3} más</span>
+              <div className="flex items-center px-2.5 py-1.5 rounded-lg bg-bg-secondary dark:bg-gray-800 border border-border-light dark:border-border-dark">
+                <span className="text-xs text-text-secondary">+{data.length - 3} más</span>
               </div>
             )}
           </div>

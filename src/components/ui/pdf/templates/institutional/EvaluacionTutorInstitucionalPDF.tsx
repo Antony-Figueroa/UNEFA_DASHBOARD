@@ -25,6 +25,12 @@ interface Criterio {
   score: number;
 }
 
+function formatScore(v: number | null | undefined): string {
+  if (v === null || v === undefined) return '';
+  if (Number.isInteger(v)) return v.toString();
+  return v.toFixed(2);
+}
+
 interface Props {
   data: {
     estudiante: { ci: string; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string };
@@ -73,12 +79,12 @@ export function EvaluacionTutorInstitucionalPDF({ data, textos }: Props) {
               <View style={styles.tableRow} key={c.itemNumber}>
                 <Text style={styles.tableHeader}>{c.itemNumber}</Text>
                 <Text style={styles.tableDesc}>{c.description}</Text>
-                <Text style={styles.tableScore}>{c.score}</Text>
+                <Text style={styles.tableScore}>{formatScore(c.score)}</Text>
               </View>
             ))}
           </View>
           <View style={styles.totalRow}>
-            <Text>Total: {data.evaluacion.totalScore} / 100</Text>
+            <Text>Total: {formatScore(data.evaluacion.totalScore)} / 100</Text>
           </View>
           {data.evaluacion.observations && (
             <View style={{ marginTop: 20 }}>

@@ -77,6 +77,12 @@ interface Props {
   textos: Record<string, string>;
 }
 
+function formatScore(v: number | null | undefined): string {
+  if (v === null || v === undefined) return '';
+  if (Number.isInteger(v)) return v.toString();
+  return v.toFixed(2);
+}
+
 /** Renderiza la tabla de criterios para una evaluación de jurado */
 function renderCriterios(evalucion: EvaluacionComite) {
   return (
@@ -92,12 +98,12 @@ function renderCriterios(evalucion: EvaluacionComite) {
           <Text style={styles.crNum}>{c.itemNumber}</Text>
           <Text style={styles.crDesc}>{c.description}</Text>
           <Text style={styles.crRange}>0-20</Text>
-          <Text style={styles.crScore}>{c.score}</Text>
+          <Text style={styles.crScore}>{formatScore(c.score)}</Text>
         </View>
       ))}
       <View style={styles.totalScoreRow}>
         <Text style={styles.totalScoreText}>
-          Subtotal / {evalucion.criterios.length}: {evalucion.totalScore.toFixed(1)} pts
+          Subtotal / {evalucion.criterios.length}: {formatScore(evalucion.totalScore)} pts
         </Text>
       </View>
     </View>
@@ -193,7 +199,7 @@ export function EvaluacionComitePDF({ data, textos }: Props) {
           {/* Promedio final del comité */}
           <View style={styles.avgRow}>
             <Text style={styles.avgText}>
-              Calificación Promedio del Comité Evaluador: {data.comiteTotalScore.toFixed(1)} / 20 pts
+              Calificación Promedio del Comité Evaluador: {formatScore(data.comiteTotalScore)} / 20 pts
             </Text>
           </View>
         </View>

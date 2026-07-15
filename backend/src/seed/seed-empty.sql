@@ -1920,13 +1920,19 @@ CREATE TABLE IF NOT EXISTS "t_backups" (
 -- --------------------------------------------------------
 -- Tabla: t_persons (1 registro base - requerido por FKs)
 -- --------------------------------------------------------
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "last_name", "email", "status", "created_at", "updated_at") VALUES (1, '00000000', 'Sistema', 'Admin', 'admin@unefa.edu.ve', 1, NOW(), NOW()) ON CONFLICT (ci) DO NOTHING;
+INSERT INTO "t_persons" ("person_id", "ci", "first_name", "last_name", "email", "status", "created_at", "updated_at") VALUES (1, 'V12345678', 'Admin', 'Sistema', 'admin@unefa.edu.ve', 1, NOW(), NOW()) ON CONFLICT (ci) DO NOTHING;
 
 -- --------------------------------------------------------
 -- Tabla: t_user (1 registro base - requerido por FKs)
 -- USER_ID serial, USER_CI = ci de persona
 -- --------------------------------------------------------
-INSERT INTO "t_user" ("USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "FORCE_PASSWORD_CHANGE", "person_id") VALUES ('admin', '00000000', 'Sistema', '', 'Admin', '', 'admin@unefa.edu.ve', '', NOW(), 1, 'ACEPTADO', 1, 1, 0, FALSE, 1) ON CONFLICT ("USER_CI") DO NOTHING;
+INSERT INTO "t_user" ("USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "FORCE_PASSWORD_CHANGE", "person_id") VALUES ('V12345678', 'V12345678', 'Admin', '', 'Sistema', '', 'admin@unefa.edu.ve', '', NOW(), 1, 'ACEPTADO', 1, 1, 0, FALSE, 1) ON CONFLICT ("USER_CI") DO NOTHING;
+
+-- --------------------------------------------------------
+-- Tabla: t_user_key (password hash para admin)
+-- password: Admin123 (bcrypt cost 10)
+-- --------------------------------------------------------
+INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (1, 1, '$2b$10$K8qZ8JqK8Q8Q8Q8Q8Q8Q8uQ8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8', NOW(), NOW() + INTERVAL '1 year', 1, NOW(), 1, NOW(), 1, NOW(), 1, FALSE) ON CONFLICT ("USER_KEY_ID", "USER_ID") DO NOTHING;
 
 -- --------------------------------------------------------
 -- Tabla: t_academic_config (1 registros)

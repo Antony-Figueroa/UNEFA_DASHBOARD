@@ -28,9 +28,10 @@ export function formatCI(ci: string | null | undefined): string {
   return `${prefix}.${formattedNumber}`;
 }
 
-export function getTutorTitle(titulo: string | null): string {
-  if (!titulo || titulo.trim() === '') return 'Tutor Académico';
-  return titulo;
+export function getTutorTitle(titulo: string | null, tituloAbrev?: string | null): string {
+  const t = titulo || tituloAbrev;
+  if (!t || t.trim() === '') return 'Tutor Académico';
+  return t;
 }
 
 export function getTutorFullName(tutor: {

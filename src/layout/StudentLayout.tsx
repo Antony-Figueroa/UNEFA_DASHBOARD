@@ -9,6 +9,7 @@ import {
   ClipboardList,
   FolderOpen,
   BarChart3,
+  ScrollText,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -26,6 +27,7 @@ const studentNav: NavItem[] = [
   { label: "Seguimiento", path: "/student/tracking", icon: <ClipboardList className="w-5 h-5" /> },
   { label: "Documentos", path: "/student/documents", icon: <FolderOpen className="w-5 h-5" /> },
   { label: "Evaluaciones", path: "/student/evaluations", icon: <BarChart3 className="w-5 h-5" /> },
+  { label: "Reportes", path: "/student/reports", icon: <ScrollText className="w-5 h-5" /> },
 ];
 
 const SIDEBAR_EXPANDED = 208;
@@ -39,6 +41,7 @@ const pageInfo: Record<string, { title: string; description: string }> = {
   "/student/tracking": { title: "Mi Seguimiento", description: "Consultá el progreso de tu práctica profesional" },
   "/student/documents": { title: "Mis Documentos", description: "Subí y gestioná tus documentos de pasantía" },
   "/student/evaluations": { title: "Mis Evaluaciones", description: "Resultados de tus evaluaciones de práctica profesional" },
+  "/student/reports": { title: "Mis Reportes", description: "Generá y descargá tus reportes institucionales" },
 };
 
 export default function StudentLayout() {

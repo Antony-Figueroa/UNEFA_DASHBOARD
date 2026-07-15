@@ -428,7 +428,7 @@ export async function generateRelacionGeneralTutoresExcel(data: any[], period: s
       { text: `\n${period}`, font: { ...ANEXO4_FONT, bold: true } },
     ],
   };
-  titleCell.alignment = { horizontal: 'center', vertical: 'center', wrapText: true };
+  (titleCell.alignment as any) = { horizontal: 'center', vertical: 'center', wrapText: true };
   titleCell.border = { bottom: { style: 'medium' } };
 
   // ── Fila 5: Encabezados (verde #92D050, Arial 11pt bold) ──
@@ -549,7 +549,7 @@ export async function generateRelacionGeneralTutoresExcel(data: any[], period: s
   // ── Configuración de página ──
   worksheet.pageSetup = {
     orientation: 'landscape',
-    paperSize: 1,
+    paperSize: 1 as any,
     fitToPage: true,
     fitToWidth: 1,
     fitToHeight: 0,
@@ -1004,7 +1004,7 @@ export async function generateRelacionIndividualDocenteExcel(data: any[], period
   // ── Configuración de página ──
   worksheet.pageSetup = {
     orientation: 'landscape',
-    paperSize: 1,
+    paperSize: 1 as any,
     fitToPage: true,
     fitToWidth: 1,
     fitToHeight: 0,

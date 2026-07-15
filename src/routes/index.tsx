@@ -45,6 +45,7 @@ const StudentActivityLogs = lazy(() => import("../pages/Student/StudentActivityL
 const StudentDocuments = lazy(() => import("../pages/Student/StudentDocuments"));
 const StudentEvaluations = lazy(() => import("../pages/Student/StudentEvaluations"));
 const StudentTracking = lazy(() => import("../pages/Student/StudentTracking"));
+const StudentReports = lazy(() => import("../pages/Student/StudentReports"));
 
 const AdminRequests = lazy(() => import("../pages/Admin/AdminRequests"));
 
@@ -245,6 +246,7 @@ export const AppRoutes = () => {
               <Route path="/student/documents" element={<StudentDocuments />} />
               <Route path="/student/evaluations" element={<StudentEvaluations />} />
               <Route path="/student/tracking" element={<StudentTracking />} />
+              <Route path="/student/reports" element={<StudentReports />} />
             </Route>
 
             {/* Admin Requests */}

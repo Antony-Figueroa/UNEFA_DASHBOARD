@@ -489,6 +489,28 @@ export default function InstitutionModal({
     }).filter(Boolean) as { value: string; label: string }[];
   }, [internshipTypeOptions, optionsTipoPractica, fallbackTypes]);
 
+  // Opciones para CareerModal (usa prop + fallback, no solo la prop)
+  const careerInternshipOptions = useMemo(() => {
+    // Si hay opciones como prop, usarlas
+    if (internshipTypeOptions && internshipTypeOptions.length > 0) {
+      return internshipTypeOptions
+        .filter(opt => opt.id)
+        .map(opt => ({
+          id: opt.id!,
+          value: opt.value,
+          label: opt.label,
+          text: opt.label
+        }));
+    }
+    // Fallback: usar los tipos fetcheados desde la API
+    return fallbackTypes.map(t => ({
+      id: t.id,
+      value: String(t.id),
+      label: t.name,
+      text: t.name
+    }));
+  }, [internshipTypeOptions, fallbackTypes]);
+
   // Observar el tipo de práctica seleccionado para filtrar carreras
   const selectedInternshipType = watch("internshipTypeId");
 
@@ -509,6 +531,11 @@ export default function InstitutionModal({
     const filtered = careerOptions.filter(career => {
       const typeIds = career.internshipTypeIds || [];
       // Comparar usando string - ambos deben ser string para el includes
+      console.log('Filtering careers:');
+      console.log('  selectedInternshipType:', selectedInternshipType);
+      console.log('  career.careerName:', career.text);
+      console.log('  career.internshipTypeIds:', typeIds);
+      console.log('  Includes result:', typeIds.includes(String(selectedInternshipType)));
       return typeIds.includes(String(selectedInternshipType));
     });
     
@@ -1543,14 +1570,7 @@ export default function InstitutionModal({
             }
           }}
           isLoading={false}
-          internshipOptions={(internshipTypeOptions || [])
-            .filter(opt => opt.id)
-            .map(opt => ({
-              id: opt.id!,
-              value: opt.value,
-              label: opt.label,
-              text: opt.label
-            }))}
+          internshipOptions={careerInternshipOptions}
         />
       )}
     </Suspense>

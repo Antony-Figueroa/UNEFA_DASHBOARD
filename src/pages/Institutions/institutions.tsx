@@ -130,7 +130,7 @@ export default function InstitutionsPage() {
 
   const { careers, refreshCareers } = useCareers({ autoLoad: true });
 
-  const { activeOptions: internshipTypeOptions } = useInternshipTypes({ autoLoad: false });
+  const { activeOptions: internshipTypeOptions } = useInternshipTypes({ autoLoad: true });
 
   const careerOptions = useMemo(() =>
     careers.filter(c => c.status).map(c => ({

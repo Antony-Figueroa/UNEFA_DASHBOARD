@@ -9,7 +9,7 @@
 -- Tablas: 76 | Con datos de sistema: 25
 -- Sequences: 68 | Índices: 107 | FK: 102 | Funciones: 17
 -- Total registros: ~2087 (solo sistema)
--- ================================================================================
+-- Total registros: ~1800 (solo sistema, sin setval)
 
 -- Extensiones requeridas
 CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA public SCHEMA pg_catalog;
@@ -21,208 +21,140 @@ CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA public;
 -- ============================================================
 
 CREATE SEQUENCE IF NOT EXISTS "t_activity_logs_ACTIVITY_LOG_ID_seq" START WITH 1;
-SELECT setval('"t_activity_logs_ACTIVITY_LOG_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_address_address_id_seq" START WITH 1;
-SELECT setval('"t_address_address_id_seq"', 32, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_auth_log_ID_seq" START WITH 1;
-SELECT setval('"t_auth_log_ID_seq"', 613, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_career_CAREER_ID_seq" START WITH 1;
-SELECT setval('"t_career_CAREER_ID_seq"', 7, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_career_internship_type_ID_CAREER_INTERNSHIP_TYPE_ID_seq" START WITH 1;
-SELECT setval('"t_career_internship_type_ID_CAREER_INTERNSHIP_TYPE_ID_seq"', 22, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_change_log_CHANGE_LOG_ID_seq" START WITH 1;
-SELECT setval('"t_change_log_CHANGE_LOG_ID_seq"', 871, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_columns_COLUMN_ID_seq" START WITH 1;
-SELECT setval('"t_columns_COLUMN_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_committee_assignment_ASSIGNMENT_ID_seq" START WITH 1;
-SELECT setval('"t_committee_assignment_ASSIGNMENT_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_config_CONFIG_ID_seq" START WITH 1;
-SELECT setval('"t_config_CONFIG_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_coordinadores_COORDINADOR_ID_seq" START WITH 1;
-SELECT setval('"t_coordinadores_COORDINADOR_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_credential_tokens_id_seq" START WITH 1;
-SELECT setval('"t_credential_tokens_id_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_culmination_reversals_REVERSAL_ID_seq" START WITH 1;
-SELECT setval('"t_culmination_reversals_REVERSAL_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_email_templates_id_seq" START WITH 1;
-SELECT setval('"t_email_templates_id_seq"', 8, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_enrollment_field_changes_CHANGE_ID_seq" START WITH 1;
-SELECT setval('"t_enrollment_field_changes_CHANGE_ID_seq"', 13, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_evaluation_EVALUATION_ID_seq" START WITH 1;
-SELECT setval('"t_evaluation_EVALUATION_ID_seq"', 46, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_evaluation_criteria_CRITERIA_ID_seq" START WITH 1;
-SELECT setval('"t_evaluation_criteria_CRITERIA_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_evaluation_detail_DETAIL_ID_seq" START WITH 1;
-SELECT setval('"t_evaluation_detail_DETAIL_ID_seq"', 617, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_institution_INSTITUTION_ID_seq" START WITH 1;
-SELECT setval('"t_institution_INSTITUTION_ID_seq"', 20, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_institution_address_institution_address_id_seq" START WITH 1;
-SELECT setval('"t_institution_address_institution_address_id_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_institution_career_INSTITUTION_CAREER_ID_seq" START WITH 1;
-SELECT setval('"t_institution_career_INSTITUTION_CAREER_ID_seq"', 17, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_institution_internship_type_INSTITUTION_INTERNSHIP_TYPE_ID_se" START WITH 1;
-SELECT setval('"t_institution_internship_type_INSTITUTION_INTERNSHIP_TYPE_ID_se"', 5, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_institution_manager_MANAGER_ID_seq" START WITH 1;
-SELECT setval('"t_institution_manager_MANAGER_ID_seq"', 6, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_institution_manager_institution_INSTITUTION_MANAGER_INSTITUTI" START WITH 1;
-SELECT setval('"t_institution_manager_institution_INSTITUTION_MANAGER_INSTITUTI"', 5, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_internship_type_INTERNSHIP_TYPE_ID_seq" START WITH 1;
-SELECT setval('"t_internship_type_INTERNSHIP_TYPE_ID_seq"', 4, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_internships_period_PERIOD_ID_seq" START WITH 1;
-SELECT setval('"t_internships_period_PERIOD_ID_seq"', 10, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_key_history_KEY_HISTORY_ID_seq" START WITH 1;
-SELECT setval('"t_key_history_KEY_HISTORY_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_landing_config_config_id_seq" START WITH 1;
-SELECT setval('"t_landing_config_config_id_seq"', 24, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_list_LIST_ID_seq" START WITH 1;
-SELECT setval('"t_list_LIST_ID_seq"', 1, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_municipio_municipio_id_seq" START WITH 1;
-SELECT setval('"t_municipio_municipio_id_seq"', 335, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_notifications_NOTIFICATION_ID_seq" START WITH 1;
-SELECT setval('"t_notifications_NOTIFICATION_ID_seq"', 219, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_nucleus_career_nucleus_career_id_seq" START WITH 1;
-SELECT setval('"t_nucleus_career_nucleus_career_id_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_operation_OPERATION_ID_seq" START WITH 1;
-SELECT setval('"t_operation_OPERATION_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_parroquia_parroquia_id_seq" START WITH 1;
-SELECT setval('"t_parroquia_parroquia_id_seq"', 1139, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_password_history_HISTORY_ID_seq" START WITH 1;
-SELECT setval('"t_password_history_HISTORY_ID_seq"', 3, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_permissions_PERMISSIONS_ID_seq" START WITH 1;
-SELECT setval('"t_permissions_PERMISSIONS_ID_seq"', 34535, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_person_address_person_address_id_seq" START WITH 1;
-SELECT setval('"t_person_address_person_address_id_seq"', 31, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_person_merge_log_log_id_seq" START WITH 1;
-SELECT setval('"t_person_merge_log_log_id_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_persons_person_id_seq" START WITH 1;
-SELECT setval('"t_persons_person_id_seq"', 96, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_practice_visits_VISIT_ID_seq" START WITH 1;
-SELECT setval('"t_practice_visits_VISIT_ID_seq"', 13, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_preset_questions_PRESET_QUESTION_ID_seq" START WITH 1;
-SELECT setval('"t_preset_questions_PRESET_QUESTION_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_professional_practices_PROFESSIONAL_PRACTICE_ID_seq" START WITH 1;
-SELECT setval('"t_professional_practices_PROFESSIONAL_PRACTICE_ID_seq"', 26, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_professional_practices_tuto_PROFESSIONAL_PRACTICES_TUTOR__seq" START WITH 1;
-SELECT setval('"t_professional_practices_tuto_PROFESSIONAL_PRACTICES_TUTOR__seq"', 37, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_prospect_list_items_ITEM_ID_seq" START WITH 1;
-SELECT setval('"t_prospect_list_items_ITEM_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_prospect_lists_LIST_ID_seq" START WITH 1;
-SELECT setval('"t_prospect_lists_LIST_ID_seq"', 1, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_recovery_tokens_TOKEN_ID_seq" START WITH 1;
-SELECT setval('"t_recovery_tokens_TOKEN_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_report_text_templates_TEMPLATE_ID_seq" START WITH 1;
-SELECT setval('"t_report_text_templates_TEMPLATE_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_request_types_REQUEST_TYPE_ID_seq" START WITH 1;
-SELECT setval('"t_request_types_REQUEST_TYPE_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_roles_ID_ROLS_seq" START WITH 1;
-SELECT setval('"t_roles_ID_ROLS_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_security_questions_SECURITY_QUESTIONS_ID_seq" START WITH 1;
-SELECT setval('"t_security_questions_SECURITY_QUESTIONS_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_session_SESSION_ID_seq" START WITH 1;
-SELECT setval('"t_session_SESSION_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_session_attempts_ATTEMPT_ID_seq" START WITH 1;
-SELECT setval('"t_session_attempts_ATTEMPT_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_session_history_SESSION_HISTORY_ID_seq" START WITH 1;
-SELECT setval('"t_session_history_SESSION_HISTORY_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_student_documents_DOCUMENT_ID_seq" START WITH 1;
-SELECT setval('"t_student_documents_DOCUMENT_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_student_requests_REQUEST_ID_seq" START WITH 1;
-SELECT setval('"t_student_requests_REQUEST_ID_seq"', 9, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_students_STUDENTS_ID_seq" START WITH 1;
-SELECT setval('"t_students_STUDENTS_ID_seq"', 83, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_system_institution_system_institution_id_seq" START WITH 1;
-SELECT setval('"t_system_institution_system_institution_id_seq"', 1, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_system_nucleus_nucleus_id_seq" START WITH 1;
-SELECT setval('"t_system_nucleus_nucleus_id_seq"', 2, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_tables_TABLE_ID_seq" START WITH 1;
-SELECT setval('"t_tables_TABLE_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_tutor_career_TUTOR_CAREER_ID_seq" START WITH 1;
-SELECT setval('"t_tutor_career_TUTOR_CAREER_ID_seq"', 49, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_tutors_TUTOR_ID_seq" START WITH 1;
-SELECT setval('"t_tutors_TUTOR_ID_seq"', 89, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_user_USER_ID_seq" START WITH 1;
-SELECT setval('"t_user_USER_ID_seq"', 17, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_user_key_USER_KEY_ID_seq" START WITH 1;
-SELECT setval('"t_user_key_USER_KEY_ID_seq"', 29, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_user_notification_prefs_ID_seq" START WITH 1;
-SELECT setval('"t_user_notification_prefs_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_user_questions_USER_QUESTION_ID_seq" START WITH 1;
-SELECT setval('"t_user_questions_USER_QUESTION_ID_seq"', 3, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_user_theme_USER_THEME_ID_seq" START WITH 1;
-SELECT setval('"t_user_theme_USER_THEME_ID_seq"', 1, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_value_list_VALUE_LIST_ID_seq" START WITH 1;
-SELECT setval('"t_value_list_VALUE_LIST_ID_seq"', 70, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_visit_VISIT_ID_seq" START WITH 1;
-SELECT setval('"t_visit_VISIT_ID_seq"', 0, true);
 
 CREATE SEQUENCE IF NOT EXISTS "t_list_list_id_seq" START WITH 1;
-SELECT setval('"t_list_list_id_seq"', 503, true);
 
 -- ============================================================
 -- SECCIÓN 2: FUNCIONES (RPCs)

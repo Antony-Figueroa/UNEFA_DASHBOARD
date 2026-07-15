@@ -553,33 +553,36 @@ export default function CareerModal({
                     value={field.value}
                     onBlur={field.onBlur}
                     onChange={(selectedIds: string[]) => {
-                      // IDs según base de datos: 1 (ÚNICA), 2 (HOSPITALARIA), 3 (COMUNITARIA)
+                      // IDs reales en base de datos: 1 (ÚNICA), 3 (HOSPITALARIA), 2 (COMUNITARIA)
+                      const UNICA_ID = "1";
+                      const HOSPITALARIA_ID = "3";
+                      const COMUNITARIA_ID = "2";
                       const lastSelected = selectedIds[selectedIds.length - 1];
                       const wasSelected = field.value || [];
                       
                       // Caso 1: Se selecciona 'ÚNICA' (ID "1")
-                      if (lastSelected === "1") {
-                        field.onChange(["1"]);
+                      if (lastSelected === UNICA_ID) {
+                        field.onChange([UNICA_ID]);
                         return;
                       }
 
-                      // Caso 2: Se selecciona Hospitalaria (2) o Comunitaria (3)
-                      const justSelectedHosp = selectedIds.includes("2") && !wasSelected.includes("2");
-                      const justSelectedComu = selectedIds.includes("3") && !wasSelected.includes("3");
+                      // Caso 2: Se selecciona Hospitalaria (3) o Comunitaria (2)
+                      const justSelectedHosp = selectedIds.includes(HOSPITALARIA_ID) && !wasSelected.includes(HOSPITALARIA_ID);
+                      const justSelectedComu = selectedIds.includes(COMUNITARIA_ID) && !wasSelected.includes(COMUNITARIA_ID);
 
                       if (justSelectedHosp || justSelectedComu) {
                         // Se activan ambos y se quita ÚNICA
-                        field.onChange(["2", "3"]);
+                        field.onChange([HOSPITALARIA_ID, COMUNITARIA_ID]);
                         return;
                       }
 
-                      // Caso 3: Se deselecciona Hospitalaria (2) o Comunitaria (3)
-                      const justDeselectedHosp = wasSelected.includes("2") && !selectedIds.includes("2");
-                      const justDeselectedComu = wasSelected.includes("3") && !selectedIds.includes("3");
+                      // Caso 3: Se deselecciona Hospitalaria (3) o Comunitaria (2)
+                      const justDeselectedHosp = wasSelected.includes(HOSPITALARIA_ID) && !selectedIds.includes(HOSPITALARIA_ID);
+                      const justDeselectedComu = wasSelected.includes(COMUNITARIA_ID) && !selectedIds.includes(COMUNITARIA_ID);
 
                       if (justDeselectedHosp || justDeselectedComu) {
                         // Se quitan ambos
-                        field.onChange(selectedIds.filter(id => id !== "2" && id !== "3"));
+                        field.onChange(selectedIds.filter(id => id !== HOSPITALARIA_ID && id !== COMUNITARIA_ID));
                         return;
                       }
 

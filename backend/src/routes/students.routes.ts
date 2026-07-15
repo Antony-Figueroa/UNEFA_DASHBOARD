@@ -16,7 +16,7 @@ import {
   exportStudents,
   exportFullStudents
 } from '../controllers/students.controller.js';
-import { validateImport, executeImport, getTemplate, validateImportJson, executeImportJson } from '../controllers/students-import.controller.js';
+import { validateImport, executeImport, getTemplate, validateImportJson, executeImportJson, autoFormatRowController } from '../controllers/students-import.controller.js';
 import { authenticateToken, requirePermission } from '../middlewares/auth.middleware.js';
 
 const router = Router();
@@ -56,6 +56,7 @@ router.post('/import/validate', authenticateToken, requirePermission('students:c
 router.post('/import/execute', authenticateToken, requirePermission('students:create'), upload.single('file'), executeImport);
 router.post('/import/validate-json', authenticateToken, requirePermission('students:create'), validateImportJson);
 router.post('/import/execute-json', authenticateToken, requirePermission('students:create'), executeImportJson);
+router.post('/import/auto-format', authenticateToken, requirePermission('students:create'), autoFormatRowController);
 router.put('/:id', authenticateToken, requirePermission('students:edit'), updateStudent);
 router.patch('/:id/status', authenticateToken, requirePermission('students:edit'), toggleStudentStatus);
 router.patch('/:id/change-registration', authenticateToken, requirePermission('students:edit'), changeStudentRegistration);

@@ -180,7 +180,7 @@ export const AppRoutes = () => {
 
             {/* Process */}
             <Route path="/pre-enrollment" element={<ProtectedRoute requiredPermissions={['enrollments:view']}><PreEnrollmentPage /></ProtectedRoute>} />
-            <Route path="/enrollment" element={<ProtectedRoute requiredPermissions={['enrollments:view']}><EnrollmentPage /></ProtectedRoute>} />
+            <Route path="/enrollment" element={<ProtectedRoute requiredPermissions={['enrollments:view', 'institutions:view']}><EnrollmentPage /></ProtectedRoute>} />
             <Route path="/tracking" element={<ProtectedRoute requiredPermissions={['tracking:view']}><TrackingPage /></ProtectedRoute>} />
             <Route path="/visit-registration/:id" element={<ProtectedRoute requiredPermissions={['tracking:view']}><VisitRegistration /></ProtectedRoute>} />
             <Route path="/activity-logs/:practiceId" element={<ProtectedRoute requiredPermissions={['activity-logs:view']}><ActivityLogPage /></ProtectedRoute>} />

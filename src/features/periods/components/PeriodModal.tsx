@@ -549,13 +549,13 @@ export default function PeriodModal({
 
                     if (dates.startDate) {
                         const start = parseYmd(dates.startDate);
-                        if (start.getTime() < periodo.startDate.getTime()) {
+                        if (start.getTime() < startDateToUse.getTime()) {
                             throw new Error(`${typeName}: la fecha de inicio es anterior al inicio del periodo`);
                         }
                     }
                     if (dates.endDate) {
                         const end = parseYmd(dates.endDate);
-                        if (end.getTime() > periodo.endDate.getTime()) {
+                        if (end.getTime() > data.endDate.getTime()) {
                             throw new Error(`${typeName}: la fecha de fin es posterior al fin del periodo`);
                         }
                     }

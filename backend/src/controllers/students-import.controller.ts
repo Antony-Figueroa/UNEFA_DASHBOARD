@@ -12,7 +12,8 @@ import {
   validateRow as validateRowFn,
   TemplateConfig,
   ValidationResult,
-  StudentImportRow
+  StudentImportRow,
+  autoFormatRow
 } from '../services/excel-parser.service.js';
 import { supabase } from '../lib/supabase.js';
 import { cacheManager } from '../lib/cache-manager.js';
@@ -806,6 +807,44 @@ export const executeImportJson = async (req: AuthRequest, res: Response) => {
     
   } catch (error: any) {
     console.error('[StudentsImport] Error en ejecución JSON:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Controlador: Auto-formatea una fila para corregir errores comunes
+ */
+export const autoFormatRowController = async (req: AuthRequest, res: Response) => {
+  try {
+    const row: StudentImportRow = req.body.row;
+    if (!row) {
+      res.status(400).json({ success: false, message: 'Fila no proporcionada' });
+      return;
+    }
+
+    const config = await getTemplateConfig();
+    const formattedRow = autoFormatRow(row, config);
+    
+    // Re-validar la fila formateada
+    const cedulas = [`${formattedRow.cedulaPrefix}-${formattedRow.cedulaNumber}`];
+    const existingStudents = await getExistingStudents(cedulas);
+    const duplicates = findDuplicateCedulas([formattedRow]);
+    const validationResult = validateRowFn(formattedRow, config, existingStudents);
+    
+    // Agregar info de duplicados si aplica
+    if (duplicates.has(validationResult.cedula)) {
+      validationResult.messages.push('Cédula duplicada en los datos');
+      validationResult.status = 'error';
+    }
+
+    res.json({
+      success: true,
+      row: formattedRow,
+      validation: validationResult
+    });
+    
+  } catch (error: any) {
+    console.error('[StudentsImport] Error en auto-format:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

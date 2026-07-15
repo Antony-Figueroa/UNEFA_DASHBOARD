@@ -797,10 +797,11 @@ export default function TutorModal({
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         
         Object.entries(data).forEach(([key, values]) => {
+          const normalizedKey = key.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           mappedOptions[key] = values.map(v => ({
             // Para Nacionalidad usamos la abreviación (V, E, P) como valor y etiqueta
-            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name,
-            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name
+            value: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name,
+            label: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name
           }));
         });
         
@@ -1336,16 +1337,16 @@ export default function TutorModal({
                   render={({ field }) => (
                     <CustomSelect
                       id="civilStatus"
-                      options={(options["Registro Civil"] || []).map(o => ({ value: String(o.value), label: o.label }))}
-                      placeholder="Seleccionar"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={String(field.value || "")}
-                      disabled={viewOnlyMode}
-                      error={!!errors.civilStatus}
-                      success={isFieldValid('civilStatus')}
-                      onAddNew={openAddValueModal ? () => openAddValueModal("Registro Civil", "civilStatus", "Agregar Estado Civil") : undefined}
-                      addNewLabel="Agregar Estado Civil"
+options={(options["Registro Civil"] || []).map(o => ({ value: String(o.value), label: o.label }))}
+                       placeholder="Seleccionar"
+                       onChange={field.onChange}
+                       onBlur={field.onBlur}
+                       value={String(field.value || "")}
+                       disabled={viewOnlyMode}
+                       error={!!errors.civilStatus}
+                       success={isFieldValid('civilStatus')}
+                       onAddNew={openAddValueModal ? () => openAddValueModal("Registro Civil", "civilStatus", "Agregar Estado Civil") : undefined}
+                       addNewLabel="Agregar Estado Civil"
                     />
                   )}
                 />

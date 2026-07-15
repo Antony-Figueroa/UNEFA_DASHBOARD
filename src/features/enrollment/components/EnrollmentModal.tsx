@@ -6,6 +6,7 @@ import Input from "../../../components/form/input/InputField";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Enrollment, CreateEnrollmentPayload, UpdateEnrollmentPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
+import toast from "react-hot-toast";
 
 import CustomSelect from "../../../components/form/CustomSelect";
 import { Student } from "../../students/types";
@@ -223,10 +224,11 @@ export default function EnrollmentModal({
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         
         Object.entries(data).forEach(([key, values]) => {
+          const normalizedKey = key.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           mappedOptions[key] = values.map(v => ({
             // Para Nacionalidad usamos la abreviación (V, E, P)
-            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name,
-            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name
+            value: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name,
+            label: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name
           }));
         });
         
@@ -277,9 +279,14 @@ export default function EnrollmentModal({
         if (!editingEntry && activePeriod) {
           setValue("period", activePeriod.description);
         }
-      } catch (error) {
-        console.error("Error al cargar datos:", error);
-      } finally {
+} catch (error: unknown) {
+          console.error("Error al cargar datos:", error);
+          // Si falla la carga de instituciones (ej: 403 por permisos), mostrar toast
+          const axiosError = error as { response?: { status?: number } };
+          if (axiosError?.response?.status === 403) {
+            toast.error('No tienes permiso para ver las instituciones');
+          }
+        } finally {
         setIsLoadingPeriods(false);
       }
     };

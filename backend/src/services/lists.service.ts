@@ -215,6 +215,13 @@ const mapValue = (v: ValueListDB, inUseSet?: Set<number> | null): ListValueRespo
 });
 
 /**
+ * Normaliza texto removiendo acentos y convirtiendo a mayúsculas para búsquedas
+ */
+const normalizeForSearch = (text: string): string => {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+};
+
+/**
  * Helper: Determina si un string es un ID numérico
  */
 const isNumericId = (value: string): boolean => {
@@ -222,7 +229,7 @@ const isNumericId = (value: string): boolean => {
 };
 
 /**
- * Helper: Busca una lista por ID o nombre (case-insensitive)
+ * Helper: Busca una lista por ID o nombre (case-insensitive + accent-insensitive)
  */
 const findListByIdentifier = async (supabase: any, identifier: string): Promise<ListDB | null> => {
   // Si es numérico, buscar por ID
@@ -237,19 +244,27 @@ const findListByIdentifier = async (supabase: any, identifier: string): Promise<
     return (data && data.length > 0) ? data[0] : null;
   }
   
-  // Si no es numérico, buscar por nombre (case-insensitive)
+  // Si no es numérico, buscar por nombre normalizando acentos
+  const normalizedIdentifier = normalizeForSearch(identifier);
+  
+  // Primero intentar búsqueda exacta normalizada
   const { data, error } = await supabase
     .from(LISTS_TABLE)
     .select('*')
-    .ilike('NAME', identifier)
-    .limit(1);
+    .limit(50);
   
-  if (error) return null;
-  return (data && data.length > 0) ? data[0] : null;
+  if (error || !data) return null;
+  
+  // Buscar coincidencia normalizando ambos lados
+  const match = data.find(list => 
+    normalizeForSearch(list.NAME) === normalizedIdentifier
+  );
+  
+  return match || null;
 };
 
 /**
- * Helper: Busca múltiples listas por IDs o nombres (case-insensitive)
+ * Helper: Busca múltiples listas por IDs o nombres (case-insensitive + accent-insensitive)
  */
 const findListsByIdentifiers = async (supabase: any, identifiers: string[]): Promise<ListDB[]> => {
   const numericIds: number[] = [];
@@ -277,20 +292,23 @@ const findListsByIdentifiers = async (supabase: any, identifiers: string[]): Pro
     }
   }
   
-  // Buscar por nombres (case-insensitive usando ILIKE individual)
-  for (const name of names) {
+  // Buscar por nombres (normalizando acentos)
+  if (names.length > 0) {
+    const normalizedNames = names.map(normalizeForSearch);
+    
     const { data, error } = await supabase
       .from(LISTS_TABLE)
-      .select('LIST_ID, NAME, STATUS')
-      .ilike('NAME', name);
+      .select('LIST_ID, NAME, STATUS');
     
-    if (!error && data && data.length > 0) {
-      // Solo agregar si no está ya en los resultados
-      data.forEach((list: Pick<ListDB, 'LIST_ID' | 'NAME' | 'STATUS'>) => {
-        if (!results.find(r => r.LIST_ID === list.LIST_ID)) {
-          results.push(list as ListDB);
+    if (!error && data) {
+      for (const list of data) {
+        const normalizedListName = normalizeForSearch(list.NAME);
+        if (normalizedNames.includes(normalizedListName)) {
+          if (!results.find(r => r.LIST_ID === list.LIST_ID)) {
+            results.push(list);
+          }
         }
-      });
+      }
     }
   }
   

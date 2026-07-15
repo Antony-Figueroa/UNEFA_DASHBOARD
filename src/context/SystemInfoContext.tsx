@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import apiClient from '../api/apiClient';
+import { INSTITUTION } from '../constants/institution';
 
 export interface SystemInfo {
   logoUrl: string;
@@ -11,7 +12,7 @@ export interface SystemInfo {
 const DEFAULTS: SystemInfo = {
   logoUrl: '/logo-nuevo.png',
   commercialName: 'UNEFA',
-  legalName: 'UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA DE LA FUERZA ARMADA NACIONAL BOLIVARIANA',
+  legalName: INSTITUTION.legalName,
   acronym: 'UNEFA',
 };
 

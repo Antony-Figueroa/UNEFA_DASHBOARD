@@ -11,6 +11,12 @@ interface PeriodInfo {
   START_DATE: string;
 }
 
+/**
+ * Helper: Supabase v2 a veces devuelve nested joins como arrays de 1 elemento
+ * en vez del objeto directamente. `unwrap` maneja ambos casos.
+ */
+const unwrap = (val: any) => Array.isArray(val) ? val[0] : val;
+
 function calcTrend(current: number, previous: number): { change: number; trend: 'up' | 'down' | 'stable' } {
   if (previous === 0) {
     return { change: current > 0 ? 100 : 0, trend: current > 0 ? 'up' : 'stable' };
@@ -404,11 +410,11 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
     }>();
 
     (tutorPractices as unknown as any[])?.forEach((tp) => {
-      const tutor = tp.t_tutors;
-      const practice = tp.t_professional_practices;
-      const student = practice?.t_students;
-      const career = practice?.t_career;
-      const institution = practice?.t_institution;
+      const tutor = unwrap(tp.t_tutors);
+      const practice = unwrap(tp.t_professional_practices);
+      const student = practice ? unwrap(practice.t_students) : null;
+      const career = practice ? unwrap(practice.t_career) : null;
+      const institution = practice ? unwrap(practice.t_institution) : null;
 
       if (!tutor || !practice) return;
 
@@ -421,18 +427,19 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
       if (tutorMap.has(tutorKey)) {
         tutorMap.get(tutorKey)!.studentCount++;
       } else {
+        const persons = unwrap(tutor.t_persons);
         tutorMap.set(tutorKey, {
           tutor: {
-            name: getPersonField(tutor.t_persons, 'first_name') || '',
-            secondName: getPersonField(tutor.t_persons, 'middle_name') || '',
-            surname: getPersonField(tutor.t_persons, 'last_name') || '',
-            secondSurname: getPersonField(tutor.t_persons, 'second_last_name') || '',
-            ci: getPersonField(tutor.t_persons, 'ci'),
+            name: getPersonField(persons, 'first_name') || '',
+            secondName: getPersonField(persons, 'middle_name') || '',
+            surname: getPersonField(persons, 'last_name') || '',
+            secondSurname: getPersonField(persons, 'second_last_name') || '',
+            ci: getPersonField(persons, 'ci'),
             condition: tutor.CONDITION,
             dedication: tutor.DEDICATION,
             category: tutor.CATEGORY,
-            phone: getPersonField(tutor.t_persons, 'phone') || '',
-            email: getPersonField(tutor.t_persons, 'email'),
+            phone: getPersonField(persons, 'phone') || '',
+            email: getPersonField(persons, 'email'),
             gender: tutor.GENDER,
             tutorId: tutor.TUTOR_ID,
             titulo: tutor.TITULO
@@ -559,9 +566,9 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
     const summaryMap = new Map<string, any>();
 
     (practices as any[]).forEach(practice => {
-      const institution = practice.t_institution;
-      const student = practice.t_students;
-      const career = practice?.t_career;
+      const institution = unwrap(practice.t_institution);
+      const student = unwrap(practice.t_students);
+      const career = practice ? unwrap(practice.t_career) : null;
 
       if (!institution || !student || !career) return;
 
@@ -1184,8 +1191,8 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         const individualMap = new Map<number, { tutorFirstNames: string; tutorLastNames: string; rows: IndividualTutorRow[] }>();
 
         raw.forEach((tp) => {
-          const tutor = tp.t_tutors;
-          const practice = tp.t_professional_practices;
+          const tutor = unwrap(tp.t_tutors);
+          const practice = unwrap(tp.t_professional_practices);
           if (!tutor || !practice) return;
           if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
           if (careerIds.length > 0 && (!practice.t_career || !careerIds.includes(practice.t_career.CAREER_ID))) return;
@@ -1206,26 +1213,27 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           if (genTutorMap.has(tutorKey)) {
             genTutorMap.get(tutorKey)!.cantidadEstudiantes++;
           } else {
+            const persons = unwrap(tutor.t_persons);
             genTutorMap.set(tutorKey, {
               region: sysLoc.region,
               nucleo: sysLoc.nucleus,
               extension: sysLoc.extension,
               carrera: careerName,
-              nombreTutor: `${getPersonField(tutor.t_persons, 'first_name') || ''} ${getPersonField(tutor.t_persons, 'middle_name') || ''}`.trim(),
-              apellidoTutor: `${getPersonField(tutor.t_persons, 'last_name') || ''} ${getPersonField(tutor.t_persons, 'second_last_name') || ''}`.trim(),
-              cedula: getPersonField(tutor.t_persons, 'ci') || '',
+              nombreTutor: `${getPersonField(persons, 'first_name') || ''} ${getPersonField(persons, 'middle_name') || ''}`.trim(),
+              apellidoTutor: `${getPersonField(persons, 'last_name') || ''} ${getPersonField(persons, 'second_last_name') || ''}`.trim(),
+              cedula: getPersonField(persons, 'ci') || '',
               condicion: tutor.CONDITION || '',
               dedicacion: tutor.DEDICATION || '',
               categoria: tutor.CATEGORY || '',
-               telefono: formatPhone(cleanVal(getPersonField(tutor.t_persons, 'phone'))),
-              correo: getPersonField(tutor.t_persons, 'email') || '',
+               telefono: formatPhone(cleanVal(getPersonField(persons, 'phone'))),
+              correo: getPersonField(persons, 'email') || '',
               cantidadEstudiantes: 1,
             });
           }
 
           // ── Individual: detalle por estudiante ──
-          const tutorFirstNames = `${getPersonField(tutor.t_persons, 'first_name') || ''} ${getPersonField(tutor.t_persons, 'middle_name') || ''}`.trim();
-          const tutorLastNames = `${getPersonField(tutor.t_persons, 'last_name') || ''} ${getPersonField(tutor.t_persons, 'second_last_name') || ''}`.trim();
+          const tutorFirstNames = `${getPersonField(persons, 'first_name') || ''} ${getPersonField(persons, 'middle_name') || ''}`.trim();
+          const tutorLastNames = `${getPersonField(persons, 'last_name') || ''} ${getPersonField(persons, 'second_last_name') || ''}`.trim();
 
           if (!individualMap.has(tutorKey)) {
             individualMap.set(tutorKey, { tutorFirstNames, tutorLastNames, rows: [] });

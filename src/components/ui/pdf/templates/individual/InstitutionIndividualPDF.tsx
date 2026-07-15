@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: "Nunito",
     fontWeight: "bold",
-    color: "#1C2434",
+    color: "#000000",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontFamily: "Nunito",
     fontWeight: "bold",
-    color: "#64748B",
+    color: "#000000",
     textTransform: "uppercase",
     letterSpacing: 0.3,
     marginBottom: 2,
@@ -55,13 +55,13 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 10,
     fontFamily: "Nunito",
-    color: "#1C2434",
+    color: "#000000",
   },
   infoValueHighlight: {
     fontSize: 10,
     fontFamily: "Nunito",
     fontWeight: "bold",
-    color: "#21486e",
+    color: "#000000",
   },
   statusContainer: {
     marginTop: 15,

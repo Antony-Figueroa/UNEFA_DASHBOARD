@@ -9,7 +9,7 @@ const styles = StyleSheet.create({
   paragraph: { marginBottom: 20, textAlign: 'justify' },
   section: { marginBottom: 20 },
   sectionTitle: { fontWeight: 'bold', marginBottom: 8, fontSize: 12 },
-  evaluatorName: { fontSize: 11, fontWeight: 'bold', marginBottom: 8, color: '#2d3748' },
+  evaluatorName: { fontSize: 11, fontWeight: 'bold', marginBottom: 8, color: '#000000' },
   row: { flexDirection: 'row', marginBottom: 4 },
   label: { fontWeight: 'bold', width: 180, fontSize: 10 },
   value: { flex: 1, fontSize: 10 },
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   criteriaRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#eee', paddingVertical: 3, alignItems: 'flex-start' },
   crNum: { width: 25, fontSize: 9, textAlign: 'center' },
   crDesc: { flex: 1, fontSize: 9, paddingLeft: 2 },
-  crRange: { width: 55, fontSize: 8, textAlign: 'center', color: '#718096' },
+  crRange: { width: 55, fontSize: 8, textAlign: 'center', color: '#000000' },
   crScore: { width: 40, fontSize: 9, textAlign: 'center' },
   hNum: { width: 25, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
   hDesc: { flex: 1, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
@@ -205,7 +205,7 @@ export function EvaluacionComitePDF({ data, textos }: Props) {
         </View>
       ) : (
         <View style={styles.section}>
-          <Text style={{ fontSize: 10, textAlign: 'center', color: '#718096' }}>
+          <Text style={{ fontSize: 10, textAlign: 'center', color: '#000000' }}>
             No hay evaluaciones registradas del comité evaluador.
           </Text>
         </View>
@@ -218,11 +218,11 @@ export function EvaluacionComitePDF({ data, textos }: Props) {
           <Text style={{ fontSize: 10, textAlign: 'center' }}>
             {data.coordinadorPP?.nombreCompleto || ''}
           </Text>
-          <Text style={{ fontSize: 9, color: '#4a5568', textAlign: 'center' }}>
+          <Text style={{ fontSize: 9, color: '#000000', textAlign: 'center' }}>
             {data.coordinadorPP?.cargo || 'Coordinador de Práctica Profesional'}
           </Text>
           {data.coordinadorPP?.ci && (
-            <Text style={{ fontSize: 8, color: '#718096', textAlign: 'center' }}>
+            <Text style={{ fontSize: 8, color: '#000000', textAlign: 'center' }}>
               CI: {formatCI(data.coordinadorPP.ci)}
             </Text>
           )}
@@ -232,11 +232,11 @@ export function EvaluacionComitePDF({ data, textos }: Props) {
           <Text style={{ fontSize: 10, textAlign: 'center' }}>
             {data.coordinadorCarrera?.nombreCompleto || ''}
           </Text>
-          <Text style={{ fontSize: 9, color: '#4a5568', textAlign: 'center' }}>
+          <Text style={{ fontSize: 9, color: '#000000', textAlign: 'center' }}>
             {data.coordinadorCarrera?.cargo || 'Coordinador de Carrera'}
           </Text>
           {data.coordinadorCarrera?.ci && (
-            <Text style={{ fontSize: 8, color: '#718096', textAlign: 'center' }}>
+            <Text style={{ fontSize: 8, color: '#000000', textAlign: 'center' }}>
               CI: {formatCI(data.coordinadorCarrera.ci)}
             </Text>
           )}

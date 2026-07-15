@@ -592,8 +592,8 @@ function PageTutorInstitucional({ data, textos }: Props) {
 
         <Text style={styles.finalCalcText}>Calificación final = (Subtotal / {TOTAL_INSTITUCIONAL}):</Text>
 
-      {/* Firmas pegadas a la tabla — espacio debajo para firma real */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 4 }}>
+      {/* Firma del Tutor(a) Institucional con espacio superior */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 40 }}>
         <View style={{ alignItems: 'center', width: '40%' }}>
           {textos.institucionalFirmaNombre ? <Text style={styles.firmaName}>{textos.institucionalFirmaNombre}</Text> : null}
           <View style={styles.firmaLine} />

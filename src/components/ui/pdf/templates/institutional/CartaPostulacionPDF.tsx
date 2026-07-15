@@ -68,6 +68,13 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
 
   return (
     <PDFLayout title="SOLICITUD DE CARTA DE POSTULACIÓN" subtitle="(PRÁCTICAS PROFESIONALES)" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
+          {/* Bloque de dirección alineado a la derecha */}
+      {textos.cuerpoAddress && (
+        <Text style={{ marginBottom: 10, textAlign: 'right', fontSize: 11, lineHeight: 1.5 }}>
+          {textos.cuerpoAddress}
+        </Text>
+      )}
+
       <Text style={styles.paragraph}>
         {renderTextoTemplate(textos.cuerpo || '', {
           estudianteNombreCompleto: nombreCompleto,
@@ -101,7 +108,7 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
         NOMBRE DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: <Text style={{ textDecoration: 'underline' }}>{(data.institucion?.nombre || '________________________').toUpperCase()}</Text>
       </Text>
       <Text style={styles.fieldRow}>
-        NOMBRE Y APELLIDOS DEL (DE LA) GERENTE DE TALENTO HUMANO DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS: <Text style={{ textDecoration: 'underline' }}>{(data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '________________________').toUpperCase()}</Text>
+        NOMBRE Y APELLIDOS DEL (DE LA) GERENTE DE TALENTO HUMANO DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS: <Text style={{ textDecoration: 'underline' }}>{(textos.gerenteTalentoHumano || (data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '________________________')).toUpperCase()}</Text>
       </Text>
 
       <View style={styles.firmaContainer}>

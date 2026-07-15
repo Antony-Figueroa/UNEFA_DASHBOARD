@@ -47,17 +47,17 @@ export const TutorPDF: React.FC<TutorPDFProps> = ({ data, careers }) => {
             <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>
               <Text style={{ fontWeight: "bold" }}>{fullName}</Text>
               {'\n'}
-              <Text style={{ fontSize: 7, color: "#64748B" }}>{tutor.sex}</Text>
+              <Text style={{ fontSize: 7, color: "#000000" }}>{tutor.sex}</Text>
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>
               <Text>{tutor.profession}</Text>
               {'\n'}
-              <Text style={{ fontSize: 7, color: "#64748B" }}>{careersStr}</Text>
+              <Text style={{ fontSize: 7, color: "#000000" }}>{careersStr}</Text>
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 3, fontSize: 8 }]}>
               <Text>{tutor.email}</Text>
               {'\n'}
-              <Text style={{ fontSize: 7, color: "#64748B" }}>{tutor.phone}</Text>
+              <Text style={{ fontSize: 7, color: "#000000" }}>{tutor.phone}</Text>
             </Text>
           </View>
           );

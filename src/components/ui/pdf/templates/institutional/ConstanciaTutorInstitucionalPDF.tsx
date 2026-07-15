@@ -11,7 +11,7 @@ const styles = StyleSheet.create({
     textIndent: 30,
   },
   placeDate: { 
-    marginBottom: 15, 
+    marginBottom: 4, 
     fontSize: 11, 
     textAlign: 'right',
   },
@@ -20,11 +20,16 @@ const styles = StyleSheet.create({
   },
   rightSection: {
     alignItems: 'flex-end',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   labelText: { 
     marginBottom: 2, 
     fontSize: 11,
+  },
+  labelBold: { 
+    marginBottom: 2, 
+    fontSize: 11,
+    fontWeight: 'bold',
   },
   firmaContainer: { 
     marginTop: 40, 
@@ -99,17 +104,30 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos, verificationHash
   const firmaCargo = textos.firmaCargo || 'DECANA';
   const firmaOrden = textos.firmaOrden || 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022';
 
+  // Destinatario editable desde configuración
+  const destinatarioTexto = textos.destinatario || (
+    responsableTitulo
+      ? `${responsableTitulo} ${responsableNombre}`
+      : responsableNombre
+  );
+
   return (
-    <PDFLayout title="CONSTANCIA DE TUTOR INSTITUCIONAL" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
+    <PDFLayout
+      title=""
+      verificationHash={verificationHash}
+      qrCodeDataUri={qrCodeDataUri}
+      hideReportTitle
+      equipoTrabajoText="COORDINACIÓN DE PRÁCTICAS PROFESIONALES"
+    >
       {/* Fecha alineada a la derecha */}
       <Text style={styles.placeDate}>Guanare, {fechaHoy.dia} de {fechaHoy.mes} del {fechaHoy.anio}.</Text>
 
-      {/* Sección izquierda: Señor (a), Responsable, Institución, Presente */}
+      {/* Sección izquierda: Destinatario (editable) */}
       <View style={styles.leftSection}>
-        <Text style={styles.labelText}>Señor (a):</Text>
-        <Text style={styles.labelText}>{responsableTitulo ? `${responsableTitulo} ` : ''}{responsableNombre}</Text>
-        <Text style={styles.labelText}>{institucionNombre}</Text>
-        <Text style={styles.labelText}>Presente.</Text>
+        <Text style={styles.labelBold}>Señor (a):</Text>
+        <Text style={styles.labelBold}>{destinatarioTexto}</Text>
+        <Text style={styles.labelBold}>{institucionNombre}</Text>
+        <Text style={styles.labelBold}>Presente.</Text>
       </View>
 
       {/* Sección derecha: Atnn. (editable desde textos) */}

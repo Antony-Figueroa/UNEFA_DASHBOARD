@@ -1,14 +1,14 @@
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
 import { formatNombreCompleto, formatCI, formatFecha, getFechaParts, getTutorTitle } from '@/features/reports/utils/reportFormatters';
-import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
+import { renderDocumentTextFormatted } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
   paragraph: { marginBottom: 20, textAlign: 'justify', fontSize: 12, lineHeight: 2, marginLeft: 30, marginRight: 30, textIndent: 30 },
   firmaContainer: { marginTop: 60, alignItems: 'center' },
   firmaLine: { marginBottom: 5 },
   firmaNombre: { fontWeight: 'bold', fontSize: 11 },
-  firmaRol: { fontSize: 10, color: '#4a5568' },
+  firmaRol: { fontSize: 10, color: '#000000' },
 });
 
 interface Props {
@@ -33,31 +33,49 @@ interface Props {
 export function ConstanciaTutorAcademicoPDF({ data, textos, verificationHash, qrCodeDataUri }: Props) {
   const fechaHoy = getFechaParts(null);
   const tutorTitulo = getTutorTitle(data.tutor.titulo, data.tutor.tituloAbrev);
-  const cuerpo = renderDocumentText(textos.cuerpo || '', {
+
+  // System data keys que van en negrita
+  const boldKeys = new Set([
+    'tutorTitulo', 'tutorNombreCompleto', 'tutorCi',
+    'tutorCondicion', 'tutorDedicacion',
+    'estudianteNombreCompleto', 'estudianteCi',
+    'totalHours',
+  ]);
+
+  const cuerpo = renderDocumentTextFormatted(textos.cuerpo || '', {
     tutorTitulo,
-    tutorNombreCompleto: formatNombreCompleto(data.tutor),
-    tutorCi: formatCI(data.tutor.ci),
-    tutorCondicion: data.tutor.condicion,
-    tutorDedicacion: data.tutor.dedicacion,
+    tutorNombreCompleto: formatNombreCompleto(data.tutor).toUpperCase(),
+    tutorCi: formatCI(data.tutor.ci).toUpperCase(),
+    tutorCondicion: data.tutor.condicion.toUpperCase(),
+    tutorDedicacion: data.tutor.dedicacion.toUpperCase(),
     totalHours: String(data.totalHours),
     periodo: data.periodo?.description || '',
     inicioLapso: data.periodo ? formatFecha(data.periodo.startDate) : '',
     finLapso: data.periodo ? formatFecha(data.periodo.endDate) : '',
-    estudianteNombreCompleto: data.estudiante ? formatNombreCompleto(data.estudiante) : '',
-    estudianteCi: data.estudiante ? formatCI(data.estudiante.ci) : '',
+    estudianteNombreCompleto: data.estudiante ? formatNombreCompleto(data.estudiante).toUpperCase() : '',
+    estudianteCi: data.estudiante ? formatCI(data.estudiante.ci).toUpperCase() : '',
     dia: fechaHoy.dia,
     mes: fechaHoy.mes,
     anio: fechaHoy.anio,
-  });
+  }, boldKeys);
+
+  const firmaNombre = textos.firmaNombre || 'MSc. Marbelys del Valle Rivero';
+  const firmaCargo = textos.firmaCargo || 'Decana del Núcleo Portuguesa';
+  const firmaOrden = textos.firmaOrden || 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022';
 
   return (
-    <PDFLayout title="CONSTANCIA" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
+    <PDFLayout
+      title="CONSTANCIA"
+      verificationHash={verificationHash}
+      qrCodeDataUri={qrCodeDataUri}
+      equipoTrabajoText="COORDINACIÓN DE PRÁCTICAS PROFESIONALES"
+    >
       <Text style={styles.paragraph}>{cuerpo}</Text>
       <View style={styles.firmaContainer}>
         <Text style={styles.firmaLine}>___________________________________</Text>
-        <Text style={styles.firmaNombre}>MSc. Marbelys del Valle Rivero</Text>
-        <Text style={styles.firmaRol}>Decana del Núcleo Portuguesa</Text>
-        <Text style={styles.firmaRol}>Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022</Text>
+        <Text style={styles.firmaNombre}>{firmaNombre.toUpperCase()}</Text>
+        <Text style={[styles.firmaRol, { fontWeight: 'bold' }]}>{firmaCargo.toUpperCase()}</Text>
+        <Text style={styles.firmaRol}>{firmaOrden}</Text>
       </View>
     </PDFLayout>
   );

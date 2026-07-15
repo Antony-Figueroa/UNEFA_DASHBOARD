@@ -5,7 +5,7 @@ import { formatNombreCompleto, formatFecha, getFechaParts, formatCI } from '@/fe
 const styles = StyleSheet.create({
 
   placeDate: { 
-    marginBottom: 15, 
+    marginBottom: 4, 
     fontSize: 11, 
     textAlign: 'right',
     fontWeight: 'normal',
@@ -16,7 +16,7 @@ const styles = StyleSheet.create({
   },
   rightSection: {
     alignItems: 'flex-end',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   destinatario: { 
     marginBottom: 2, 
@@ -46,9 +46,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     textAlign: 'center',
   },
-  centeredParagraph: { 
+  rightParagraph: { 
     marginBottom: 10, 
-    textAlign: 'center', 
+    textAlign: 'right', 
     fontSize: 11, 
     lineHeight: 1.4,
   },
@@ -91,37 +91,50 @@ interface Props {
 export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCodeDataUri }: Props) {
   const fechaHoy = getFechaParts(null);
 
-  const estudianteNombre = formatNombreCompleto(data.estudiante);
-  const estudianteCI = formatCI(data.estudiante.ci);
-  const carreraNombre = data.carrera.nombre;
-  const lapsoInicio = data.periodo ? formatFecha(data.periodo.startDate) : '________________________';
-  const lapsoFin = data.periodo ? formatFecha(data.periodo.endDate) : '________________________';
+  const estudianteNombre = formatNombreCompleto(data.estudiante).toUpperCase();
+  const estudianteCI = formatCI(data.estudiante.ci).toUpperCase();
+  const carreraNombre = data.carrera.nombre.toUpperCase();
+  const lapsoInicio = data.periodo ? formatFecha(data.periodo.startDate).toUpperCase() : '________________________';
+  const lapsoFin = data.periodo ? formatFecha(data.periodo.endDate).toUpperCase() : '________________________';
 
   const firmaNombre = textos.firmaNombre || 'MSc. Marbelys del Valle Rivero';
   const firmaCargo = textos.firmaCargo || 'Decana del Núcleo Portuguesa';
   const firmaOrden = textos.firmaOrden || textos.orden || 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022';
 
+  // Textos editables desde la configuración
+  const senoresTexto = textos.senores || 'Señores:';
+  const presenteTexto = textos.presente || 'Presente';
+  const destinatarioNombre = textos.destinatarioNombre || data.institucion?.nombre?.toUpperCase() || '________________________';
+  const destinatarioAtte = textos.destinatario || 'MSc. Marbelys del Valle Rivero';
+  const destinatarioCargo = textos.cargo || 'Decana del Núcleo Portuguesa';
+
   return (
-    <PDFLayout title="SOLICITUD DE INSTITUCIÓN" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
-      {/* Fecha alineada a la derecha */}
+    <PDFLayout
+      title=""
+      verificationHash={verificationHash}
+      qrCodeDataUri={qrCodeDataUri}
+      hideReportTitle
+      hideEquipoTrabajo
+    >
+      {/* Fecha inmediatamente debajo del membrete */}
         <Text style={styles.placeDate}>Guanare, {fechaHoy.dia} de {fechaHoy.mes} del {fechaHoy.anio}</Text>
         
-        {/* Sección izquierda: Señores, Institución, Presente */}
+        {/* Sección izquierda: Señores, Institución, Presente (editables) */}
         <View style={styles.leftSection}>
-          <Text style={styles.destinatario}>Señores:</Text>
-          <Text style={styles.destinatarioRed}>{data.institucion?.nombre || '________________________'}</Text>
-          <Text style={styles.destinatario}>Presente</Text>
+          <Text style={styles.destinatario}>{senoresTexto}</Text>
+          <Text style={styles.destinatarioRed}>{destinatarioNombre}</Text>
+          <Text style={styles.destinatario}>{presenteTexto}</Text>
         </View>
         
         {/* Sección derecha: Atte y Cargo */}
         <View style={styles.rightSection}>
-          <Text style={styles.destinatario}>Atte: {textos.destinatario || 'MSc. Marbelys del Valle Rivero'}</Text>
-          <Text style={styles.destinatario}>{textos.cargo || 'Decana del Núcleo Portuguesa'}</Text>
+          <Text style={styles.destinatario}>Atte: {destinatarioAtte}</Text>
+          <Text style={styles.destinatario}>{destinatarioCargo}</Text>
         </View>
         
-        {/* Cuerpo del texto */}
+        {/* Cuerpo del texto con datos en mayúsculas */}
         <Text style={styles.paragraph}>
-          Tengo el agrado de dirigirme a usted, en la oportunidad de presentarle a el Bachiller <Text style={styles.textRed}>{estudianteNombre}</Text>, titular de la cédula de identidad <Text style={styles.textRed}>{estudianteCI}</Text>, estudiante de la carrera <Text style={styles.textRed}>{carreraNombre}</Text>, el mencionado Bachiller está autorizado para realizar trámites en la Organización que usted representa, relacionados con la posibilidad de desarrollar en su práctica profesional un proyecto con un mínimo de 480 horas laborales, comprendidas desde <Text style={styles.textRed}>{lapsoInicio}</Text> hasta <Text style={styles.textRed}>{lapsoFin}</Text>.
+          Tengo el agrado de dirigirme a usted, en la oportunidad de presentarle a el/la Bachiller <Text style={styles.textRed}>{estudianteNombre}</Text>, titular de la cédula de identidad <Text style={styles.textRed}>{estudianteCI}</Text>, estudiante de la carrera <Text style={styles.textRed}>{carreraNombre}</Text>, el mencionado Bachiller está autorizado para realizar trámites en la Organización que usted representa, relacionados con la posibilidad de desarrollar en su práctica profesional un proyecto con un mínimo de 480 horas laborales, comprendidas desde <Text style={styles.textRed}>{lapsoInicio}</Text> hasta <Text style={styles.textRed}>{lapsoFin}</Text>.
         </Text>
         
         <Text style={styles.paragraph}>
@@ -129,10 +142,11 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
         </Text>
         
         <Text style={styles.paragraph}>
-          Por otra parte, el bachiller será supervisado durante dos (2) oportunidades por un docente, debidamente autorizado por la UNEFA, Anexo a esta carta, se facilita el perfil del egresado del estudiante.
+          Por otra parte, el/la bachiller será supervisado/a durante dos (2) oportunidades por un docente, debidamente autorizado por la UNEFA. Anexo a esta carta, se facilita el perfil del egresado del estudiante.
         </Text>
         
-        <Text style={styles.centeredParagraph}>
+        {/* Despedida alineada a la derecha */}
+        <Text style={styles.rightParagraph}>
           Agradeciendo la atención sobre este particular, quedo de usted.
         </Text>
         

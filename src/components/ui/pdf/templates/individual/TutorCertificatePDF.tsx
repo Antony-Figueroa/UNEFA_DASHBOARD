@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   body: {
     marginTop: 10,
     textAlign: "justify",
-    color: "#1A202C",
+    color: "#000000",
     fontSize: 11,
     textIndent: 35,
   },
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   signerSubtitle: {
     fontSize: 8,
     textAlign: "center",
-    color: "#4A5568",
+    color: "#000000",
     marginTop: 2,
   },
   watermark: {

@@ -35,7 +35,7 @@ export const InstitutionPDF: React.FC<InstitutionPDFProps> = ({ data }) => {
             <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>
               <Text style={{ fontWeight: "bold" }}>{institution.name}</Text>
               {'\n'}
-              <Text style={{ fontSize: 7, color: "#64748B" }}>{institution.institutionType}</Text>
+              <Text style={{ fontSize: 7, color: "#000000" }}>{institution.institutionType}</Text>
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 3.5, fontSize: 8 }]}>{institution.fiscalAddress}</Text>
             <Text style={[pdfStyles.tableCell, { flex: 1, fontSize: 8 }]}>{institution.phone}</Text>

@@ -38,7 +38,7 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
   const localStyles = {
     headerCell: {
       backgroundColor: '#F8FAFC',
-      color: '#1C2434',
+      color: '#000000',
       fontWeight: 'bold' as const,
       borderRightWidth: 1,
       borderRightColor: '#E2E8F0',

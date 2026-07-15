@@ -53,15 +53,15 @@ interface Props {
 export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Props) {
   const fechaHoy = getFechaParts(null);
   
-  const tutorTitle = data.tutor ? getTutorTitle(data.tutor.titulo, data.tutor.tituloAbrev) : 'MAESTR';
+  const tutorTitle = data.tutor ? getTutorTitle(data.tutor.titulo, data.tutor.tituloAbrev).toUpperCase() : 'MAESTR';
   const tutorName = data.tutor ? formatNombreCompleto(data.tutor).toUpperCase() : '';
-  const tutorCI = data.tutor ? formatCI(data.tutor.ci) : '';
+  const tutorCI = data.tutor ? formatCI(data.tutor.ci).toUpperCase() : '';
   const estudianteNombre = formatNombreCompleto(data.estudiante).toUpperCase();
-  const estudianteCI = formatCI(data.estudiante.ci);
-  const carreraNombre = data.carrera.nombre;
+  const estudianteCI = formatCI(data.estudiante.ci).toUpperCase();
+  const carreraNombre = data.carrera.nombre.toUpperCase();
 
   return (
-    <PDFLayout title="ACEPTACIÓN DEL TUTOR ACADÉMICO" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
+    <PDFLayout title="ACEPTACIÓN DEL TUTOR ACADÉMICO" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
       <Text style={styles.paragraph}>
         Yo, {tutorTitle}. {tutorName}, titular de la cedula de identidad {tutorCI}, hago constar por medio de la presente que acepto la tutoría académica de la práctica profesional por parte de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA) del (la) bachiller {estudianteNombre}, titular de la cedula de identidad {estudianteCI} para optar al grado de {carreraNombre}
       </Text>

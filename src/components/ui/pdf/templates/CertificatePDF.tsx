@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     top: 30,
     right: 50,
     fontSize: 8,
-    color: '#a0aec0',
+    color: '#000000',
   },
 });
 

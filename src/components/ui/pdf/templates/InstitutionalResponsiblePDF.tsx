@@ -52,7 +52,7 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
             <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8 }]}>
               <Text>{responsible.email}</Text>
               {'\n'}
-              <Text style={{ fontSize: 7, color: "#64748B" }}>{responsible.phone}</Text>
+              <Text style={{ fontSize: 7, color: "#000000" }}>{responsible.phone}</Text>
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 8 }]}>
               {formatDate(responsible.registrationDate)}

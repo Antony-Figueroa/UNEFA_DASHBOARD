@@ -37,13 +37,13 @@ export const PreEnrollmentPDF: React.FC<PreEnrollmentPDFProps> = ({ data }) => {
             <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8 }]}>
               <Text style={{ fontWeight: "bold" }}>{item.studentName}</Text>
               {'\n'}
-              <Text style={{ fontSize: 7, color: "#64748B" }}>Tel: {item.phone}</Text>
+              <Text style={{ fontSize: 7, color: "#000000" }}>Tel: {item.phone}</Text>
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>{item.careerName}</Text>
             <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>
               <Text>{item.period}</Text>
               {'\n'}
-              <Text style={{ fontSize: 7, color: "#64748B" }}>{item.practiceType}</Text>
+              <Text style={{ fontSize: 7, color: "#000000" }}>{item.practiceType}</Text>
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>{item.enrollmentCode}</Text>
           </View>

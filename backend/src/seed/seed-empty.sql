@@ -1,17 +1,20 @@
+﻿-- ================================================================================
+-- UNEFA Dashboard — Seed VACÍA (solo datos de sistema)
 -- ================================================================================
--- UNEFA Dashboard - Respaldo COMPLETO para Réplica Exacta
--- Nombre: 07/05/26-5-57pm
--- Fecha: 2026-07-05T21:57:33.296Z
--- Incluye: Sequences + Funciones + CREATE TABLE + FK + Índices + Triggers + RLS + Datos
--- Compatible con: Restauración en otro proyecto Supabase
+-- Schema completo: Tablas + Funciones + FK + Índices + RLS + Triggers
+-- Datos de sistema: roles, permisos, carreras, config, estados/municipios/parroquias, listas
+-- SIN datos transaccionales: estudiantes, tutores, instituciones, evaluaciones, usuarios
+-- Compatible con: PGlite offline y Supabase cloud/local
 -- ================================================================================
--- Tablas: 76 | Con datos: 56
--- Sequences: 68 | Índices: 107 | FK: 102
--- Triggers: 0 | RLS: 0 | Funciones: 17
--- Total registros: 4252
+-- Tablas: 76 | Con datos de sistema: 25
+-- Sequences: 68 | Índices: 107 | FK: 102 | Funciones: 17
+-- Total registros: ~2087 (solo sistema)
 -- ================================================================================
 
 -- Extensiones requeridas
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA public SCHEMA pg_catalog;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public SCHEMA pg_catalog;
+CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA public;
 
 -- ============================================================
 -- SECCIÓN 1: SEQUENCES
@@ -19,193 +22,823 @@
 
 CREATE SEQUENCE IF NOT EXISTS "t_activity_logs_ACTIVITY_LOG_ID_seq" START WITH 1;
 SELECT setval('"t_activity_logs_ACTIVITY_LOG_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_address_address_id_seq" START WITH 1;
 SELECT setval('"t_address_address_id_seq"', 32, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_auth_log_ID_seq" START WITH 1;
 SELECT setval('"t_auth_log_ID_seq"', 613, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_career_CAREER_ID_seq" START WITH 1;
 SELECT setval('"t_career_CAREER_ID_seq"', 7, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_career_internship_type_ID_CAREER_INTERNSHIP_TYPE_ID_seq" START WITH 1;
 SELECT setval('"t_career_internship_type_ID_CAREER_INTERNSHIP_TYPE_ID_seq"', 22, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_change_log_CHANGE_LOG_ID_seq" START WITH 1;
 SELECT setval('"t_change_log_CHANGE_LOG_ID_seq"', 871, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_columns_COLUMN_ID_seq" START WITH 1;
 SELECT setval('"t_columns_COLUMN_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_committee_assignment_ASSIGNMENT_ID_seq" START WITH 1;
 SELECT setval('"t_committee_assignment_ASSIGNMENT_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_config_CONFIG_ID_seq" START WITH 1;
 SELECT setval('"t_config_CONFIG_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_coordinadores_COORDINADOR_ID_seq" START WITH 1;
 SELECT setval('"t_coordinadores_COORDINADOR_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_credential_tokens_id_seq" START WITH 1;
 SELECT setval('"t_credential_tokens_id_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_culmination_reversals_REVERSAL_ID_seq" START WITH 1;
 SELECT setval('"t_culmination_reversals_REVERSAL_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_email_templates_id_seq" START WITH 1;
 SELECT setval('"t_email_templates_id_seq"', 8, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_enrollment_field_changes_CHANGE_ID_seq" START WITH 1;
 SELECT setval('"t_enrollment_field_changes_CHANGE_ID_seq"', 13, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_evaluation_EVALUATION_ID_seq" START WITH 1;
 SELECT setval('"t_evaluation_EVALUATION_ID_seq"', 46, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_evaluation_criteria_CRITERIA_ID_seq" START WITH 1;
 SELECT setval('"t_evaluation_criteria_CRITERIA_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_evaluation_detail_DETAIL_ID_seq" START WITH 1;
 SELECT setval('"t_evaluation_detail_DETAIL_ID_seq"', 617, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_institution_INSTITUTION_ID_seq" START WITH 1;
 SELECT setval('"t_institution_INSTITUTION_ID_seq"', 20, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_institution_address_institution_address_id_seq" START WITH 1;
 SELECT setval('"t_institution_address_institution_address_id_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_institution_career_INSTITUTION_CAREER_ID_seq" START WITH 1;
 SELECT setval('"t_institution_career_INSTITUTION_CAREER_ID_seq"', 17, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_institution_internship_type_INSTITUTION_INTERNSHIP_TYPE_ID_se" START WITH 1;
 SELECT setval('"t_institution_internship_type_INSTITUTION_INTERNSHIP_TYPE_ID_se"', 5, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_institution_manager_MANAGER_ID_seq" START WITH 1;
 SELECT setval('"t_institution_manager_MANAGER_ID_seq"', 6, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_institution_manager_institution_INSTITUTION_MANAGER_INSTITUTI" START WITH 1;
 SELECT setval('"t_institution_manager_institution_INSTITUTION_MANAGER_INSTITUTI"', 5, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_internship_type_INTERNSHIP_TYPE_ID_seq" START WITH 1;
 SELECT setval('"t_internship_type_INTERNSHIP_TYPE_ID_seq"', 4, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_internships_period_PERIOD_ID_seq" START WITH 1;
 SELECT setval('"t_internships_period_PERIOD_ID_seq"', 10, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_key_history_KEY_HISTORY_ID_seq" START WITH 1;
 SELECT setval('"t_key_history_KEY_HISTORY_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_landing_config_config_id_seq" START WITH 1;
 SELECT setval('"t_landing_config_config_id_seq"', 24, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_list_LIST_ID_seq" START WITH 1;
 SELECT setval('"t_list_LIST_ID_seq"', 1, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_municipio_municipio_id_seq" START WITH 1;
 SELECT setval('"t_municipio_municipio_id_seq"', 335, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_notifications_NOTIFICATION_ID_seq" START WITH 1;
 SELECT setval('"t_notifications_NOTIFICATION_ID_seq"', 219, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_nucleus_career_nucleus_career_id_seq" START WITH 1;
 SELECT setval('"t_nucleus_career_nucleus_career_id_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_operation_OPERATION_ID_seq" START WITH 1;
 SELECT setval('"t_operation_OPERATION_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_parroquia_parroquia_id_seq" START WITH 1;
 SELECT setval('"t_parroquia_parroquia_id_seq"', 1139, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_password_history_HISTORY_ID_seq" START WITH 1;
 SELECT setval('"t_password_history_HISTORY_ID_seq"', 3, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_permissions_PERMISSIONS_ID_seq" START WITH 1;
 SELECT setval('"t_permissions_PERMISSIONS_ID_seq"', 34535, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_person_address_person_address_id_seq" START WITH 1;
 SELECT setval('"t_person_address_person_address_id_seq"', 31, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_person_merge_log_log_id_seq" START WITH 1;
 SELECT setval('"t_person_merge_log_log_id_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_persons_person_id_seq" START WITH 1;
 SELECT setval('"t_persons_person_id_seq"', 96, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_practice_visits_VISIT_ID_seq" START WITH 1;
 SELECT setval('"t_practice_visits_VISIT_ID_seq"', 13, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_preset_questions_PRESET_QUESTION_ID_seq" START WITH 1;
 SELECT setval('"t_preset_questions_PRESET_QUESTION_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_professional_practices_PROFESSIONAL_PRACTICE_ID_seq" START WITH 1;
 SELECT setval('"t_professional_practices_PROFESSIONAL_PRACTICE_ID_seq"', 26, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_professional_practices_tuto_PROFESSIONAL_PRACTICES_TUTOR__seq" START WITH 1;
 SELECT setval('"t_professional_practices_tuto_PROFESSIONAL_PRACTICES_TUTOR__seq"', 37, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_prospect_list_items_ITEM_ID_seq" START WITH 1;
 SELECT setval('"t_prospect_list_items_ITEM_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_prospect_lists_LIST_ID_seq" START WITH 1;
 SELECT setval('"t_prospect_lists_LIST_ID_seq"', 1, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_recovery_tokens_TOKEN_ID_seq" START WITH 1;
 SELECT setval('"t_recovery_tokens_TOKEN_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_report_text_templates_TEMPLATE_ID_seq" START WITH 1;
 SELECT setval('"t_report_text_templates_TEMPLATE_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_request_types_REQUEST_TYPE_ID_seq" START WITH 1;
 SELECT setval('"t_request_types_REQUEST_TYPE_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_roles_ID_ROLS_seq" START WITH 1;
 SELECT setval('"t_roles_ID_ROLS_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_security_questions_SECURITY_QUESTIONS_ID_seq" START WITH 1;
 SELECT setval('"t_security_questions_SECURITY_QUESTIONS_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_session_SESSION_ID_seq" START WITH 1;
 SELECT setval('"t_session_SESSION_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_session_attempts_ATTEMPT_ID_seq" START WITH 1;
 SELECT setval('"t_session_attempts_ATTEMPT_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_session_history_SESSION_HISTORY_ID_seq" START WITH 1;
 SELECT setval('"t_session_history_SESSION_HISTORY_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_student_documents_DOCUMENT_ID_seq" START WITH 1;
 SELECT setval('"t_student_documents_DOCUMENT_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_student_requests_REQUEST_ID_seq" START WITH 1;
 SELECT setval('"t_student_requests_REQUEST_ID_seq"', 9, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_students_STUDENTS_ID_seq" START WITH 1;
 SELECT setval('"t_students_STUDENTS_ID_seq"', 83, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_system_institution_system_institution_id_seq" START WITH 1;
 SELECT setval('"t_system_institution_system_institution_id_seq"', 1, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_system_nucleus_nucleus_id_seq" START WITH 1;
 SELECT setval('"t_system_nucleus_nucleus_id_seq"', 2, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_tables_TABLE_ID_seq" START WITH 1;
 SELECT setval('"t_tables_TABLE_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_tutor_career_TUTOR_CAREER_ID_seq" START WITH 1;
 SELECT setval('"t_tutor_career_TUTOR_CAREER_ID_seq"', 49, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_tutors_TUTOR_ID_seq" START WITH 1;
 SELECT setval('"t_tutors_TUTOR_ID_seq"', 89, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_user_USER_ID_seq" START WITH 1;
 SELECT setval('"t_user_USER_ID_seq"', 17, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_user_key_USER_KEY_ID_seq" START WITH 1;
 SELECT setval('"t_user_key_USER_KEY_ID_seq"', 29, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_user_notification_prefs_ID_seq" START WITH 1;
 SELECT setval('"t_user_notification_prefs_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_user_questions_USER_QUESTION_ID_seq" START WITH 1;
 SELECT setval('"t_user_questions_USER_QUESTION_ID_seq"', 3, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_user_theme_USER_THEME_ID_seq" START WITH 1;
 SELECT setval('"t_user_theme_USER_THEME_ID_seq"', 1, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_value_list_VALUE_LIST_ID_seq" START WITH 1;
 SELECT setval('"t_value_list_VALUE_LIST_ID_seq"', 70, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_visit_VISIT_ID_seq" START WITH 1;
 SELECT setval('"t_visit_VISIT_ID_seq"', 0, true);
+
 CREATE SEQUENCE IF NOT EXISTS "t_list_list_id_seq" START WITH 1;
 SELECT setval('"t_list_list_id_seq"', 503, true);
+
 -- ============================================================
 -- SECCIÓN 2: FUNCIONES (RPCs)
 -- ============================================================
 
+CREATE OR REPLACE FUNCTION public.execute_sql(sql text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+    EXECUTE sql;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_all_constraints()
+ RETURNS TABLE(table_name text, constraint_name text, constraint_type text, definition text)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+  RETURN QUERY
+  SELECT
+    c.conrelid::regclass::text AS table_name,
+    c.conname::text AS constraint_name,
+    CASE c.contype
+      WHEN 'f' THEN 'FOREIGN KEY'
+      WHEN 'u' THEN 'UNIQUE'
+      WHEN 'c' THEN 'CHECK'
+      ELSE 'OTHER'
+    END::text AS constraint_type,
+    pg_get_constraintdef(c.oid)::text AS definition
+  FROM pg_constraint c
+  JOIN pg_namespace n ON n.oid = c.connamespace
+  WHERE n.nspname = 'public'
+    AND c.contype IN ('f', 'u', 'c')
+    AND c.conname NOT LIKE '%_pkey%'  -- PKs already in CREATE TABLE
+  ORDER BY
+    CASE c.contype
+      WHEN 'u' THEN 1
+      WHEN 'f' THEN 2
+      ELSE 3
+    END,
+    c.conrelid::regclass::text;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_all_functions()
+ RETURNS TABLE(function_name text, definition text)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+  RETURN QUERY
+  SELECT
+    (p.proname::text || '(' || pg_get_function_arguments(p.oid) || ')')::text AS function_name,
+    pg_get_functiondef(p.oid)::text AS definition
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.prokind = 'f'  -- only normal functions, not aggregates
+    AND p.proname NOT LIKE 'pgrst_%'  -- exclude Supabase internal
+    AND NOT EXISTS (     -- exclude extension-owned functions
+      SELECT 1 FROM pg_depend d
+      WHERE d.objid = p.oid
+        AND d.classid = 'pg_proc'::regclass
+        AND d.deptype = 'e'
+        AND d.refclassid = 'pg_extension'::regclass
+    )
+  ORDER BY p.proname;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_all_indexes()
+ RETURNS TABLE(index_name text, table_name text, index_def text, is_unique boolean, is_primary boolean)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+  RETURN QUERY
+  SELECT
+    i.indexname::text,
+    i.tablename::text,
+    i.indexdef::text,
+    i.indexdef LIKE 'CREATE UNIQUE%' AS is_unique,
+    i.indexdef LIKE 'CREATE UNIQUE INDEX%' AND i.indexdef LIKE '%pkey%' AS is_primary
+  FROM pg_indexes i
+  WHERE i.schemaname = 'public'
+    AND i.tablename NOT IN ('_prisma_migrations')
+    AND i.indexdef NOT LIKE '%_pkey%'  -- PKs already in CREATE TABLE
+  ORDER BY i.tablename, i.indexname;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_all_sequences()
+ RETURNS TABLE(seq_name text, table_name text, column_name text, current_value bigint)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+  RETURN QUERY
+  WITH seqs AS (
+    SELECT
+      c.relname::text AS seq_name,
+      COALESCE(
+        (SELECT refn.nspname || '.' || refc.relname
+         FROM pg_depend d
+         JOIN pg_class refc ON refc.oid = d.refobjid
+         JOIN pg_namespace refn ON refn.oid = refc.relnamespace
+         WHERE d.objid = c.oid
+           AND d.deptype = 'a'
+           AND d.classid = 'pg_class'::regclass
+           AND d.refclassid = 'pg_class'::regclass
+           AND refc.relkind = 'r'),
+        'public.unknown'
+      )::text AS table_ref,
+      COALESCE(
+        (SELECT a.attname::text
+         FROM pg_depend d
+         JOIN pg_attribute a ON a.attrelid = d.refobjid AND a.attnum = d.refobjsubid
+         WHERE d.objid = c.oid
+           AND d.deptype = 'a'
+           AND d.classid = 'pg_class'::regclass
+           AND d.refclassid = 'pg_class'::regclass
+           AND a.attnum > 0),
+        'unknown'
+      )::text AS col_name,
+      pg_sequence_last_value(c.oid)::bigint AS cur_val
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relkind = 'S' AND n.nspname = 'public'
+  )
+  SELECT
+    seqs.seq_name,
+    split_part(seqs.table_ref, '.', 2)::text AS table_name,
+    seqs.col_name,
+    COALESCE(seqs.cur_val, 0)::bigint
+  FROM seqs
+  ORDER BY seqs.table_ref, seqs.col_name;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_all_table_definitions()
+ RETURNS TABLE(table_name text, definition text, has_data boolean)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+DECLARE
+  rec RECORD;
+  col_rec RECORD;
+  pk_cols text[];
+  def text;
+  has_rows boolean;
+BEGIN
+  FOR rec IN
+    SELECT tablename::text AS tname
+    FROM pg_catalog.pg_tables
+    WHERE schemaname = 'public'
+    ORDER BY tablename
+  LOOP
+    def := 'CREATE TABLE IF NOT EXISTS public.' || quote_ident(rec.tname) || ' (' || E'\n';
+
+    FOR col_rec IN
+      SELECT
+        c.column_name,
+        c.is_nullable,
+        c.column_default,
+        c.udt_name,
+        c.character_maximum_length,
+        c.numeric_precision,
+        c.numeric_scale
+      FROM information_schema.columns c
+      WHERE c.table_schema = 'public' AND c.table_name = rec.tname
+      ORDER BY c.ordinal_position
+    LOOP
+      def := def || '  ' || quote_ident(col_rec.column_name) || ' ';
+      CASE col_rec.udt_name
+        WHEN 'int4' THEN def := def || 'INTEGER';
+        WHEN 'int8' THEN def := def || 'BIGINT';
+        WHEN 'int2' THEN def := def || 'SMALLINT';
+        WHEN 'varchar' THEN
+          IF col_rec.character_maximum_length IS NOT NULL THEN
+            def := def || 'VARCHAR(' || col_rec.character_maximum_length || ')';
+          ELSE
+            def := def || 'VARCHAR';
+          END IF;
+        WHEN 'text' THEN def := def || 'TEXT';
+        WHEN 'bool' THEN def := def || 'BOOLEAN';
+        WHEN 'float4' THEN def := def || 'REAL';
+        WHEN 'float8' THEN def := def || 'DOUBLE PRECISION';
+        WHEN 'numeric' THEN
+          IF col_rec.numeric_precision IS NOT NULL AND col_rec.numeric_scale IS NOT NULL THEN
+            def := def || 'NUMERIC(' || col_rec.numeric_precision || ', ' || col_rec.numeric_scale || ')';
+          ELSE
+            def := def || 'NUMERIC';
+          END IF;
+        WHEN 'timestamp' THEN def := def || 'TIMESTAMP';
+        WHEN 'timestamptz' THEN def := def || 'TIMESTAMPTZ';
+        WHEN 'date' THEN def := def || 'DATE';
+        WHEN 'time' THEN def := def || 'TIME';
+        WHEN 'uuid' THEN def := def || 'UUID';
+        WHEN 'json' THEN def := def || 'JSON';
+        WHEN 'jsonb' THEN def := def || 'JSONB';
+        ELSE def := def || col_rec.udt_name;
+      END CASE;
+
+      IF col_rec.column_default IS NOT NULL THEN
+        def := def || ' DEFAULT ' || col_rec.column_default;
+      END IF;
+      IF col_rec.is_nullable = 'NO' THEN
+        def := def || ' NOT NULL';
+      END IF;
+      def := def || ',' || E'\n';
+    END LOOP;
+
+    SELECT array_agg(kcu.column_name::text) INTO pk_cols
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+    WHERE tc.table_schema = 'public'
+      AND tc.table_name = rec.tname
+      AND tc.constraint_type = 'PRIMARY KEY';
+
+    IF pk_cols IS NOT NULL AND array_length(pk_cols, 1) > 0 THEN
+      def := def || '  PRIMARY KEY (' || (SELECT string_agg(quote_ident(p), ', ') FROM unnest(pk_cols) p) || '),' || E'\n';
+    END IF;
+
+    -- Remove trailing comma
+    IF def LIKE '%,' || E'\n' THEN
+      def := left(def, length(def) - 2) || E'\n';
+    END IF;
+    def := def || ');';
+
+    EXECUTE format('SELECT EXISTS (SELECT 1 FROM %I LIMIT 1)', rec.tname) INTO has_rows;
+    RETURN QUERY SELECT rec.tname::text, def::text, has_rows::boolean;
+  END LOOP;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_all_tables()
+ RETURNS TABLE(table_name text)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+  RETURN QUERY
+  SELECT tablename::text
+  FROM pg_catalog.pg_tables
+  WHERE schemaname = 'public'
+  ORDER BY tablename;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_all_triggers()
+ RETURNS TABLE(table_name text, trigger_name text, definition text)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+  RETURN QUERY
+  SELECT
+    tg.tgrelid::regclass::text AS table_name,
+    tg.tgname::text AS trigger_name,
+    pg_get_triggerdef(tg.oid, true)::text AS definition
+  FROM pg_trigger tg
+  WHERE tg.tgrelid IN (
+    SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+  )
+  AND NOT tg.tgisinternal  -- exclude internal triggers (FK enforcement etc.)
+  ORDER BY tg.tgrelid::regclass::text, tg.tgname;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_coincidence_stats()
+ RETURNS TABLE(level text, count bigint, percentage numeric)
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+  total_enrollments BIGINT;
+BEGIN
+  SELECT COUNT(*) INTO total_enrollments
+  FROM t_professional_practices pp
+  WHERE pp."INTERNSHIP_STATUS" IS NOT NULL
+    AND pp."STATUS" = 1;
+
+  IF total_enrollments = 0 THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  WITH enrollment_addresses AS (
+    SELECT
+      pp."PROFESSIONAL_PRACTICE_ID" AS practice_id,
+      s.person_id AS student_person_id,
+      pp."INSTITUTION_ID" AS institution_id
+    FROM t_professional_practices pp
+    JOIN t_students s ON s."STUDENTS_ID" = pp."STUDENTS_ID"
+    WHERE pp."INTERNSHIP_STATUS" IS NOT NULL
+      AND pp."STATUS" = 1
+  ),
+  student_primary AS (
+    SELECT ea.practice_id, p.parroquia_id, p.municipio_id, m.estado_id
+    FROM enrollment_addresses ea
+    JOIN t_person_address pa ON pa.person_id = ea.student_person_id AND pa.is_primary = TRUE
+    JOIN t_address a ON a.address_id = pa.address_id
+    JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
+    JOIN t_municipio m ON m.municipio_id = p.municipio_id
+  ),
+  institution_primary AS (
+    SELECT ea.practice_id, p.parroquia_id, p.municipio_id, m.estado_id
+    FROM enrollment_addresses ea
+    JOIN t_institution_address ia ON ia.institution_id = ea.institution_id AND ia.is_primary = TRUE
+    JOIN t_address a ON a.address_id = ia.address_id
+    JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
+    JOIN t_municipio m ON m.municipio_id = p.municipio_id
+  ),
+  level_counts AS (
+    SELECT
+      CASE
+        WHEN sp.parroquia_id = ip.parroquia_id THEN 'SAME_PARROQUIA'
+        WHEN sp.municipio_id = ip.municipio_id THEN 'SAME_MUNICIPIO'
+        WHEN sp.estado_id = ip.estado_id THEN 'SAME_STATE'
+        ELSE 'DIFFERENT_STATE'
+      END AS match_level
+    FROM student_primary sp
+    JOIN institution_primary ip ON ip.practice_id = sp.practice_id
+  )
+  SELECT
+    lc.match_level AS level,
+    COUNT(*)::BIGINT AS count,
+    ROUND((COUNT(*)::NUMERIC / total_enrollments) * 100, 1) AS percentage
+  FROM level_counts lc
+  GROUP BY lc.match_level
+  ORDER BY
+    CASE lc.match_level
+      WHEN 'SAME_PARROQUIA' THEN 1
+      WHEN 'SAME_MUNICIPIO' THEN 2
+      WHEN 'SAME_STATE' THEN 3
+      WHEN 'DIFFERENT_STATE' THEN 4
+    END;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_institution_suggestions(p_person_id integer, p_career_id integer, p_internship_type_id integer DEFAULT NULL::integer)
+ RETURNS TABLE(institution_id integer, institution_name character varying, institution_address text, estado character varying, municipio character varying, proximity_score integer)
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+  v_student_parroquia_id INT;
+  v_student_municipio_id BIGINT;
+  v_student_estado_id INT;
+BEGIN
+  SELECT p.parroquia_id, p.municipio_id, m.estado_id
+  INTO v_student_parroquia_id, v_student_municipio_id, v_student_estado_id
+  FROM t_person_address pa
+  JOIN t_address a ON a.address_id = pa.address_id
+  JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
+  JOIN t_municipio m ON m.municipio_id = p.municipio_id
+  WHERE pa.person_id = p_person_id
+    AND pa.is_primary = TRUE
+  LIMIT 1;
+
+  IF v_student_parroquia_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    i."INSTITUTION_ID"::INT,
+    i."INSTITUTION_NAME"::VARCHAR(255),
+    i."INSTITUTION_ADDRESS"::TEXT,
+    e.name::VARCHAR(100),
+    m.name::VARCHAR(100),
+    CASE
+      WHEN p.parroquia_id = v_student_parroquia_id THEN 10
+      WHEN p.municipio_id = v_student_municipio_id THEN 5
+      WHEN m.estado_id = v_student_estado_id THEN 3
+      ELSE 0
+    END::INT AS proximity_score
+  FROM t_institution i
+  JOIN t_institution_career ic ON ic."INSTITUTION_ID" = i."INSTITUTION_ID"
+  JOIN t_institution_address ia ON ia.institution_id = i."INSTITUTION_ID" AND ia.is_primary = TRUE
+  JOIN t_address a ON a.address_id = ia.address_id
+  JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
+  JOIN t_municipio m ON m.municipio_id = p.municipio_id
+  JOIN t_estado e ON e.estado_id = m.estado_id
+  WHERE ic."CAREER_ID" = p_career_id
+    AND i."STATUS" = 1
+    AND (p_internship_type_id IS NULL
+      OR i."PRACTICE_TYPE" = p_internship_type_id::TEXT
+      OR EXISTS (
+        SELECT 1 FROM t_institution_internship_type iit
+        WHERE iit."INSTITUTION_ID" = i."INSTITUTION_ID"
+          AND iit."INTERNSHIP_TYPE_ID" = p_internship_type_id
+      ))
+  ORDER BY proximity_score DESC, i."INSTITUTION_NAME";
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_primary_address(p_entity_type text, p_entity_id integer)
+ RETURNS TABLE(address_id bigint, street_address character varying, reference text, parroquia_id bigint, parroquia_name character varying, municipio_id bigint, municipio_name character varying, estado_id integer, estado_name character varying)
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+  IF p_entity_type = 'person' THEN
+    RETURN QUERY
+    SELECT
+      a.address_id,
+      a.street_address,
+      a.reference,
+      p.parroquia_id,
+      p.name::VARCHAR(200),
+      m.municipio_id,
+      m.name::VARCHAR(100),
+      e.estado_id,
+      e.name::VARCHAR(100)
+    FROM t_person_address pa
+    JOIN t_address a ON a.address_id = pa.address_id
+    JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
+    JOIN t_municipio m ON m.municipio_id = p.municipio_id
+    JOIN t_estado e ON e.estado_id = m.estado_id
+    WHERE pa.person_id = p_entity_id
+      AND pa.is_primary = TRUE
+    LIMIT 1;
+  ELSIF p_entity_type = 'institution' THEN
+    RETURN QUERY
+    SELECT
+      a.address_id,
+      a.street_address,
+      a.reference,
+      p.parroquia_id,
+      p.name::VARCHAR(200),
+      m.municipio_id,
+      m.name::VARCHAR(100),
+      e.estado_id,
+      e.name::VARCHAR(100)
+    FROM t_institution_address ia
+    JOIN t_address a ON a.address_id = ia.address_id
+    JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
+    JOIN t_municipio m ON m.municipio_id = p.municipio_id
+    JOIN t_estado e ON e.estado_id = m.estado_id
+    WHERE ia.institution_id = p_entity_id
+      AND ia.is_primary = TRUE
+    LIMIT 1;
+  END IF;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_rls_policies()
+ RETURNS TABLE(table_name text, definition text)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+  RETURN QUERY
+  WITH policy_sql AS (
+    SELECT
+      n.nspname::text || '.' || c.relname::text AS full_table,
+      c.relname::text AS tname,
+      p.polname::text AS polname,
+      CASE
+        WHEN p.polpermissive THEN 'PERMISSIVE'
+        ELSE 'RESTRICTIVE'
+      END AS permissive,
+      CASE p.polcmd
+        WHEN 'r' THEN 'SELECT'
+        WHEN 'a' THEN 'INSERT'
+        WHEN 'w' THEN 'UPDATE'
+        WHEN 'd' THEN 'DELETE'
+        WHEN '*' THEN 'ALL'
+        ELSE 'ALL'
+      END AS cmd,
+      COALESCE(
+        (SELECT string_agg(rolname, ', ') FROM pg_catalog.pg_roles WHERE oid = ANY(p.polroles)),
+        'public'
+      ) AS roles,
+      pg_get_expr(p.polqual, p.polrelid) AS using_expr,
+      COALESCE(pg_get_expr(p.polwithcheck, p.polrelid), '') AS withcheck_expr
+    FROM pg_policy p
+    JOIN pg_class c ON c.oid = p.polrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+  )
+  SELECT
+    ps.tname::text AS table_name,
+    format(
+      'CREATE POLICY %s ON %s AS %s FOR %s TO %s%s%s;',
+      quote_ident(ps.polname),
+      quote_ident(ps.tname),
+      ps.permissive,
+      ps.cmd,
+      ps.roles,
+      CASE WHEN ps.using_expr != '' THEN ' USING (' || ps.using_expr || ')' ELSE '' END,
+      CASE WHEN ps.withcheck_expr != '' THEN ' WITH CHECK (' || ps.withcheck_expr || ')' ELSE '' END
+    )::text AS definition
+  FROM policy_sql ps
+  ORDER BY ps.tname, ps.polname;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.get_table_definition(table_name_param text)
+ RETURNS text
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+DECLARE
+    definition text := '';
+    col_record record;
+    constraint_record record;
+    first_col boolean := true;
+BEGIN
+    definition := 'CREATE TABLE IF NOT EXISTS "' || table_name_param || '" (' || E'\n';
+    
+    FOR col_record IN 
+        SELECT column_name, data_type, character_maximum_length,
+               numeric_precision, numeric_scale, is_nullable, column_default
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = table_name_param
+        ORDER BY ordinal_position
+    LOOP
+        IF NOT first_col THEN definition := definition || ',' || E'\n'; END IF;
+        first_col := false;
+        definition := definition || '  "' || col_record.column_name || '" ';
+        IF col_record.character_maximum_length IS NOT NULL THEN
+            definition := definition || col_record.data_type || '(' || col_record.character_maximum_length || ')';
+        ELSIF col_record.numeric_precision IS NOT NULL THEN
+            definition := definition || col_record.data_type || '(' || col_record.numeric_precision || ')';
+        ELSE
+            definition := definition || col_record.data_type;
+        END IF;
+        IF col_record.is_nullable = 'NO' THEN definition := definition || ' NOT NULL'; END IF;
+        IF col_record.column_default IS NOT NULL THEN
+            definition := definition || ' DEFAULT ' || col_record.column_default;
+        END IF;
+    END LOOP;
+    definition := definition || E'\n' || ');';
+    RETURN definition;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.search_knowledge_base(query_embedding vector, match_threshold double precision DEFAULT 0.7, match_limit integer DEFAULT 5, filter_category text DEFAULT NULL::text, filter_roles integer[] DEFAULT NULL::integer[])
+ RETURNS TABLE(id uuid, title text, category text, content text, metadata jsonb, similarity double precision)
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RETURN QUERY
+    SELECT
+        kb.id,
+        kb.title,
+        kb.category,
+        kb.content,
+        kb.metadata,
+        1 - (kb.embedding <=> query_embedding) AS similarity
+    FROM t_knowledge_base kb
+    WHERE kb.is_active = true
+      AND (filter_category IS NULL OR kb.category = filter_category)
+      AND (filter_roles IS NULL OR kb.roles IS NULL OR kb.roles && filter_roles)
+      AND 1 - (kb.embedding <=> query_embedding) >= match_threshold
+    ORDER BY kb.embedding <=> query_embedding
+    LIMIT match_limit;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.trg_set_student_person_id()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+  IF NEW.student_person_id IS NULL AND NEW."STUDENTS_ID" IS NOT NULL THEN
+    SELECT person_id INTO NEW.student_person_id
+    FROM "t_students"
+    WHERE "STUDENTS_ID" = NEW."STUDENTS_ID";
+  END IF;
+  RETURN NEW;
+END;
+$function$
 
 
+CREATE OR REPLACE FUNCTION public.trg_set_tutor_person_id()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+  IF NEW.tutor_person_id IS NULL AND NEW."TUTOR_ID" IS NOT NULL THEN
+    SELECT person_id INTO NEW.tutor_person_id
+    FROM "t_tutors"
+    WHERE "TUTOR_ID" = NEW."TUTOR_ID";
+  END IF;
+  RETURN NEW;
+END;
+$function$
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+CREATE OR REPLACE FUNCTION public.update_kb_updated_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$function$
 
 
 -- ============================================================
@@ -226,6 +859,7 @@ CREATE TABLE IF NOT EXISTS public.t_academic_config (
   "LOCK_API_LOADED_FIELDS" BOOLEAN DEFAULT true NOT NULL,
   PRIMARY KEY ("CONFIG_ID")
 );
+
 -- Tabla: t_activity_logs
 CREATE TABLE IF NOT EXISTS public.t_activity_logs (
   "ACTIVITY_LOG_ID" INTEGER DEFAULT nextval('"t_activity_logs_ACTIVITY_LOG_ID_seq"'::regclass) NOT NULL,
@@ -250,6 +884,7 @@ CREATE TABLE IF NOT EXISTS public.t_activity_logs (
   student_person_id INTEGER NOT NULL,
   PRIMARY KEY ("ACTIVITY_LOG_ID")
 );
+
 -- Tabla: t_address
 CREATE TABLE IF NOT EXISTS public.t_address (
   address_id BIGINT DEFAULT nextval('t_address_address_id_seq'::regclass) NOT NULL,
@@ -264,6 +899,7 @@ CREATE TABLE IF NOT EXISTS public.t_address (
   deleted_at TIMESTAMPTZ,
   PRIMARY KEY (address_id)
 );
+
 -- Tabla: t_address_type
 CREATE TABLE IF NOT EXISTS public.t_address_type (
   address_type_id BIGINT NOT NULL,
@@ -273,6 +909,7 @@ CREATE TABLE IF NOT EXISTS public.t_address_type (
   status SMALLINT DEFAULT 1 NOT NULL,
   PRIMARY KEY (address_type_id)
 );
+
 -- Tabla: t_auth_log
 CREATE TABLE IF NOT EXISTS public.t_auth_log (
   "ID" INTEGER DEFAULT nextval('"t_auth_log_ID_seq"'::regclass) NOT NULL,
@@ -285,6 +922,7 @@ CREATE TABLE IF NOT EXISTS public.t_auth_log (
   "CREATED_AT" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("ID")
 );
+
 -- Tabla: t_career
 CREATE TABLE IF NOT EXISTS public.t_career (
   "CAREER_ID" INTEGER DEFAULT nextval('"t_career_CAREER_ID_seq"'::regclass) NOT NULL,
@@ -304,6 +942,7 @@ CREATE TABLE IF NOT EXISTS public.t_career (
   "SEMESTER" VARCHAR(10),
   PRIMARY KEY ("CAREER_ID")
 );
+
 -- Tabla: t_career_internship_type
 CREATE TABLE IF NOT EXISTS public.t_career_internship_type (
   "ID_CAREER_INTERNSHIP_TYPE_ID" INTEGER DEFAULT nextval('"t_career_internship_type_ID_CAREER_INTERNSHIP_TYPE_ID_seq"'::regclass) NOT NULL,
@@ -311,6 +950,7 @@ CREATE TABLE IF NOT EXISTS public.t_career_internship_type (
   "INTERNSHIP_TYPE_ID" INTEGER NOT NULL,
   PRIMARY KEY ("ID_CAREER_INTERNSHIP_TYPE_ID")
 );
+
 -- Tabla: t_change_log
 CREATE TABLE IF NOT EXISTS public.t_change_log (
   "CHANGE_LOG_ID" INTEGER DEFAULT nextval('"t_change_log_CHANGE_LOG_ID_seq"'::regclass) NOT NULL,
@@ -327,6 +967,7 @@ CREATE TABLE IF NOT EXISTS public.t_change_log (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("CHANGE_LOG_ID", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID")
 );
+
 -- Tabla: t_chat_config
 CREATE TABLE IF NOT EXISTS public.t_chat_config (
   config_id UUID DEFAULT gen_random_uuid() NOT NULL,
@@ -338,6 +979,7 @@ CREATE TABLE IF NOT EXISTS public.t_chat_config (
   updated_at TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY (config_id)
 );
+
 -- Tabla: t_chat_sessions
 CREATE TABLE IF NOT EXISTS public.t_chat_sessions (
   "SESSION_ID" UUID DEFAULT gen_random_uuid() NOT NULL,
@@ -349,6 +991,7 @@ CREATE TABLE IF NOT EXISTS public.t_chat_sessions (
   "STATUS" SMALLINT DEFAULT 1 NOT NULL,
   PRIMARY KEY ("SESSION_ID")
 );
+
 -- Tabla: t_columns
 CREATE TABLE IF NOT EXISTS public.t_columns (
   "COLUMN_ID" INTEGER DEFAULT nextval('"t_columns_COLUMN_ID_seq"'::regclass) NOT NULL,
@@ -357,6 +1000,7 @@ CREATE TABLE IF NOT EXISTS public.t_columns (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("COLUMN_ID")
 );
+
 -- Tabla: t_committee_assignment
 CREATE TABLE IF NOT EXISTS public.t_committee_assignment (
   "ASSIGNMENT_ID" INTEGER DEFAULT nextval('"t_committee_assignment_ASSIGNMENT_ID_seq"'::regclass) NOT NULL,
@@ -369,6 +1013,7 @@ CREATE TABLE IF NOT EXISTS public.t_committee_assignment (
   "UPDATED_AT" TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY ("ASSIGNMENT_ID")
 );
+
 -- Tabla: t_config
 CREATE TABLE IF NOT EXISTS public.t_config (
   "CONFIG_ID" INTEGER DEFAULT nextval('"t_config_CONFIG_ID_seq"'::regclass) NOT NULL,
@@ -407,6 +1052,7 @@ CREATE TABLE IF NOT EXISTS public.t_config (
   "RECOVERY_LINK_EXPIRY_HOURS" INTEGER DEFAULT 48 NOT NULL,
   PRIMARY KEY ("CONFIG_ID")
 );
+
 -- Tabla: t_coordinadores
 CREATE TABLE IF NOT EXISTS public.t_coordinadores (
   "COORDINADOR_ID" INTEGER DEFAULT nextval('"t_coordinadores_COORDINADOR_ID_seq"'::regclass) NOT NULL,
@@ -422,6 +1068,7 @@ CREATE TABLE IF NOT EXISTS public.t_coordinadores (
   "STATUS" SMALLINT DEFAULT 1,
   PRIMARY KEY ("COORDINADOR_ID")
 );
+
 -- Tabla: t_credential_tokens
 CREATE TABLE IF NOT EXISTS public.t_credential_tokens (
   id INTEGER DEFAULT nextval('t_credential_tokens_id_seq'::regclass) NOT NULL,
@@ -434,6 +1081,7 @@ CREATE TABLE IF NOT EXISTS public.t_credential_tokens (
   created_at TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY (id)
 );
+
 -- Tabla: t_culmination_reversals
 CREATE TABLE IF NOT EXISTS public.t_culmination_reversals (
   "REVERSAL_ID" INTEGER DEFAULT nextval('"t_culmination_reversals_REVERSAL_ID_seq"'::regclass) NOT NULL,
@@ -445,6 +1093,7 @@ CREATE TABLE IF NOT EXISTS public.t_culmination_reversals (
   "UPDATED_AT" TIMESTAMP DEFAULT now(),
   PRIMARY KEY ("REVERSAL_ID")
 );
+
 -- Tabla: t_email_templates
 CREATE TABLE IF NOT EXISTS public.t_email_templates (
   id INTEGER DEFAULT nextval('t_email_templates_id_seq'::regclass) NOT NULL,
@@ -457,6 +1106,7 @@ CREATE TABLE IF NOT EXISTS public.t_email_templates (
   updated_at TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY (id)
 );
+
 -- Tabla: t_enrollment_field_changes
 CREATE TABLE IF NOT EXISTS public.t_enrollment_field_changes (
   "CHANGE_ID" INTEGER DEFAULT nextval('"t_enrollment_field_changes_CHANGE_ID_seq"'::regclass) NOT NULL,
@@ -468,6 +1118,7 @@ CREATE TABLE IF NOT EXISTS public.t_enrollment_field_changes (
   "CHANGED_AT" TIMESTAMP DEFAULT now(),
   PRIMARY KEY ("CHANGE_ID")
 );
+
 -- Tabla: t_estado
 CREATE TABLE IF NOT EXISTS public.t_estado (
   estado_id INTEGER NOT NULL,
@@ -476,6 +1127,7 @@ CREATE TABLE IF NOT EXISTS public.t_estado (
   capital VARCHAR(100),
   PRIMARY KEY (estado_id)
 );
+
 -- Tabla: t_evaluation
 CREATE TABLE IF NOT EXISTS public.t_evaluation (
   "EVALUATION_ID" INTEGER DEFAULT nextval('"t_evaluation_EVALUATION_ID_seq"'::regclass) NOT NULL,
@@ -496,6 +1148,7 @@ CREATE TABLE IF NOT EXISTS public.t_evaluation (
   unfreeze_authorized_by INTEGER,
   PRIMARY KEY ("EVALUATION_ID")
 );
+
 -- Tabla: t_evaluation_criteria
 CREATE TABLE IF NOT EXISTS public.t_evaluation_criteria (
   "CRITERIA_ID" INTEGER DEFAULT nextval('"t_evaluation_criteria_CRITERIA_ID_seq"'::regclass) NOT NULL,
@@ -505,6 +1158,7 @@ CREATE TABLE IF NOT EXISTS public.t_evaluation_criteria (
   "STATUS" SMALLINT DEFAULT 1,
   PRIMARY KEY ("CRITERIA_ID")
 );
+
 -- Tabla: t_evaluation_detail
 CREATE TABLE IF NOT EXISTS public.t_evaluation_detail (
   "DETAIL_ID" INTEGER DEFAULT nextval('"t_evaluation_detail_DETAIL_ID_seq"'::regclass) NOT NULL,
@@ -515,6 +1169,7 @@ CREATE TABLE IF NOT EXISTS public.t_evaluation_detail (
   "STATUS" SMALLINT DEFAULT 1,
   PRIMARY KEY ("DETAIL_ID")
 );
+
 -- Tabla: t_institution
 CREATE TABLE IF NOT EXISTS public.t_institution (
   "INSTITUTION_ID" INTEGER DEFAULT nextval('"t_institution_INSTITUTION_ID_seq"'::regclass) NOT NULL,
@@ -532,6 +1187,7 @@ CREATE TABLE IF NOT EXISTS public.t_institution (
   "INSTITUTION_CODE" VARCHAR(25) NOT NULL,
   PRIMARY KEY ("INSTITUTION_ID")
 );
+
 -- Tabla: t_institution_address
 CREATE TABLE IF NOT EXISTS public.t_institution_address (
   institution_address_id BIGINT DEFAULT nextval('t_institution_address_institution_address_id_seq'::regclass) NOT NULL,
@@ -545,6 +1201,7 @@ CREATE TABLE IF NOT EXISTS public.t_institution_address (
   version INTEGER DEFAULT 1,
   PRIMARY KEY (institution_address_id)
 );
+
 -- Tabla: t_institution_career
 CREATE TABLE IF NOT EXISTS public.t_institution_career (
   "INSTITUTION_CAREER_ID" BIGINT DEFAULT nextval('"t_institution_career_INSTITUTION_CAREER_ID_seq"'::regclass) NOT NULL,
@@ -553,6 +1210,7 @@ CREATE TABLE IF NOT EXISTS public.t_institution_career (
   "CAREER_ID" INTEGER NOT NULL,
   PRIMARY KEY ("INSTITUTION_CAREER_ID")
 );
+
 -- Tabla: t_institution_internship_type
 CREATE TABLE IF NOT EXISTS public.t_institution_internship_type (
   "INSTITUTION_INTERNSHIP_TYPE_ID" BIGINT DEFAULT nextval('"t_institution_internship_type_INSTITUTION_INTERNSHIP_TYPE_ID_se"'::regclass) NOT NULL,
@@ -561,6 +1219,7 @@ CREATE TABLE IF NOT EXISTS public.t_institution_internship_type (
   "INTERNSHIP_TYPE_ID" INTEGER NOT NULL,
   PRIMARY KEY ("INSTITUTION_INTERNSHIP_TYPE_ID")
 );
+
 -- Tabla: t_institution_manager
 CREATE TABLE IF NOT EXISTS public.t_institution_manager (
   "MANAGER_ID" INTEGER DEFAULT nextval('"t_institution_manager_MANAGER_ID_seq"'::regclass) NOT NULL,
@@ -579,6 +1238,7 @@ CREATE TABLE IF NOT EXISTS public.t_institution_manager (
   "TITLE" VARCHAR(100) DEFAULT NULL::character varying,
   PRIMARY KEY ("MANAGER_ID")
 );
+
 -- Tabla: t_institution_manager_institution
 CREATE TABLE IF NOT EXISTS public.t_institution_manager_institution (
   "INSTITUTION_MANAGER_INSTITUTION_ID" BIGINT DEFAULT nextval('"t_institution_manager_institution_INSTITUTION_MANAGER_INSTITUTI"'::regclass) NOT NULL,
@@ -588,6 +1248,7 @@ CREATE TABLE IF NOT EXISTS public.t_institution_manager_institution (
   cargo VARCHAR(100),
   PRIMARY KEY ("INSTITUTION_MANAGER_INSTITUTION_ID")
 );
+
 -- Tabla: t_internship_type
 CREATE TABLE IF NOT EXISTS public.t_internship_type (
   "INTERNSHIP_TYPE_ID" INTEGER DEFAULT nextval('"t_internship_type_INTERNSHIP_TYPE_ID_seq"'::regclass) NOT NULL,
@@ -598,6 +1259,7 @@ CREATE TABLE IF NOT EXISTS public.t_internship_type (
   "HOURS_REQUIRED" INTEGER DEFAULT 360,
   PRIMARY KEY ("INTERNSHIP_TYPE_ID")
 );
+
 -- Tabla: t_internships_period
 CREATE TABLE IF NOT EXISTS public.t_internships_period (
   "PERIOD_ID" INTEGER DEFAULT nextval('"t_internships_period_PERIOD_ID_seq"'::regclass) NOT NULL,
@@ -612,6 +1274,7 @@ CREATE TABLE IF NOT EXISTS public.t_internships_period (
   "T_INTERNSHIPS_CODE" VARCHAR(8) NOT NULL,
   PRIMARY KEY ("PERIOD_ID")
 );
+
 -- Tabla: t_key_history
 CREATE TABLE IF NOT EXISTS public.t_key_history (
   "KEY_HISTORY_ID" INTEGER DEFAULT nextval('"t_key_history_KEY_HISTORY_ID_seq"'::regclass) NOT NULL,
@@ -621,6 +1284,7 @@ CREATE TABLE IF NOT EXISTS public.t_key_history (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("KEY_HISTORY_ID", "USER_KEY_ID", "USER_ID")
 );
+
 -- Tabla: t_knowledge_base
 CREATE TABLE IF NOT EXISTS public.t_knowledge_base (
   id UUID DEFAULT gen_random_uuid() NOT NULL,
@@ -635,6 +1299,7 @@ CREATE TABLE IF NOT EXISTS public.t_knowledge_base (
   updated_at TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY (id)
 );
+
 -- Tabla: t_landing_config
 CREATE TABLE IF NOT EXISTS public.t_landing_config (
   config_id INTEGER DEFAULT nextval('t_landing_config_config_id_seq'::regclass) NOT NULL,
@@ -644,6 +1309,7 @@ CREATE TABLE IF NOT EXISTS public.t_landing_config (
   updated_by VARCHAR(50) DEFAULT 'system'::character varying,
   PRIMARY KEY (config_id)
 );
+
 -- Tabla: t_list
 CREATE TABLE IF NOT EXISTS public.t_list (
   "LIST_ID" INTEGER DEFAULT nextval('t_list_list_id_seq'::regclass) NOT NULL,
@@ -658,6 +1324,7 @@ CREATE TABLE IF NOT EXISTS public.t_list (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("LIST_ID")
 );
+
 -- Tabla: t_municipio
 CREATE TABLE IF NOT EXISTS public.t_municipio (
   municipio_id BIGINT DEFAULT nextval('t_municipio_municipio_id_seq'::regclass) NOT NULL,
@@ -665,6 +1332,7 @@ CREATE TABLE IF NOT EXISTS public.t_municipio (
   name VARCHAR(100) NOT NULL,
   PRIMARY KEY (municipio_id)
 );
+
 -- Tabla: t_notifications
 CREATE TABLE IF NOT EXISTS public.t_notifications (
   "NOTIFICATION_ID" INTEGER DEFAULT nextval('"t_notifications_NOTIFICATION_ID_seq"'::regclass) NOT NULL,
@@ -678,6 +1346,7 @@ CREATE TABLE IF NOT EXISTS public.t_notifications (
   "CREATED_AT" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("NOTIFICATION_ID")
 );
+
 -- Tabla: t_nucleus_career
 CREATE TABLE IF NOT EXISTS public.t_nucleus_career (
   nucleus_career_id INTEGER DEFAULT nextval('t_nucleus_career_nucleus_career_id_seq'::regclass) NOT NULL,
@@ -687,6 +1356,7 @@ CREATE TABLE IF NOT EXISTS public.t_nucleus_career (
   created_at TIMESTAMP DEFAULT now() NOT NULL,
   PRIMARY KEY (nucleus_career_id)
 );
+
 -- Tabla: t_operation
 CREATE TABLE IF NOT EXISTS public.t_operation (
   "OPERATION_ID" INTEGER DEFAULT nextval('"t_operation_OPERATION_ID_seq"'::regclass) NOT NULL,
@@ -695,6 +1365,7 @@ CREATE TABLE IF NOT EXISTS public.t_operation (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("OPERATION_ID")
 );
+
 -- Tabla: t_parroquia
 CREATE TABLE IF NOT EXISTS public.t_parroquia (
   parroquia_id BIGINT DEFAULT nextval('t_parroquia_parroquia_id_seq'::regclass) NOT NULL,
@@ -702,6 +1373,7 @@ CREATE TABLE IF NOT EXISTS public.t_parroquia (
   name VARCHAR(200) NOT NULL,
   PRIMARY KEY (parroquia_id)
 );
+
 -- Tabla: t_password_history
 CREATE TABLE IF NOT EXISTS public.t_password_history (
   "HISTORY_ID" INTEGER DEFAULT nextval('"t_password_history_HISTORY_ID_seq"'::regclass) NOT NULL,
@@ -710,6 +1382,7 @@ CREATE TABLE IF NOT EXISTS public.t_password_history (
   "CREATION_DATE" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("HISTORY_ID")
 );
+
 -- Tabla: t_permissions
 CREATE TABLE IF NOT EXISTS public.t_permissions (
   "PERMISSIONS_ID" INTEGER DEFAULT nextval('"t_permissions_PERMISSIONS_ID_seq"'::regclass) NOT NULL,
@@ -725,6 +1398,7 @@ CREATE TABLE IF NOT EXISTS public.t_permissions (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("PERMISSIONS_ID")
 );
+
 -- Tabla: t_person_address
 CREATE TABLE IF NOT EXISTS public.t_person_address (
   person_address_id BIGINT DEFAULT nextval('t_person_address_person_address_id_seq'::regclass) NOT NULL,
@@ -738,6 +1412,7 @@ CREATE TABLE IF NOT EXISTS public.t_person_address (
   version INTEGER DEFAULT 1,
   PRIMARY KEY (person_address_id)
 );
+
 -- Tabla: t_person_merge_log
 CREATE TABLE IF NOT EXISTS public.t_person_merge_log (
   log_id INTEGER DEFAULT nextval('t_person_merge_log_log_id_seq'::regclass) NOT NULL,
@@ -752,6 +1427,7 @@ CREATE TABLE IF NOT EXISTS public.t_person_merge_log (
   created_at TIMESTAMP DEFAULT now(),
   PRIMARY KEY (log_id)
 );
+
 -- Tabla: t_persons
 CREATE TABLE IF NOT EXISTS public.t_persons (
   person_id INTEGER DEFAULT nextval('t_persons_person_id_seq'::regclass) NOT NULL,
@@ -771,6 +1447,7 @@ CREATE TABLE IF NOT EXISTS public.t_persons (
   updated_at TIMESTAMP DEFAULT now(),
   PRIMARY KEY (person_id)
 );
+
 -- Tabla: t_practice_culmination
 CREATE TABLE IF NOT EXISTS public.t_practice_culmination (
   "PRACTICE_ID" INTEGER NOT NULL,
@@ -783,6 +1460,7 @@ CREATE TABLE IF NOT EXISTS public.t_practice_culmination (
   "UPDATED_AT" TIMESTAMP DEFAULT now(),
   PRIMARY KEY ("PRACTICE_ID")
 );
+
 -- Tabla: t_practice_visits
 CREATE TABLE IF NOT EXISTS public.t_practice_visits (
   "VISIT_ID" INTEGER DEFAULT nextval('"t_practice_visits_VISIT_ID_seq"'::regclass) NOT NULL,
@@ -802,6 +1480,7 @@ CREATE TABLE IF NOT EXISTS public.t_practice_visits (
   tutor_person_id INTEGER NOT NULL,
   PRIMARY KEY ("VISIT_ID")
 );
+
 -- Tabla: t_preset_questions
 CREATE TABLE IF NOT EXISTS public.t_preset_questions (
   "PRESET_QUESTION_ID" INTEGER DEFAULT nextval('"t_preset_questions_PRESET_QUESTION_ID_seq"'::regclass) NOT NULL,
@@ -816,6 +1495,7 @@ CREATE TABLE IF NOT EXISTS public.t_preset_questions (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("PRESET_QUESTION_ID")
 );
+
 -- Tabla: t_professional_practices
 CREATE TABLE IF NOT EXISTS public.t_professional_practices (
   "PROFESSIONAL_PRACTICE_ID" INTEGER DEFAULT nextval('"t_professional_practices_PROFESSIONAL_PRACTICE_ID_seq"'::regclass) NOT NULL,
@@ -851,6 +1531,7 @@ CREATE TABLE IF NOT EXISTS public.t_professional_practices (
   withdrawal_type VARCHAR(20),
   PRIMARY KEY ("PROFESSIONAL_PRACTICE_ID")
 );
+
 -- Tabla: t_professional_practices_tutor
 CREATE TABLE IF NOT EXISTS public.t_professional_practices_tutor (
   "PROFESSIONAL_PRACTICES_TUTOR_ID" INTEGER DEFAULT nextval('"t_professional_practices_tuto_PROFESSIONAL_PRACTICES_TUTOR__seq"'::regclass) NOT NULL,
@@ -863,6 +1544,7 @@ CREATE TABLE IF NOT EXISTS public.t_professional_practices_tutor (
   "UPDATED_AT" TIMESTAMP DEFAULT now(),
   PRIMARY KEY ("PROFESSIONAL_PRACTICES_TUTOR_ID")
 );
+
 -- Tabla: t_prospect_list_items
 CREATE TABLE IF NOT EXISTS public.t_prospect_list_items (
   "ITEM_ID" INTEGER DEFAULT nextval('"t_prospect_list_items_ITEM_ID_seq"'::regclass) NOT NULL,
@@ -874,6 +1556,7 @@ CREATE TABLE IF NOT EXISTS public.t_prospect_list_items (
   "ADDED_BY" INTEGER,
   PRIMARY KEY ("ITEM_ID")
 );
+
 -- Tabla: t_prospect_lists
 CREATE TABLE IF NOT EXISTS public.t_prospect_lists (
   "LIST_ID" INTEGER DEFAULT nextval('"t_prospect_lists_LIST_ID_seq"'::regclass) NOT NULL,
@@ -886,6 +1569,7 @@ CREATE TABLE IF NOT EXISTS public.t_prospect_lists (
   "CREATED_BY" INTEGER,
   PRIMARY KEY ("LIST_ID")
 );
+
 -- Tabla: t_recovery_tokens
 CREATE TABLE IF NOT EXISTS public.t_recovery_tokens (
   "TOKEN_ID" INTEGER DEFAULT nextval('"t_recovery_tokens_TOKEN_ID_seq"'::regclass) NOT NULL,
@@ -896,6 +1580,7 @@ CREATE TABLE IF NOT EXISTS public.t_recovery_tokens (
   "CREATION_DATE" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("TOKEN_ID")
 );
+
 -- Tabla: t_report_text_templates
 CREATE TABLE IF NOT EXISTS public.t_report_text_templates (
   "TEMPLATE_ID" INTEGER DEFAULT nextval('"t_report_text_templates_TEMPLATE_ID_seq"'::regclass) NOT NULL,
@@ -907,6 +1592,7 @@ CREATE TABLE IF NOT EXISTS public.t_report_text_templates (
   "STATUS" SMALLINT DEFAULT 1,
   PRIMARY KEY ("TEMPLATE_ID")
 );
+
 -- Tabla: t_request_types
 CREATE TABLE IF NOT EXISTS public.t_request_types (
   "REQUEST_TYPE_ID" INTEGER DEFAULT nextval('"t_request_types_REQUEST_TYPE_ID_seq"'::regclass) NOT NULL,
@@ -925,6 +1611,7 @@ CREATE TABLE IF NOT EXISTS public.t_request_types (
   "CATEGORY" VARCHAR(50) DEFAULT 'GENERAL'::character varying,
   PRIMARY KEY ("REQUEST_TYPE_ID")
 );
+
 -- Tabla: t_roles
 CREATE TABLE IF NOT EXISTS public.t_roles (
   "ID_ROLS" INTEGER DEFAULT nextval('"t_roles_ID_ROLS_seq"'::regclass) NOT NULL,
@@ -940,12 +1627,14 @@ CREATE TABLE IF NOT EXISTS public.t_roles (
   "IS_SYSTEM" BOOLEAN DEFAULT false NOT NULL,
   PRIMARY KEY ("ID_ROLS")
 );
+
 -- Tabla: t_roles_permissions
 CREATE TABLE IF NOT EXISTS public.t_roles_permissions (
   "ROLES_ID" INTEGER NOT NULL,
   "PERMISSIONS_ID" INTEGER NOT NULL,
   PRIMARY KEY ("ROLES_ID", "PERMISSIONS_ID")
 );
+
 -- Tabla: t_security_questions
 CREATE TABLE IF NOT EXISTS public.t_security_questions (
   "SECURITY_QUESTIONS_ID" INTEGER DEFAULT nextval('"t_security_questions_SECURITY_QUESTIONS_ID_seq"'::regclass) NOT NULL,
@@ -955,6 +1644,7 @@ CREATE TABLE IF NOT EXISTS public.t_security_questions (
   "CUSTOM_QUESTION" TEXT,
   PRIMARY KEY ("SECURITY_QUESTIONS_ID")
 );
+
 -- Tabla: t_session
 CREATE TABLE IF NOT EXISTS public.t_session (
   "SESSION_ID" INTEGER DEFAULT nextval('"t_session_SESSION_ID_seq"'::regclass) NOT NULL,
@@ -969,6 +1659,7 @@ CREATE TABLE IF NOT EXISTS public.t_session (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("SESSION_ID", "USER_ID")
 );
+
 -- Tabla: t_session_attempts
 CREATE TABLE IF NOT EXISTS public.t_session_attempts (
   "ATTEMPT_ID" INTEGER DEFAULT nextval('"t_session_attempts_ATTEMPT_ID_seq"'::regclass) NOT NULL,
@@ -984,6 +1675,7 @@ CREATE TABLE IF NOT EXISTS public.t_session_attempts (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("ATTEMPT_ID", "USER_ID")
 );
+
 -- Tabla: t_session_history
 CREATE TABLE IF NOT EXISTS public.t_session_history (
   "SESSION_HISTORY_ID" INTEGER DEFAULT nextval('"t_session_history_SESSION_HISTORY_ID_seq"'::regclass) NOT NULL,
@@ -994,6 +1686,7 @@ CREATE TABLE IF NOT EXISTS public.t_session_history (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("SESSION_HISTORY_ID", "SESSION_ID", "USER_ID")
 );
+
 -- Tabla: t_student_documents
 CREATE TABLE IF NOT EXISTS public.t_student_documents (
   "DOCUMENT_ID" INTEGER DEFAULT nextval('"t_student_documents_DOCUMENT_ID_seq"'::regclass) NOT NULL,
@@ -1017,6 +1710,7 @@ CREATE TABLE IF NOT EXISTS public.t_student_documents (
   student_person_id INTEGER NOT NULL,
   PRIMARY KEY ("DOCUMENT_ID")
 );
+
 -- Tabla: t_student_requests
 CREATE TABLE IF NOT EXISTS public.t_student_requests (
   "REQUEST_ID" INTEGER DEFAULT nextval('"t_student_requests_REQUEST_ID_seq"'::regclass) NOT NULL,
@@ -1044,6 +1738,7 @@ CREATE TABLE IF NOT EXISTS public.t_student_requests (
   student_person_id INTEGER NOT NULL,
   PRIMARY KEY ("REQUEST_ID")
 );
+
 -- Tabla: t_students
 CREATE TABLE IF NOT EXISTS public.t_students (
   "STUDENTS_ID" INTEGER DEFAULT nextval('"t_students_STUDENTS_ID_seq"'::regclass) NOT NULL,
@@ -1067,6 +1762,7 @@ CREATE TABLE IF NOT EXISTS public.t_students (
   "USER_ID" INTEGER,
   PRIMARY KEY ("STUDENTS_ID")
 );
+
 -- Tabla: t_system_institution
 CREATE TABLE IF NOT EXISTS public.t_system_institution (
   system_institution_id INTEGER DEFAULT nextval('t_system_institution_system_institution_id_seq'::regclass) NOT NULL,
@@ -1088,6 +1784,7 @@ CREATE TABLE IF NOT EXISTS public.t_system_institution (
   extension VARCHAR(255) DEFAULT ''::character varying NOT NULL,
   PRIMARY KEY (system_institution_id)
 );
+
 -- Tabla: t_system_nucleus
 CREATE TABLE IF NOT EXISTS public.t_system_nucleus (
   nucleus_id INTEGER DEFAULT nextval('t_system_nucleus_nucleus_id_seq'::regclass) NOT NULL,
@@ -1103,6 +1800,7 @@ CREATE TABLE IF NOT EXISTS public.t_system_nucleus (
   updated_at TIMESTAMP DEFAULT now() NOT NULL,
   PRIMARY KEY (nucleus_id)
 );
+
 -- Tabla: t_tables
 CREATE TABLE IF NOT EXISTS public.t_tables (
   "TABLE_ID" INTEGER DEFAULT nextval('"t_tables_TABLE_ID_seq"'::regclass) NOT NULL,
@@ -1113,6 +1811,7 @@ CREATE TABLE IF NOT EXISTS public.t_tables (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("TABLE_ID")
 );
+
 -- Tabla: t_tutor_career
 CREATE TABLE IF NOT EXISTS public.t_tutor_career (
   "TUTOR_CAREER_ID" BIGINT DEFAULT nextval('"t_tutor_career_TUTOR_CAREER_ID_seq"'::regclass) NOT NULL,
@@ -1121,6 +1820,7 @@ CREATE TABLE IF NOT EXISTS public.t_tutor_career (
   "CAREER_ID" INTEGER NOT NULL,
   PRIMARY KEY ("TUTOR_CAREER_ID")
 );
+
 -- Tabla: t_tutors
 CREATE TABLE IF NOT EXISTS public.t_tutors (
   "TUTOR_ID" INTEGER DEFAULT nextval('"t_tutors_TUTOR_ID_seq"'::regclass) NOT NULL,
@@ -1144,6 +1844,7 @@ CREATE TABLE IF NOT EXISTS public.t_tutors (
   "ATTENTION_SCHEDULE" VARCHAR(255) DEFAULT NULL::character varying,
   PRIMARY KEY ("TUTOR_ID")
 );
+
 -- Tabla: t_user
 CREATE TABLE IF NOT EXISTS public.t_user (
   "USER_ID" INTEGER DEFAULT nextval('"t_user_USER_ID_seq"'::regclass) NOT NULL,
@@ -1167,6 +1868,7 @@ CREATE TABLE IF NOT EXISTS public.t_user (
   "LAST_LOGIN" TIMESTAMP,
   PRIMARY KEY ("USER_ID")
 );
+
 -- Tabla: t_user_key
 CREATE TABLE IF NOT EXISTS public.t_user_key (
   "USER_KEY_ID" INTEGER DEFAULT nextval('"t_user_key_USER_KEY_ID_seq"'::regclass) NOT NULL,
@@ -1184,6 +1886,7 @@ CREATE TABLE IF NOT EXISTS public.t_user_key (
   "IS_TEMPORARY" BOOLEAN DEFAULT false,
   PRIMARY KEY ("USER_KEY_ID", "USER_ID")
 );
+
 -- Tabla: t_user_notification_prefs
 CREATE TABLE IF NOT EXISTS public.t_user_notification_prefs (
   "ID" INTEGER DEFAULT nextval('"t_user_notification_prefs_ID_seq"'::regclass) NOT NULL,
@@ -1195,6 +1898,7 @@ CREATE TABLE IF NOT EXISTS public.t_user_notification_prefs (
   "UPDATED_AT" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("ID")
 );
+
 -- Tabla: t_user_questions
 CREATE TABLE IF NOT EXISTS public.t_user_questions (
   "USER_QUESTION_ID" INTEGER DEFAULT nextval('"t_user_questions_USER_QUESTION_ID_seq"'::regclass) NOT NULL,
@@ -1209,12 +1913,14 @@ CREATE TABLE IF NOT EXISTS public.t_user_questions (
   "STATUS" SMALLINT DEFAULT 1 NOT NULL,
   PRIMARY KEY ("USER_QUESTION_ID")
 );
+
 -- Tabla: t_user_roles
 CREATE TABLE IF NOT EXISTS public.t_user_roles (
   "ID_USER" INTEGER NOT NULL,
   "ID_ROLES" INTEGER NOT NULL,
   PRIMARY KEY ("ID_USER", "ID_ROLES")
 );
+
 -- Tabla: t_user_theme
 CREATE TABLE IF NOT EXISTS public.t_user_theme (
   "USER_THEME_ID" INTEGER DEFAULT nextval('"t_user_theme_USER_THEME_ID_seq"'::regclass) NOT NULL,
@@ -1230,6 +1936,7 @@ CREATE TABLE IF NOT EXISTS public.t_user_theme (
   "STATUS" SMALLINT DEFAULT 1 NOT NULL,
   PRIMARY KEY ("USER_THEME_ID")
 );
+
 -- Tabla: t_value_list
 CREATE TABLE IF NOT EXISTS public.t_value_list (
   "VALUE_LIST_ID" INTEGER DEFAULT nextval('"t_value_list_VALUE_LIST_ID_seq"'::regclass) NOT NULL,
@@ -1246,6 +1953,7 @@ CREATE TABLE IF NOT EXISTS public.t_value_list (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("VALUE_LIST_ID")
 );
+
 -- Tabla: t_visit
 CREATE TABLE IF NOT EXISTS public.t_visit (
   "VISIT_ID" INTEGER DEFAULT nextval('"t_visit_VISIT_ID_seq"'::regclass) NOT NULL,
@@ -1258,6 +1966,7 @@ CREATE TABLE IF NOT EXISTS public.t_visit (
   "PROFESSIONAL_PRACTICE_ID" INTEGER NOT NULL,
   PRIMARY KEY ("VISIT_ID")
 );
+
 -- Tablas excluidas del backup (solo estructura)
 CREATE TABLE IF NOT EXISTS "t_backups" (
   "id" UUID NOT NULL DEFAULT gen_random_uuid(),
@@ -1271,6 +1980,7 @@ CREATE TABLE IF NOT EXISTS "t_backups" (
   "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
 -- ============================================================
 -- SECCIÓN 4: DATOS (INSERT)
 -- ============================================================
@@ -1279,658 +1989,17 @@ CREATE TABLE IF NOT EXISTS "t_backups" (
 -- Tabla: t_academic_config (1 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_academic_config" ("CONFIG_ID", "DEFAULT_ENROLLMENT_GRACE_DAYS", "DEFAULT_EVALUATION_GRACE_DAYS", "UPDATED_AT", "UPDATED_BY", "allow_multiple_visits_per_day", "max_visits_per_day", "ALLOW_MULTIPLE_VISITS_PER_DAY", "MAX_VISITS_PER_DAY", "LOCK_API_LOADED_FIELDS") VALUES (1, 64, 31, '2026-06-26T13:05:21.928', 1, TRUE, 3, TRUE, 3, TRUE);
+
 -- --------------------------------------------------------
 -- Tabla: t_address (24 registros)
--- --------------------------------------------------------
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (3, 1, 'Calle test 123', NULL, '2026-06-23T03:43:36.198605+00:00', '7a1c2406-c134-4b03-9732-ded6f6726e56', NULL, '2026-06-23T03:43:36.198605+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (9, 102, 'sdfghjmk,', NULL, '2026-06-23T13:22:02.324653+00:00', 'f654c75f-bd31-435b-a258-82458ac49520', NULL, '2026-06-23T13:22:02.324653+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (10, 167, 'saddsdsd', NULL, '2026-06-23T13:27:46.605819+00:00', '6dad0681-94de-47d8-985b-b34ec11b5df9', NULL, '2026-06-23T13:27:46.605819+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (13, 725, 'calle principal casa nro 8 zona los malabares sector la cañada', NULL, '2026-06-24T00:16:52.267609+00:00', '4c35345c-4069-440e-b6d2-1daca558c708', NULL, '2026-06-24T00:16:52.267609+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (14, 725, 'tapa de piedra casa nro 64 sector marcelino alvarado', NULL, '2026-06-24T00:19:45.220282+00:00', 'a39f5e72-03a0-4811-98d0-65e68240eb6d', NULL, '2026-06-24T00:19:45.220282+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (15, 725, 'av 1 callejon b y e casa nro 32 barrio el tumulo', NULL, '2026-06-24T00:22:37.377705+00:00', 'dd3726de-ae10-466e-935a-b3f0a4678926', NULL, '2026-06-24T00:22:37.377705+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (16, 725, 'calle callejon 3 casa s/n barrio las palmas sector 2 y 3 payara', NULL, '2026-06-24T00:26:07.75722+00:00', '4300d9c0-9c96-4a77-b73b-4664ffe40ad5', NULL, '2026-06-24T00:26:07.75722+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (17, 725, 'calle 9 casa nro 196 urb campo alegre', NULL, '2026-06-24T00:29:16.942987+00:00', '3b2ae394-8d09-4733-b189-5b409b3d3a12', NULL, '2026-06-24T00:29:16.942987+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (18, 725, 'calle 11 con av 27 y 28 casa nro 27-29 barrio la quebradita', NULL, '2026-06-24T00:34:04.562147+00:00', 'dd22af6d-8818-4eb1-8eef-f59680b35826', NULL, '2026-06-24T00:34:04.562147+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (19, 725, 'av venezuela calle 8 qta maria jose zona el tumulo', NULL, '2026-06-24T00:37:07.320054+00:00', '4b60e6f0-ac78-4e80-afd2-bfd6df32f293', NULL, '2026-06-24T00:37:07.320054+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (20, 725, 'av 48 con calles 36 y 37 casa s/n barrio andres eloy blanco', NULL, '2026-06-24T00:41:36.576739+00:00', '0e34c45e-7186-48b1-b1f3-34a41809fc00', NULL, '2026-06-24T00:41:36.576739+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (21, 725, 'calle 1 casa nro 3 barrio brisas de libertador', NULL, '2026-06-24T00:44:46.585138+00:00', '7151fa44-5a41-4947-802b-b183c23d68b4', NULL, '2026-06-24T00:44:46.585138+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (22, 494, 'calle 23 de enero con calle casa blanca casa s/n sector el motor', NULL, '2026-06-24T00:49:43.613299+00:00', 'dd2aef35-a5cd-4302-b50c-f07738d61d7c', NULL, '2026-06-24T00:49:43.613299+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (12, 725, 'calle 5 casa manzana E nro 17 urb prados del sol sector las turaguas araure portuguesa zona postal 3301', '', '2026-06-24T00:12:00.173215+00:00', '57ab8466-b765-46cf-a5ff-4ccbc68d23c2', NULL, '2026-06-24T00:12:00.173215+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (11, 725, 'calle 5 casa manzana E nro 17 urb prados del sol sector las turaguas araure portuguesa', NULL, '2026-06-24T00:06:43.24985+00:00', '5bced3a1-a5ea-43e7-b94c-0fd51bea1e4b', NULL, '2026-06-24T00:06:43.24985+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (23, 725, 'av 28 con calle 11 casa s/n sector la quebradita', NULL, '2026-06-24T00:52:47.400342+00:00', 'b0096623-a6a4-47c0-abb6-7a6627bdd4ce', NULL, '2026-06-24T00:52:47.400342+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (24, 725, 'gfgfgfggf', NULL, '2026-06-24T00:57:05.744733+00:00', '0c5508b4-5611-425a-a34c-6764e1fbfdf0', NULL, '2026-06-24T00:57:05.744733+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (25, 725, 'av 1 con calle 2 cana nro 9 barrio 29 de noviembre sector 3 payara', NULL, '2026-06-24T01:03:36.651509+00:00', '4f0872df-47e7-40ce-86d5-c566a1696318', NULL, '2026-06-24T01:03:36.651509+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (26, 725, 'calle 2 casa nro 83 sector villa nueva', NULL, '2026-06-24T01:07:21.41219+00:00', 'f9566784-8c22-4402-98f8-3ae78684d9ed', NULL, '2026-06-24T01:07:21.41219+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (27, 725, 'manzana f 14 casa nro 7 urb tricentenaria sector 3', NULL, '2026-06-24T01:10:58.062265+00:00', '1435094a-48c9-4a0b-9cd7-1799443987d0', NULL, '2026-06-24T01:10:58.062265+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (8, 725, 'deddwdwd', '', '2026-06-23T12:59:04.468657+00:00', '7231dbd9-8a15-45b8-9ebc-c3026f6c5825', NULL, '2026-06-23T12:59:04.468657+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (30, 128, 'cambio de ruta', '', '2026-06-24T01:31:39.962582+00:00', '224f6538-0561-44af-b600-b8b804ec8567', NULL, '2026-06-24T01:31:39.962582+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (31, 29, 'otra direccion', NULL, '2026-06-24T01:44:05.555327+00:00', '447eebdc-2f17-4fb4-bb3a-b7b4c42f3eb1', NULL, '2026-06-24T01:44:05.555327+00:00', 1, NULL);
-INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (32, 725, 'av escopeta calle pum pum', 'al lado del cartucho', '2026-07-02T15:11:59.578671+00:00', '5f5cdbc5-bac6-433a-92f4-42adce4fe42d', NULL, '2026-07-02T15:11:59.578671+00:00', 1, NULL);
--- --------------------------------------------------------
--- Tabla: t_address_type (4 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_address_type" ("address_type_id", "code", "name", "description", "status") VALUES (1, 'HOME', 'Residencial', 'Dirección de residencia habitual', 1);
 INSERT INTO "t_address_type" ("address_type_id", "code", "name", "description", "status") VALUES (2, 'WORK', 'Laboral', 'Dirección del lugar de trabajo', 1);
 INSERT INTO "t_address_type" ("address_type_id", "code", "name", "description", "status") VALUES (3, 'FISCAL', 'Fiscal', 'Dirección fiscal registrada', 1);
 INSERT INTO "t_address_type" ("address_type_id", "code", "name", "description", "status") VALUES (4, 'TEMPORAL', 'Temporal', 'Dirección temporal o de contacto', 1);
+
 -- --------------------------------------------------------
 -- Tabla: t_auth_log (613 registros)
--- --------------------------------------------------------
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (1, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T03:18:47.945218+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (2, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-16T03:26:12.418339+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (3, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T03:26:23.625667+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (4, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-16T03:34:27.986326+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (5, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T03:37:47.693939+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (6, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T03:40:34.69602+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (7, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T03:52:04.236105+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (8, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T04:01:51.368611+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (9, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T12:10:47.476527+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (10, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Intento fallido 1/3', '2026-06-16T12:12:07.238117+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (11, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T12:12:19.588045+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (12, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T12:23:44.679325+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (13, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T12:31:35.599174+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (14, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T13:30:48.573647+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (15, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T13:31:38.460714+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (16, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T13:40:17.517899+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (17, 2, '9663439', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T13:48:09.26847+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (18, 2, '9663439', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-16T13:51:55.953081+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (19, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T13:52:07.960532+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (20, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-16T13:53:00.104477+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (21, 2, '9663439', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-16T13:53:28.816437+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (22, 2, '9663439', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T13:53:43.358386+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (23, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T13:59:31.215974+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (24, 2, '9663439', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:02:46.524891+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (25, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:07:52.597446+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (26, 2, '9663439', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:11:22.03645+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (27, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:12:28.251735+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (28, 2, '9663439', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:14:51.332706+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (29, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-16T14:19:21.677875+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (30, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:19:24.198845+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (31, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:21:14.629057+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (32, 2, '9663439', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-16T14:23:48.923676+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (33, 2, '9663439', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36', 'Intento fallido 2/3', '2026-06-16T14:24:03.214206+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (34, 2, '9663439', 'ACCOUNT_LOCKED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36', 'Máximo de intentos alcanzado. Bloqueado hasta 2026-06-17T14:24:11.222Z', '2026-06-16T14:24:11.564101+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (35, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:25:34.482886+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (36, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:27:28.441735+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (37, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:31:45.692102+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (38, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:38:52.216598+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (39, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:40:06.119352+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (40, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:43:26.156905+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (41, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-16T14:50:51.69433+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (42, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:51:07.843597+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (43, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T14:51:48.481075+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (44, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T15:02:02.135057+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (45, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T15:02:30.36805+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (46, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T15:03:01.053272+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (47, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T15:13:54.215694+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (48, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T15:14:00.103146+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (49, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T15:22:19.254816+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (50, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T15:31:01.443156+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (51, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T15:40:11.665607+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (52, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T15:51:24.799912+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (53, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T15:59:57.329545+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (54, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T16:07:25.021285+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (55, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T16:08:18.505959+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (56, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T16:16:30.47274+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (57, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T16:25:24.967887+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (58, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T16:29:23.932649+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (59, NULL, '30713670', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Usuario no encontrado', '2026-06-16T16:35:40.118248+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (60, NULL, '30713670', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Usuario no encontrado', '2026-06-16T16:35:42.286646+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (61, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T16:37:16.958549+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (62, 2, '9663439', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cuenta bloqueada', '2026-06-16T16:37:26.499352+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (63, 2, '9663439', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cuenta bloqueada', '2026-06-16T16:37:33.409509+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (64, 2, '9663439', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cuenta bloqueada', '2026-06-16T16:37:36.510677+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (65, 2, '9663439', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cuenta bloqueada', '2026-06-16T16:37:40.70922+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (66, NULL, 'V87654321', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-16T16:37:52.780936+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (67, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-16T18:03:00.642275+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (68, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-17T01:19:41.665795+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (69, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-17T01:47:50.424561+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (70, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-17T02:02:59.734695+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (71, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-17T02:06:36.921765+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (72, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-17T02:08:30.322656+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (73, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-17T02:16:36.863951+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (74, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-17T02:17:01.130305+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (444, 7, 'V-TESTADM', 'LOGIN_SUCCESS', '::ffff:127.0.0.1', '', 'Inicio de sesión exitoso', '2026-06-26T19:46:14.622822+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (75, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-17T02:17:46.112215+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (76, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-17T02:26:24.591574+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (77, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 2/3', '2026-06-17T02:26:27.408305+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (78, 1, 'V12345678', 'ACCOUNT_LOCKED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Máximo de intentos alcanzado. Bloqueado hasta 2026-06-18T02:26:51.326Z', '2026-06-17T02:26:52.768993+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (79, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cuenta bloqueada', '2026-06-17T02:27:50.563756+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (80, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cuenta bloqueada', '2026-06-17T02:28:05.704035+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (81, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cuenta bloqueada', '2026-06-17T02:29:55.738893+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (82, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-17T02:30:51.790923+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (83, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-17T02:31:24.555702+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (84, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-17T15:57:07.894403+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (85, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-18T00:30:47.541781+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (86, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-18T00:57:00.969228+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (87, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-18T01:16:11.155897+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (88, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-18T01:29:23.470509+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (89, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-18T12:11:08.410757+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (90, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-18T12:15:24.731664+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (91, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-18T12:17:21.861372+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (92, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'curl/8.19.0', 'Intento fallido 2/3', '2026-06-18T12:19:11.773469+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (93, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.19.0', 'Inicio de sesión exitoso', '2026-06-18T12:20:16.794362+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (94, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-18T12:20:42.390247+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (95, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-18T12:31:48.186841+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (96, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-18T12:39:57.214573+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (97, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 2/3', '2026-06-18T12:40:47.254744+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (98, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-18T12:50:33.31604+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (99, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-18T13:21:07.866965+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (100, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-18T13:40:41.319303+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (101, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-18T13:49:12.77334+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (102, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-18T14:12:00.825535+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (103, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-18T14:44:00.028857+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (104, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-18T14:52:34.292785+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (105, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-18T14:53:32.956731+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (106, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-18T15:00:55.837039+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (107, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-19T00:35:47.076655+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (108, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-19T00:37:10.119465+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (109, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-19T00:37:15.756067+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (110, 1, NULL, 'CREATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Creación de nuevo usuario: ALBANY MARTINEZ (CI: 29968304, Rol: 8)', '2026-06-19T00:39:35.327653+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (111, 3, '29968304', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-19T00:41:03.712047+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (112, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-19T00:46:10.227056+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (113, 1, NULL, 'CREATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Creación de nuevo usuario: JUAN ESTELLER (CI: 12088665, Rol: 1)', '2026-06-19T00:57:31.757784+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (114, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Inicio de sesión exitoso', '2026-06-19T01:08:32.247807+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (115, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-19T03:43:42.622184+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (116, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-19T03:48:14.757793+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (117, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 2/3', '2026-06-19T03:52:01.421251+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (118, 1, 'V12345678', 'ACCOUNT_LOCKED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Máximo de intentos alcanzado. Bloqueado hasta 2026-06-20T03:52:54.599Z', '2026-06-19T03:52:53.860578+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (119, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-19T03:53:54.31136+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (120, 1, NULL, 'CREATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Creación de nuevo usuario: ANTONY FIGUEROA (CI: 31114449, Rol: 1)', '2026-06-19T03:54:35.061295+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (121, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Inicio de sesión exitoso', '2026-06-19T11:57:17.79163+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (122, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-19T18:36:29.863929+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (123, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Intento fallido 2/3', '2026-06-19T18:40:52.446525+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (124, NULL, 'V87654321', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-19T18:41:22.233481+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (125, NULL, 'V87654321', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-19T18:41:54.206299+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (126, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-19T18:42:15.682+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (127, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-19T18:50:17.663807+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (128, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-19T19:19:15.090556+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (129, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-19T22:55:33.810925+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (130, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Intento fallido 1/3', '2026-06-19T22:59:52.717446+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (131, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Intento fallido 2/3', '2026-06-19T22:59:57.838867+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (132, NULL, '29847715', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Usuario no encontrado', '2026-06-19T23:00:02.288908+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (133, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-19T23:54:47.517619+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (134, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-20T00:02:50.831676+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (135, 7, 'V-TESTADM', 'LOGIN_SUCCESS', '::ffff:127.0.0.1', '', 'Inicio de sesión exitoso', '2026-06-20T02:07:52.358111+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (136, 7, 'V-TESTADM', 'LOGIN_SUCCESS', '::ffff:127.0.0.1', '', 'Inicio de sesión exitoso', '2026-06-20T02:09:20.946255+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (137, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-20T18:42:28.784212+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (138, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-20T18:52:01.438821+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (139, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-20T19:40:52.769033+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (140, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-20T20:51:17.077722+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (141, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-20T21:31:32.732687+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (142, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-20T21:33:51.425419+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (143, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 2/3', '2026-06-20T21:33:55.840423+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (144, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-20T21:34:04.876638+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (145, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-20T21:39:53.445531+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (146, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-20T21:57:53.637219+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (147, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-20T22:16:00.575446+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (148, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-20T22:44:20.322695+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (149, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-20T22:49:47.852176+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (445, 7, 'V-TESTADM', 'LOGIN_SUCCESS', '::ffff:127.0.0.1', '', 'Inicio de sesión exitoso', '2026-06-26T19:46:51.791427+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (150, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-20T23:11:51.152433+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (151, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-20T23:31:34.998441+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (152, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-20T23:38:47.920686+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (153, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T00:01:01.941058+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (154, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T00:02:57.792268+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (155, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-21T00:18:08.879189+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (156, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T00:21:35.252241+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (157, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T00:26:28.810071+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (158, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T00:34:53.770679+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (159, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-21T00:44:53.617561+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (160, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-21T01:00:32.040118+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (161, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T01:34:08.055516+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (162, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T01:47:22.375426+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (163, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T01:56:48.301067+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (164, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T02:06:54.952117+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (165, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T02:07:13.706011+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (166, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T02:30:14.894104+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (167, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T02:38:32.468493+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (168, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T02:47:17.782857+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (169, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T03:15:45.108348+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (170, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T03:42:03.194839+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (171, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T14:11:20.403258+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (172, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T14:48:52.325072+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (173, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T16:20:53.948568+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (174, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T16:21:12.259201+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (175, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T19:12:51.753557+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (176, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T19:15:17.351835+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (177, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T20:03:45.278053+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (178, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T21:06:55.664675+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (179, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T21:15:04.761973+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (180, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T21:15:23.415577+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (181, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T21:23:22.334994+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (182, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T21:27:32.230594+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (183, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-21T21:33:22.523757+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (184, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-21T22:04:35.665492+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (185, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T22:18:23.94893+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (599, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-05T01:30:20.466375+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (186, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-21T22:29:05.50869+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (187, NULL, NULL, 'DATA_SYNC', NULL, NULL, 'Sincronización de datos completada', '2026-06-21T23:40:58.96+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (188, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T00:15:38.201024+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (189, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T00:15:53.418604+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (190, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T00:16:31.65732+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (191, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T00:25:33.17464+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (192, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-22T02:32:31.285028+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (193, NULL, '12345678', 'LOGIN_FAILED', '127.0.0.1', 'curl/8.19.0', 'Usuario no encontrado', '2026-06-22T02:33:15.10789+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (194, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'curl/8.19.0', 'Intento fallido 2/3', '2026-06-22T02:34:59.279258+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (195, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'curl/8.19.0', 'Intento fallido 2/3', '2026-06-22T02:34:59.308509+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (196, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T02:35:27.240334+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (197, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.19.0', 'Inicio de sesión exitoso', '2026-06-22T02:35:57.861056+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (198, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T02:36:09.282318+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (199, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T02:56:00.72435+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (200, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T03:13:22.93355+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (201, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T03:21:42.290465+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (202, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T03:32:02.66492+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (203, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T12:26:11.859297+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (204, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T12:34:40.791149+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (205, 1, NULL, 'UPDATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Actualización de usuario ID: 5. Cambios: {"id":5,"name":"ANTONY","surname":"FIGUEROA","email":"ANTONYSAMUEL0903@GMAIL.COM","role":3,"status":1}', '2026-06-22T12:34:43.67546+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (206, 5, '31114449', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-22T12:36:13.840556+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (207, 5, '31114449', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 2/3', '2026-06-22T12:38:32.898284+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (208, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T12:42:15.739061+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (209, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T12:46:57.733832+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (210, 5, '31114449', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T12:50:27.089279+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (211, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T12:55:39.790619+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (212, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T13:05:08.692422+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (213, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-22T13:24:54.157601+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (214, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T13:44:38.031213+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (215, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T13:56:26.928213+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (216, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T14:06:26.341517+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (217, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-22T14:11:54.193618+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (218, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T14:12:20.703319+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (219, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T14:12:40.662109+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (220, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T14:14:13.223216+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (221, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T14:37:55.29492+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (222, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T14:41:31.129893+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (223, 5, '31114449', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T14:46:54.32004+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (600, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'curl/8.20.0', 'Sesión expirada por inactividad', '2026-07-05T01:30:32.135753+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (224, 5, '31114449', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-22T15:09:53.948633+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (225, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T15:14:57.317993+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (226, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T16:11:04.137062+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (227, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:27:03.367519+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (228, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:27:06.709343+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (229, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:31:02.515613+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (230, NULL, 'V26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:31:12.920886+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (231, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:31:19.618057+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (232, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:31:20.650663+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (233, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:31:45.424098+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (234, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:31:47.580787+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (235, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:31:48.76042+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (236, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:31:49.181135+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (237, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:31:49.574748+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (238, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:31:49.981473+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (239, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T17:34:09.50564+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (240, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:35:36.634378+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (241, NULL, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-22T17:39:00.205854+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (242, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T18:00:43.065149+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (243, 1, NULL, 'CREATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Creación de nuevo usuario: EVER MENDOZA (CI: 26940010, Rol: 1)', '2026-06-22T18:03:47.342175+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (244, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T18:03:47.697917+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (245, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T18:04:05.811415+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (246, 9, '26940010', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T18:10:12.230328+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (247, 5, '31114449', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-22T18:12:53.682989+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (248, 1, NULL, 'UPDATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Actualización de usuario ID: 5. Cambios: {"id":5,"name":"ANTONY","surname":"FIGUEROA","email":"ANTONYSAMUEL0903@GMAIL.COM","role":4,"status":1}', '2026-06-22T18:28:20.315135+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (249, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T18:28:36.286543+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (250, 5, '31114449', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-22T18:56:53.69897+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (251, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-22T18:56:58.571026+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (252, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-22T19:14:42.668432+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (253, 9, '26940010', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-22T19:19:45.637146+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (254, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-22T19:37:54.181408+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (255, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T02:02:37.603496+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (256, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T02:12:30.631239+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (257, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T02:20:39.647544+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (258, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T02:34:25.671531+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (259, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T02:55:50.074854+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (601, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-05T01:30:43.804835+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (260, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T03:15:54.794419+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (261, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T03:20:19.365876+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (262, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.19.0', 'Inicio de sesión exitoso', '2026-06-23T03:27:17.127536+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (263, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T03:34:28.382665+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (264, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.19.0', 'Inicio de sesión exitoso', '2026-06-23T03:34:41.138494+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (265, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T03:34:51.917664+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (266, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.19.0', 'Inicio de sesión exitoso', '2026-06-23T03:43:17.958072+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (267, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T03:47:45.326988+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (268, NULL, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-23T03:48:16.785179+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (269, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T03:48:24.136056+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (270, NULL, 'V-12345678', 'LOGIN_FAILED', '127.0.0.1', 'curl/8.19.0', 'Usuario no encontrado', '2026-06-23T03:49:52.942207+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (271, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T03:52:54.932807+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (272, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.19.0', 'Inicio de sesión exitoso', '2026-06-23T03:53:33.117304+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (273, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T03:54:07.560931+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (274, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T04:49:28.914497+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (275, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T04:57:46.357631+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (276, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T05:28:46.405017+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (277, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-23T11:06:07.742702+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (278, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Intento fallido 2/3', '2026-06-23T11:06:55.667304+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (279, NULL, '31165109', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-23T11:07:34.618501+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (280, NULL, 'V31165109', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-23T11:07:43.071815+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (281, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T11:09:17.419692+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (282, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T11:20:08.60455+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (283, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T11:32:23.230743+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (284, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T11:33:02.238264+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (285, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T11:34:41.625579+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (286, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T11:49:32.62666+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (287, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T11:54:21.375152+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (288, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T11:54:39.592905+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (289, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T11:56:03.412511+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (290, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T11:56:08.870455+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (291, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T12:03:05.428841+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (292, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T12:17:43.275157+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (293, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T12:45:42.186644+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (294, 5, '31114449', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T12:56:35.151817+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (295, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T12:56:43.209589+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (296, 5, '31114449', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T12:56:52.305429+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (297, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T12:56:59.740312+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (298, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T12:57:48.924831+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (602, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-05T01:31:03.754813+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (299, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T13:05:55.029134+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (300, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T13:16:44.937552+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (301, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T13:26:25.132315+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (302, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T13:46:55.682416+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (303, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T13:54:46.035155+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (304, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T14:02:22.286752+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (305, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T14:04:15.336475+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (306, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T14:19:50.523676+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (307, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T14:21:23.624323+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (308, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T14:23:54.984558+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (309, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T14:24:21.759345+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (310, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T14:32:50.870718+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (311, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T15:08:18.022913+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (312, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T15:13:38.692518+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (313, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T15:21:55.002122+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (314, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T15:25:54.53451+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (315, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T15:38:26.643915+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (316, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T16:36:12.198979+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (317, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T16:36:43.258574+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (318, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T16:57:55.043914+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (319, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T18:55:11.483579+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (320, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T19:13:51.483812+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (321, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T19:43:07.919422+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (322, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T19:52:36.254167+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (323, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T20:08:55.247193+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (324, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T22:57:11.940943+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (325, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T23:24:36.967071+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (326, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T23:30:31.772689+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (327, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T23:30:49.153737+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (328, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-23T23:49:59.776415+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (329, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T23:51:04.242353+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (330, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-23T23:51:17.714866+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (331, 9, '26940010', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-23T23:57:02.332051+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (332, 9, '26940010', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-23T23:57:15.659786+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (333, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T00:00:01.404828+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (334, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T00:11:45.891672+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (603, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-05T01:31:19.228513+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (335, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T00:12:42.128493+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (336, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T00:16:22.120563+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (337, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T00:17:31.148341+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (338, 1, NULL, 'UPDATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Actualización de usuario ID: 5. Cambios: {"id":5,"name":"ANTONY","surname":"FIGUEROA","email":"ANTONYSAMUEL0903@GMAIL.COM","role":3,"status":1}', '2026-06-24T00:17:41.623106+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (339, 5, '31114449', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T00:19:18.25908+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (340, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T00:21:44.004173+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (341, 5, '31114449', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T00:21:48.787247+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (342, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T00:21:52.771189+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (343, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T00:21:54.402041+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (344, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T00:39:45.966759+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (345, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T00:50:45.432606+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (346, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T00:52:49.671626+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (347, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T01:47:46.935201+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (348, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T01:49:38.083211+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (349, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T01:50:20.786606+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (350, 1, 'V12345678', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Intento fallido 1/3', '2026-06-24T02:08:29.611581+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (351, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T02:33:06.289335+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (352, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T02:38:54.117522+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (353, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T02:43:41.939123+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (354, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T03:08:31.674659+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (355, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T12:12:26.900249+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (356, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T12:14:07.69753+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (357, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T12:14:13.875142+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (358, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T12:23:29.301006+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (359, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T12:30:08.107459+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (360, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T13:42:38.899989+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (361, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T13:58:14.500751+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (362, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T14:02:51.63864+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (363, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T14:14:18.2582+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (364, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T14:23:48.539651+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (365, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T14:54:04.776032+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (366, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T15:19:14.274026+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (367, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T15:42:09.625401+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (368, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T15:42:27.936193+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (369, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T15:50:15.734495+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (370, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T15:50:32.683253+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (604, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-05T01:31:37.362953+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (371, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T15:58:40.434656+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (372, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T19:08:49.302354+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (373, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T19:17:23.522147+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (374, NULL, 'V00000000', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-24T19:43:06.749335+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (375, NULL, '30713670', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-24T19:44:12.06994+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (376, 2, '9663439', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cuenta bloqueada', '2026-06-24T19:45:34.975566+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (377, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T19:47:17.17488+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (378, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Cierre de sesión manual', '2026-06-24T19:47:27.633773+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (379, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T19:47:31.875534+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (380, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T19:47:35.170481+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (381, 1, NULL, 'CREATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Creación de nuevo usuario: LEOVIC ALVARADO (CI: 30713670, Rol: 1)', '2026-06-24T19:49:29.004332+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (382, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T19:55:39.811066+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (383, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T20:03:33.950486+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (384, 10, '30713670', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 1/3', '2026-06-24T20:04:37.489669+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (385, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T20:04:55.602699+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (386, 1, NULL, 'RESET_PASSWORD', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Reset de clave para usuario ID: 10 (LEOVIC ALVARADO)', '2026-06-24T20:05:11.714232+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (387, 1, NULL, 'UPDATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Actualización de usuario ID: 10. Cambios: {"id":10,"name":"LEOVIC","surname":"ALVARADO","email":"LEOVICALVARADO@GMAIL.COM","role":1,"status":1}', '2026-06-24T20:06:56.911363+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (388, 1, NULL, 'RESET_PASSWORD', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Reset de clave para usuario ID: 10 (LEOVIC ALVARADO)', '2026-06-24T20:07:10.615642+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (389, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T20:07:44.449667+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (390, 10, '30713670', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Intento fallido 2/3', '2026-06-24T20:08:28.651257+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (391, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T20:08:43.274264+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (392, 1, NULL, 'UPDATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Actualización de usuario ID: 10. Cambios: {"id":10,"name":"LEOVIC","surname":"ALVARADO","email":"LEOVICALVARADO@GMAIL.COM","role":4,"status":1}', '2026-06-24T20:09:01.883953+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (393, 1, NULL, 'RESET_PASSWORD', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Reset de clave para usuario ID: 10 (LEOVIC ALVARADO)', '2026-06-24T20:15:22.780715+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (394, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T20:17:04.307816+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (395, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T20:17:13.958575+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (396, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T20:24:57.163137+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (397, 1, NULL, 'UPDATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Actualización de usuario ID: 10. Cambios: {"id":10,"name":"LEOVIC","surname":"ALVARADO","email":"LEOVICALVARADO@GMAIL.COM","role":1,"status":1}', '2026-06-24T20:25:57.581553+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (398, 1, NULL, 'RESET_PASSWORD', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Reset de clave para usuario ID: 10 (LEOVIC ALVARADO)', '2026-06-24T20:26:07.588726+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (399, 1, NULL, 'UPDATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Actualización de usuario ID: 10. Cambios: {"id":10,"name":"LEOVIC","surname":"ALVARADO","email":"LEOVICALVARADO@GMAIL.COM","role":4,"status":1}', '2026-06-24T20:26:55.357661+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (400, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T20:28:23.358746+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (401, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T20:49:40.726327+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (402, 1, NULL, 'RESET_PASSWORD', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Reset de clave para usuario ID: 10 (LEOVIC ALVARADO)', '2026-06-24T20:49:58.685617+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (403, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T20:54:17.356105+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (404, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T21:04:57.494471+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (405, 10, '30713670', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T21:05:13.191974+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (406, 10, '30713670', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T21:05:27.432889+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (407, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T21:06:04.145628+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (408, 1, NULL, 'UPDATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Actualización de usuario ID: 10. Cambios: {"id":10,"name":"LEOVIC","surname":"ALVARADO","email":"LEOVICALVARADO@GMAIL.COM","role":1,"status":1}', '2026-06-24T21:06:17.723491+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (409, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T21:21:28.08501+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (410, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T21:25:04.068184+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (411, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T22:02:00.904501+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (412, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T22:54:53.671879+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (413, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-24T23:34:14.43377+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (414, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-24T23:34:40.268153+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (415, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-24T23:55:14.190237+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (416, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-25T00:01:14.177182+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (417, NULL, '29847715', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Usuario no encontrado', '2026-06-25T03:14:50.325278+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (418, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-25T12:15:24.850206+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (419, 1, '', 'PROFILE_UPDATE', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cambios realizados: Teléfono: null -> 04125515921', '2026-06-25T12:34:48.693188+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (420, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-25T12:44:00.586913+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (421, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-25T13:19:59.671974+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (422, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-25T15:51:20.716908+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (423, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-25T15:55:21.020209+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (424, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-25T21:03:28.277295+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (425, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-25T22:29:47.486473+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (426, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-26T00:15:23.600264+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (427, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-26T00:37:48.014308+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (428, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-26T01:44:32.681548+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (429, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-26T02:00:48.185822+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (430, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-26T02:29:12.293165+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (431, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-26T02:46:29.89442+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (432, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Inicio de sesión exitoso', '2026-06-26T11:49:10.464218+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (433, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-26T12:31:55.133396+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (434, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-26T12:48:28.952381+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (435, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-26T13:08:41.346164+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (436, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-26T13:34:03.076515+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (437, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-26T13:56:56.849467+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (438, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-26T14:31:57.308142+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (439, 7, 'V-TESTADM', 'LOGIN_SUCCESS', '::ffff:127.0.0.1', '', 'Inicio de sesión exitoso', '2026-06-26T19:41:03.210275+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (440, 7, 'V-TESTADM', 'LOGIN_SUCCESS', '::ffff:127.0.0.1', '', 'Inicio de sesión exitoso', '2026-06-26T19:41:20.968763+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (441, 7, 'V-TESTADM', 'LOGIN_SUCCESS', '::ffff:127.0.0.1', '', 'Inicio de sesión exitoso', '2026-06-26T19:43:32.798612+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (442, 7, 'V-TESTADM', 'LOGIN_SUCCESS', '::ffff:127.0.0.1', '', 'Inicio de sesión exitoso', '2026-06-26T19:43:45.274593+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (443, 7, 'V-TESTADM', 'LOGIN_SUCCESS', '::ffff:127.0.0.1', '', 'Inicio de sesión exitoso', '2026-06-26T19:45:08.22756+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (446, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-26T19:49:37.638702+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (447, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-26T20:15:27.646988+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (448, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-26T21:07:08.222692+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (449, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-26T21:50:57.76367+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (450, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-26T21:53:10.664171+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (451, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-27T21:20:35.892858+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (452, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-27T21:41:04.910466+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (453, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-27T21:56:00.686714+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (454, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-27T22:42:55.248843+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (455, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-27T22:51:35.213883+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (456, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-27T23:05:59.902743+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (457, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-27T23:36:47.528438+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (458, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-27T23:59:57.283288+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (459, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-28T01:25:10.802674+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (460, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-28T01:45:57.025661+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (461, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-28T01:53:56.937397+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (462, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-28T21:28:59.283982+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (463, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-28T21:33:50.584178+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (464, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-28T21:50:35.962621+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (465, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-28T21:50:58.292168+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (466, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-28T21:51:20.002685+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (467, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-28T21:56:03.751665+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (468, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-28T22:08:25.636179+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (469, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-28T22:12:26.855724+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (470, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-28T22:12:56.383132+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (471, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-28T22:15:07.329613+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (472, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-28T22:35:19.906137+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (473, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-28T23:06:19.39439+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (474, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-28T23:07:03.048054+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (475, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-29T00:26:02.344639+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (476, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-29T00:58:11.892452+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (477, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-29T01:50:55.212633+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (478, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-29T01:51:54.439108+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (479, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-06-29T02:09:55.199118+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (480, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-29T02:12:09.126933+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (481, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-29T15:07:19.765137+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (482, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-29T15:13:43.217501+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (483, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-29T15:34:23.731927+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (484, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-29T23:40:04.472236+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (485, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-29T23:41:22.66099+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (486, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-30T00:01:49.705668+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (487, NULL, 'V31114449', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-30T00:48:24.327354+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (488, NULL, 'V31114449', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-06-30T00:48:29.728806+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (489, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-30T00:53:37.765034+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (490, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-30T00:59:38.730016+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (491, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-30T01:00:29.081884+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (492, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-30T01:14:09.954776+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (493, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-30T01:36:06.620375+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (494, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-30T01:57:00.727986+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (495, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-30T02:29:58.699399+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (496, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-30T18:10:22.828334+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (497, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-30T18:31:13.473538+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (498, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-30T23:20:03.633874+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (499, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-06-30T23:40:17.291605+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (500, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-06-30T23:40:24.945665+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (501, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-01T00:00:22.028989+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (502, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T00:02:03.29791+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (503, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-01T00:37:45.171259+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (504, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T00:38:12.542526+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (505, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-01T00:42:59.743504+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (506, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T00:43:00.611406+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (507, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T00:44:15.934552+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (508, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-01T01:20:18.841347+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (509, 1, NULL, 'UPDATE_USER', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Actualización de usuario ID: 3. Cambios: {"id":3,"name":"ALBANY","surname":"MARTINEZ","email":"ALBANYUNIVERSIDAD@GMAIL.COM","role":3,"status":1}', '2026-07-01T01:26:10.862221+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (510, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T01:27:15.274376+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (511, 1, NULL, 'RESET_PASSWORD', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Reset de clave para usuario ID: 3 (ALBANY MARTINEZ)', '2026-07-01T01:28:02.681321+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (512, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-01T01:29:59.513108+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (513, NULL, 'V29968304', 'LOGIN_FAILED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Usuario no encontrado', '2026-07-01T01:30:21.290044+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (514, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T01:33:10.665805+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (515, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-01T01:34:30.596841+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (516, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T01:36:34.929081+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (517, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T01:48:01.896379+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (518, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-01T14:21:17.963133+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (519, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T14:30:09.34665+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (520, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T14:37:44.374122+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (521, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T14:40:07.735013+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (522, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-01T14:41:43.407521+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (523, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T14:42:26.277825+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (524, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T14:44:21.59092+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (525, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T14:59:07.355432+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (526, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-01T15:10:35.187516+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (527, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T15:22:11.084694+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (528, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T15:24:25.837678+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (529, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-01T15:43:46.962746+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (530, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-01T15:47:47.492523+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (531, 9, '26940010', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-01T23:28:25.075721+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (532, 9, '26940010', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-01T23:28:54.471182+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (533, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-02T12:10:31.549301+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (534, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-02T12:11:34.525523+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (535, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-02T12:18:55.099249+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (536, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-02T12:31:16.508765+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (537, 9, '26940010', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-02T13:15:49.381887+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (538, 9, '26940010', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-02T13:36:25.340232+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (539, 9, '26940010', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-02T14:18:25.529125+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (540, 9, '26940010', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-02T14:39:26.044945+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (541, 9, '26940010', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-02T14:59:29.097351+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (542, 9, '26940010', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-02T15:44:14.518565+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (543, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-02T19:10:45.410981+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (544, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-02T19:12:37.168537+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (545, 7, 'V-TESTADM', 'LOGIN_SUCCESS', '::ffff:127.0.0.1', '', 'Inicio de sesión exitoso', '2026-07-02T19:31:31.719551+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (546, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-02T19:38:45.374449+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (547, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-02T20:01:17.063995+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (548, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-02T20:02:48.905069+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (549, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-02T22:25:39.701356+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (550, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-02T22:41:56.008343+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (551, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T00:22:12.414683+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (552, 16, 'V-12874046', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-03T00:41:05.94471+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (553, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-03T01:00:13.843079+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (554, 17, 'V-30100001', 'LOGIN_FAILED', '127.0.0.1', 'curl/8.20.0', 'Intento fallido 1/4', '2026-07-03T01:05:47.046025+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (555, 16, 'V-12874046', 'LOGIN_FAILED', '127.0.0.1', 'curl/8.20.0', 'Intento fallido 1/4', '2026-07-03T01:06:12.226899+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (556, 17, 'V-30100001', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-03T01:07:13.379236+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (557, 17, 'V-30100001', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-03T01:07:23.874596+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (558, 17, 'V-30100001', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-03T01:09:46.860143+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (559, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-03T01:20:20.076785+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (560, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-03T01:25:57.688963+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (561, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-03T01:26:07.283143+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (562, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-03T01:39:55.373677+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (563, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T01:50:59.306257+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (564, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-03T02:11:34.929286+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (565, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T15:23:08.801987+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (566, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-03T15:43:59.908033+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (567, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-03T15:49:59.473632+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (568, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T16:01:13.276479+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (569, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-03T17:09:00.978288+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (570, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T17:28:55.254417+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (571, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-03T17:51:59.716762+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (572, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T18:01:17.930831+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (573, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T18:28:34.830218+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (574, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T18:31:46.299704+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (575, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-03T18:51:50.624911+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (576, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-03T18:52:26.321333+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (577, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T19:26:34.873543+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (578, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T19:26:58.621468+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (579, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-03T19:37:52.925387+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (580, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-03T19:51:00.631489+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (581, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T19:51:10.083992+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (582, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T20:37:09.041499+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (583, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T20:37:13.784184+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (584, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Mobile Safari/537.36', 'Sesión expirada por inactividad', '2026-07-03T22:10:05.001057+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (585, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-03T23:36:55.524891+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (586, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-04T00:24:50.416606+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (587, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-04T00:56:10.185844+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (588, 1, 'V12345678', 'SESSION_EXPIRED', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Sesión expirada por inactividad', '2026-07-04T01:16:29.996316+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (589, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-04T01:21:26.395308+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (590, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-04T01:21:34.627052+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (591, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-04T01:32:01.778984+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (592, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-04T01:37:48.416587+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (593, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-04T01:45:53.379629+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (594, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-04T02:39:17.662788+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (595, 5, '31114449', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-04T23:11:18.459228+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (596, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'curl/8.20.0', 'Inicio de sesión exitoso', '2026-07-04T23:19:32.562962+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (597, 16, 'V-12874046', 'LOGIN_FAILED', '127.0.0.1', 'curl/8.20.0', 'Intento fallido 2/4', '2026-07-04T23:20:33.141981+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (598, 16, 'V-12874046', 'LOGIN_FAILED', '127.0.0.1', 'curl/8.20.0', 'Intento fallido 3/4', '2026-07-04T23:21:14.437901+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (605, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-05T02:17:48.715202+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (606, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-05T02:21:59.711549+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (607, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-05T02:38:16.941707+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (608, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-05T02:59:58.02801+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (609, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-05T20:46:01.98157+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (610, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-05T21:16:56.306954+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (611, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-05T21:24:30.744521+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (612, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-05T21:40:56.90908+00:00');
-INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (613, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-05T21:56:54.348169+00:00');
--- --------------------------------------------------------
--- Tabla: t_career (7 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRADE", "CAREER_ABBREVIATION", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "CAREER_TYPE", "SEMESTER") VALUES (3, 'INGENIERIA AGRONOMICA', '2016', 16, 'ING-AGRONO', '2026-06-16T12:28:03.968', 1, '2026-06-16T12:28:03.968', 1, '2026-06-16T12:28:03.968', 1, '2026-06-16T12:28:03.968', 1, 'LARGA', '9');
 INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRADE", "CAREER_ABBREVIATION", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "CAREER_TYPE", "SEMESTER") VALUES (4, 'TECNICO SUPERIOR EN ENFERMERÍA', '0316', 16, 'TSU-ENF', '2026-06-16T12:28:37.376', 1, '2026-06-16T12:28:37.376', 1, '2026-06-16T12:28:37.376', 1, '2026-06-16T12:28:37.376', 1, 'CORTA', '8');
@@ -1939,6 +2008,7 @@ INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRAD
 INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRADE", "CAREER_ABBREVIATION", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "CAREER_TYPE", "SEMESTER") VALUES (1, 'CARRERA TESTS', '1234', 16, 'CAREERTEST', '2026-06-16T03:54:07.398', 1, '2026-06-16T03:54:07.398', 9, '2026-07-02T13:30:35.42', 9, '2026-07-02T13:36:49.338', 1, 'CORTA', '5');
 INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRADE", "CAREER_ABBREVIATION", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "CAREER_TYPE", "SEMESTER") VALUES (7, 'REPUESTOS AUTOMOTRIZ', '1013', 15, 'IRA', '2026-07-02T15:05:45.738', 9, '2026-07-02T15:05:45.738', 9, '2026-07-02T15:05:45.738', 9, '2026-07-02T15:05:45.738', 1, 'LARGA', '8');
 INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRADE", "CAREER_ABBREVIATION", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "CAREER_TYPE", "SEMESTER") VALUES (5, 'CARRERA DE PRUEBA', '12348', 16, 'CAREER-P', '2026-06-22T01:42:06.519', 1, '2026-07-03T02:12:11.594', 1, '2026-06-22T01:42:06.519', 1, '2026-06-22T01:42:06.519', 1, 'LARGA', '8');
+
 -- --------------------------------------------------------
 -- Tabla: t_career_internship_type (17 registros)
 -- --------------------------------------------------------
@@ -1959,595 +2029,9 @@ INSERT INTO "t_career_internship_type" ("ID_CAREER_INTERNSHIP_TYPE_ID", "CAREER_
 INSERT INTO "t_career_internship_type" ("ID_CAREER_INTERNSHIP_TYPE_ID", "CAREER_ID", "INTERNSHIP_TYPE_ID") VALUES (20, 6, 3);
 INSERT INTO "t_career_internship_type" ("ID_CAREER_INTERNSHIP_TYPE_ID", "CAREER_ID", "INTERNSHIP_TYPE_ID") VALUES (21, 7, 1);
 INSERT INTO "t_career_internship_type" ("ID_CAREER_INTERNSHIP_TYPE_ID", "CAREER_ID", "INTERNSHIP_TYPE_ID") VALUES (22, 5, 1);
+
 -- --------------------------------------------------------
 -- Tabla: t_change_log (584 registros)
--- --------------------------------------------------------
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (294, '2026-06-23T13:21:57.568', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (297, '2026-06-23T13:21:58.477', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (300, '2026-06-23T13:27:43.897', 18, 79, 1, 1, 'SI', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (306, '2026-06-23T15:20:36.121', 20, 91, 1, 1, 'EMPRESSA OTRA V', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (309, '2026-06-23T15:20:37.05', 20, 95, 1, 1, 'LOS LLANOS', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (312, '2026-06-23T15:20:38.688', 20, 98, 1, 1, 'PRIVADA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (189, '2026-06-20T02:08:05.034', 22, 112, 1, 7, 'PTD-TEST-1781921284459', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (190, '2026-06-20T02:08:05.252', 22, 110, 1, 7, '2026-03-01', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (193, '2026-06-20T02:08:05.806', 22, 114, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (11, '2026-06-16T03:43:13.73', 22, 112, 1, 1, '1-2026', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (12, '2026-06-16T03:43:14.036', 22, 110, 1, 1, '2026-01-05', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (13, '2026-06-16T03:43:14.344', 22, 111, 1, 1, '2026-05-02', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (14, '2026-06-16T03:43:14.648', 22, 113, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (15, '2026-06-16T03:43:14.957', 22, 114, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (16, '2026-06-16T03:43:15.264', 22, 115, 1, 1, '1-2026', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (17, '2026-06-16T03:43:34.616', 22, 112, 1, 1, '2-2026', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (18, '2026-06-16T03:43:34.922', 22, 110, 1, 1, '2026-06-22', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (19, '2026-06-16T03:43:35.23', 22, 111, 1, 1, '2026-10-16', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (20, '2026-06-16T03:43:35.498', 22, 113, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (21, '2026-06-16T03:43:35.801', 22, 114, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (22, '2026-06-16T03:43:36.151', 22, 115, 1, 1, '2-2026', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (313, '2026-06-23T15:20:38.928', 20, 99, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (197, '2026-06-20T02:09:33.645', 22, 110, 1, 7, '2026-03-01', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (198, '2026-06-20T02:09:33.847', 22, 111, 1, 7, '2026-07-31', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (200, '2026-06-20T02:09:34.192', 22, 114, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (201, '2026-06-20T02:09:34.401', 22, 115, 1, 7, 'P1373389', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (317, '2026-06-23T15:24:36.461', 20, 93, 1, 1, '0255-4856418', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (320, '2026-06-23T15:24:37.28', 20, 97, 1, 1, 'ACARIGUA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (207, '2026-06-20T22:20:50.801', 22, 110, 1, 1, '2027-01-01', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (209, '2026-06-20T22:20:51.002', 22, 113, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (32, '2026-06-16T13:46:11.89', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (33, '2026-06-16T13:46:12.001', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (34, '2026-06-16T13:46:12.111', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (35, '2026-06-16T13:46:12.204', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (211, '2026-06-20T22:20:51.246', 22, 115, 1, 1, '1-2027', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (328, '2026-06-23T23:14:06.946', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (39, '2026-06-16T13:59:06.35', 18, 77, 1, 2, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (40, '2026-06-16T13:59:06.472', 18, 78, 1, 2, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (41, '2026-06-16T13:59:06.577', 18, 79, 1, 2, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (42, '2026-06-16T13:59:06.668', 18, 80, 1, 2, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (331, '2026-06-23T23:14:07.513', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (221, '2026-06-21T16:24:46.051', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (223, '2026-06-21T16:24:47.277', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (342, '2026-06-24T00:27:25.393', 20, 92, 1, 1, 'EDDDSDSD', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (49, '2026-06-16T14:18:55.227', 18, 77, 1, 2, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (50, '2026-06-16T14:18:55.323', 18, 78, 1, 2, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (51, '2026-06-16T14:18:55.417', 18, 79, 1, 2, 'SI', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (52, '2026-06-16T14:18:55.521', 18, 80, 1, 2, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (229, '2026-06-22T01:33:54.279', 22, 112, 1, 1, '2-2027', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (231, '2026-06-22T01:33:54.963', 22, 111, 1, 1, '2027-08-16', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (233, '2026-06-22T01:33:55.565', 22, 114, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (56, '2026-06-16T14:26:36.919', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (57, '2026-06-16T14:26:37.036', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (58, '2026-06-16T14:26:37.172', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (59, '2026-06-16T14:26:37.279', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (234, '2026-06-22T01:33:55.874', 22, 115, 1, 1, '2-2027', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (61, '2026-06-16T14:28:48.627', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (62, '2026-06-16T14:28:48.73', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (63, '2026-06-16T14:28:48.865', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (64, '2026-06-16T14:28:48.975', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (236, '2026-06-22T01:46:37.425', 22, 110, 1, 1, '2028-01-01', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (238, '2026-06-22T01:46:37.834', 22, 113, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (241, '2026-06-22T01:55:31.451', 22, 112, 1, 1, '2-2028', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (68, '2026-06-16T14:43:22.326', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (69, '2026-06-16T14:43:22.47', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (70, '2026-06-16T14:43:22.578', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (71, '2026-06-16T14:43:22.686', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (243, '2026-06-22T01:55:31.848', 22, 111, 1, 1, '2028-08-13', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (73, '2026-06-16T14:46:44.171', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (74, '2026-06-16T14:46:44.298', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (75, '2026-06-16T14:46:44.404', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (76, '2026-06-16T14:46:44.499', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (245, '2026-06-22T01:55:32.255', 22, 114, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (246, '2026-06-22T01:55:32.463', 22, 115, 1, 1, '2-2028', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (79, '2026-06-16T14:53:37.337', 18, 77, 1, 1, 'MIL', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (80, '2026-06-16T14:53:37.447', 18, 78, 1, 1, 'SUBTENIENTE', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (81, '2026-06-16T14:53:37.557', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (82, '2026-06-16T14:53:37.649', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (83, '2026-06-16T14:56:06.348', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (84, '2026-06-16T14:56:06.452', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (85, '2026-06-16T14:56:06.563', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (86, '2026-06-16T14:56:06.671', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (87, '2026-06-16T14:57:05.6', 18, 77, 1, 1, 'MIL', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (88, '2026-06-16T14:57:05.722', 18, 78, 1, 1, 'SUBTENIENTE', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (89, '2026-06-16T14:57:05.9', 18, 79, 1, 1, 'SI', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (248, '2026-06-22T02:12:16.7', 18, 78, 1, 1, 'TENIENTE', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (344, '2026-06-24T00:27:25.823', 20, 98, 1, 1, 'PRIVADA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (90, '2026-06-16T14:57:06.1', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (295, '2026-06-23T13:21:57.967', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (298, '2026-06-23T13:27:43.67', 18, 77, 1, 1, 'MIL', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (301, '2026-06-23T13:27:44.02', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (94, '2026-06-16T15:05:49.712', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (95, '2026-06-16T15:05:49.866', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (96, '2026-06-16T15:05:49.964', 18, 79, 1, 1, 'SI', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (97, '2026-06-16T15:05:50.074', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (98, '2026-06-16T15:09:22.156', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (99, '2026-06-16T15:09:22.293', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (100, '2026-06-16T15:09:22.395', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (101, '2026-06-16T15:09:22.508', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (304, '2026-06-23T15:03:03.584', 19, 89, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (307, '2026-06-23T15:20:36.397', 20, 92, 1, 1, 'SDFDFMDFD', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (104, '2026-06-16T15:17:21.448', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (105, '2026-06-16T15:17:21.594', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (106, '2026-06-16T15:17:21.71', 18, 79, 1, 1, 'SI', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (107, '2026-06-16T15:17:21.828', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (310, '2026-06-23T15:20:37.459', 20, 96, 1, 1, 'PORTUGUESA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (109, '2026-06-16T15:25:40.244', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (110, '2026-06-16T15:25:40.383', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (111, '2026-06-16T15:25:40.484', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (112, '2026-06-16T15:25:40.582', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (314, '2026-06-23T15:20:39.325', 20, 100, 1, 1, 'G-456151515', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (114, '2026-06-16T15:36:32.824', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (115, '2026-06-16T15:36:32.952', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (116, '2026-06-16T15:36:33.077', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (117, '2026-06-16T15:36:33.204', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (191, '2026-06-20T02:08:05.466', 22, 111, 1, 7, '2026-07-31', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (192, '2026-06-20T02:08:05.682', 22, 113, 1, 7, '2', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (120, '2026-06-16T15:55:25.604', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (121, '2026-06-16T15:55:25.757', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (122, '2026-06-16T15:55:25.869', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (123, '2026-06-16T15:55:25.982', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (194, '2026-06-20T02:08:06.016', 22, 115, 1, 7, 'P1284877', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (125, '2026-06-16T16:03:14.575', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (126, '2026-06-16T16:03:14.696', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (127, '2026-06-16T16:03:14.847', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (128, '2026-06-16T16:03:14.962', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (129, '2026-06-16T16:06:43.263', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (130, '2026-06-16T16:06:43.414', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (131, '2026-06-16T16:06:43.522', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (132, '2026-06-16T16:06:43.621', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (196, '2026-06-20T02:09:33.514', 22, 112, 1, 7, 'PTD-TEST-1781921372982', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (199, '2026-06-20T02:09:34.065', 22, 113, 1, 7, '2', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (135, '2026-06-16T16:10:49.425', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (136, '2026-06-16T16:10:49.556', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (137, '2026-06-16T16:10:49.668', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (138, '2026-06-16T16:10:49.779', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (139, '2026-06-16T16:16:13.5', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (140, '2026-06-16T16:16:13.644', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (141, '2026-06-16T16:16:13.763', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (142, '2026-06-16T16:16:13.862', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (315, '2026-06-23T15:24:35.85', 20, 91, 1, 1, 'EMPRESA DE PRUEBA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (144, '2026-06-16T16:22:06.273', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (145, '2026-06-16T16:22:06.402', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (146, '2026-06-16T16:22:06.53', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (147, '2026-06-16T16:22:06.73', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (318, '2026-06-23T15:24:36.693', 20, 95, 1, 1, 'LOS LLANOS', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (149, '2026-06-16T16:27:44.411', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (150, '2026-06-16T16:27:44.551', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (151, '2026-06-16T16:27:44.662', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (152, '2026-06-16T16:27:44.757', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (206, '2026-06-20T22:20:50.698', 22, 112, 1, 1, '1-2027', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (154, '2026-06-16T16:31:27.718', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (155, '2026-06-16T16:31:27.929', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (156, '2026-06-16T16:31:28.071', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (157, '2026-06-16T16:31:28.169', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (208, '2026-06-20T22:20:50.905', 22, 111, 1, 1, '2027-04-23', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (210, '2026-06-20T22:20:51.116', 22, 114, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (321, '2026-06-23T15:24:37.482', 20, 98, 1, 1, 'MIXTA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (322, '2026-06-23T15:24:38.208', 20, 99, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (329, '2026-06-23T23:14:07.178', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (220, '2026-06-21T16:24:45.451', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (222, '2026-06-21T16:24:46.675', 18, 79, 1, 1, 'SI', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (230, '2026-06-22T01:33:54.676', 22, 110, 1, 1, '2027-04-26', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (232, '2026-06-22T01:33:55.261', 22, 113, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (235, '2026-06-22T01:46:37.12', 22, 112, 1, 1, '1-2028', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (237, '2026-06-22T01:46:37.627', 22, 111, 1, 1, '2028-04-22', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (239, '2026-06-22T01:46:37.968', 22, 114, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (240, '2026-06-22T01:46:38.177', 22, 115, 1, 1, '1-2028', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (242, '2026-06-22T01:55:31.645', 22, 110, 1, 1, '2028-04-23', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (244, '2026-06-22T01:55:32.051', 22, 113, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (247, '2026-06-22T02:12:16.324', 18, 77, 1, 1, 'MIL', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (249, '2026-06-22T02:12:17.004', 18, 79, 1, 1, 'SI', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (250, '2026-06-22T02:12:17.318', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (296, '2026-06-23T13:21:58.171', 18, 79, 1, 1, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (299, '2026-06-23T13:27:43.797', 18, 78, 1, 1, 'TENIENTE', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (308, '2026-06-23T15:20:36.742', 20, 93, 1, 1, '0412-1234121', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (311, '2026-06-23T15:20:37.958', 20, 97, 1, 1, 'ACARIGUA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (316, '2026-06-23T15:24:36.258', 20, 92, 1, 1, 'SDFDFMDFD', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (319, '2026-06-23T15:24:36.871', 20, 96, 1, 1, 'PORTUGUESA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (323, '2026-06-23T15:24:38.408', 20, 100, 1, 1, 'G-342123432', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (330, '2026-06-23T23:14:07.305', 18, 79, 1, 1, 'SI', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (341, '2026-06-24T00:27:25.188', 20, 91, 1, 1, 'EMPRESA DE PRUEBASSS', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (267, '2026-06-23T03:25:01.806', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (268, '2026-06-23T03:25:02.11', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (269, '2026-06-23T03:25:02.428', 18, 79, 1, 1, 'SI', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (270, '2026-06-23T03:25:02.723', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (343, '2026-06-24T00:27:25.619', 20, 93, 1, 1, '0255-3432341', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (345, '2026-06-24T00:27:26.048', 20, 99, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (346, '2026-06-24T00:27:26.249', 20, 100, 1, 1, 'G-234576543', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (347, '2026-06-24T00:34:01.444', 18, 77, 1, 9, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (348, '2026-06-24T00:34:01.57', 18, 78, 1, 9, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (349, '2026-06-24T00:34:01.676', 18, 79, 1, 9, 'NO', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (350, '2026-06-24T00:34:01.783', 18, 80, 1, 9, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (351, '2026-06-24T00:43:48.143', 19, 89, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (352, '2026-06-24T00:44:17.839', 19, 89, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (354, '2026-06-24T00:56:59.014', 18, 77, 1, 1, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (355, '2026-06-24T00:56:59.226', 18, 78, 1, 1, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (356, '2026-06-24T00:56:59.435', 18, 79, 1, 1, 'SI', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (357, '2026-06-24T00:56:59.653', 18, 80, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (358, '2026-06-24T00:57:20.483', 18, 80, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (366, '2026-06-24T14:16:16.573', 23, 122, 2, 1, '17', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (367, '2026-06-24T14:16:16.858', 23, 121, 2, 1, '', '5', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (368, '2026-06-24T14:16:17.069', 23, 129, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (369, '2026-06-24T14:16:17.284', 23, 130, 2, 1, '2', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (370, '2026-06-24T14:44:57.574', 20, 91, 1, 1, 'EMPRESA DE PRUEBA GVG', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (371, '2026-06-24T14:44:57.844', 20, 92, 1, 1, 'DFGHJK', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (372, '2026-06-24T14:44:58.081', 20, 93, 1, 1, '0412-4567890', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (373, '2026-06-24T14:44:58.704', 20, 98, 1, 1, 'MIXTA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (374, '2026-06-24T14:44:59.071', 20, 99, 1, 1, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (375, '2026-06-24T14:44:59.308', 20, 100, 1, 1, 'G-851881818', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (393, '2026-06-25T13:21:06.131', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (394, '2026-06-25T13:21:06.332', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (395, '2026-06-25T13:21:06.533', 23, 124, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (396, '2026-06-25T13:21:06.737', 23, 126, 2, 1, '', 'obv', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (400, '2026-06-26T00:17:16.946', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (401, '2026-06-26T00:17:17.461', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (402, '2026-06-26T00:17:17.7', 23, 124, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (403, '2026-06-26T00:17:17.916', 23, 126, 2, 1, '', 'obv', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (406, '2026-06-26T02:30:50.973', 22, 113, 2, 1, '3', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (407, '2026-06-26T02:31:00.495', 22, 113, 2, 1, '3', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (408, '2026-06-26T02:31:09.58', 22, 113, 2, 1, '2', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (411, '2026-06-26T12:33:30.248', 23, 122, 2, 1, '17', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (412, '2026-06-26T12:33:30.384', 23, 125, 2, 1, '4', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (413, '2026-06-26T12:33:30.554', 23, 121, 2, 1, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (414, '2026-06-26T12:33:30.768', 23, 129, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (415, '2026-06-26T12:33:30.954', 23, 130, 2, 1, '2', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (416, '2026-06-26T12:33:31.164', 23, 128, 2, 1, '1', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (417, '2026-06-26T12:33:31.271', 23, 126, 2, 1, '', 'SIN OBSERVACIONES', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (419, '2026-06-26T12:52:10.185', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (420, '2026-06-26T12:52:10.383', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (421, '2026-06-26T12:52:10.576', 23, 124, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (422, '2026-06-26T12:52:10.694', 23, 126, 2, 1, '', 'SIN OBSERVACIONES', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (425, '2026-06-26T19:41:28.768', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (426, '2026-06-26T19:41:29.613', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (427, '2026-06-26T19:41:30.953', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (428, '2026-06-26T19:41:35.244', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (429, '2026-06-26T19:41:35.909', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (430, '2026-06-26T19:41:36.353', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (431, '2026-06-26T19:41:47.138', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (432, '2026-06-26T19:41:47.499', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (433, '2026-06-26T19:41:47.708', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (434, '2026-06-26T19:41:47.868', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (435, '2026-06-26T19:41:50.64', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (436, '2026-06-26T19:41:50.903', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (437, '2026-06-26T19:41:51.325', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (438, '2026-06-26T19:41:51.737', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (439, '2026-06-26T19:41:58.689', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (440, '2026-06-26T19:41:59.64', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (441, '2026-06-26T19:42:00.195', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (442, '2026-06-26T19:42:04.469', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (443, '2026-06-26T19:42:05.174', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (444, '2026-06-26T19:42:05.536', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (445, '2026-06-26T19:42:05.981', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (446, '2026-06-26T19:42:09.642', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (447, '2026-06-26T19:42:09.892', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (448, '2026-06-26T19:42:10.298', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (449, '2026-06-26T19:42:32.466', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (450, '2026-06-26T19:42:32.98', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (451, '2026-06-26T19:42:33.201', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (452, '2026-06-26T19:42:33.568', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (455, '2026-06-26T19:43:49.176', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (456, '2026-06-26T19:43:49.325', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (457, '2026-06-26T19:43:49.493', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (458, '2026-06-26T19:43:53.56', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (459, '2026-06-26T19:43:53.848', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (460, '2026-06-26T19:43:54.204', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (461, '2026-06-26T19:44:03.702', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (462, '2026-06-26T19:44:04.862', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (463, '2026-06-26T19:44:05.276', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (464, '2026-06-26T19:44:05.629', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (465, '2026-06-26T19:44:07.413', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (466, '2026-06-26T19:44:07.964', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (467, '2026-06-26T19:44:08.216', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (468, '2026-06-26T19:44:08.81', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (469, '2026-06-26T19:44:15.933', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (470, '2026-06-26T19:44:16.325', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (471, '2026-06-26T19:44:16.976', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (472, '2026-06-26T19:44:22.635', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (473, '2026-06-26T19:44:23.291', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (474, '2026-06-26T19:44:23.833', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (475, '2026-06-26T19:44:24.56', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (476, '2026-06-26T19:44:27.004', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (477, '2026-06-26T19:44:27.21', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (478, '2026-06-26T19:44:27.413', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (479, '2026-06-26T19:44:33.864', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (480, '2026-06-26T19:44:34.069', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (481, '2026-06-26T19:44:34.192', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (482, '2026-06-26T19:44:34.392', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (483, '2026-06-26T19:44:36.131', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (484, '2026-06-26T19:44:36.326', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (485, '2026-06-26T19:44:36.436', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (486, '2026-06-26T19:44:38.677', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (487, '2026-06-26T19:44:38.882', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (488, '2026-06-26T19:44:39.083', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (489, '2026-06-26T19:44:39.289', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (490, '2026-06-26T19:44:42.258', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (491, '2026-06-26T19:44:42.463', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (492, '2026-06-26T19:44:42.667', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (493, '2026-06-26T19:44:45.739', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (494, '2026-06-26T19:44:45.944', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (495, '2026-06-26T19:44:46.149', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (496, '2026-06-26T19:44:46.354', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (497, '2026-06-26T19:44:48.001', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (498, '2026-06-26T19:44:48.197', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (499, '2026-06-26T19:44:48.404', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (500, '2026-06-26T19:44:49.631', 18, 80, 2, 7, '0', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (501, '2026-06-26T19:44:51.351', 18, 80, 2, 7, '1', '0', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (502, '2026-06-26T19:44:52.737', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (503, '2026-06-26T19:44:52.877', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (504, '2026-06-26T19:44:53.031', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (505, '2026-06-26T19:44:53.182', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (508, '2026-06-26T19:44:54.888', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (509, '2026-06-26T19:44:55.8', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (512, '2026-06-26T19:44:56.231', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (515, '2026-06-26T19:45:09.291', 22, 110, 1, 7, '2026-03-01', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (517, '2026-06-26T19:45:09.7', 22, 113, 1, 7, '2', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (506, '2026-06-26T19:44:54.576', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (510, '2026-06-26T19:44:55.946', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (514, '2026-06-26T19:45:09.088', 22, 112, 1, 7, 'PTD-TEST-1782503108559', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (519, '2026-06-26T19:45:10.109', 22, 115, 1, 7, 'P3108881', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (507, '2026-06-26T19:44:54.727', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (511, '2026-06-26T19:44:56.091', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (516, '2026-06-26T19:45:09.495', 22, 111, 1, 7, '2026-07-31', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (518, '2026-06-26T19:45:09.905', 22, 114, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (522, '2026-06-26T19:46:58.37', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (523, '2026-06-26T19:46:59.146', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (524, '2026-06-26T19:46:59.446', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (525, '2026-06-26T19:47:06.426', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (526, '2026-06-26T19:47:06.81', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (527, '2026-06-26T19:47:07.51', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (528, '2026-06-26T19:47:20.701', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (529, '2026-06-26T19:47:21.44', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (530, '2026-06-26T19:47:21.985', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (531, '2026-06-26T19:47:22.33', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (532, '2026-06-26T19:47:24.734', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (533, '2026-06-26T19:47:25.202', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (534, '2026-06-26T19:47:26.024', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (535, '2026-06-26T19:47:26.718', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (536, '2026-06-26T19:47:36.855', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (537, '2026-06-26T19:47:37.133', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (538, '2026-06-26T19:47:37.497', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (539, '2026-06-26T19:47:41.591', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (540, '2026-06-26T19:47:42.315', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (541, '2026-06-26T19:47:42.463', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (542, '2026-06-26T19:47:43.055', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (543, '2026-06-26T19:47:47.053', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (544, '2026-06-26T19:47:47.369', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (545, '2026-06-26T19:47:47.534', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (546, '2026-06-26T19:47:59.313', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (547, '2026-06-26T19:47:59.739', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (548, '2026-06-26T19:48:00.224', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (549, '2026-06-26T19:48:00.768', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (550, '2026-06-26T19:48:05.178', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (551, '2026-06-26T19:48:05.741', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (552, '2026-06-26T19:48:07.19', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (553, '2026-06-26T19:48:10.158', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (554, '2026-06-26T19:48:10.361', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (555, '2026-06-26T19:48:10.55', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (556, '2026-06-26T19:48:10.748', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (557, '2026-06-26T19:48:13.261', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (558, '2026-06-26T19:48:13.45', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (559, '2026-06-26T19:48:13.627', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (560, '2026-06-26T19:48:16.618', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (561, '2026-06-26T19:48:16.839', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (562, '2026-06-26T19:48:17.084', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (563, '2026-06-26T19:48:17.315', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (564, '2026-06-26T19:48:19.363', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (565, '2026-06-26T19:48:19.584', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (566, '2026-06-26T19:48:19.885', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (567, '2026-06-26T19:48:21.644', 18, 80, 2, 7, '0', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (568, '2026-06-26T19:48:25.053', 18, 80, 2, 7, '1', '0', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (569, '2026-06-26T19:48:28.234', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (570, '2026-06-26T19:48:28.57', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (571, '2026-06-26T19:48:29.077', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (572, '2026-06-26T19:48:29.271', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (573, '2026-06-26T19:48:31.784', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (574, '2026-06-26T19:48:32.054', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (575, '2026-06-26T19:48:32.352', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (576, '2026-06-26T19:48:33.883', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (577, '2026-06-26T19:48:34.112', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (578, '2026-06-26T19:48:34.388', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (579, '2026-06-26T19:48:34.532', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (584, '2026-06-27T21:59:18.147', 23, 122, 2, 1, '19', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (585, '2026-06-27T21:59:18.262', 23, 125, 2, 1, '5', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (586, '2026-06-27T21:59:18.371', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (587, '2026-06-27T21:59:18.496', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (588, '2026-06-27T21:59:18.605', 23, 124, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (589, '2026-06-27T21:59:18.715', 23, 126, 2, 1, '', 'Solo institucional', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (590, '2026-06-27T21:59:40.078', 23, 122, 2, 1, '19', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (591, '2026-06-27T21:59:40.194', 23, 125, 2, 1, '5', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (592, '2026-06-27T21:59:40.307', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (593, '2026-06-27T21:59:40.421', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (594, '2026-06-27T21:59:40.532', 23, 124, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (595, '2026-06-27T21:59:40.643', 23, 126, 2, 1, '', 'Sin evaluaciones', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (596, '2026-06-27T22:00:00.762', 23, 122, 2, 1, '19', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (597, '2026-06-27T22:00:00.893', 23, 125, 2, 1, '5', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (598, '2026-06-27T22:00:01.037', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (599, '2026-06-27T22:00:01.242', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (600, '2026-06-27T22:00:01.449', 23, 124, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (601, '2026-06-27T22:00:01.65', 23, 126, 2, 1, '', 'Lista para evaluar', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (602, '2026-06-27T22:00:42.874', 18, 80, 2, 1, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (603, '2026-06-27T22:16:43.26', 23, 122, 2, 1, '17', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (604, '2026-06-27T22:16:43.386', 23, 121, 2, 1, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (605, '2026-06-27T22:16:43.502', 23, 129, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (606, '2026-06-27T22:16:43.634', 23, 130, 2, 1, '2', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (611, '2026-06-28T01:27:08.194', 22, 113, 2, 1, '3', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (626, '2026-06-30T00:36:05.195', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (627, '2026-06-30T00:36:05.405', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (628, '2026-06-30T00:36:05.584', 23, 124, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (629, '2026-06-30T00:36:05.786', 23, 126, 2, 1, '', 'obv', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (639, '2026-07-01T00:45:41.58', 22, 114, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (640, '2026-07-01T00:45:52.415', 22, 114, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (657, '2026-07-02T12:20:10.469', 23, 122, 2, 1, '', '17', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (658, '2026-07-02T12:20:10.667', 23, 125, 2, 1, '', '4', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (659, '2026-07-02T12:20:10.804', 23, 121, 2, 1, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (660, '2026-07-02T12:20:10.933', 23, 129, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (661, '2026-07-02T12:20:11.067', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (662, '2026-07-02T12:20:11.201', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (663, '2026-07-02T12:20:11.328', 23, 124, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (664, '2026-07-02T12:20:13.003', 23, 122, 2, 1, '', '17', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (665, '2026-07-02T12:20:13.206', 23, 125, 2, 1, '', '4', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (666, '2026-07-02T12:20:13.363', 23, 121, 2, 1, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (667, '2026-07-02T12:20:13.78', 23, 129, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (668, '2026-07-02T12:20:13.934', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (669, '2026-07-02T12:20:14.092', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (670, '2026-07-02T12:20:14.242', 23, 124, 2, 1, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (671, '2026-07-02T12:20:30.132', 23, 122, 2, 1, '', '17', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (672, '2026-07-02T12:20:30.334', 23, 125, 2, 1, '', '4', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (673, '2026-07-02T12:20:30.436', 23, 121, 2, 1, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (674, '2026-07-02T12:20:30.641', 23, 129, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (675, '2026-07-02T12:20:30.743', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (676, '2026-07-02T12:20:30.948', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (677, '2026-07-02T12:20:31.665', 23, 124, 2, 1, '0', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (679, '2026-07-02T13:20:29.106', 22, 114, 2, 9, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (680, '2026-07-02T13:22:01.396', 22, 114, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (681, '2026-07-02T13:38:41.132', 18, 80, 2, 9, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (682, '2026-07-02T13:39:42.251', 18, 80, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (683, '2026-07-02T13:40:50.878', 19, 89, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (684, '2026-07-02T13:41:15.866', 19, 89, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (685, '2026-07-02T13:41:20.966', 19, 89, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (686, '2026-07-02T13:41:25.971', 19, 89, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (687, '2026-07-02T13:42:23.662', 19, 89, 2, 9, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (688, '2026-07-02T13:42:48.297', 19, 89, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (689, '2026-07-02T13:44:05.497', 20, 99, 2, 9, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (690, '2026-07-02T13:45:05.16', 20, 99, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (691, '2026-07-02T13:51:35.734', 23, 122, 2, 9, '', '17', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (692, '2026-07-02T13:51:35.862', 23, 125, 2, 9, '', '4', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (693, '2026-07-02T13:51:35.973', 23, 121, 2, 9, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (694, '2026-07-02T13:51:36.075', 23, 129, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (695, '2026-07-02T13:51:36.198', 23, 130, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (696, '2026-07-02T13:51:36.314', 23, 128, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (697, '2026-07-02T13:51:36.408', 23, 124, 2, 9, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (698, '2026-07-02T13:51:36.506', 23, 126, 2, 9, '', 'obv', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (699, '2026-07-02T13:52:31.745', 23, 122, 2, 9, '', '17', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (700, '2026-07-02T13:52:31.985', 23, 125, 2, 9, '', '4', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (701, '2026-07-02T13:52:32.114', 23, 121, 2, 9, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (702, '2026-07-02T13:52:32.203', 23, 129, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (703, '2026-07-02T13:52:32.292', 23, 130, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (704, '2026-07-02T13:52:32.384', 23, 128, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (705, '2026-07-02T13:52:32.471', 23, 124, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (706, '2026-07-02T13:52:32.575', 23, 126, 2, 9, '', 'obv', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (707, '2026-07-02T13:52:53.244', 23, 122, 2, 9, '', '19', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (708, '2026-07-02T13:52:53.369', 23, 125, 2, 9, '', '5', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (709, '2026-07-02T13:52:53.477', 23, 121, 2, 9, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (710, '2026-07-02T13:52:53.873', 23, 129, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (711, '2026-07-02T13:52:53.979', 23, 130, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (712, '2026-07-02T13:52:54.069', 23, 128, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (713, '2026-07-02T13:52:54.162', 23, 124, 2, 9, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (714, '2026-07-02T13:52:54.398', 23, 126, 2, 9, '', 'Sin evaluaciones', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (715, '2026-07-02T13:54:18.606', 23, 122, 2, 9, '', '19', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (716, '2026-07-02T13:54:18.719', 23, 125, 2, 9, '', '5', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (717, '2026-07-02T13:54:18.848', 23, 121, 2, 9, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (718, '2026-07-02T13:54:18.956', 23, 129, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (719, '2026-07-02T13:54:19.081', 23, 130, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (720, '2026-07-02T13:54:19.192', 23, 128, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (721, '2026-07-02T13:54:19.295', 23, 124, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (722, '2026-07-02T13:54:19.418', 23, 126, 2, 9, '', 'Sin evaluaciones', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (724, '2026-07-02T14:58:23.042', 23, 122, 2, 9, '', '17', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (725, '2026-07-02T14:58:23.185', 23, 125, 2, 9, '', '4', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (726, '2026-07-02T14:58:23.314', 23, 121, 2, 9, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (727, '2026-07-02T14:58:23.421', 23, 129, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (728, '2026-07-02T14:58:23.524', 23, 130, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (729, '2026-07-02T14:58:23.646', 23, 128, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (730, '2026-07-02T14:58:23.739', 23, 124, 2, 9, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (731, '2026-07-02T14:58:23.857', 23, 126, 2, 9, '', 'obv', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (732, '2026-07-02T14:58:43.224', 23, 122, 2, 9, '', '17', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (733, '2026-07-02T14:58:43.315', 23, 125, 2, 9, '', '4', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (734, '2026-07-02T14:58:43.415', 23, 121, 2, 9, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (735, '2026-07-02T14:58:43.509', 23, 129, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (736, '2026-07-02T14:58:43.611', 23, 130, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (737, '2026-07-02T14:58:43.72', 23, 128, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (738, '2026-07-02T14:58:43.825', 23, 124, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (739, '2026-07-02T14:58:43.918', 23, 126, 2, 9, '', 'obv', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (740, '2026-07-02T14:59:05.447', 23, 122, 2, 9, '', '19', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (741, '2026-07-02T14:59:05.559', 23, 125, 2, 9, '', '5', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (742, '2026-07-02T14:59:05.664', 23, 121, 2, 9, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (743, '2026-07-02T14:59:05.757', 23, 129, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (744, '2026-07-02T14:59:05.885', 23, 130, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (745, '2026-07-02T14:59:06.12', 23, 128, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (746, '2026-07-02T14:59:06.216', 23, 124, 2, 9, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (747, '2026-07-02T14:59:06.484', 23, 126, 2, 9, '', 'Sin evaluaciones', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (748, '2026-07-02T14:59:28.975', 23, 122, 2, 9, '', '19', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (749, '2026-07-02T14:59:29.06', 23, 125, 2, 9, '', '5', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (750, '2026-07-02T14:59:29.187', 23, 121, 2, 9, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (751, '2026-07-02T14:59:29.296', 23, 129, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (752, '2026-07-02T14:59:29.415', 23, 130, 2, 9, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (753, '2026-07-02T14:59:29.532', 23, 128, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (754, '2026-07-02T14:59:29.644', 23, 124, 2, 9, '1', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (755, '2026-07-02T14:59:29.77', 23, 126, 2, 9, '', 'Sin evaluaciones', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (756, '2026-07-02T15:11:53.882', 18, 77, 1, 9, 'CIV', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (757, '2026-07-02T15:11:53.999', 18, 78, 1, 9, 'NO APLICA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (758, '2026-07-02T15:11:54.093', 18, 79, 1, 9, 'SI', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (759, '2026-07-02T15:11:54.184', 18, 80, 1, 9, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (760, '2026-07-02T15:15:22.464', 20, 91, 1, 9, 'JAPON', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (761, '2026-07-02T15:15:22.609', 20, 92, 1, 9, 'ROMULO GALLEGO - POR LA CANAL', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (762, '2026-07-02T15:15:22.927', 20, 93, 1, 9, '0412-5571645', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (763, '2026-07-02T15:15:23.049', 20, 98, 1, 9, 'PRIVADA', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (764, '2026-07-02T15:15:23.141', 20, 99, 1, 9, '1', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (765, '2026-07-02T15:15:23.265', 20, 100, 1, 9, 'J-506703998', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (766, '2026-07-02T15:34:25.14', 23, 122, 2, 9, '17', '', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (767, '2026-07-02T15:34:25.292', 23, 121, 2, 9, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (768, '2026-07-02T15:34:25.384', 23, 129, 2, 9, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (769, '2026-07-02T15:34:25.515', 23, 130, 2, 9, '2', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (770, '2026-07-02T18:58:07.892', 23, 124, 2, 1, '0', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (771, '2026-07-02T19:01:04.325', 23, 122, 2, 1, '', '17', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (772, '2026-07-02T19:01:04.472', 23, 125, 2, 1, '', '4', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (773, '2026-07-02T19:01:04.578', 23, 121, 2, 1, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (774, '2026-07-02T19:01:04.708', 23, 129, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (775, '2026-07-02T19:01:04.819', 23, 130, 2, 1, '', '0', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (776, '2026-07-02T19:01:04.948', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (779, '2026-07-02T19:31:35.931', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (780, '2026-07-02T19:31:36.138', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (781, '2026-07-02T19:31:36.267', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (782, '2026-07-02T19:31:40.138', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (783, '2026-07-02T19:31:40.293', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (784, '2026-07-02T19:31:40.435', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (785, '2026-07-02T19:31:47.196', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (786, '2026-07-02T19:31:47.4', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (787, '2026-07-02T19:31:47.604', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (788, '2026-07-02T19:31:47.809', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (789, '2026-07-02T19:31:48.834', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (790, '2026-07-02T19:31:49.038', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (791, '2026-07-02T19:31:49.242', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (793, '2026-07-02T19:31:52.929', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (796, '2026-07-02T19:31:55.284', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (799, '2026-07-02T19:31:55.899', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (802, '2026-07-02T19:31:58.109', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (805, '2026-07-02T19:32:05.97', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (808, '2026-07-02T19:32:08.289', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (812, '2026-07-02T19:32:11.272', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (792, '2026-07-02T19:31:49.447', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (794, '2026-07-02T19:31:53.134', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (797, '2026-07-02T19:31:55.489', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (800, '2026-07-02T19:31:57.742', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (803, '2026-07-02T19:32:05.491', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (806, '2026-07-02T19:32:06.138', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (809, '2026-07-02T19:32:08.494', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (810, '2026-07-02T19:32:10.951', 18, 77, 3, 7, '', 'CIV', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (813, '2026-07-02T19:32:11.463', 18, 80, 3, 7, '', '1', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (795, '2026-07-02T19:31:53.339', 18, 80, 1, 7, '1', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (798, '2026-07-02T19:31:55.693', 18, 79, 3, 7, '', 'NO', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (801, '2026-07-02T19:31:57.947', 18, 79, 1, 7, 'NO', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (804, '2026-07-02T19:32:05.728', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (807, '2026-07-02T19:32:08.099', 18, 77, 1, 7, 'CIV', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (811, '2026-07-02T19:32:11.157', 18, 78, 3, 7, '', '', '::ffff:127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (817, '2026-07-03T00:23:18.881', 23, 122, 2, 1, '', '17', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (818, '2026-07-03T00:23:19.085', 23, 125, 2, 1, '', '4', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (819, '2026-07-03T00:23:19.292', 23, 121, 2, 1, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (820, '2026-07-03T00:23:19.496', 23, 129, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (821, '2026-07-03T00:23:19.663', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (822, '2026-07-03T00:23:19.904', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (823, '2026-07-03T00:23:20.11', 23, 124, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (824, '2026-07-03T00:23:20.313', 23, 126, 2, 1, '', 'obv', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (832, '2026-07-03T02:10:45.075', 22, 114, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (835, '2026-07-03T16:10:34.499', 18, 80, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (836, '2026-07-03T16:38:04.584', 19, 89, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (838, '2026-07-03T17:29:12.736', 20, 99, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (842, '2026-07-03T19:16:30.149', 23, 122, 2, 1, '', '17', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (843, '2026-07-03T19:16:30.479', 23, 125, 2, 1, '', '4', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (844, '2026-07-03T19:16:30.611', 23, 121, 2, 1, '', '3', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (845, '2026-07-03T19:16:30.858', 23, 129, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (846, '2026-07-03T19:16:30.977', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (847, '2026-07-03T19:16:31.218', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
-INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (848, '2026-07-03T19:16:31.514', 23, 124, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
--- --------------------------------------------------------
--- Tabla: t_columns (108 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_columns" ("COLUMN_ID", "TABLE_ID", "COLUMN_NAME", "STATUS") VALUES (106, 21, 'CAREER_TYPE', 1);
 INSERT INTO "t_columns" ("COLUMN_ID", "TABLE_ID", "COLUMN_NAME", "STATUS") VALUES (120, 23, 'GRADE', 1);
@@ -2657,40 +2141,22 @@ INSERT INTO "t_columns" ("COLUMN_ID", "TABLE_ID", "COLUMN_NAME", "STATUS") VALUE
 INSERT INTO "t_columns" ("COLUMN_ID", "TABLE_ID", "COLUMN_NAME", "STATUS") VALUES (88, 19, 'PHONE', 1);
 INSERT INTO "t_columns" ("COLUMN_ID", "TABLE_ID", "COLUMN_NAME", "STATUS") VALUES (130, 23, 'PRACTICES_STATUS', 1);
 INSERT INTO "t_columns" ("COLUMN_ID", "TABLE_ID", "COLUMN_NAME", "STATUS") VALUES (144, 25, 'HOURS_WORKED', 1);
+
 -- --------------------------------------------------------
 -- Tabla: t_config (1 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_config" ("CONFIG_ID", "RECOVERY_EMAIL", "BLOCKING_DAYS", "WRONG_KEY_LOCK", "ATTEMPTS_KEY_BLOCK", "KEY_EXPIRATION", "EXPIRATION_DAYS", "USER_UPPERCASE", "USER_LOWERCASE", "USER_NUMBERS", "USER_SPECIAL_CHARACTERS", "USER_NUM_UPPERCASE", "USER_NUM_LOWERCASE", "USER_NUM_NUMBERS", "USER_NUM_SPECIAL_CHARACTERS", "KEY_UPPERCASE", "KEY_LOWERCASE", "KEY_NUMBERS", "KEY_SPECIAL_CHARACTERS", "KEY_NUM_UPPERCASE", "KEY_NUM_LOWERCASE", "KEY_NUM_NUMBERS", "KEY_NUM_SPECIAL_CHARACTERS", "USER_LENGTH", "KEY_LEGTH", "SECURITY_QUESTIONS", "TOTAL_QUESTIONS", "TOTAL_PRESET_QUESTIONS", "TOTAL_USER_QUESTIONS", "TOTAL_ANSWERS", "PERIOD_VALIDATION_RULES", "EVALUATION_CONFIG", "SESSION_MAX_HOURS", "RECOVERY_LINK_EXPIRY_HOURS") VALUES (1, 1, 0, 1, 4, 2, 90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 20, 1, 3, 3, 0, 3, '{"visit":{"create":{"skipPeriodStatusCheck":false},"update":{"skipPeriodStatusCheck":false}},"enrollment":{"create":{"usePeriodGraceDays":true,"skipPeriodStatusCheck":false},"update":{"usePeriodGraceDays":true,"skipPeriodStatusCheck":false}},"evaluation":{"create":{"extendEndDateDays":10,"usePeriodGraceDays":true,"skipPeriodStatusCheck":false,"requirePracticesStatusInscribed":true},"update":{"extendEndDateDays":10,"usePeriodGraceDays":true,"skipPeriodStatusCheck":false,"requirePracticesStatusInscribed":true}},"pre-enrollment":{"create":{"skipPeriodStatusCheck":false},"update":{"skipPeriodStatusCheck":true}}}', '{"score":{"max":20,"min":1,"displayScale":20},"weights":{"COMITE":0.3,"ACADEMICO":0.3,"INSTITUCIONAL":0.4},"evaluationWindowDays":10}', 24, 78);
+
 -- --------------------------------------------------------
 -- Tabla: t_coordinadores (2 registros)
--- --------------------------------------------------------
-INSERT INTO "t_coordinadores" ("COORDINADOR_ID", "TIPO", "CAREER_ID", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CI", "CARGO", "CREATION_DATE", "STATUS") VALUES (1, 'COORDINADOR', NULL, 'ANGELA MARGARITA', NULL, 'CASTILLO SABINA', NULL, '9663439', 'COORDINADORA DE PASANTÍAS', '2026-06-21T19:30:35.223475', 1);
-INSERT INTO "t_coordinadores" ("COORDINADOR_ID", "TIPO", "CAREER_ID", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CI", "CARGO", "CREATION_DATE", "STATUS") VALUES (2, 'COORDINADOR', NULL, 'PEDRO', NULL, 'SANCHEZ', NULL, 'V-10456789', 'COORDINADOR ACADÉMICO', '2026-06-21T19:30:35.223475', 1);
--- --------------------------------------------------------
--- Tabla: t_email_templates (4 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_email_templates" ("id", "name", "description", "category", "subject", "body_html", "created_at", "updated_at") VALUES (5, 'Inicio de Lapso Académico', 'Notificar a estudiantes sobre el inicio de un nuevo período académico', 'periodo', '📢 Inicio de lapso {{periodo}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>¡Bienvenido al {{periodo}}, {{nombre}}!</h2><p>Informamos que el lapso académico <strong>{{periodo}}</strong> ha dado inicio el día <strong>{{fecha_inicio}}</strong>.</p><p>Te recordamos mantener tus datos al día y revisar las actividades programadas para este período.</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', '2026-06-16T03:24:37.541816+00:00', '2026-06-16T03:24:37.541816+00:00');
 INSERT INTO "t_email_templates" ("id", "name", "description", "category", "subject", "body_html", "created_at", "updated_at") VALUES (6, 'Fin de Lapso Académico', 'Notificar a estudiantes sobre el cierre del período académico', 'periodo', '⏰ Cierre de lapso {{periodo}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>Cierre del {{periodo}}</h2><p>Hola {{nombre}},</p><p>Te informamos que el lapso académico <strong>{{periodo}}</strong> finaliza el <strong>{{fecha_fin}}</strong>.</p><p>Asegurate de tener toda tu documentación al día antes del cierre.</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', '2026-06-16T03:24:37.541816+00:00', '2026-06-16T03:24:37.541816+00:00');
 INSERT INTO "t_email_templates" ("id", "name", "description", "category", "subject", "body_html", "created_at", "updated_at") VALUES (7, 'Reporte de Evaluación', 'Notificar a tutores sobre reportes de evaluación disponibles', 'evaluacion', '📋 Reporte de evaluación disponible', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>Reporte de Evaluación</h2><p>Hola {{nombre}},</p><p>Tenés disponible el reporte de evaluación del período <strong>{{periodo}}</strong>.</p><p>Ingresá al sistema para revisar los resultados y completar las evaluaciones pendientes de tus estudiantes asignados.</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', '2026-06-16T03:24:37.541816+00:00', '2026-06-16T03:24:37.541816+00:00');
 INSERT INTO "t_email_templates" ("id", "name", "description", "category", "subject", "body_html", "created_at", "updated_at") VALUES (8, 'Aviso General', 'Plantilla genérica para comunicados institucionales', 'general', '{{asunto}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>{{asunto}}</h2><p>Hola {{nombre}},</p><p>{{mensaje}}</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', '2026-06-16T03:24:37.541816+00:00', '2026-06-16T03:24:37.541816+00:00');
+
 -- --------------------------------------------------------
 -- Tabla: t_enrollment_field_changes (13 registros)
--- --------------------------------------------------------
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (1, 10, 'TUTOR_ACADEMICO', 'ANA MONTERO', 'LAURA HERNANDEZ', 1, '2026-06-25T13:21:08.108993');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (2, 10, 'TUTOR_METODOLOGICO', 'PEDRO SANCHEZ', 'MARIA GONZALEZ', 1, '2026-06-25T13:21:08.108993');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (3, 10, 'TUTOR_ACADEMICO', 'LAURA HERNANDEZ', 'ANA MONTERO', 1, '2026-06-26T00:17:19.582797');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (4, 10, 'TUTOR_METODOLOGICO', 'MARIA GONZALEZ', 'PEDRO SANCHEZ', 1, '2026-06-26T00:17:19.582797');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (5, 7, 'TUTOR_ACADEMICO', 'ANA MONTERO', 'ANTONY FIGUEROA', 1, '2026-06-26T12:52:12.230621');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (6, 7, 'TUTOR_METODOLOGICO', 'MARIA GONZALEZ', 'PEDRO SANCHEZ', 1, '2026-06-26T12:52:12.230621');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (7, 20, 'INSTITUTION', 'HOSPITAL DR. MARÍA AUXILIADORA', 'EMPRESA DE PRUEBA GVG', 1, '2026-06-27T21:59:19.27674');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (8, 20, 'INSTITUTION_RESPONSIBLE', 'null', 'CARLOS MENDOZA', 1, '2026-06-27T21:59:19.27674');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (9, 24, 'INSTITUTION', 'HOSPITAL DR. MARÍA AUXILIADORA', 'EMPRESA DE PRUEBA GVG', 1, '2026-06-27T21:59:41.228354');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (10, 24, 'INSTITUTION_RESPONSIBLE', 'null', 'CARLOS MENDOZA', 1, '2026-06-27T21:59:41.228354');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (11, 19, 'INSTITUTION', 'HOSPITAL DR. MARÍA AUXILIADORA', 'EMPRESA DE PRUEBA GVG', 1, '2026-06-27T22:00:02.318338');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (12, 19, 'INSTITUTION_RESPONSIBLE', 'null', 'CARLOS MENDOZA', 1, '2026-06-27T22:00:02.318338');
-INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (13, 10, 'TUTOR_ACADEMICO', 'ANA MONTERO', 'MARIA GONZALEZ', 1, '2026-06-30T00:36:06.93253');
--- --------------------------------------------------------
--- Tabla: t_estado (24 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_estado" ("estado_id", "iso_31662", "name", "capital") VALUES (1, 'VE-X', 'Amazonas', 'Puerto Ayacucho');
 INSERT INTO "t_estado" ("estado_id", "iso_31662", "name", "capital") VALUES (2, 'VE-B', 'Anzoátegui', 'Barcelona');
@@ -2716,45 +2182,9 @@ INSERT INTO "t_estado" ("estado_id", "iso_31662", "name", "capital") VALUES (21,
 INSERT INTO "t_estado" ("estado_id", "iso_31662", "name", "capital") VALUES (22, 'VE-U', 'Yaracuy', 'San Felipe');
 INSERT INTO "t_estado" ("estado_id", "iso_31662", "name", "capital") VALUES (23, 'VE-V', 'Zulia', 'Maracaibo');
 INSERT INTO "t_estado" ("estado_id", "iso_31662", "name", "capital") VALUES (24, 'VE-A', 'Distrito Capital', 'Caracas');
+
 -- --------------------------------------------------------
 -- Tabla: t_evaluation (34 registros)
--- --------------------------------------------------------
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (2, 2, 'ACADEMICO', 1, 'ADMIN PRINCIPAL', 'V12345678', 18, 'BUEN DESEMPEÑO', '2026-06-21T19:38:44.672528', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (3, 2, 'INSTITUCIONAL', 7, 'TEST ADMIN', 'V-TESTADM', 19, 'EXCELENTE TRABAJO', '2026-06-21T19:38:44.672528', NULL, 7, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (4, 2, 'COMITE', 1, 'ADMIN PRINCIPAL', 'V12345678', 17, 'APROBADO', '2026-06-21T19:38:44.672528', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (5, 3, 'ACADEMICO', 1, 'ADMIN PRINCIPAL', 'V12345678', 17, 'BUEN TRABAJO COMUNITARIO', '2026-06-21T19:38:44.672528', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (6, 3, 'INSTITUCIONAL', 7, 'TEST ADMIN', 'V-TESTADM', 18, 'BUENA PARTICIPACIÓN', '2026-06-21T19:38:44.672528', NULL, 7, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (7, 3, 'COMITE', 1, 'ADMIN PRINCIPAL', 'V12345678', 16, 'APROBADO', '2026-06-21T19:38:44.672528', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (8, 4, 'ACADEMICO', 1, 'ADMIN PRINCIPAL', 'V12345678', 19, 'EXCELENTE', '2026-06-21T19:38:44.672528', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (9, 4, 'INSTITUCIONAL', 7, 'TEST ADMIN', 'V-TESTADM', 20, 'EXCELENTE DESEMPEÑO', '2026-06-21T19:38:44.672528', NULL, 7, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (10, 4, 'COMITE', 1, 'ADMIN PRINCIPAL', 'V12345678', 18, 'APROBADO CON MENCIÓN', '2026-06-21T19:38:44.672528', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (11, 6, 'ACADEMICO', 1, 'ADMIN PRINCIPAL', 'V12345678', 20, 'EXCELENTE TRABAJO DE CAMPO', '2026-06-21T19:38:44.672528', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (12, 6, 'INSTITUCIONAL', 7, 'TEST ADMIN', 'V-TESTADM', 19, 'BUEN RENDIMIENTO', '2026-06-21T19:38:44.672528', NULL, 7, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (13, 6, 'COMITE', 1, 'ADMIN PRINCIPAL', 'V12345678', 19, 'APROBADO DESTACADO', '2026-06-21T19:38:44.672528', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (14, 10, 'INSTITUCIONAL', NULL, 'CARLOS PEREZ', 'V-15651651', 16.4, NULL, '2026-06-24T15:43:12.175842', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (15, 10, 'ACADEMICO', NULL, 'ANA MONTERO F', 'V-15389028', 10, NULL, '2026-06-24T15:51:08.528763', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (28, 21, 'INSTITUCIONAL', NULL, 'Ing. Rosa Hernández', NULL, 8, NULL, '2026-06-26T20:12:47.928647', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (29, 21, 'ACADEMICO', NULL, 'Prof. Luis Mendoza', NULL, 9, NULL, '2026-06-26T20:12:47.928647', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (30, 21, 'COMITE', NULL, 'Dra. Carmen Torres', NULL, 7, NULL, '2026-06-26T20:12:47.928647', 1, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (31, 21, 'COMITE', NULL, 'Prof. Andrés Rivas', NULL, 8, NULL, '2026-06-26T20:12:47.928647', 2, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (33, 22, 'INSTITUCIONAL', NULL, 'Dr. Ricardo Méndez', NULL, 8, NULL, '2026-06-26T20:12:47.928647', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (34, 22, 'ACADEMICO', NULL, 'Prof. Luis Mendoza', NULL, 9, NULL, '2026-06-26T20:12:47.928647', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (35, 22, 'COMITE', NULL, 'Dra. Carmen Torres', NULL, 9, NULL, '2026-06-26T20:12:47.928647', 1, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (36, 22, 'COMITE', NULL, 'Prof. Andrés Rivas', NULL, 8, NULL, '2026-06-26T20:12:47.928647', 2, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (37, 22, 'COMITE', NULL, 'Lic. Patricia Guerra', NULL, 10, NULL, '2026-06-26T20:12:47.928647', 3, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (32, 21, 'COMITE', NULL, 'LIC. PATRICIA GUERRA', NULL, 18, NULL, '2026-06-26T20:12:47.928647', 3, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (38, 19, 'COMITE', NULL, 'MARÍA ELENA RODRÍGUEZ VARGAS', 'V-15389028', 10, NULL, '2026-06-27T21:22:00.085063', 1, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (41, 20, 'COMITE', NULL, 'JR 1', NULL, 10.5, NULL, '2026-06-29T01:52:13.925203', 1, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (40, 7, 'INSTITUCIONAL', NULL, 'CARLOS PEREZ', 'V-15651651', 15, NULL, '2026-06-28T22:39:42.435883', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (42, 24, 'INSTITUCIONAL', NULL, 'CARLOS MENDOZA', 'V-3456788', 16.5, NULL, '2026-06-30T00:50:17.683447', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (27, 20, 'INSTITUCIONAL', NULL, 'DR. RICARDO MÉNDEZ', NULL, 20, NULL, '2026-06-26T20:12:47.928647', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (43, 24, 'ACADEMICO', NULL, 'ANTONY FIGUEROA', 'V-6885265', 20, NULL, '2026-06-30T01:52:29.036519', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (44, 24, 'COMITE', NULL, 'EVAL 1', NULL, 18.7, NULL, '2026-06-30T01:53:42.845126', 1, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (39, 20, 'ACADEMICO', NULL, 'ANTONY FIGUEROA', 'V-6885265', 5, NULL, '2026-06-28T22:39:11.100872', NULL, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (45, 20, 'COMITE', NULL, 'EVAL 2', NULL, 20, NULL, '2026-06-30T18:11:08.528349', 2, 1, 1, NULL, NULL, NULL, NULL);
-INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (46, 20, 'COMITE', NULL, 'EVAL 3', NULL, 20, NULL, '2026-06-30T18:16:45.366552', 3, 1, 1, NULL, NULL, NULL, NULL);
--- --------------------------------------------------------
--- Tabla: t_evaluation_criteria (55 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_evaluation_criteria" ("CRITERIA_ID", "ITEM_NUMBER", "DESCRIPTION", "EVALUATOR_TYPE", "STATUS") VALUES (41, 1, 'Usa vocabulario apropiado para la audiencia', 'COMITE', 1);
 INSERT INTO "t_evaluation_criteria" ("CRITERIA_ID", "ITEM_NUMBER", "DESCRIPTION", "EVALUATOR_TYPE", "STATUS") VALUES (42, 2, 'El volumen de voz proyectado es lo suficientemente alto para ser escuchado por todos los presentes.', 'COMITE', 1);
@@ -2811,427 +2241,16 @@ INSERT INTO "t_evaluation_criteria" ("CRITERIA_ID", "ITEM_NUMBER", "DESCRIPTION"
 INSERT INTO "t_evaluation_criteria" ("CRITERIA_ID", "ITEM_NUMBER", "DESCRIPTION", "EVALUATOR_TYPE", "STATUS") VALUES (18, 18, 'Capacidad para obtener información respecto a su entorno y compartirla con el resto del personal', 'INSTITUCIONAL', 1);
 INSERT INTO "t_evaluation_criteria" ("CRITERIA_ID", "ITEM_NUMBER", "DESCRIPTION", "EVALUATOR_TYPE", "STATUS") VALUES (19, 19, 'Capacidad de trabajo bajo condiciones adversas de tiempo', 'INSTITUCIONAL', 1);
 INSERT INTO "t_evaluation_criteria" ("CRITERIA_ID", "ITEM_NUMBER", "DESCRIPTION", "EVALUATOR_TYPE", "STATUS") VALUES (20, 20, 'Habilidades para el trabajo en equipo por encima de las diferencias personales', 'INSTITUCIONAL', 1);
+
 -- --------------------------------------------------------
 -- Tabla: t_evaluation_detail (345 registros)
--- --------------------------------------------------------
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (1, 14, 1, 1, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (2, 14, 2, 2, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (3, 14, 3, 3, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (4, 14, 4, 4, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (5, 14, 5, 5, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (6, 14, 6, 6, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (7, 14, 7, 7, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (8, 14, 8, 8, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (9, 14, 9, 9, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (10, 14, 10, 10, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (11, 14, 11, 11, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (12, 14, 12, 12, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (13, 14, 13, 13, 9.5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (14, 14, 14, 14, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (15, 14, 15, 15, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (16, 14, 16, 16, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (17, 14, 17, 17, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (18, 14, 18, 18, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (19, 14, 19, 19, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (20, 14, 20, 20, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (21, 15, 21, 1, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (22, 15, 22, 2, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (23, 15, 23, 3, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (24, 15, 24, 4, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (25, 15, 25, 5, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (26, 15, 26, 6, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (27, 15, 27, 7, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (28, 15, 28, 8, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (29, 15, 29, 9, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (30, 15, 30, 10, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (31, 15, 31, 11, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (32, 15, 32, 12, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (33, 15, 33, 13, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (34, 15, 34, 14, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (35, 15, 35, 15, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (36, 15, 36, 16, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (37, 15, 37, 17, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (38, 15, 38, 18, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (39, 15, 39, 19, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (40, 15, 40, 20, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (251, 28, 1, 1, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (252, 28, 2, 2, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (253, 28, 3, 3, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (254, 28, 4, 4, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (255, 28, 5, 5, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (256, 28, 6, 6, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (257, 28, 7, 7, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (258, 28, 8, 8, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (259, 28, 9, 9, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (260, 28, 10, 10, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (261, 28, 11, 11, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (262, 28, 12, 12, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (263, 28, 13, 13, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (264, 28, 14, 14, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (265, 28, 15, 15, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (266, 28, 16, 16, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (267, 28, 17, 17, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (268, 28, 18, 18, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (269, 28, 19, 19, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (270, 28, 20, 20, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (271, 29, 21, 1, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (272, 29, 22, 2, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (273, 29, 23, 3, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (274, 29, 24, 4, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (275, 29, 25, 5, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (276, 29, 26, 6, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (277, 29, 27, 7, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (278, 29, 28, 8, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (279, 29, 29, 9, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (280, 29, 30, 10, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (281, 29, 31, 11, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (282, 29, 32, 12, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (283, 29, 33, 13, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (284, 29, 34, 14, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (285, 29, 35, 15, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (286, 29, 36, 16, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (287, 29, 37, 17, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (288, 29, 38, 18, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (289, 29, 39, 19, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (290, 29, 40, 20, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (291, 30, 41, 1, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (292, 30, 42, 2, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (293, 30, 43, 3, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (294, 30, 44, 4, 6, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (295, 30, 45, 5, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (296, 30, 46, 6, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (297, 30, 47, 7, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (298, 30, 48, 8, 6, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (299, 30, 49, 9, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (300, 30, 50, 10, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (301, 30, 51, 11, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (302, 30, 52, 12, 6, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (303, 30, 53, 13, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (304, 30, 54, 14, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (305, 30, 55, 15, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (306, 31, 41, 1, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (307, 31, 42, 2, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (308, 31, 43, 3, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (309, 31, 44, 4, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (310, 31, 45, 5, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (311, 31, 46, 6, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (312, 31, 47, 7, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (313, 31, 48, 8, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (314, 31, 49, 9, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (315, 31, 50, 10, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (316, 31, 51, 11, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (317, 31, 52, 12, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (318, 31, 53, 13, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (319, 31, 54, 14, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (320, 31, 55, 15, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (336, 33, 1, 1, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (337, 33, 2, 2, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (338, 33, 3, 3, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (339, 33, 4, 4, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (340, 33, 5, 5, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (341, 33, 6, 6, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (342, 33, 7, 7, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (343, 33, 8, 8, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (344, 33, 9, 9, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (345, 33, 10, 10, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (346, 33, 11, 11, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (347, 33, 12, 12, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (348, 33, 13, 13, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (349, 33, 14, 14, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (350, 33, 15, 15, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (351, 33, 16, 16, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (352, 33, 17, 17, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (353, 33, 18, 18, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (354, 33, 19, 19, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (355, 33, 20, 20, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (356, 34, 21, 1, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (357, 34, 22, 2, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (358, 34, 23, 3, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (359, 34, 24, 4, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (360, 34, 25, 5, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (361, 34, 26, 6, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (362, 34, 27, 7, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (363, 34, 28, 8, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (364, 34, 29, 9, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (365, 34, 30, 10, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (366, 34, 31, 11, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (367, 34, 32, 12, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (368, 34, 33, 13, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (369, 34, 34, 14, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (370, 34, 35, 15, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (371, 34, 36, 16, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (372, 34, 37, 17, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (373, 34, 38, 18, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (374, 34, 39, 19, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (375, 34, 40, 20, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (376, 35, 41, 1, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (377, 35, 42, 2, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (378, 35, 43, 3, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (379, 35, 44, 4, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (380, 35, 45, 5, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (381, 35, 46, 6, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (382, 35, 47, 7, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (383, 35, 48, 8, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (384, 35, 49, 9, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (385, 35, 50, 10, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (386, 35, 51, 11, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (387, 35, 52, 12, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (388, 35, 53, 13, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (389, 35, 54, 14, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (390, 35, 55, 15, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (391, 36, 41, 1, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (392, 36, 42, 2, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (393, 36, 43, 3, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (394, 36, 44, 4, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (395, 36, 45, 5, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (396, 36, 46, 6, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (397, 36, 47, 7, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (398, 36, 48, 8, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (399, 36, 49, 9, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (400, 36, 50, 10, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (401, 36, 51, 11, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (402, 36, 52, 12, 7, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (403, 36, 53, 13, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (404, 36, 54, 14, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (405, 36, 55, 15, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (406, 37, 41, 1, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (407, 37, 42, 2, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (408, 37, 43, 3, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (409, 37, 44, 4, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (410, 37, 45, 5, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (411, 37, 46, 6, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (412, 37, 47, 7, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (413, 37, 48, 8, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (414, 37, 49, 9, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (415, 37, 50, 10, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (416, 37, 51, 11, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (417, 37, 52, 12, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (418, 37, 53, 13, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (419, 37, 54, 14, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (420, 37, 55, 15, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (421, 32, 41, 1, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (422, 32, 42, 2, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (423, 32, 43, 3, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (424, 32, 44, 4, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (425, 32, 45, 5, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (426, 32, 46, 6, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (427, 32, 47, 7, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (428, 32, 48, 8, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (429, 32, 49, 9, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (430, 32, 50, 10, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (431, 32, 51, 11, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (432, 32, 52, 12, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (433, 32, 53, 13, 9, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (434, 32, 54, 14, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (435, 32, 55, 15, 8, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (436, 38, 41, 1, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (437, 38, 42, 2, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (438, 38, 43, 3, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (439, 38, 44, 4, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (440, 38, 45, 5, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (441, 38, 46, 6, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (442, 38, 47, 7, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (443, 38, 48, 8, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (444, 38, 49, 9, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (445, 38, 50, 10, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (446, 38, 51, 11, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (447, 38, 52, 12, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (448, 38, 53, 13, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (449, 38, 54, 14, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (450, 38, 55, 15, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (491, 41, 41, 1, 8.5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (492, 41, 42, 2, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (493, 41, 43, 3, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (494, 41, 44, 4, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (495, 41, 45, 5, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (496, 41, 46, 6, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (497, 41, 47, 7, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (498, 41, 48, 8, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (499, 41, 49, 9, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (500, 41, 50, 10, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (501, 41, 51, 11, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (502, 41, 52, 12, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (503, 41, 53, 13, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (504, 41, 54, 14, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (505, 41, 55, 15, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (513, 27, 1, 1, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (514, 27, 2, 2, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (515, 27, 3, 3, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (516, 27, 4, 4, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (517, 27, 5, 5, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (518, 27, 6, 6, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (519, 27, 7, 7, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (520, 27, 8, 8, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (521, 27, 9, 9, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (522, 27, 10, 10, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (523, 27, 11, 11, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (524, 27, 12, 12, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (525, 27, 13, 13, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (526, 27, 14, 14, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (527, 27, 15, 15, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (528, 27, 16, 16, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (529, 27, 17, 17, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (530, 27, 18, 18, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (531, 27, 19, 19, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (532, 27, 20, 20, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (533, 43, 21, 1, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (534, 43, 22, 2, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (535, 43, 23, 3, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (536, 43, 24, 4, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (537, 43, 25, 5, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (538, 43, 26, 6, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (539, 43, 27, 7, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (540, 43, 28, 8, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (541, 43, 29, 9, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (542, 43, 30, 10, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (543, 43, 31, 11, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (544, 43, 32, 12, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (545, 43, 33, 13, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (546, 43, 34, 14, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (547, 43, 35, 15, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (548, 43, 36, 16, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (549, 43, 37, 17, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (550, 43, 38, 18, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (551, 43, 39, 19, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (552, 43, 40, 20, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (553, 44, 41, 1, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (554, 44, 42, 2, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (555, 44, 43, 3, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (556, 44, 44, 4, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (557, 44, 45, 5, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (558, 44, 46, 6, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (559, 44, 47, 7, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (560, 44, 48, 8, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (561, 44, 49, 9, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (562, 44, 50, 10, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (563, 44, 51, 11, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (564, 44, 52, 12, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (565, 44, 53, 13, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (566, 44, 54, 14, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (567, 44, 55, 15, 10, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (568, 39, 21, 1, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (569, 39, 22, 2, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (570, 39, 23, 3, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (571, 39, 24, 4, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (572, 39, 25, 5, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (573, 39, 26, 6, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (574, 39, 27, 7, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (575, 39, 28, 8, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (576, 39, 29, 9, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (577, 39, 30, 10, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (578, 39, 31, 11, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (579, 39, 32, 12, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (580, 39, 33, 13, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (581, 39, 34, 14, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (582, 39, 35, 15, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (583, 39, 36, 16, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (584, 39, 37, 17, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (585, 39, 38, 18, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (586, 39, 39, 19, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (587, 39, 40, 20, 5, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (588, 45, 41, 1, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (589, 45, 42, 2, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (590, 45, 43, 3, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (591, 45, 44, 4, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (592, 45, 45, 5, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (593, 45, 46, 6, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (594, 45, 47, 7, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (595, 45, 48, 8, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (596, 45, 49, 9, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (597, 45, 50, 10, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (598, 45, 51, 11, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (599, 45, 52, 12, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (600, 45, 53, 13, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (601, 45, 54, 14, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (602, 45, 55, 15, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (603, 46, 41, 1, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (604, 46, 42, 2, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (605, 46, 43, 3, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (606, 46, 44, 4, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (607, 46, 45, 5, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (608, 46, 46, 6, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (609, 46, 47, 7, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (610, 46, 48, 8, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (611, 46, 49, 9, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (612, 46, 50, 10, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (613, 46, 51, 11, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (614, 46, 52, 12, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (615, 46, 53, 13, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (616, 46, 54, 14, 20, 1);
-INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (617, 46, 55, 15, 20, 1);
--- --------------------------------------------------------
--- Tabla: t_institution (9 registros)
--- --------------------------------------------------------
-INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (1, 'HOSPITAL DR. MARÍA AUXILIADORA', 'Av. Los Pájaros, Acarigua', '02551234567', 'HOSPITALARIA', 'PORTUGUESA', 'PORTUGUESA', 'ACARIGUA', '2026-06-21T03:41:24.145114', 'PÚBLICA', 1, 'J-12345678', 'HMA-001');
-INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (2, 'ALCALDÍA DEL MUNICIPIO PÍRITU', 'Calle Bolívar, Píritu', '02559876543', 'COMUNITARIA', 'PORTUGUESA', 'PORTUGUESA', 'ACARIGUA', '2026-06-21T03:41:24.145114', 'PÚBLICA', 1, 'J-23456789', 'AMP-001');
-INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (3, 'EMPRESA AGROINDUSTRIAL PORTUGUESA C.A.', 'Zona Industrial, Araure', '02551122334', 'ÚNICA', 'PORTUGUESA', 'PORTUGUESA', 'ACARIGUA', '2026-06-21T03:41:24.145114', 'PRIVADA', 1, 'J-34567890', 'EAP-001');
-INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (16, 'EMPRESSA OTRA V', 'SDFDFMDFD', '0412-1234121', '3', 'LOS LLANOS', 'PORTUGUESA', 'ACARIGUA', '2026-06-23T15:20:33.547', 'PRIVADA', 1, 'G-456151515', 'G-456151515');
-INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (17, 'EMPRESA DE PRUEBA', 'SDFDFMDFD', '0255-4856418', '1', 'LOS LLANOS', 'PORTUGUESA', 'ACARIGUA', '2026-06-23T15:24:34.108', 'MIXTA', 1, 'G-342123432', 'G-342123432');
-INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (18, 'EMPRESA DE PRUEBASSS', 'EDDDSDSD', '0255-3432341', '1', '', '', '', '2026-06-24T00:27:24.231', 'PRIVADA', 1, 'G-234576543', 'G-234576543');
-INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (19, 'EMPRESA DE PRUEBA GVG', 'DFGHJK', '0412-4567890', '2', 'LOS LLANOS', 'PORTUGUESA', 'ACARIGUA', '2026-06-24T14:44:54.301', 'MIXTA', 1, 'G-851881818', 'G-851881818');
-INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (20, 'JAPON', 'ROMULO GALLEGO - POR LA CANAL', '0412-5571645', '1', '', '', '', '2026-07-02T15:15:22.187', 'PRIVADA', 1, 'J-506703998', 'J-506703998');
-INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (4, 'AMBULATORIO URBANO DR. JOSÉ GREGORIO HERNÁNDEZ', 'Av. Libertador, Araure', '02554433221', 'HOSPITALARIA', 'PORTUGUESA', 'PORTUGUESA', 'ACARIGUA', '2026-06-21T03:41:24.145114', 'PÚBLICA', 0, 'J-45678901', 'AUJ-001');
--- --------------------------------------------------------
--- Tabla: t_institution_career (17 registros)
--- --------------------------------------------------------
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (1, '2026-06-23T15:20:41.250124+00:00', 16, 3);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (2, '2026-06-23T15:20:41.250124+00:00', 16, 2);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (3, '2026-06-23T15:20:41.250124+00:00', 16, 6);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (4, '2026-06-23T15:20:41.250124+00:00', 16, 4);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (5, '2026-06-23T15:24:40.231732+00:00', 17, 5);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (6, '2026-06-23T15:24:40.231732+00:00', 17, 2);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (7, '2026-06-23T15:24:40.231732+00:00', 17, 3);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (8, '2026-06-23T15:24:40.231732+00:00', 17, 4);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (9, '2026-06-24T00:27:28.342332+00:00', 18, 5);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (10, '2026-06-24T00:27:28.342332+00:00', 18, 2);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (11, '2026-06-24T00:27:28.342332+00:00', 18, 3);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (12, '2026-06-24T00:27:28.342332+00:00', 18, 4);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (13, '2026-06-24T14:45:00.194229+00:00', 19, 2);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (14, '2026-06-24T14:45:00.194229+00:00', 19, 3);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (15, '2026-06-24T14:45:00.194229+00:00', 19, 6);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (16, '2026-06-24T14:45:00.194229+00:00', 19, 4);
-INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (17, '2026-07-02T15:15:23.998112+00:00', 20, 7);
--- --------------------------------------------------------
--- Tabla: t_institution_internship_type (5 registros)
--- --------------------------------------------------------
-INSERT INTO "t_institution_internship_type" ("INSTITUTION_INTERNSHIP_TYPE_ID", "created_at", "INSTITUTION_ID", "INTERNSHIP_TYPE_ID") VALUES (1, '2026-06-23T15:20:35.29578+00:00', 16, 3);
-INSERT INTO "t_institution_internship_type" ("INSTITUTION_INTERNSHIP_TYPE_ID", "created_at", "INSTITUTION_ID", "INTERNSHIP_TYPE_ID") VALUES (2, '2026-06-23T15:24:36.239008+00:00', 17, 1);
-INSERT INTO "t_institution_internship_type" ("INSTITUTION_INTERNSHIP_TYPE_ID", "created_at", "INSTITUTION_ID", "INTERNSHIP_TYPE_ID") VALUES (3, '2026-06-24T00:27:26.025787+00:00', 18, 1);
-INSERT INTO "t_institution_internship_type" ("INSTITUTION_INTERNSHIP_TYPE_ID", "created_at", "INSTITUTION_ID", "INTERNSHIP_TYPE_ID") VALUES (4, '2026-06-24T14:44:55.949407+00:00', 19, 2);
-INSERT INTO "t_institution_internship_type" ("INSTITUTION_INTERNSHIP_TYPE_ID", "created_at", "INSTITUTION_ID", "INTERNSHIP_TYPE_ID") VALUES (5, '2026-07-02T15:15:22.397055+00:00', 20, 1);
--- --------------------------------------------------------
--- Tabla: t_institution_manager (3 registros)
--- --------------------------------------------------------
-INSERT INTO "t_institution_manager" ("MANAGER_ID", "person_id", "MANAGER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "EMAIL", "CREATION_DATE", "STATUS", "INSTITUTION_ID", "cargo", "TITLE") VALUES (4, 45, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-23T15:21:57.964', 1, NULL, NULL, 'MEDICO VETERINARIO');
-INSERT INTO "t_institution_manager" ("MANAGER_ID", "person_id", "MANAGER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "EMAIL", "CREATION_DATE", "STATUS", "INSTITUTION_ID", "cargo", "TITLE") VALUES (6, 88, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-02T15:17:22.004', 1, NULL, NULL, 'TÉCNICO SUPERIOR');
-INSERT INTO "t_institution_manager" ("MANAGER_ID", "person_id", "MANAGER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "EMAIL", "CREATION_DATE", "STATUS", "INSTITUTION_ID", "cargo", "TITLE") VALUES (5, 49, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-24T14:45:39.447', 1, NULL, NULL, 'FARMACÉUTICO');
--- --------------------------------------------------------
--- Tabla: t_institution_manager_institution (4 registros)
--- --------------------------------------------------------
-INSERT INTO "t_institution_manager_institution" ("INSTITUTION_MANAGER_INSTITUTION_ID", "created_at", "MANAGER_ID", "INSTITUTION_ID", "cargo") VALUES (2, '2026-06-23T15:25:05.311423+00:00', 4, 16, 'JEGFE');
-INSERT INTO "t_institution_manager_institution" ("INSTITUTION_MANAGER_INSTITUTION_ID", "created_at", "MANAGER_ID", "INSTITUTION_ID", "cargo") VALUES (3, '2026-06-23T15:25:05.311423+00:00', 4, 17, 'UGUUJN');
-INSERT INTO "t_institution_manager_institution" ("INSTITUTION_MANAGER_INSTITUTION_ID", "created_at", "MANAGER_ID", "INSTITUTION_ID", "cargo") VALUES (4, '2026-06-24T14:45:39.511684+00:00', 5, 19, 'SFDFD');
-INSERT INTO "t_institution_manager_institution" ("INSTITUTION_MANAGER_INSTITUTION_ID", "created_at", "MANAGER_ID", "INSTITUTION_ID", "cargo") VALUES (5, '2026-07-02T15:17:22.174472+00:00', 6, 20, 'JEFE');
--- --------------------------------------------------------
--- Tabla: t_internship_type (3 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_internship_type" ("INTERNSHIP_TYPE_ID", "NAME", "PRIORITY", "CREATION_DATE", "STATUS", "HOURS_REQUIRED") VALUES (1, 'ÚNICA', 0, '2026-06-16T03:12:17.850399', 1, 360);
 INSERT INTO "t_internship_type" ("INTERNSHIP_TYPE_ID", "NAME", "PRIORITY", "CREATION_DATE", "STATUS", "HOURS_REQUIRED") VALUES (2, 'HOSPITALARIA', 2, '2026-06-16T03:12:17.850399', 1, 480);
 INSERT INTO "t_internship_type" ("INTERNSHIP_TYPE_ID", "NAME", "PRIORITY", "CREATION_DATE", "STATUS", "HOURS_REQUIRED") VALUES (3, 'COMUNITARIA', 1, '2026-06-16T03:12:17.850399', 1, 360);
+
 -- --------------------------------------------------------
 -- Tabla: t_internships_period (9 registros)
--- --------------------------------------------------------
-INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (7, '2027-04-26', '2027-08-16', 21, 10, '2026-06-22T01:33:50.594', '2-2027', '1', 1, '2-2027');
-INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (2, '2026-01-05', '2026-05-02', 21, 10, '2026-06-16T03:43:12.303', '1-2026', '3', 1, '1-2026');
-INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (4, '2026-03-01', '2026-07-31', 21, 10, '2026-06-20T02:08:04.666', 'PTD-TEST-1781921284459', '3', 1, 'P1284877');
-INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (5, '2026-03-01', '2026-07-31', 21, 10, '2026-06-20T02:09:33.187', 'PTD-TEST-1781921372982', '3', 1, 'P1373389');
-INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (3, '2026-06-22', '2026-10-16', 21, 10, '2026-06-16T03:43:33.402', '2-2026', '2', 1, '2-2026');
-INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (10, '2026-03-01', '2026-07-31', 64, 31, '2026-06-26T19:45:08.688', 'PTD-TEST-1782503108559', '3', 1, 'P3108881');
-INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (8, '2028-01-01', '2028-04-22', 21, 10, '2026-06-22T01:46:36.413', '1-2028', '1', 1, '1-2028');
-INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (9, '2028-04-23', '2028-08-13', 21, 10, '2026-06-22T01:55:30.823', '2-2028', '1', 1, '2-2028');
-INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (6, '2027-01-01', '2027-04-23', 21, 10, '2026-06-20T22:20:50.448', '1-2027', '1', 1, '1-2027');
--- --------------------------------------------------------
--- Tabla: t_knowledge_base (8 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding", "metadata", "roles", "is_active", "created_at", "updated_at") VALUES ('88396492-eef6-457c-a326-530e576abd8e', 'Inscripción de Estudiante', 'process', '## Inscripción de Estudiante
 
@@ -3394,6 +2413,7 @@ INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding
 - La nota final se registra en el sistema de evaluaciones
 
 *Fuente: Reglamento General de la UNEFA. Para el texto completo, contacta a la Dirección de Asuntos Académicos.*', NULL, '{"tags":["reglamento","pasantias","practicas","normativa"],"source":"Reglamento General UNEFA"}', '["0","1","2"]', TRUE, '2026-06-16T03:26:41.326294+00:00', '2026-06-16T03:26:41.326294+00:00');
+
 -- --------------------------------------------------------
 -- Tabla: t_landing_config (13 registros)
 -- --------------------------------------------------------
@@ -3410,6 +2430,7 @@ INSERT INTO "t_landing_config" ("config_id", "config_key", "config_value", "upda
 INSERT INTO "t_landing_config" ("config_id", "config_key", "config_value", "updated_at", "updated_by") VALUES (15, 'dashboard_layout_3', '{"widgets":[{"key":"tutor-quick-stats","order":0,"visible":true},{"key":"tutor-students-chart","size":"md","order":1,"visible":true},{"key":"tutor-status-distribution","order":2,"visible":true},{"key":"tutor-pending-approvals","order":3,"visible":true},{"key":"tutor-upcoming-deadlines","order":4,"visible":true},{"key":"tutor-student-alerts","order":5,"visible":true},{"key":"tutor-grade-averages","size":"xl","order":6,"visible":false}]}', '2026-06-22T14:57:21.413285', '1');
 INSERT INTO "t_landing_config" ("config_id", "config_key", "config_value", "updated_at", "updated_by") VALUES (14, 'dashboard_layout_2', '{"widgets":[{"key":"quick-stats","order":0,"visible":true},{"key":"growth-metrics","order":1,"visible":true},{"key":"evaluations","order":2,"visible":true},{"key":"geo-coincidence","order":3,"visible":true},{"key":"pending-requests","order":4,"visible":true},{"key":"registration-stats","order":5,"visible":true},{"key":"career-distribution","order":6,"visible":true},{"key":"tutor-distribution","order":7,"visible":true},{"key":"institution-distribution","order":8,"visible":true},{"key":"monthly-enrollments","order":9,"visible":true}]}', '2026-06-22T12:59:52.46', '1');
 INSERT INTO "t_landing_config" ("config_id", "config_key", "config_value", "updated_at", "updated_by") VALUES (22, 'hero', '{"title":"Impulsa tu carrera con","subtitle":"Conectamos estudiantes talentosos de la UNEFA con las mejores oportunidades en el sector público y privado para transformar su potencial en experiencia real.","mainImage":"/unefa-img/9360.jpg","statsText":"estudiantes han impulsado su carrera con nosotros.","statsCount":3200,"highlightTexts":["Creatividad","Excelencia","Valor","Éxito","Logro"],"successCardTitle":"Éxito laboral","successCardValue":"+85%","primaryButtonLink":"/signin","primaryButtonText":"Comenzar ahora","companiesCardTitle":"Empresas aliadas","companiesCardValue":"+100","secondaryButtonText":"Saber más","successCardSubtitle":"Éxito laboral","companiesCardSubtitle":"Empresas aliadas"}', '2026-06-22T18:26:56.677', '1');
+
 -- --------------------------------------------------------
 -- Tabla: t_list (31 registros)
 -- --------------------------------------------------------
@@ -3444,6 +2465,7 @@ INSERT INTO "t_list" ("LIST_ID", "NAME", "CREATION_DATE", "MODIF_USER_ID", "MODI
 INSERT INTO "t_list" ("LIST_ID", "NAME", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (14, 'ESTATUS PASANTIA', '2026-06-16T03:12:17.850399', 0, '2026-06-16T03:12:17.850399', 0, '2026-06-16T03:12:17.850399', 0, '2026-06-16T03:12:17.850399', 1);
 INSERT INTO "t_list" ("LIST_ID", "NAME", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (15, 'ESTATUS PERIODO', '2026-06-16T03:23:20.453883', 1, '2026-06-16T03:23:20.453883', 1, '2026-06-16T03:23:20.453883', 1, '2026-06-16T03:23:20.453883', 1);
 INSERT INTO "t_list" ("LIST_ID", "NAME", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (503, 'TUTOR_TYPE', '2026-06-17T02:03:37.58322', 1, '2026-06-17T02:03:37.58322', 1, '2026-06-17T02:03:37.58322', 1, '2026-06-17T02:03:37.58322', 1);
+
 -- --------------------------------------------------------
 -- Tabla: t_municipio (335 registros)
 -- --------------------------------------------------------
@@ -3782,218 +2804,14 @@ INSERT INTO "t_municipio" ("municipio_id", "estado_id", "name") VALUES (332, 23,
 INSERT INTO "t_municipio" ("municipio_id", "estado_id", "name") VALUES (333, 23, 'Sucre');
 INSERT INTO "t_municipio" ("municipio_id", "estado_id", "name") VALUES (334, 23, 'Valmore Rodríguez');
 INSERT INTO "t_municipio" ("municipio_id", "estado_id", "name") VALUES (335, 24, 'Libertador');
+
 -- --------------------------------------------------------
 -- Tabla: t_notifications (203 registros)
--- --------------------------------------------------------
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (4, 3, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1781921284459" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-20T02:07:55.574063');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (5, 4, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1781921284459" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-20T02:07:55.574063');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (6, 5, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1781921284459" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-20T02:07:55.574063');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (8, 7, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1781921284459" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-20T02:07:55.574063');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (9, 3, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1781921372982" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-20T02:09:23.869333');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (10, 4, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1781921372982" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-20T02:09:23.869333');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (11, 5, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1781921372982" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-20T02:09:23.869333');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (13, 7, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1781921372982" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-20T02:09:23.869333');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (14, 3, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "1-2027" (01 de enero de 2027 - 23 de abril de 2027).', FALSE, NULL, NULL, '2026-06-20T22:20:51.742696');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (15, 4, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "1-2027" (01 de enero de 2027 - 23 de abril de 2027).', FALSE, NULL, NULL, '2026-06-20T22:20:51.742696');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (16, 5, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "1-2027" (01 de enero de 2027 - 23 de abril de 2027).', FALSE, NULL, NULL, '2026-06-20T22:20:51.742696');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (17, 7, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "1-2027" (01 de enero de 2027 - 23 de abril de 2027).', FALSE, NULL, NULL, '2026-06-20T22:20:51.742696');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (19, 3, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "2-2027" (25 de abril de 2027 - 15 de agosto de 2027).', FALSE, NULL, NULL, '2026-06-22T01:33:57.718374');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (20, 4, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "2-2027" (25 de abril de 2027 - 15 de agosto de 2027).', FALSE, NULL, NULL, '2026-06-22T01:33:57.718374');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (21, 5, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "2-2027" (25 de abril de 2027 - 15 de agosto de 2027).', FALSE, NULL, NULL, '2026-06-22T01:33:57.718374');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (22, 7, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "2-2027" (25 de abril de 2027 - 15 de agosto de 2027).', FALSE, NULL, NULL, '2026-06-22T01:33:57.718374');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (24, 3, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "1-2028" (31 de diciembre de 2027 - 21 de abril de 2028).', FALSE, NULL, NULL, '2026-06-22T01:46:38.883334');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (25, 4, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "1-2028" (31 de diciembre de 2027 - 21 de abril de 2028).', FALSE, NULL, NULL, '2026-06-22T01:46:38.883334');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (26, 5, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "1-2028" (31 de diciembre de 2027 - 21 de abril de 2028).', FALSE, NULL, NULL, '2026-06-22T01:46:38.883334');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (27, 7, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "1-2028" (31 de diciembre de 2027 - 21 de abril de 2028).', FALSE, NULL, NULL, '2026-06-22T01:46:38.883334');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (29, 3, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "2-2028" (22 de abril de 2028 - 12 de agosto de 2028).', FALSE, NULL, NULL, '2026-06-22T01:55:33.122976');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (30, 4, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "2-2028" (22 de abril de 2028 - 12 de agosto de 2028).', FALSE, NULL, NULL, '2026-06-22T01:55:33.122976');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (31, 5, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "2-2028" (22 de abril de 2028 - 12 de agosto de 2028).', FALSE, NULL, NULL, '2026-06-22T01:55:33.122976');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (32, 7, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "2-2028" (22 de abril de 2028 - 12 de agosto de 2028).', FALSE, NULL, NULL, '2026-06-22T01:55:33.122976');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (2, 1, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "1-2026" (04 de enero de 2026 - 01 de mayo de 2026).', TRUE, '2026-06-22T19:17:41.533', NULL, '2026-06-16T03:43:16.175703');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (3, 1, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "2-2026" (21 de junio de 2026 - 15 de octubre de 2026).', TRUE, '2026-06-22T19:17:41.533', NULL, '2026-06-16T03:43:37.064628');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (7, 1, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1781921284459" (28 de febrero de 2026 - 30 de julio de 2026).', TRUE, '2026-06-22T19:17:41.533', NULL, '2026-06-20T02:07:55.574063');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (12, 1, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1781921372982" (28 de febrero de 2026 - 30 de julio de 2026).', TRUE, '2026-06-22T19:17:41.533', NULL, '2026-06-20T02:09:23.869333');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (18, 1, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "1-2027" (01 de enero de 2027 - 23 de abril de 2027).', TRUE, '2026-06-22T19:17:41.533', NULL, '2026-06-20T22:20:51.742696');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (23, 1, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "2-2027" (25 de abril de 2027 - 15 de agosto de 2027).', TRUE, '2026-06-22T19:17:41.533', NULL, '2026-06-22T01:33:57.718374');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (34, 5, 'system', '📢 Inicio de lapso {{periodo}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>¡Bienvenido al {{periodo}}, {{nombre}}!</h2><p>Informamos que el lapso académico <strong>{{periodo}}</strong> ha dado inicio el día <strong>{{fecha_inicio}}</strong>.</p><p>Te recordamos mantener tus datos al día y revisar las actividades programadas para este período.</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', FALSE, NULL, NULL, '2026-06-23T19:14:00.148173');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (35, 3, 'system', '{{asunto}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>{{asunto}}</h2><p>Hola {{nombre}},</p><p>Este correo se mando desde la pagina web con RESEND</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', FALSE, NULL, NULL, '2026-06-23T19:16:21.864038');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (36, 5, 'system', '{{asunto}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>{{asunto}}</h2><p>Hola {{nombre}},</p><p>Este correo se mando desde la pagina web con RESEND</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', FALSE, NULL, NULL, '2026-06-23T19:16:21.864038');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (33, 1, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "2-2028" (22 de abril de 2028 - 12 de agosto de 2028).', TRUE, '2026-06-24T02:34:11.572', NULL, '2026-06-22T01:55:33.122976');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (80, 3, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1782503108559" ha finalizado.', FALSE, NULL, NULL, '2026-06-28T01:27:08.463488');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (28, 1, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "1-2028" (31 de diciembre de 2027 - 21 de abril de 2028).', TRUE, '2026-06-24T02:45:05.255', NULL, '2026-06-22T01:46:38.883334');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (40, 10, 'system', 'correo test', 'correo test', FALSE, NULL, NULL, '2026-06-24T20:25:51.310337');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (41, 5, 'system', '📢 Inicio de lapso {{periodo}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>¡Bienvenido al {{periodo}}, {{nombre}}!</h2><p>Informamos que el lapso académico <strong>{{periodo}}</strong> ha dado inicio el día <strong>{{fecha_inicio}}</strong>.</p><p>Te recordamos mantener tus datos al día y revisar las actividades programadas para este período.</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', FALSE, NULL, NULL, '2026-06-24T20:39:22.465727');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (42, 3, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921284459" ha finalizado.', FALSE, NULL, NULL, '2026-06-26T02:30:52.186467');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (43, 4, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921284459" ha finalizado.', FALSE, NULL, NULL, '2026-06-26T02:30:52.186467');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (45, 10, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921284459" ha finalizado.', FALSE, NULL, NULL, '2026-06-26T02:30:52.186467');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (46, 7, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921284459" ha finalizado.', FALSE, NULL, NULL, '2026-06-26T02:30:52.186467');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (47, 5, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921284459" ha finalizado.', FALSE, NULL, NULL, '2026-06-26T02:30:52.186467');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (49, 3, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921372982" ha finalizado.', FALSE, NULL, NULL, '2026-06-26T02:31:01.198417');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (50, 4, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921372982" ha finalizado.', FALSE, NULL, NULL, '2026-06-26T02:31:01.198417');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (52, 10, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921372982" ha finalizado.', FALSE, NULL, NULL, '2026-06-26T02:31:01.198417');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (53, 7, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921372982" ha finalizado.', FALSE, NULL, NULL, '2026-06-26T02:31:01.198417');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (54, 5, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921372982" ha finalizado.', FALSE, NULL, NULL, '2026-06-26T02:31:01.198417');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (56, 3, 'system', '🚀 Período Académico Iniciado', 'El período "2-2026" ha iniciado formalmente.', FALSE, NULL, NULL, '2026-06-26T02:31:10.289251');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (57, 4, 'system', '🚀 Período Académico Iniciado', 'El período "2-2026" ha iniciado formalmente.', FALSE, NULL, NULL, '2026-06-26T02:31:10.289251');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (59, 10, 'system', '🚀 Período Académico Iniciado', 'El período "2-2026" ha iniciado formalmente.', FALSE, NULL, NULL, '2026-06-26T02:31:10.289251');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (60, 7, 'system', '🚀 Período Académico Iniciado', 'El período "2-2026" ha iniciado formalmente.', FALSE, NULL, NULL, '2026-06-26T02:31:10.289251');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (61, 5, 'system', '🚀 Período Académico Iniciado', 'El período "2-2026" ha iniciado formalmente.', FALSE, NULL, NULL, '2026-06-26T02:31:10.289251');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (64, 3, 'system', '✏️ Período Académico Modificado', 'El período "2-2026" ha sido actualizado.', FALSE, NULL, NULL, '2026-06-26T02:31:11.704851');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (65, 4, 'system', '✏️ Período Académico Modificado', 'El período "2-2026" ha sido actualizado.', FALSE, NULL, NULL, '2026-06-26T02:31:11.704851');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (67, 10, 'system', '✏️ Período Académico Modificado', 'El período "2-2026" ha sido actualizado.', FALSE, NULL, NULL, '2026-06-26T02:31:11.704851');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (68, 7, 'system', '✏️ Período Académico Modificado', 'El período "2-2026" ha sido actualizado.', FALSE, NULL, NULL, '2026-06-26T02:31:11.704851');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (69, 5, 'system', '✏️ Período Académico Modificado', 'El período "2-2026" ha sido actualizado.', FALSE, NULL, NULL, '2026-06-26T02:31:11.704851');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (71, 3, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1782503108559" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-26T19:45:11.184807');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (72, 4, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1782503108559" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-26T19:45:11.184807');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (74, 10, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1782503108559" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-26T19:45:11.184807');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (75, 5, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1782503108559" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-26T19:45:11.184807');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (77, 7, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1782503108559" (28 de febrero de 2026 - 30 de julio de 2026).', FALSE, NULL, NULL, '2026-06-26T19:45:11.184807');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (81, 4, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1782503108559" ha finalizado.', FALSE, NULL, NULL, '2026-06-28T01:27:08.463488');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (83, 10, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1782503108559" ha finalizado.', FALSE, NULL, NULL, '2026-06-28T01:27:08.463488');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (84, 5, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1782503108559" ha finalizado.', FALSE, NULL, NULL, '2026-06-28T01:27:08.463488');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (85, 7, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1782503108559" ha finalizado.', FALSE, NULL, NULL, '2026-06-28T01:27:08.463488');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (37, 9, 'system', '{{asunto}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>{{asunto}}</h2><p>Hola {{nombre}},</p><p>Este correo se mando desde la pagina web con RESEND</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', TRUE, '2026-07-02T13:17:49.819', NULL, '2026-06-23T19:16:21.864038');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (44, 9, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921284459" ha finalizado.', TRUE, '2026-07-02T13:17:49.819', NULL, '2026-06-26T02:30:52.186467');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (51, 9, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921372982" ha finalizado.', TRUE, '2026-07-02T13:17:49.819', NULL, '2026-06-26T02:31:01.198417');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (79, 1, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1782503108559" ha finalizado.', TRUE, '2026-07-01T00:23:25.896', NULL, '2026-06-28T01:27:08.463488');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (48, 1, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921284459" ha finalizado.', TRUE, '2026-07-01T00:23:25.896', NULL, '2026-06-26T02:30:52.186467');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (55, 1, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1781921372982" ha finalizado.', TRUE, '2026-07-01T00:23:25.896', NULL, '2026-06-26T02:31:01.198417');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (62, 1, 'system', '🚀 Período Académico Iniciado', 'El período "2-2026" ha iniciado formalmente.', TRUE, '2026-07-01T00:23:25.896', NULL, '2026-06-26T02:31:10.289251');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (70, 1, 'system', '✏️ Período Académico Modificado', 'El período "2-2026" ha sido actualizado.', TRUE, '2026-07-01T00:23:25.896', NULL, '2026-06-26T02:31:11.704851');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (76, 1, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1782503108559" (28 de febrero de 2026 - 30 de julio de 2026).', TRUE, '2026-07-01T00:23:25.896', NULL, '2026-06-26T19:45:11.184807');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (93, 3, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:41.888338');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (94, 4, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:41.888338');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (96, 10, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:41.888338');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (97, 5, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:41.888338');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (98, 1, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:41.888338');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (99, 7, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:41.888338');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (100, 3, 'system', '🗑️ Período Académico Eliminado', 'El período "1-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:52.700585');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (101, 4, 'system', '🗑️ Período Académico Eliminado', 'El período "1-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:52.700585');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (103, 10, 'system', '🗑️ Período Académico Eliminado', 'El período "1-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:52.700585');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (104, 5, 'system', '🗑️ Período Académico Eliminado', 'El período "1-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:52.700585');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (105, 1, 'system', '🗑️ Período Académico Eliminado', 'El período "1-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:52.700585');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (106, 7, 'system', '🗑️ Período Académico Eliminado', 'El período "1-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-01T00:45:52.700585');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (107, 5, 'system', '📋 Reporte de evaluación disponible', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>Reporte de Evaluación</h2><p>Hola {{nombre}},</p><p>Tenés disponible el reporte de evaluación del período <strong>{{periodo}}</strong>.</p><p>Ingresá al sistema para revisar los resultados y completar las evaluaciones pendientes de tus estudiantes asignados.</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', FALSE, NULL, NULL, '2026-07-01T14:41:16.141928');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (108, 5, 'system', '{{asunto}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>{{asunto}}</h2><p>Hola {{nombre}},</p><p>Esto es un test desde la pagina</p><p></p><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', FALSE, NULL, NULL, '2026-07-01T15:23:14.024113');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (109, 3, 'system', '{{asunto}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>{{asunto}}</h2><p>Hola {{nombre}},</p><p>Esto es un test desde la pagina</p><p></p><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', FALSE, NULL, NULL, '2026-07-01T15:23:14.024113');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (58, 9, 'system', '🚀 Período Académico Iniciado', 'El período "2-2026" ha iniciado formalmente.', TRUE, '2026-07-02T13:17:49.819', NULL, '2026-06-26T02:31:10.289251');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (66, 9, 'system', '✏️ Período Académico Modificado', 'El período "2-2026" ha sido actualizado.', TRUE, '2026-07-02T13:17:49.819', NULL, '2026-06-26T02:31:11.704851');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (73, 9, 'system', '📅 Nuevo Período Académico Creado', 'Se ha creado el período "PTD-TEST-1782503108559" (28 de febrero de 2026 - 30 de julio de 2026).', TRUE, '2026-07-02T13:17:49.819', NULL, '2026-06-26T19:45:11.184807');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (82, 9, 'system', '🏁 Período Académico Finalizado', 'El período "PTD-TEST-1782503108559" ha finalizado.', TRUE, '2026-07-02T13:17:49.819', NULL, '2026-06-28T01:27:08.463488');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (95, 9, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', TRUE, '2026-07-02T13:17:49.819', NULL, '2026-07-01T00:45:41.888338');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (102, 9, 'system', '🗑️ Período Académico Eliminado', 'El período "1-2028" ha sido eliminado.', TRUE, '2026-07-02T13:17:49.819', NULL, '2026-07-01T00:45:52.700585');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (110, 1, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-02T13:20:29.424716');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (112, 4, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-02T13:20:29.424716');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (113, 10, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-02T13:20:29.424716');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (114, 5, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-02T13:20:29.424716');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (115, 3, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-02T13:20:29.424716');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (116, 7, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', FALSE, NULL, NULL, '2026-07-02T13:20:29.424716');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (117, 1, 'system', '✏️ Período Académico Modificado', 'El período "2-2028" ha sido actualizado.', FALSE, NULL, NULL, '2026-07-02T13:22:04.362113');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (119, 4, 'system', '✏️ Período Académico Modificado', 'El período "2-2028" ha sido actualizado.', FALSE, NULL, NULL, '2026-07-02T13:22:04.362113');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (120, 10, 'system', '✏️ Período Académico Modificado', 'El período "2-2028" ha sido actualizado.', FALSE, NULL, NULL, '2026-07-02T13:22:04.362113');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (121, 5, 'system', '✏️ Período Académico Modificado', 'El período "2-2028" ha sido actualizado.', FALSE, NULL, NULL, '2026-07-02T13:22:04.362113');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (122, 3, 'system', '✏️ Período Académico Modificado', 'El período "2-2028" ha sido actualizado.', FALSE, NULL, NULL, '2026-07-02T13:22:04.362113');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (123, 7, 'system', '✏️ Período Académico Modificado', 'El período "2-2028" ha sido actualizado.', FALSE, NULL, NULL, '2026-07-02T13:22:04.362113');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (111, 9, 'system', '🗑️ Período Académico Eliminado', 'El período "2-2028" ha sido eliminado.', TRUE, '2026-07-02T15:04:05.41', NULL, '2026-07-02T13:20:29.424716');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (118, 9, 'system', '✏️ Período Académico Modificado', 'El período "2-2028" ha sido actualizado.', TRUE, '2026-07-02T15:04:11.144', NULL, '2026-07-02T13:22:04.362113');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (124, 5, 'system', '{{asunto}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>{{asunto}}</h2><p>Hola {{nombre}},</p><p>{{mensaje}}</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', FALSE, NULL, NULL, '2026-07-02T19:13:12.914029');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (125, 5, 'system', '📋 Reporte de evaluación disponible', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>Reporte de Evaluación</h2><p>Hola {{nombre}},</p><p>Tenés disponible el reporte de evaluación del período <strong>{{periodo}}</strong>.</p><p>Ingresá al sistema para revisar los resultados y completar las evaluaciones pendientes de tus estudiantes asignados.</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', FALSE, NULL, NULL, '2026-07-02T19:17:51.012896');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (126, 5, 'system', '{{asunto}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>{{asunto}}</h2><p>Hola {{nombre}},</p><p>{{mensaje}}</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', FALSE, NULL, NULL, '2026-07-02T20:01:51.543898');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (127, 5, 'system', '{{asunto}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>{{asunto}}</h2><p>Hola {{nombre}},</p><p>{{mensaje}}</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', FALSE, NULL, NULL, '2026-07-02T22:26:06.69448');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (128, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T00:42:22.659486');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (129, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T00:42:22.955999');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (130, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T00:45:11.294875');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (131, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T00:45:11.711054');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (132, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T00:54:34.533949');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (133, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T00:54:34.902973');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (134, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:05:35.122264');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (135, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:05:35.567313');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (136, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:09:07.808378');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (137, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:09:08.290856');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (138, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:11:11.354123');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (139, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:11:11.686848');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (140, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:11:46.874326');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (141, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:11:47.195288');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (142, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:18:09.854131');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (143, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:18:10.250659');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (144, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:19:32.782829');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (145, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:19:33.093055');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (146, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:20:17.053453');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (147, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T01:20:17.3312');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (150, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T02:10:07.354329');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (151, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T02:10:07.65107');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (152, 4, 'system', 'PERÍODO ACADÉMICO ELIMINADO', 'EL PERÍODO "1-2027" HA SIDO ELIMINADO.', FALSE, NULL, NULL, '2026-07-03T02:10:45.154276');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (153, 9, 'system', 'PERÍODO ACADÉMICO ELIMINADO', 'EL PERÍODO "1-2027" HA SIDO ELIMINADO.', FALSE, NULL, NULL, '2026-07-03T02:10:45.154276');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (154, 7, 'system', 'PERÍODO ACADÉMICO ELIMINADO', 'EL PERÍODO "1-2027" HA SIDO ELIMINADO.', FALSE, NULL, NULL, '2026-07-03T02:10:45.154276');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (155, 10, 'system', 'PERÍODO ACADÉMICO ELIMINADO', 'EL PERÍODO "1-2027" HA SIDO ELIMINADO.', FALSE, NULL, NULL, '2026-07-03T02:10:45.154276');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (156, 16, 'system', 'PERÍODO ACADÉMICO ELIMINADO', 'EL PERÍODO "1-2027" HA SIDO ELIMINADO.', FALSE, NULL, NULL, '2026-07-03T02:10:45.154276');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (157, 17, 'system', 'PERÍODO ACADÉMICO ELIMINADO', 'EL PERÍODO "1-2027" HA SIDO ELIMINADO.', FALSE, NULL, NULL, '2026-07-03T02:10:45.154276');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (158, 5, 'system', 'PERÍODO ACADÉMICO ELIMINADO', 'EL PERÍODO "1-2027" HA SIDO ELIMINADO.', FALSE, NULL, NULL, '2026-07-03T02:10:45.154276');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (160, 3, 'system', 'PERÍODO ACADÉMICO ELIMINADO', 'EL PERÍODO "1-2027" HA SIDO ELIMINADO.', FALSE, NULL, NULL, '2026-07-03T02:10:45.154276');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (161, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T02:14:28.183253');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (162, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T02:14:28.434488');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (163, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T09:16:06.658254');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (164, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T09:16:06.983559');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (165, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T15:14:58.566692');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (166, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T15:14:58.828862');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (167, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T17:28:56.6977');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (168, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T17:28:56.94262');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (159, 1, 'system', 'PERÍODO ACADÉMICO ELIMINADO', 'EL PERÍODO "1-2027" HA SIDO ELIMINADO.', TRUE, '2026-07-03T18:01:55.82', NULL, '2026-07-03T02:10:45.154276');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (169, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:03:22.401294');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (170, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:03:22.599');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (171, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:07:52.641438');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (172, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:07:52.948644');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (173, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:11:34.076274');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (174, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:11:34.409313');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (175, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:12:25.120506');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (176, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:12:25.400684');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (177, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:28:46.01542');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (178, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:28:46.306653');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (179, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:31:51.889127');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (180, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T18:31:52.092943');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (181, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T20:37:17.220186');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (182, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T20:37:17.566942');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (183, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T21:11:08.824656');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (184, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T21:11:09.077881');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (185, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T22:10:10.136692');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (186, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T22:10:11.129406');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (187, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T23:37:01.629446');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (188, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-03T23:37:01.849498');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (189, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T00:55:46.265046');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (190, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T00:55:46.583844');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (191, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T01:21:29.522049');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (192, 17, 'reminder', '⚠️ Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T01:21:29.95548');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (193, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T02:01:44.528316');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (194, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T02:01:44.744615');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (195, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T02:39:20.663268');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (196, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T02:39:21.051635');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (197, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T23:19:31.085922');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (198, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T23:19:31.349763');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (200, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T23:24:18.497996');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (201, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T23:24:18.945262');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (202, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T23:25:33.527513');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (203, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-04T23:25:34.022069');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (204, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T01:30:33.172211');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (205, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T01:30:33.412752');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (207, 16, 'success', 'SOLICITUD APROBADA', 'TU SOLICITUD "CONSTANCIA DE ESTUDIOS" FUE APROBADA. REVISA LA RESPUESTA DE COORDINACIÓN.', FALSE, NULL, '{"entity":"request","entityId":9}', '2026-07-05T01:34:39.18578');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (208, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T02:17:49.817777');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (209, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T02:17:50.062406');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (210, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T02:38:20.733826');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (211, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T02:38:21.053325');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (212, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T18:19:08.288144');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (213, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T18:19:08.598537');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (214, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T19:00:00.141335');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (215, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T19:00:00.382471');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (216, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T20:46:05.645193');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (217, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T20:46:06.159937');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (218, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T21:56:59.639852');
-INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (219, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T21:56:59.856839');
--- --------------------------------------------------------
--- Tabla: t_operation (3 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_operation" ("OPERATION_ID", "ACTION", "DESCRIPTION", "STATUS") VALUES (1, 'INSERT', 'Inserción de nuevo registro', 1);
 INSERT INTO "t_operation" ("OPERATION_ID", "ACTION", "DESCRIPTION", "STATUS") VALUES (2, 'UPDATE', 'Actualización de registro', 1);
 INSERT INTO "t_operation" ("OPERATION_ID", "ACTION", "DESCRIPTION", "STATUS") VALUES (3, 'DELETE', 'Eliminación de registro', 1);
+
 -- --------------------------------------------------------
 -- Tabla: t_parroquia (1000 registros)
 -- --------------------------------------------------------
@@ -4997,14 +3815,9 @@ INSERT INTO "t_parroquia" ("parroquia_id", "municipio_id", "name") VALUES (997, 
 INSERT INTO "t_parroquia" ("parroquia_id", "municipio_id", "name") VALUES (998, 306, 'La Trinidad');
 INSERT INTO "t_parroquia" ("parroquia_id", "municipio_id", "name") VALUES (999, 307, 'Manuel Monge');
 INSERT INTO "t_parroquia" ("parroquia_id", "municipio_id", "name") VALUES (1000, 308, 'Salóm');
+
 -- --------------------------------------------------------
 -- Tabla: t_password_history (3 registros)
--- --------------------------------------------------------
-INSERT INTO "t_password_history" ("HISTORY_ID", "USER_ID", "KEY", "CREATION_DATE") VALUES (1, 5, '$2b$10$LcVHaWLAwmmGhr.smwBHfuYRk1pC5wBqsWxgFG.vjF.QCAHMGERG.', '2026-06-22T08:42:03');
-INSERT INTO "t_password_history" ("HISTORY_ID", "USER_ID", "KEY", "CREATION_DATE") VALUES (2, 9, '$2b$10$2sS4l1LJghI/DLR.plAiPuJ9M0Z5IbUsgUefLw6OVax6.91QMx5zG', '2026-06-22T14:09:50');
-INSERT INTO "t_password_history" ("HISTORY_ID", "USER_ID", "KEY", "CREATION_DATE") VALUES (3, 10, '$2b$10$Bu.LMNHxF6yoRwNhU7en3uwDdOafLjxwEFPSqc0NFnm8fEYsHLH6a', '2026-06-24T17:05:02');
--- --------------------------------------------------------
--- Tabla: t_permissions (70 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_permissions" ("PERMISSIONS_ID", "NAME", "MODULE", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (138, 'lists:edit', 'Listas', 'Editar listas del sistema', 0, '2026-07-05T21:56:55.448', 0, '2026-07-05T21:56:55.448', 0, '2026-07-05T21:56:55.448', 1);
 INSERT INTO "t_permissions" ("PERMISSIONS_ID", "NAME", "MODULE", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (131, 'evaluations:view', 'Evaluaciones', 'Ver evaluaciones', 0, '2026-07-05T21:56:54.091', 0, '2026-07-05T21:56:54.091', 0, '2026-07-05T21:56:54.091', 1);
@@ -5076,139 +3889,9 @@ INSERT INTO "t_permissions" ("PERMISSIONS_ID", "NAME", "MODULE", "DESCRIPTION", 
 INSERT INTO "t_permissions" ("PERMISSIONS_ID", "NAME", "MODULE", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (124, 'enrollments:create', 'Inscripciones', 'Crear inscripciones', 0, '2026-07-05T21:56:52.697', 0, '2026-07-05T21:56:52.697', 0, '2026-07-05T21:56:52.697', 1);
 INSERT INTO "t_permissions" ("PERMISSIONS_ID", "NAME", "MODULE", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (125, 'enrollments:edit', 'Inscripciones', 'Editar inscripciones', 0, '2026-07-05T21:56:52.821', 0, '2026-07-05T21:56:52.821', 0, '2026-07-05T21:56:52.821', 1);
 INSERT INTO "t_permissions" ("PERMISSIONS_ID", "NAME", "MODULE", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (130, 'tracking:delete', 'Seguimiento', 'Eliminar seguimiento', 0, '2026-07-05T21:56:53.948', 0, '2026-07-05T21:56:53.948', 0, '2026-07-05T21:56:53.948', 1);
+
 -- --------------------------------------------------------
 -- Tabla: t_person_address (24 registros)
--- --------------------------------------------------------
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (2, 1, 3, 3, FALSE, '2026-06-23T03:43:36.654895+00:00', 'f0811e02-4a82-4da4-bd46-30dea5bc1ae2', '2026-06-23T03:43:36.654895+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (7, 28, 8, 3, TRUE, '2026-06-23T12:59:04.657263+00:00', 'ac95b405-1017-4e2b-ba8b-0f4afd5a480f', '2026-06-23T12:59:04.657263+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (8, 43, 9, 3, TRUE, '2026-06-23T13:22:02.799986+00:00', '6cee8e20-06c1-4d36-9292-2834c040c392', '2026-06-23T13:22:02.799986+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (9, 44, 10, 3, TRUE, '2026-06-23T13:27:46.853239+00:00', '5499f8ef-bd13-41e3-b672-1928d1c8780b', '2026-06-23T13:27:46.853239+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (11, 4, 12, 3, TRUE, '2026-06-24T00:12:00.451044+00:00', '94698bcb-ea2f-4a18-93b1-84e351db9fce', '2026-06-24T00:12:00.451044+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (12, 5, 13, 3, TRUE, '2026-06-24T00:16:52.462336+00:00', '7daa16b8-3d94-4687-bd8b-1338d2af174c', '2026-06-24T00:16:52.462336+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (13, 6, 14, 3, TRUE, '2026-06-24T00:19:45.48257+00:00', 'cc1a2da6-fbe4-4a88-a0d9-c78545497ee9', '2026-06-24T00:19:45.48257+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (14, 16, 15, 3, TRUE, '2026-06-24T00:22:37.579877+00:00', '67cbcba3-5adc-4578-9fb7-6b6e1f2ba055', '2026-06-24T00:22:37.579877+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (15, 14, 16, 3, TRUE, '2026-06-24T00:26:07.951276+00:00', 'cb51fd3e-8d6d-475a-8622-d2800e1825d3', '2026-06-24T00:26:07.951276+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (16, 11, 17, 3, TRUE, '2026-06-24T00:29:17.136668+00:00', 'd8b6d876-e46d-4d36-b408-4f82e6575741', '2026-06-24T00:29:17.136668+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (17, 47, 18, 3, TRUE, '2026-06-24T00:34:04.788104+00:00', '60f16cc6-9755-493a-a6c4-2de481f001f6', '2026-06-24T00:34:04.788104+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (18, 9, 19, 3, TRUE, '2026-06-24T00:37:07.523639+00:00', '2da3f6f0-4ef6-40e9-b208-8f7246fca396', '2026-06-24T00:37:07.523639+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (19, 17, 20, 3, TRUE, '2026-06-24T00:41:36.819649+00:00', '9c40e1a3-cfd3-451c-be19-581400fd958f', '2026-06-24T00:41:36.819649+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (20, 25, 21, 3, TRUE, '2026-06-24T00:44:49.635357+00:00', '0782ade0-ea60-403c-9c5d-5c91486ba2c2', '2026-06-24T00:44:49.635357+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (21, 7, 22, 3, TRUE, '2026-06-24T00:49:43.82273+00:00', 'a07537d9-7171-4e2b-aa1f-a4ffa6189c4a', '2026-06-24T00:49:43.82273+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (10, 3, 11, 3, TRUE, '2026-06-24T00:06:43.511332+00:00', 'c61b8ed5-6538-49ad-982e-a67941cb73b3', '2026-06-24T00:06:43.511332+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (22, 8, 23, 3, TRUE, '2026-06-24T00:52:47.661597+00:00', 'c213d061-965c-48cd-a877-47dfe5ed893f', '2026-06-24T00:52:47.661597+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (23, 48, 24, 3, TRUE, '2026-06-24T00:57:06.125038+00:00', 'b034f358-d1b9-44aa-80ea-0ad4c3fea3df', '2026-06-24T00:57:06.125038+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (24, 15, 25, 3, TRUE, '2026-06-24T01:03:36.861675+00:00', 'e16b45c4-c394-4ee4-956d-6c06d8368289', '2026-06-24T01:03:36.861675+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (25, 13, 26, 3, TRUE, '2026-06-24T01:07:21.629593+00:00', '922432e7-2d7a-4917-9ae5-934607127886', '2026-06-24T01:07:21.629593+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (26, 12, 27, 3, TRUE, '2026-06-24T01:10:58.268178+00:00', '9bc50818-6671-4023-9392-ebd56a5e5a6a', '2026-06-24T01:10:58.268178+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (30, 10, 31, 3, FALSE, '2026-06-24T01:44:06.071342+00:00', 'c2a33c68-6c53-43e1-8985-32b26e0e405c', '2026-06-24T01:44:06.071342+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (29, 10, 30, 3, TRUE, '2026-06-24T01:31:40.474279+00:00', '84e24da7-8415-489c-b05d-d95fa2f5a08c', '2026-06-24T01:31:40.474279+00:00', 1);
-INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (31, 87, 32, 3, TRUE, '2026-07-02T15:11:59.846124+00:00', 'd8482c03-97c5-43ad-8d01-88c1f03e021c', '2026-07-02T15:11:59.846124+00:00', 1);
--- --------------------------------------------------------
--- Tabla: t_persons (83 registros)
--- --------------------------------------------------------
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (1, 'V12345678', 'ADMIN', NULL, 'PRINCIPAL', NULL, 'admin@unefa.edu.ve', NULL, 'M', '2000-01-01', 'Sede Principal', 'S', 1, '2026-06-16T03:16:38.42954', '2026-06-16T03:18:06.430221');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (2, '9663439', 'Angela', 'Margarita', 'Castillo', 'Sabina', 'pasantiasacarigua@gmail.com', '0424-5513911', NULL, NULL, NULL, NULL, 1, '2026-06-16T13:40:51.50235', '2026-06-16T13:40:51.50235');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (18, 'V-30441472', 'DANIEL', 'ALFONSO', 'MARTINEZ', 'RODRIGUEZ', 'MARTINEZ1903R@GMAIL.COM', '04245660625', 'M', NULL, NULL, 'S', 1, '2026-06-16T15:55:25.380484', '2026-06-16T15:55:25.380484');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (19, 'V-30668348', 'LAIRET', 'ALEJANDRA', 'FLORES', 'ARAUJO', 'LAIRETFLORES2@GMAIL.COM', '04260339318', 'F', NULL, NULL, 'S', 1, '2026-06-16T16:03:14.3552', '2026-06-16T16:03:14.3552');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (20, 'V-30095693', 'EDGAR', 'ALEJANDRO', 'MOGOLLON', 'PERALTA', 'EDGARMOGOLLON883@GMAIL.COM', '04128211241', 'M', NULL, NULL, 'S', 1, '2026-06-16T16:06:42.977158', '2026-06-16T16:06:42.977158');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (21, 'V-29824321', 'ROMARIO', 'ALBERTO', 'ALSECO', 'CASTILLO', 'ROMARIOAC01@GMAIL.COM', '04125158713', 'M', NULL, NULL, 'S', 1, '2026-06-16T16:10:49.197879', '2026-06-16T16:10:49.197879');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (22, 'V-28288990', 'WUISLEIDY', 'ALEJANDRA', 'ROJAS', 'ROJAS', 'ROJASWUISLEIDY@GMAIL.COM', '04125574580', 'F', NULL, NULL, 'S', 1, '2026-06-16T16:16:13.162578', '2026-06-16T16:16:13.162578');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (23, 'V-23052558', 'DIANA', 'PATRICIA', 'CAMACARO', 'PUERTA', 'CAMACAROPUERTADIANAPATRICIA@GMAIL.COM', '04129619909', 'F', NULL, NULL, 'S', 1, '2026-06-16T16:22:06.066839', '2026-06-16T16:22:06.066839');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (24, 'V-28537156', 'CRISTIAM', 'XAVIER', 'PEREZ', 'DURAN', 'XAVIER.CRISTIAM30@GMAIL.COM', '04125159114', 'M', NULL, NULL, 'S', 1, '2026-06-16T16:27:44.206782', '2026-06-16T16:27:44.206782');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (27, 'V-12088665', 'JUAN', NULL, 'ESTELLER', NULL, 'JUANESTELLER@GMAIL.COM', NULL, NULL, NULL, NULL, NULL, 1, '2026-06-19T00:57:30.5406', '2026-06-19T00:57:30.5406');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (56, 'V-12874046', 'TEST', NULL, 'EST_12874046', NULL, 'test.est12874046@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:42:35.733831', '2026-06-26T19:42:35.733831');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (33, 'V-10123456', 'MARIA', NULL, 'GONZALEZ', NULL, 'maria.gonzalez@unefa.edu.ve', NULL, 'F', NULL, NULL, NULL, 1, '2026-06-21T19:26:31.341719', '2026-06-21T19:26:31.341719');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (36, 'V-10456789', 'PEDRO', NULL, 'SANCHEZ', NULL, 'pedro.sanchez@unefa.edu.ve', NULL, 'M', NULL, NULL, NULL, 1, '2026-06-21T19:26:31.341719', '2026-06-21T19:26:31.341719');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (38, 'V-12345678', 'JOSE', NULL, 'PRIMERO', NULL, 'JOSECORREO@GMAIL.COM', '04225645136', 'M', '1998-03-12', NULL, 'D', 1, '2026-06-22T02:12:15.585438', '2026-06-22T02:12:15.585438');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (6, 'V-31114762', 'FRAGDIELIS', 'URIMAR', 'CARRILLO', 'MEDINA', 'FRAGDIELISC@GMAIL.COM', '04145088961', 'F', '2005-08-16', NULL, 'S', 1, '2026-06-16T14:26:36.745333', '2026-06-24T00:19:42');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (39, 'V-26940010', 'EVER', NULL, 'MENDOZA', NULL, 'EVERMENDOZA.178@GMAIL.COM', NULL, NULL, NULL, NULL, NULL, 1, '2026-06-22T18:03:45.64141', '2026-06-22T18:03:45.64141');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (40, 'V-51612515', 'JOSE', NULL, 'PEREZ', NULL, 'COROE@FOC.COM', '02122342342', 'F', '1999-12-20', NULL, 'C', 1, '2026-06-23T03:25:00.948033', '2026-06-23T03:25:00.948033');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (45, 'V-15651651', 'CARLOS', NULL, 'PEREZ', NULL, 'CARLO@CDC.COM', '0422-1211222', NULL, NULL, NULL, NULL, 1, '2026-06-23T15:21:58.133281', '2026-06-23T15:25:03');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (16, 'V-31114596', 'ORYANMY', 'ALEXANDRA', 'CHIRINOS', 'CORDERO', 'ORIANMYC@GMAIL.COM', '04128284007', 'F', '2004-08-29', NULL, 'S', 1, '2026-06-16T15:25:40.029402', '2026-06-24T00:22:34');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (14, 'V-31426942', 'WENDY', 'MARIOSI', 'BERRIOS', 'GUEDEZ', 'MARIOSIBERRIOS@GMAIL.COM', '04126781429', 'F', '2005-12-14', NULL, 'S', 1, '2026-06-16T15:09:21.950852', '2026-06-24T00:26:05');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (11, 'V-30537077', 'FRANCELIS', 'SARAI', 'RODRIGUEZ', 'AZUAJE', 'RFRANCELIS35@GMAIL.COM', '04263583363', 'F', '2004-09-16', NULL, 'S', 1, '2026-06-16T14:56:06.08885', '2026-06-24T00:29:14');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (46, 'V-98765453', 'FULANO', NULL, 'MENGANITO', NULL, 'FULL@GMW.COM', '02551561516', 'F', '2010-06-07', NULL, 'S', 1, '2026-06-23T23:14:07.347469', '2026-06-23T23:14:07.347469');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (8, 'V-27215174', 'DANNA', 'GABRIELA', 'FREITEZ', 'RAMOS', 'FREITEZRAMOSDG@GMAIL.COM', '04120697877', 'F', '1998-12-29', NULL, 'S', 1, '2026-06-16T14:43:22.121015', '2026-06-24T00:59:34');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (4, 'V-31771030', 'ANTONELLA', 'IRANSUY', 'STURBA', 'GIMENEZ', 'ANTONELLASTURBA07@GMAIL.COM', '04245879104', 'F', '2006-04-07', NULL, 'S', 1, '2026-06-16T13:59:06.170647', '2026-06-24T00:11:56');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (5, 'V-30965856', 'ELEIDIMAR', 'ANYELIZ', 'RODRIGUEZ', 'LOPEZ', 'ELEIDIMARRODRIGUEZ@GMAIL.COM', '04245672035', 'F', '2004-10-22', NULL, 'S', 1, '2026-06-16T14:18:55.044392', '2026-06-24T00:16:49');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (28, 'V-31114449', 'ANTONY', NULL, 'FIGUEROA', NULL, 'ANTONYSAMUEL0903@GMAIL.COM', '04125515915', 'M', '2003-03-09', NULL, 'S', 1, '2026-06-19T03:54:33.725603', '2026-06-24T00:17:39');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (47, 'V-27944057', 'JOSE', 'EMILIO', 'RODRIGUEZ', 'YEPEZ', 'JOSEYEPEZE@GMAIL.COM', '04245133874', 'M', '2001-03-19', NULL, 'S', 1, '2026-06-24T00:34:01.153863', '2026-06-24T00:34:01.153863');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (9, 'V-25139202', 'DUSMARY', 'BEATRIZ', 'ROMAN', 'BOZA', 'DUSMARYSROMAN2702@GMAIL.COM', '02125044865', 'F', '1995-02-27', NULL, 'S', 1, '2026-06-16T14:46:43.900223', '2026-06-24T00:37:04');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (10, 'V-24146194', 'ANDREA', 'SALOME', 'GOMES', 'QUINTEROS', 'ANDREA.GOMES.QUINTERO@GMAIL.COM', '04245849218', 'F', '1995-03-29', NULL, 'S', 0, '2026-06-16T14:53:37.147358', '2026-07-03T16:10:34');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (41, 'V-6885265', 'ANTONY', NULL, 'FIGUEROA', NULL, 'ANTONYSAMUEL903@GMAIL.COM', '04166889766', 'MASCULINO', '2010-06-05', 'SDSDSD', 'C', 1, '2026-06-23T11:35:35.728459', '2026-07-02T15:13:46');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (17, 'V-29540745', 'ELOIS', 'JOSE', 'HERNANDEZ', 'PERNALETE', 'ELOISJOHERNANDEZ@GMAIL.COM', '04267127064', 'M', '1998-09-10', NULL, 'S', 1, '2026-06-16T15:36:32.531286', '2026-06-24T00:41:33');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (25, 'V-23577710', 'GENESIS', 'COROMOTO', 'CUICAS', 'PINEDA', 'GENESISCUICASPINEDA.1995@GMAIL.COM', '04263366992', 'F', '1995-06-25', NULL, 'S', 1, '2026-06-16T16:31:27.311349', '2026-06-24T00:44:43');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (44, 'V-4564511', 'RAMON', NULL, 'SEGUNDO', NULL, 'SMDSDM@FF.COM', '02551234567', 'M', '2010-06-04', NULL, 'C', 1, '2026-06-23T13:27:43.221753', '2026-06-24T00:48:32');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (7, 'V-27067798', 'ESTEFANI', 'MERCEDES', 'GONZALES', 'NUÑEZ', 'EMGONZALEZ145@GMAIL.COM', '04161272747', 'F', '1999-09-02', NULL, 'S', 1, '2026-06-16T14:28:48.451791', '2026-06-24T00:49:40');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (3, 'V-31356238', 'YUVIRISAY', 'MERCEDES', 'MENESES', 'PÉREZ', 'YUVIRISAYMENESES@GMAIL.COM', '04264500147', 'F', '1998-09-10', NULL, 'S', 1, '2026-06-16T13:46:11.657307', '2026-06-24T00:50:53');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (58, 'V-13021169', 'TEST', NULL, 'EST_13021169', NULL, 'test.est13021169@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:43:49.140243', '2026-06-26T19:43:49.140243');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (15, 'V-26167971', 'FRANCELIS', 'MARIA', 'RODRIGUEZ', 'RIVERO', 'RODRIGUEZFRANCE1997@GMAIL.COM', '04121379141', 'F', '1997-10-04', NULL, 'S', 1, '2026-06-16T15:17:21.085691', '2026-06-24T01:03:31');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (13, 'V-21396498', 'ENNY', 'MARITZA', 'REA', 'SERRANO', 'LOONE92@GMAIL.COM', '04262693007', 'F', '1989-08-26', NULL, 'S', 1, '2026-06-16T15:05:49.417448', '2026-06-24T01:07:15');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (12, 'V-25751125', 'MARIA', 'EUGENIA', 'ALMEIDA', 'RIJO', 'ORIANAVICTORIA110@GMAIL.COM', '04245175700', 'F', '1996-07-06', NULL, 'S', 1, '2026-06-16T14:57:05.425678', '2026-06-24T01:10:55');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (52, 'V-12874041', 'TEST', NULL, 'EST_12874041', NULL, 'test.est12874041@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:41:27.498427', '2026-06-26T19:41:27.498427');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (53, 'V-12874043', 'TEST', NULL, 'EST_12874043', NULL, 'test.est12874043@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:41:35.250754', '2026-06-26T19:41:35.250754');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (54, 'V-12874044', 'BUSQUEDA1782502914903', NULL, 'EST_12874044', NULL, 'test.est12874044@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:41:57.890144', '2026-06-26T19:41:57.890144');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (55, 'V-12874045', 'TEST', NULL, 'EST_12874045', NULL, 'test.est12874045@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:42:09.17007', '2026-06-26T19:42:09.17007');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (50, 'V-30713670', 'LEOVIC', NULL, 'ALVARADO', NULL, 'LEOVICALVARADO@GMAIL.COM', NULL, NULL, NULL, NULL, NULL, 1, '2026-06-24T19:49:27.788728', '2026-06-24T21:06:17');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (35, 'V-10345678', 'LAURA', NULL, 'HERNANDEZ', NULL, 'LAURA.HERNANDEZ@UNEFA.ED', '04241212121', 'FEMENINO', '2010-06-02', NULL, 'C', 1, '2026-06-21T19:26:31.341719', '2026-06-30T00:20:07');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (59, 'V-13021171', 'TEST', NULL, 'EST_13021171', NULL, 'test.est13021171@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:43:53.343107', '2026-06-26T19:43:53.343107');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (60, 'V-13021172', 'BUSQUEDA1782503052749', NULL, 'EST_13021172', NULL, 'test.est13021172@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:44:15.637557', '2026-06-26T19:44:15.637557');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (61, 'V-13021173', 'TEST', NULL, 'EST_13021173', NULL, 'test.est13021173@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:44:27.054118', '2026-06-26T19:44:27.054118');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (26, 'V-29968304', 'ALBANY', NULL, 'MARTINEZ', NULL, 'ALBANYUNIVERSIDAD@GMAIL.COM', NULL, NULL, NULL, NULL, NULL, 1, '2026-06-19T00:39:34.132166', '2026-07-01T01:26:10');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (43, 'V-45613215', 'JESUS', NULL, 'PERALTA', NULL, 'MDMD2D@MSF.COM', '02553271283', 'M', '2010-06-02', NULL, 'D', 1, '2026-06-23T13:21:57.100662', '2026-07-02T13:40:50');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (37, 'V-10567890', 'CARMEN', NULL, 'TORRES', NULL, 'carmen.torres@unefa.edu.ve', NULL, 'F', NULL, NULL, NULL, 1, '2026-06-21T19:26:31.341719', '2026-07-02T13:41:15');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (34, 'V-10234567', 'CARLOS', NULL, 'RAMIREZ', NULL, 'carlos.ramirez@unefa.edu.ve', NULL, 'M', NULL, NULL, NULL, 1, '2026-06-21T19:26:31.341719', '2026-07-02T13:41:25');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (42, 'V-15389028', 'ANA', NULL, 'MONTERO', 'F', 'ANTONYSAMUEL093@GMAIL.COM', '02558362881', 'FEMENINO', '2010-06-12', 'SDSDSDSD', 'D', 1, '2026-06-23T11:50:42.747846', '2026-07-02T15:13:22');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (29, 'V-13353114', 'ARMANDO', 'DE JESUS', 'FIGUEROA', 'APONTE', 'CORREO@MDFD.COM', '04246455416', 'MASCULINO', '1991-12-15', NULL, 'S', 0, '2026-06-19T23:59:20.960927', '2026-07-03T16:38:04');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (49, 'V-3456788', 'CARLOS', NULL, 'MENDOZA', NULL, 'FAYEL61693@NOP2POSAL.COM', '0412-2345676', NULL, NULL, NULL, NULL, 1, '2026-06-24T14:45:38.90091', '2026-07-03T18:49:19');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (62, 'V-13021174', 'TEST', NULL, 'EST_13021174', NULL, 'test.est13021174@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:44:36.201218', '2026-06-26T19:44:36.201218');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (67, 'V-13205696', 'TEST', NULL, 'EST_13205696', NULL, 'test.est13205696@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:46:57.338869', '2026-06-26T19:46:57.338869');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (30, 'V-TESTADM', 'Test', NULL, 'Admin', NULL, 'test.admin@unefa.edu.ve', NULL, 'M', NULL, NULL, NULL, 1, '2026-06-20T02:06:13.449558', '2026-06-20T02:06:13.449558');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (63, 'V-13021175', 'ACTUALIZADO', NULL, 'CORRECTAMENTE', NULL, 'test.est13021176@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:44:42.305882', '2026-06-26T19:44:43');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (64, 'V-13021178', 'TEST', NULL, 'EST_13021178', NULL, 'test.est13021178@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:44:48.141193', '2026-06-26T19:44:51');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (65, 'V-13021179', 'TEST', NULL, 'EST_13021179', NULL, 'test.est13021179@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:44:54.766289', '2026-06-26T19:44:54.766289');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (68, 'V-13205698', 'TEST', NULL, 'EST_13205698', NULL, 'test.est13205698@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:47:05.750885', '2026-06-26T19:47:05.750885');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (69, 'V-13205699', 'BUSQUEDA1782503252668', NULL, 'EST_13205699', NULL, 'test.est13205699@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:47:37.072449', '2026-06-26T19:47:37.072449');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (70, 'V-13205700', 'TEST', NULL, 'EST_13205700', NULL, 'test.est13205700@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:47:46.983031', '2026-06-26T19:47:46.983031');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (71, 'V-13205701', 'TEST', NULL, 'EST_13205701', NULL, 'test.est13205701@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:48:04.821778', '2026-06-26T19:48:04.821778');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (72, 'V-13205702', 'ACTUALIZADO', NULL, 'CORRECTAMENTE', NULL, 'test.est13205703@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:48:13.432135', '2026-06-26T19:48:14');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (73, 'V-13205705', 'TEST', NULL, 'EST_13205705', NULL, 'test.est13205705@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:48:19.392825', '2026-06-26T19:48:24');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (74, 'V-13205706', 'TEST', NULL, 'EST_13205706', NULL, 'test.est13205706@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-06-26T19:48:31.849551', '2026-06-26T19:48:31.849551');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (81, 'V-30100001', 'María', NULL, 'García', NULL, 'maria.garcia@test.com', '04140000001', 'FEMENINO', '2000-03-15', 'Urb. Las Flores', 'SOLTERO', 1, '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (82, 'V-30100002', 'Carlos', NULL, 'López', NULL, 'carlos.lopez@test.com', '04140000002', 'MASCULINO', '1999-07-22', 'Urb. El Valle', 'SOLTERO', 1, '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (83, 'V-30100003', 'Ana', NULL, 'Martínez', NULL, 'ana.martinez@test.com', '04140000003', 'FEMENINO', '2001-01-10', 'Urb. Los Chorros', 'SOLTERO', 1, '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (84, 'V-30100004', 'Pedro', NULL, 'Sánchez', NULL, 'pedro.sanchez@test.com', '04140000004', 'MASCULINO', '1998-11-05', 'Urb. La Florida', 'CASADO', 1, '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (85, 'V-30100005', 'Laura', NULL, 'Rodríguez', NULL, 'laura.rodriguez@test.com', '04140000005', 'FEMENINO', '2000-09-18', 'Urb. El Marqués', 'SOLTERO', 1, '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (86, 'V-30100006', 'Jorge', NULL, 'Pérez', NULL, 'jorge.perez@test.com', '04140000006', 'MASCULINO', '1999-05-30', 'Urb. Santa Mónica', 'SOLTERO', 1, '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (48, 'V-45611515', 'FULANO', NULL, 'SEGUHNDO', NULL, 'FAYEL61693@NOPROPOSAL.COM', '04121234542', 'M', '2010-06-10', NULL, 'C', 1, '2026-06-24T00:56:59.239579', '2026-06-27T22:00:42');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (87, 'V-20940010', 'EVER', 'ALEXANDER', 'MENDOZA', 'MOLOY', 'AFGASGA@GMAI.COM', '04145201020', 'M', '1998-09-14', NULL, 'S', 1, '2026-07-02T15:11:53.556242', '2026-07-02T15:11:53.556242');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (88, 'V-10940010', 'LORENZO', NULL, 'PIÑA', NULL, 'DSADSAD@GMAIL.COM', '0426-5571645', NULL, NULL, NULL, NULL, 1, '2026-07-02T15:17:21.935879', '2026-07-02T15:17:21.935879');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (90, 'V-10690045', 'TEST', NULL, 'EST_10690045', NULL, 'test.est10690045@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-07-02T19:31:34.95434', '2026-07-02T19:31:34.95434');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (91, 'V-10690047', 'TEST', NULL, 'EST_10690047', NULL, 'test.est10690047@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-07-02T19:31:38.391664', '2026-07-02T19:31:38.391664');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (92, 'V-10690048', 'BUSQUEDA1783020711414', NULL, 'EST_10690048', NULL, 'test.est10690048@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-07-02T19:31:51.964941', '2026-07-02T19:31:51.964941');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (93, 'V-10690049', 'TEST', NULL, 'EST_10690049', NULL, 'test.est10690049@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-07-02T19:31:56.693843', '2026-07-02T19:31:56.693843');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (94, 'V-10690050', 'TEST', NULL, 'EST_10690050', NULL, 'test.est10690050@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-07-02T19:32:07.143461', '2026-07-02T19:32:07.143461');
-INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (95, 'V-10690051', 'TEST', NULL, 'EST_10690051', NULL, 'test.est10690051@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-07-02T19:32:14.06885', '2026-07-02T19:32:14.06885');
--- --------------------------------------------------------
--- Tabla: t_practice_culmination (1 registros)
--- --------------------------------------------------------
-INSERT INTO "t_practice_culmination" ("PRACTICE_ID", "STATUS", "CERTIFICATE_NUMBER", "CERTIFIED_AT", "APPROVED_AT", "APPROVED_BY", "CREATED_AT", "UPDATED_AT") VALUES (22, 1, 'CERT-2026-0001', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 1, '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647');
--- --------------------------------------------------------
--- Tabla: t_practice_visits (11 registros)
--- --------------------------------------------------------
-INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (1, 2, 25, '2026-03-15T00:00:00', 'SEGUIMIENTO', 8, 'REVISIÓN DE AVANCES DEL INFORME', 'SIN NOVEDAD', NULL, 1, '2026-06-21T19:39:09.056339', '2026-06-21T19:39:09.056339', NULL, 'SEGUIMIENTO_REGULAR', 33);
-INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (2, 2, 25, '2026-04-01T00:00:00', 'EVALUACIÓN', 4, 'REVISIÓN FINAL DEL INFORME', 'CUMPLE CON LOS REQUISITOS', NULL, 1, '2026-06-21T19:39:09.056339', '2026-06-21T19:39:09.056339', NULL, 'SEGUIMIENTO_REGULAR', 33);
-INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (3, 4, 28, '2026-03-10T00:00:00', 'SEGUIMIENTO', 6, 'ASESORÍA TÉCNICA', 'BUEN AVANCE', NULL, 1, '2026-06-21T19:39:09.056339', '2026-06-21T19:39:09.056339', NULL, 'SEGUIMIENTO_REGULAR', 36);
-INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (4, 6, 25, '2026-03-20T00:00:00', 'SEGUIMIENTO', 8, 'VISITA DE CAMPO', 'TRABAJO SATISFACTORIO', NULL, 1, '2026-06-21T19:39:09.056339', '2026-06-21T19:39:09.056339', NULL, 'SEGUIMIENTO_REGULAR', 33);
-INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (7, 7, 1, '2026-06-22T12:55:00', '135', 0, 'sdfgh hjkl', '', '', 1, '2026-06-26T12:52:58.215509', '2026-06-26T12:52:58.215509', 1, '143', 29);
-INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (8, 7, 1, '2026-06-23T15:59:00', '136', 5, 'ndndn dndn', '', '', 1, '2026-06-26T13:00:09.070262', '2026-06-26T13:00:09.070262', 1, '140', 29);
-INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (9, 7, 1, '2026-06-24T13:11:00', '137', 5, 'efefef fef ', '', '', 1, '2026-06-26T13:11:48.714698', '2026-06-26T13:11:48.714698', 1, '140', 29);
-INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (10, 10, 54, '2026-06-24T01:04:00', '135', 0, 'de dddddddddddd ', '', '', 1, '2026-06-30T00:04:15.408345', '2026-06-30T00:04:15.408345', 1, '139', 42);
-INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (11, 10, 28, '2026-06-26T00:04:00', '137', 12, 'aaaaaaaaaa aaaaaaaaa', '', '', 1, '2026-06-30T00:04:41.768796', '2026-06-30T00:04:41.768796', 1, '139', 36);
-INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (12, 10, 26, '2026-06-24T20:04:00', '136', 1, 'aaaaaaa qwss', '', '', 1, '2026-06-30T00:05:21.907332', '2026-06-30T00:39:04.082', 1, '146', 34);
-INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (13, 22, 1, '2026-07-03T10:00:00', 'PRESENCIAL', 4, 'REVISIÓN DE AVANCES', '', '', 1, '2026-07-05T01:30:36.440076', '2026-07-05T01:30:36.440076', 5, 'SEGUIMIENTO_REGULAR', 29);
--- --------------------------------------------------------
--- Tabla: t_preset_questions (6 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_preset_questions" ("PRESET_QUESTION_ID", "DESCRIPTION", "ANSWER", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (1, '¿Cuál es el nombre de tu primera mascota?', 'Respuesta', 0, '2026-06-16T03:12:17.850399', 0, '2026-06-16T03:12:17.850399', 0, '2026-06-16T03:12:17.850399', 1);
 INSERT INTO "t_preset_questions" ("PRESET_QUESTION_ID", "DESCRIPTION", "ANSWER", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (2, '¿Cuál es tu comida favorita?', 'Respuesta', 0, '2026-06-16T03:12:17.850399', 0, '2026-06-16T03:12:17.850399', 0, '2026-06-16T03:12:17.850399', 1);
@@ -5216,71 +3899,9 @@ INSERT INTO "t_preset_questions" ("PRESET_QUESTION_ID", "DESCRIPTION", "ANSWER",
 INSERT INTO "t_preset_questions" ("PRESET_QUESTION_ID", "DESCRIPTION", "ANSWER", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (4, '¿Cuántas mascotas tenías a los 10 años?', 'ASD', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 1);
 INSERT INTO "t_preset_questions" ("PRESET_QUESTION_ID", "DESCRIPTION", "ANSWER", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (5, '¿Cuál fue tu primera mascota?', 'ASD', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 1);
 INSERT INTO "t_preset_questions" ("PRESET_QUESTION_ID", "DESCRIPTION", "ANSWER", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (6, '¿En qué ciudad nació tu madre?', 'ASD', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 1);
+
 -- --------------------------------------------------------
 -- Tabla: t_professional_practices (17 registros)
--- --------------------------------------------------------
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (2, '2026-02-01', '2026-04-30', 'INFORME DE PASANTÍAS', '2026-06-21T19:32:53.564434', '2026-06-21T19:32:53.564434', 18, 0, 'DIURNO', 2, 1, 1, 1, NULL, 'SIN OBSERVACIONES', 'E-001', 4, 2, 3, 'FINALIZADO', '8', 'U', 'SEMIPRESENCIAL', 4, 3, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (3, '2026-02-01', '2026-04-30', 'INFORME DE PASANTÍAS', '2026-06-21T19:32:53.564434', '2026-06-21T19:32:53.564434', 17, 0, 'DIURNO', 2, 2, 2, 1, NULL, 'SIN OBSERVACIONES', 'E-002', 4, 3, 3, 'FINALIZADO', '8', 'U', 'SEMIPRESENCIAL', 4, 4, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (6, '2026-02-01', '2026-04-30', 'INFORME DE PASANTÍAS', '2026-06-21T19:32:53.564434', '2026-06-21T19:32:53.564434', 20, 0, 'DIURNO', 2, 1, 15, 1, NULL, 'SIN OBSERVACIONES', 'E-005', 4, 2, 3, 'FINALIZADO', '9', 'U', 'SEMIPRESENCIAL', 3, 17, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (21, '2026-04-01', '2026-07-30', 'PP Única - Ana Martínez', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 9.2, 0, 'T', 3, 1, 70, 1, NULL, 'Lista para culminar', 'REGULAR', 1, 1, 4, 'completed', '2026-1', 'U', 'DIURNO', 6, 83, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (4, '2026-02-01', '2026-04-30', 'INFORME DE PASANTÍAS', '2026-06-21T19:32:53.564434', '2026-06-21T19:32:53.564434', 19, 0, 'DIURNO', 2, 3, 3, 1, NULL, 'SIN OBSERVACIONES', 'E-003', 4, 1, 3, 'FINALIZADO', '8', 'U', 'SEMIPRESENCIAL', 2, 5, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (24, '2026-06-01', '2026-09-30', 'PP Hospitalaria - Jorge Pérez', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 0, 0, 'M', 3, 19, 73, 1, 5, 'Sin evaluaciones', 'REGULAR', 1, 2, 2, 'partial', '2026-2', 'U', 'DIURNO', 6, 86, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (8, '2026-03-01', '2026-07-31', 'PENDIENTE', '2026-06-22T02:38:25', '2026-06-22T02:38:25', 0, 0, '', 5, NULL, 24, 0, NULL, '', 'CAREER-P-06-001-N2', 1, 1, 1, 'pending', '6', '1', 'NOCTURNO', 5, 28, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (9, '2026-03-01', '2026-07-31', 'PENDIENTE', '2026-06-23T13:29:38', '2026-06-23T13:29:38', 0, 0, '', 5, NULL, 28, 0, NULL, '', 'CAREER-P-06-001-N2', 1, 1, 1, 'pending', '6', '1', 'NOCTURNO', 5, 44, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (7, '2026-07-01', '2026-09-30', 'INFORME DE PASANTÍAS', '2026-06-26T12:33:29.223', '2026-06-21T19:32:53.564434', 17, 0, 'DIURNO', 3, 17, 19, 1, 4, 'RETIRO SIN JUSTIFICATIVO: Abandono completo de la pasantía', 'ING-AGRO-08-001-N2', 1, 1, 0, 'partial', '8', '1', 'NOCTURNO', 2, 21, NULL, FALSE, NULL, NULL, NULL, 'unjustified');
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (25, '2026-06-22', '2026-10-16', 'PENDIENTE', '2026-06-27T22:16:41.839', '2026-06-27T22:01:32', 0, 0, '', 3, 17, 31, 1, 4, 'RETIRO CON JUSTIFICATIVO: Prueba técnica de retiro justificado con más de 10 caracteres', 'CAREER-P-09-002-N2', 1, 1, 0, 'pending', '9', '2', 'NOCTURNO', 5, 48, NULL, FALSE, NULL, NULL, NULL, 'justified');
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (10, '2026-03-01', '2026-07-31', 'INFORME FINAL AHORA SI XD', '2026-06-24T14:16:14.527', '2026-06-23T15:23:22', 0, 1, 'araure', 3, 17, 24, 0, 4, 'obv', 'ING-AGRONO-09-001-N2', 1, 1, 2, 'partial', '9', '1', 'NOCTURNO', 3, 28, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (26, '2026-06-22', '2026-10-16', 'PENDIENTE', '2026-07-02T15:34:24.241', '2026-07-02T15:29:53', 0, 0, '', 3, 17, 74, 0, 4, '', 'CAREER-P-05-001-D1', 1, 1, 2, 'pending', '5', '1', 'DIURNO', 5, 87, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (19, '2026-05-01', '2026-08-30', 'PP Hospitalaria - María García', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 0, 0, 'M', 3, 19, 68, 1, 5, 'Lista para evaluar', 'REGULAR', 1, 2, 2, 'partial', '2026-2', 'U', 'DIURNO', 6, 81, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (18, '2026-01-15', '2026-04-15', 'PP Comunitaria - María García', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 16, 0, 'M', 3, 1, 68, 1, NULL, 'Aprobada', 'REGULAR', 1, 3, 3, 'pending', '2026-1', 'U', 'DIURNO', 6, 81, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (23, '2026-05-01', '2026-08-30', 'PP Hospitalaria - Laura Rodríguez', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 5, 0, 'M', 3, 1, 72, 1, NULL, 'Reprobada', 'REGULAR', 1, 2, 4, 'pending', '2026-2', 'U', 'DIURNO', 6, 85, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (22, '2026-02-01', '2026-05-30', 'PP Hospitalaria - Pedro Sánchez', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 16, 0, 'M', 3, 1, 71, 1, NULL, 'Culminada', 'REGULAR', 1, 2, 3, 'completed', '2026-1', 'U', 'DIURNO', 6, 84, NULL, FALSE, NULL, NULL, NULL, NULL);
-INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (20, '2026-06-01', '2026-09-30', 'PP Hospitalaria - Carlos López', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 14.5, 0, 'M', 3, 19, 69, 1, 5, 'Solo institucional', 'REGULAR', 1, 2, 4, 'completed', '2026-2', 'U', 'DIURNO', 6, 82, NULL, FALSE, NULL, NULL, NULL, NULL);
--- --------------------------------------------------------
--- Tabla: t_professional_practices_tutor (36 registros)
--- --------------------------------------------------------
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (1, 25, 2, 'ACADEMICO', 33, TRUE, '2026-06-25T12:47:20.330658', '2026-06-25T12:47:20.330658');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (2, 25, 3, 'ACADEMICO', 33, TRUE, '2026-06-25T12:47:20.330658', '2026-06-25T12:47:20.330658');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (4, 25, 6, 'ACADEMICO', 33, TRUE, '2026-06-25T12:47:20.330658', '2026-06-25T12:47:20.330658');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (5, 27, 2, 'INSTITUCIONAL', 35, TRUE, '2026-06-25T12:47:20.330658', '2026-06-25T12:47:20.330658');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (6, 27, 3, 'INSTITUCIONAL', 35, TRUE, '2026-06-25T12:47:20.330658', '2026-06-25T12:47:20.330658');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (7, 27, 4, 'INSTITUCIONAL', 35, TRUE, '2026-06-25T12:47:20.330658', '2026-06-25T12:47:20.330658');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (8, 27, 6, 'INSTITUCIONAL', 35, TRUE, '2026-06-25T12:47:20.330658', '2026-06-25T12:47:20.330658');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (9, 28, 4, 'ACADEMICO', 36, TRUE, '2026-06-25T12:47:20.330658', '2026-06-25T12:47:20.330658');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (10, 54, 10, 'ACADEMICO', NULL, FALSE, '2026-06-25T12:47:20.330658', '2026-06-25T13:21:07.049');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (11, 28, 10, 'METODOLOGICO', NULL, FALSE, '2026-06-25T12:47:20.330658', '2026-06-25T13:21:07.049');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (12, 27, 10, 'ACADEMICO', NULL, FALSE, '2026-06-25T13:21:07.681', '2026-06-26T00:17:18.285');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (13, 25, 10, 'METODOLOGICO', NULL, FALSE, '2026-06-25T13:21:07.873', '2026-06-26T00:17:18.285');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (16, 54, 7, 'ACADEMICO', NULL, FALSE, '2026-06-26T12:33:31.466', '2026-06-26T12:52:11.099');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (17, 25, 7, 'METODOLOGICO', NULL, FALSE, '2026-06-26T12:33:31.466', '2026-06-26T12:52:11.099');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (18, 30, 7, 'ACADEMICO', NULL, TRUE, '2026-06-26T12:52:11.434', '2026-06-26T12:52:12.028919');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (19, 28, 7, 'METODOLOGICO', NULL, TRUE, '2026-06-26T12:52:11.615', '2026-06-26T12:52:12.028919');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (20, 30, 20, 'ACADEMICO', NULL, TRUE, '2026-06-27T21:59:19.267', '2026-06-27T21:59:19.832546');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (21, 54, 20, 'METODOLOGICO', NULL, TRUE, '2026-06-27T21:59:19.377', '2026-06-27T21:59:19.832546');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (22, 30, 24, 'ACADEMICO', NULL, TRUE, '2026-06-27T21:59:41.337', '2026-06-27T21:59:41.92127');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (23, 54, 24, 'METODOLOGICO', NULL, TRUE, '2026-06-27T21:59:41.467', '2026-06-27T21:59:41.92127');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (24, 30, 19, 'ACADEMICO', NULL, TRUE, '2026-06-27T22:00:02.378', '2026-06-27T22:00:02.953996');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (25, 54, 19, 'METODOLOGICO', NULL, TRUE, '2026-06-27T22:00:02.494', '2026-06-27T22:00:02.953996');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (26, 30, 25, 'ACADEMICO', NULL, TRUE, '2026-06-27T22:16:43.752', '2026-06-27T22:16:44.226479');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (27, 54, 25, 'METODOLOGICO', NULL, TRUE, '2026-06-27T22:16:43.753', '2026-06-27T22:16:44.226479');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (14, 54, 10, 'ACADEMICO', NULL, FALSE, '2026-06-26T00:17:18.759', '2026-06-30T00:36:06.173');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (15, 28, 10, 'METODOLOGICO', NULL, FALSE, '2026-06-26T00:17:18.983', '2026-06-30T00:36:06.173');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (28, 25, 10, 'ACADEMICO', NULL, TRUE, '2026-06-30T00:36:06.554', '2026-06-30T00:36:06.726785');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (29, 28, 10, 'METODOLOGICO', NULL, TRUE, '2026-06-30T00:36:06.74', '2026-06-30T00:36:06.726785');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (30, 54, 26, 'ACADEMICO', NULL, TRUE, '2026-07-02T15:34:25.643', '2026-07-02T15:34:25.688179');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (31, 30, 26, 'METODOLOGICO', NULL, TRUE, '2026-07-02T15:34:25.643', '2026-07-02T15:34:25.688179');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (32, 1, 2, 'ACADEMICO', 29, TRUE, '2026-07-04T23:10:53.005605', '2026-07-04T23:10:53.005605');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (33, 1, 3, 'ACADEMICO', 29, TRUE, '2026-07-04T23:10:53.005605', '2026-07-04T23:10:53.005605');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (34, 1, 4, 'ACADEMICO', 29, TRUE, '2026-07-04T23:10:53.005605', '2026-07-04T23:10:53.005605');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (35, 1, 6, 'ACADEMICO', 29, TRUE, '2026-07-04T23:10:53.005605', '2026-07-04T23:10:53.005605');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (36, 1, 7, 'ACADEMICO', 29, TRUE, '2026-07-04T23:10:53.005605', '2026-07-04T23:10:53.005605');
-INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (37, 1, 22, 'ACADEMICO', 29, TRUE, '2026-07-04T23:10:53.005605', '2026-07-04T23:10:53.005605');
--- --------------------------------------------------------
--- Tabla: t_prospect_lists (1 registros)
--- --------------------------------------------------------
-INSERT INTO "t_prospect_lists" ("LIST_ID", "NAME", "DESCRIPTION", "PERIOD_ID", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY") VALUES (1, 'PROSPECTO 2-2026', NULL, 3, 1, '2026-06-20T00:08:18.747644', '2026-06-20T00:08:18.747644', NULL);
--- --------------------------------------------------------
--- Tabla: t_request_types (11 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_request_types" ("REQUEST_TYPE_ID", "NAME", "DESCRIPTION", "IS_ACTIVE", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_REASSIGNMENT", "CATEGORY") VALUES (1, 'Cambio de Empresa', 'Solicitud para cambiar la empresa donde se realizan las prácticas', 1, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 1, 0, 'GENERAL');
 INSERT INTO "t_request_types" ("REQUEST_TYPE_ID", "NAME", "DESCRIPTION", "IS_ACTIVE", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_REASSIGNMENT", "CATEGORY") VALUES (2, 'Cambio de Tutor', 'Solicitud para cambiar el tutor académico asignado', 1, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 1, 0, 'GENERAL');
@@ -5293,6 +3914,7 @@ INSERT INTO "t_request_types" ("REQUEST_TYPE_ID", "NAME", "DESCRIPTION", "IS_ACT
 INSERT INTO "t_request_types" ("REQUEST_TYPE_ID", "NAME", "DESCRIPTION", "IS_ACTIVE", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_REASSIGNMENT", "CATEGORY") VALUES (9, 'Cambio de Tutor', 'Solicitar cambio de tutor académico', 1, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 1, 1, 'REASSIGNMENT');
 INSERT INTO "t_request_types" ("REQUEST_TYPE_ID", "NAME", "DESCRIPTION", "IS_ACTIVE", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_REASSIGNMENT", "CATEGORY") VALUES (10, 'Cambio de Empresa', 'Solicitar cambio de empresa/institución donde realiza la pasantía', 1, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 1, 1, 'REASSIGNMENT');
 INSERT INTO "t_request_types" ("REQUEST_TYPE_ID", "NAME", "DESCRIPTION", "IS_ACTIVE", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_REASSIGNMENT", "CATEGORY") VALUES (11, 'Cambio de Carrera', 'Solicitar cambio de carrera', 1, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 1, 1, 'REASSIGNMENT');
+
 -- --------------------------------------------------------
 -- Tabla: t_roles (9 registros)
 -- --------------------------------------------------------
@@ -5305,6 +3927,7 @@ INSERT INTO "t_roles" ("ID_ROLS", "NAME", "DESCRIPTION", "MODIF_USER_ID", "MODIF
 INSERT INTO "t_roles" ("ID_ROLS", "NAME", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_SYSTEM") VALUES (2, 'ASISTENTE', 'Asistente con permisos limitados', 0, '2026-07-05T21:56:45.543', 0, '2026-07-05T21:56:45.543', 0, '2026-07-05T21:56:45.543', 1, TRUE);
 INSERT INTO "t_roles" ("ID_ROLS", "NAME", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_SYSTEM") VALUES (3, 'TUTOR', 'Tutor académico - gestión de seguimiento y notas', 0, '2026-07-05T21:56:46.039', 0, '2026-07-05T21:56:46.039', 0, '2026-07-05T21:56:46.039', 1, TRUE);
 INSERT INTO "t_roles" ("ID_ROLS", "NAME", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_SYSTEM") VALUES (4, 'ESTUDIANTE', 'Estudiante - visualización y solicitudes', 0, '2026-07-05T21:56:46.456', 0, '2026-07-05T21:56:46.456', 0, '2026-07-05T21:56:46.456', 1, TRUE);
+
 -- --------------------------------------------------------
 -- Tabla: t_roles_permissions (241 registros)
 -- --------------------------------------------------------
@@ -5549,66 +4172,17 @@ INSERT INTO "t_roles_permissions" ("ROLES_ID", "PERMISSIONS_ID") VALUES (3, 131)
 INSERT INTO "t_roles_permissions" ("ROLES_ID", "PERMISSIONS_ID") VALUES (3, 132);
 INSERT INTO "t_roles_permissions" ("ROLES_ID", "PERMISSIONS_ID") VALUES (3, 133);
 INSERT INTO "t_roles_permissions" ("ROLES_ID", "PERMISSIONS_ID") VALUES (3, 145);
+
 -- --------------------------------------------------------
 -- Tabla: t_student_requests (6 registros)
 -- --------------------------------------------------------
-INSERT INTO "t_student_requests" ("REQUEST_ID", "STUDENT_ID", "REQUEST_TYPE_ID", "SUBJECT", "DESCRIPTION", "STATUS", "RESPONSE", "PROCESSED_BY", "PROCESSED_AT", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS_TABLE", "REASSIGNMENT_DATA", "IS_REASSIGNMENT", "PREVIOUS_TUTOR_ID", "PREVIOUS_INSTITUTION_ID", "PREVIOUS_CAREER_ID", "student_person_id") VALUES (7, 39, 6, 'Constancia de Estudios', 'Solicito constancia de estudios actualizada con fines de pasantía. Debe incluir el período actual y las materias cursadas.', 'approved', 'Su constancia de estudios ha sido generada. Puede pasar a retirarla por la oficina de coordinación en horario de atención.', 1, '2026-06-27T00:46:40.054452', '2026-06-26T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 1, NULL, 0, NULL, NULL, NULL, 56);
-INSERT INTO "t_student_requests" ("REQUEST_ID", "STUDENT_ID", "REQUEST_TYPE_ID", "SUBJECT", "DESCRIPTION", "STATUS", "RESPONSE", "PROCESSED_BY", "PROCESSED_AT", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS_TABLE", "REASSIGNMENT_DATA", "IS_REASSIGNMENT", "PREVIOUS_TUTOR_ID", "PREVIOUS_INSTITUTION_ID", "PREVIOUS_CAREER_ID", "student_person_id") VALUES (8, 39, 8, 'Solicitud de revisión de horario', 'Solicito que se revise mi horario de pasantía porque trabajo en las mañanas y solo puedo asistir en la tarde. Adjunto constancia de trabajo.', 'rejected', 'Su solicitud ha sido revisada. El horario actual no puede modificarse porque las pasantías se realizan en horario académico. Puede acercarse a coordinación para evaluar opciones.', 1, '2026-06-24T00:46:40.054452', '2026-06-23T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 1, NULL, 0, NULL, NULL, NULL, 56);
-INSERT INTO "t_student_requests" ("REQUEST_ID", "STUDENT_ID", "REQUEST_TYPE_ID", "SUBJECT", "DESCRIPTION", "STATUS", "RESPONSE", "PROCESSED_BY", "PROCESSED_AT", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS_TABLE", "REASSIGNMENT_DATA", "IS_REASSIGNMENT", "PREVIOUS_TUTOR_ID", "PREVIOUS_INSTITUTION_ID", "PREVIOUS_CAREER_ID", "student_person_id") VALUES (5, 39, 3, 'Prórroga de Pasantía por 2 semanas', 'Necesito una prórroga de 2 semanas para completar las horas restantes de mi pasantía. Actualmente tengo 96 horas de 120 requeridas.', 'approved', NULL, 1, '2026-07-03T01:01:18.206', '2026-06-30T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 1, NULL, 0, NULL, NULL, NULL, 56);
-INSERT INTO "t_student_requests" ("REQUEST_ID", "STUDENT_ID", "REQUEST_TYPE_ID", "SUBJECT", "DESCRIPTION", "STATUS", "RESPONSE", "PROCESSED_BY", "PROCESSED_AT", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS_TABLE", "REASSIGNMENT_DATA", "IS_REASSIGNMENT", "PREVIOUS_TUTOR_ID", "PREVIOUS_INSTITUTION_ID", "PREVIOUS_CAREER_ID", "student_person_id") VALUES (6, 39, 2, 'Cambio de Tutor Académico', 'Solicito el cambio de tutor académico debido a que mi tutor actual no ha tenido disponibilidad para reuniones en las últimas 3 semanas.', 'approved', NULL, 1, '2026-07-03T01:58:35.771', '2026-07-01T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 1, NULL, 0, NULL, NULL, NULL, 56);
-INSERT INTO "t_student_requests" ("REQUEST_ID", "STUDENT_ID", "REQUEST_TYPE_ID", "SUBJECT", "DESCRIPTION", "STATUS", "RESPONSE", "PROCESSED_BY", "PROCESSED_AT", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS_TABLE", "REASSIGNMENT_DATA", "IS_REASSIGNMENT", "PREVIOUS_TUTOR_ID", "PREVIOUS_INSTITUTION_ID", "PREVIOUS_CAREER_ID", "student_person_id") VALUES (4, 39, 5, 'Solicitud de Carta de Pasantía', 'Solicito la carta de culminación de pasantía para presentar en mi trabajo. Mi período finalizó la semana pasada y necesito el documento con urgencia.', 'approved', 'Su carta de pasantía ha sido aprobada. Puede pasar a retirarla por la oficina de coordinación en horario de atención (lunes a viernes 8am-4pm).', 1, '2026-07-04T23:22:01.453', '2026-06-28T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 1, NULL, 0, NULL, NULL, NULL, 56);
-INSERT INTO "t_student_requests" ("REQUEST_ID", "STUDENT_ID", "REQUEST_TYPE_ID", "SUBJECT", "DESCRIPTION", "STATUS", "RESPONSE", "PROCESSED_BY", "PROCESSED_AT", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS_TABLE", "REASSIGNMENT_DATA", "IS_REASSIGNMENT", "PREVIOUS_TUTOR_ID", "PREVIOUS_INSTITUTION_ID", "PREVIOUS_CAREER_ID", "student_person_id") VALUES (9, 39, 6, 'Constancia de Estudios - Test', 'Solicito constancia de estudios para verificar el flujo de notificaciones.', 'approved', 'Aprobado. Retirar constancia en coordinación.', 1, '2026-07-05T01:34:35.977', '2026-07-05T01:31:55.549506', 0, '2026-07-05T01:31:55.549506', 0, '2026-07-05T01:31:55.549506', 0, '2026-07-05T01:31:55.549506', 1, NULL, 0, NULL, NULL, NULL, 56);
--- --------------------------------------------------------
--- Tabla: t_students (40 registros)
--- --------------------------------------------------------
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (16, 18, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T15:55:25', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (17, 19, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T16:03:14', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (18, 20, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T16:06:43', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (19, 21, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T16:10:49', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (20, 22, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T16:16:13', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (21, 23, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T16:22:06', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (22, 24, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T16:27:44', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (25, 38, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'MIL', 'TENIENTE', 'SI', 1, '2026-06-22T02:12:15', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (26, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'SI', 1, '2026-06-23T03:25:01', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (24, 28, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'SI', 1, '2026-06-21T16:24:44', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (27, 43, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-23T13:21:57', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (29, 46, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'SI', 1, '2026-06-23T23:14:06', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (2, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T13:59:06', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (3, 5, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'SI', 1, '2026-06-16T14:18:55', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (4, 6, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T14:26:36', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (14, 16, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T15:25:40', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (12, 14, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T15:09:22', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (9, 11, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T14:56:06', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (30, 47, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-24T00:34:01', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (7, 9, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T14:46:43', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (15, 17, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T15:36:32', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (23, 25, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T16:31:27', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (28, 44, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'MIL', 'TENIENTE', 'SI', 1, '2026-06-23T13:27:43', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (5, 7, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T14:28:48', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T13:46:11', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (6, 8, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'NO', 1, '2026-06-16T14:43:22', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (13, 15, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'SI', 1, '2026-06-16T15:17:21', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (11, 13, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'SI', 1, '2026-06-16T15:05:49', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (10, 12, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'MIL', 'SUBTENIENTE', 'SI', 1, '2026-06-16T14:57:05', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (69, 82, 'V-30100002', 'Carlos', NULL, 'López', NULL, 'M', '1999-07-22', '04140000002', 'carlos.lopez@test.com', 'Urb. El Valle', 'S', 'CIVIL', NULL, 'NO', 1, '2026-06-26T20:12:47.928647', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (70, 83, 'V-30100003', 'Ana', NULL, 'Martínez', NULL, 'F', '2001-01-10', '04140000003', 'ana.martinez@test.com', 'Urb. Los Chorros', 'S', 'CIVIL', NULL, 'NO', 1, '2026-06-26T20:12:47.928647', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (71, 84, 'V-30100004', 'Pedro', NULL, 'Sánchez', NULL, 'M', '1998-11-05', '04140000004', 'pedro.sanchez@test.com', 'Urb. La Florida', 'C', 'CIVIL', NULL, 'NO', 1, '2026-06-26T20:12:47.928647', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (72, 85, 'V-30100005', 'Laura', NULL, 'Rodríguez', NULL, 'F', '2000-09-18', '04140000005', 'laura.rodriguez@test.com', 'Urb. El Marqués', 'S', 'CIVIL', NULL, 'NO', 1, '2026-06-26T20:12:47.928647', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (73, 86, 'V-30100006', 'Jorge', NULL, 'Pérez', NULL, 'M', '1999-05-30', '04140000006', 'jorge.perez@test.com', 'Urb. Santa Mónica', 'S', 'CIVIL', NULL, 'NO', 1, '2026-06-26T20:12:47.928647', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (31, 48, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'SI', 1, '2026-06-24T00:56:58', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (74, 87, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', 'NO APLICA', 'SI', 1, '2026-07-02T15:11:53', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (83, 95, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', NULL, 'NO', 1, '2026-07-02T19:32:14', NULL);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (39, 56, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', NULL, 'NO', 1, '2026-06-26T19:42:35', 16);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (68, 81, 'V-30100001', 'María', NULL, 'García', NULL, 'F', '2000-03-15', '04140000001', 'maria.garcia@test.com', 'Urb. Las Flores', 'S', 'CIVIL', NULL, 'NO', 1, '2026-06-26T20:12:47.928647', 17);
-INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (8, 10, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'MIL', 'SUBTENIENTE', 'NO', 0, '2026-06-16T14:53:37', NULL);
--- --------------------------------------------------------
--- Tabla: t_system_institution (1 registros)
--- --------------------------------------------------------
 INSERT INTO "t_system_institution" ("system_institution_id", "legal_name", "commercial_name", "acronym", "rif", "phone", "email", "website", "logo_url", "resolution_number", "foundation_date", "status", "created_at", "updated_at", "region", "nucleus", "extension") VALUES (1, 'UNEFA Universidad Nacional Experimental Politécnica de las Fuerzas Armadas', 'UNEFA', 'UNEFA', 'G-20000660-9', '', 'ingresopregrado@unefa.edu.ve', 'https://www.unefa.edu.ve/portal/', NULL, 'Resolución N° 28.', NULL, 1, '2026-06-16T03:23:57.825967', '2026-06-24T14:35:06.418', 'LOS LLANOS', 'PORTUGUESA', 'ACARIGUA');
+
 -- --------------------------------------------------------
 -- Tabla: t_system_nucleus (1 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_system_nucleus" ("nucleus_id", "code", "name", "region", "nucleus_type", "phone", "email", "is_main", "status", "created_at", "updated_at") VALUES (1, 'nucleo acarigua', 'acarigua portuguesa', 'LOS LLANOS', 'EXTENSIÓN', NULL, NULL, FALSE, 1, '2026-06-24T14:50:16.129', '2026-06-24T15:02:32.804');
+
 -- --------------------------------------------------------
 -- Tabla: t_tables (13 registros)
 -- --------------------------------------------------------
@@ -5625,107 +4199,9 @@ INSERT INTO "t_tables" ("TABLE_ID", "NAME", "DESCRIPTION", "PHYSICAL_NAME", "LOG
 INSERT INTO "t_tables" ("TABLE_ID", "NAME", "DESCRIPTION", "PHYSICAL_NAME", "LOG", "STATUS") VALUES (24, 'Evaluaciones', 'Evaluaciones de prácticas', 't_evaluation', 1, 1);
 INSERT INTO "t_tables" ("TABLE_ID", "NAME", "DESCRIPTION", "PHYSICAL_NAME", "LOG", "STATUS") VALUES (25, 'Visitas', 'Visitas a instituciones', 't_practice_visits', 1, 1);
 INSERT INTO "t_tables" ("TABLE_ID", "NAME", "DESCRIPTION", "PHYSICAL_NAME", "LOG", "STATUS") VALUES (26, 'Respaldos', 'Respaldos de BD', 't_backups', 0, 1);
+
 -- --------------------------------------------------------
 -- Tabla: t_tutor_career (27 registros)
--- --------------------------------------------------------
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (1, '2026-06-21T19:29:24.766007+00:00', 25, 3);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (2, '2026-06-21T19:29:24.766007+00:00', 26, 3);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (4, '2026-06-21T19:29:24.766007+00:00', 28, 3);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (5, '2026-06-21T19:29:24.766007+00:00', 29, 3);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (6, '2026-06-21T19:29:24.766007+00:00', 25, 4);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (7, '2026-06-21T19:29:24.766007+00:00', 26, 4);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (9, '2026-06-21T19:29:24.766007+00:00', 28, 4);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (10, '2026-06-21T19:29:24.766007+00:00', 29, 4);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (11, '2026-06-21T19:29:24.766007+00:00', 25, 2);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (12, '2026-06-21T19:29:24.766007+00:00', 26, 2);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (14, '2026-06-21T19:29:24.766007+00:00', 28, 2);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (15, '2026-06-21T19:29:24.766007+00:00', 29, 2);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (35, '2026-06-30T00:20:08.630224+00:00', 27, 3);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (36, '2026-06-30T00:20:08.630224+00:00', 27, 4);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (37, '2026-06-30T00:20:08.630224+00:00', 27, 2);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (38, '2026-07-02T15:13:22.599723+00:00', 54, 2);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (39, '2026-07-02T15:13:22.599723+00:00', 54, 5);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (40, '2026-07-02T15:13:22.599723+00:00', 54, 3);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (41, '2026-07-02T15:13:22.599723+00:00', 54, 6);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (42, '2026-07-02T15:13:22.599723+00:00', 54, 4);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (43, '2026-07-02T15:13:22.599723+00:00', 54, 7);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (44, '2026-07-02T15:13:46.703521+00:00', 30, 5);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (45, '2026-07-02T15:13:46.703521+00:00', 30, 2);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (46, '2026-07-02T15:13:46.703521+00:00', 30, 3);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (47, '2026-07-02T15:13:46.703521+00:00', 30, 6);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (48, '2026-07-02T15:13:46.703521+00:00', 30, 4);
-INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (49, '2026-07-02T15:13:46.703521+00:00', 30, 7);
--- --------------------------------------------------------
--- Tabla: t_tutors (9 registros)
--- --------------------------------------------------------
-INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (27, 35, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'LICENCIADA EN ENFERMERÍA', 'ORDINARIO', 'MEDIO TIEMPO', 'ASISTENTE', '2026-06-21T19:27:16.105107', 1, NULL, 'MAESTRÍA', NULL);
-INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (29, 37, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'LICENCIADA EN EDUCACIÓN', 'ORDINARIO', 'TIEMPO COMPLETO', 'ASOCIADO', '2026-06-21T19:27:16.105107', 1, NULL, 'MAESTRÍA', NULL);
-INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (26, 34, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'LICENCIADO EN ADMINISTRACIÓN', 'ORDINARIO', 'MEDIO TIEMPO', 'AGREGADO', '2026-06-21T19:27:16.105107', 1, NULL, 'ESPECIALIZACIÓN', NULL);
-INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (54, 42, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'INGENIERO/A EN SISTEMAS', 'ORDINARIO', 'MEDIO TIEMPO', 'ASISTENTE', '2026-06-23T11:50:42.91', 1, NULL, 'TÉCNICO SUPERIOR UNIVERSITARIO', NULL);
-INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (30, 41, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'INGENIERO/A ELÉCTRICO', 'CONTRATADO', 'MEDIO TIEMPO', 'AGREGADO', '2026-06-23T11:35:35.956', 1, NULL, 'ODONTÓLOGO', NULL);
-INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (1, 29, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'MEDICO CIRUJANO', 'ORDINARIO', 'MEDIO TIEMPO', 'AGREGADO', '2026-06-19T23:59:21.039', 0, 5, 'MAESTRÍA', NULL);
-INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (25, 33, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'INGENIERO AGRONOMO', 'ORDINARIO', 'TIEMPO COMPLETO', 'TITULAR', '2026-06-21T19:27:16.105107', 1, NULL, 'MAESTRÍA', NULL);
-INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (28, 36, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'INGENIERO AGROINDUSTRIAL', 'ORDINARIO', 'TIEMPO COMPLETO', 'TITULAR', '2026-06-21T19:27:16.105107', 1, NULL, 'DOCTORADO', NULL);
-INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (78, 43, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'DSDS', 'ORDINARIO', 'DEDICACIÓN EXCLUSIVA', 'INSTRUCTOR', '2026-06-23T13:23:02.687', 1, NULL, 'FARMACÉUTICO', NULL);
--- --------------------------------------------------------
--- Tabla: t_user (10 registros)
--- --------------------------------------------------------
-INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (16, 'V-12874046', 'V-12874046', 'TEST', NULL, 'EST_12874046', NULL, 'test.est12874046@unefa.edu.ve', NULL, '2026-07-03T00:40:36.189492', 1, 'aceptado', 0, 1, 3, NULL, FALSE, 56, NULL);
-INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (4, '12088665', '12088665', NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-19T00:57:31.028', 0, '0', 2, 1, 0, NULL, TRUE, 27, NULL);
-INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (9, '26940010', '26940010', 'EVER', 'ALEX', 'MENDOZA', 'MOLOY', 'EVERMENDOZA.178@GMAIL.COM', '04145601020', '2026-06-22T18:03:45.584', 1, 'ACEPTADO', 2, 1, 0, NULL, FALSE, 39, NULL);
-INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (7, 'TEST-ADMIN', 'V-TESTADM', 'Test', NULL, 'Admin', NULL, 'test.admin@unefa.edu.ve', NULL, '2026-07-02T19:32:22.669', 1, 'ACEPTADO', 2, 1, 0, NULL, FALSE, 30, NULL);
-INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (5, '31114449', '31114449', 'ANTONY', NULL, 'FIGUEROA', NULL, 'ANTONY.JOB.2026@GMAIL.COM', '02125515921', '2026-06-19T03:54:35.149', 1, 'ACEPTADO', 2, 1, 0, NULL, FALSE, 28, NULL);
-INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (2, '9663439', '9663439', 'Angela', 'Margarita', 'Castillo', 'Sabina', 'pasantiasacarigua@gmail.com', '0424-5513911', '2026-06-16T13:40:51.50235', 0, '1', 0, 0, 0, NULL, FALSE, 2, NULL);
-INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (1, 'V12345678', 'V12345678', 'ADMIN', NULL, 'PRINCIPAL', NULL, 'antonysamuel0903@gmail.com', '04125515921', '2026-06-16T03:16:38.42954', 0, 'ACEPTADO', 2, 1, 0, NULL, FALSE, 1, NULL);
-INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (10, '30713670', '30713670', 'LEOVIC', NULL, 'ALVARADO', 'ALVARADO', 'LEOVICALVARADO@GMAIL.COM', '04129321978', '2026-06-24T19:49:27.844', 1, 'ACEPTADO', 2, 1, 0, NULL, FALSE, 50, NULL);
-INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (17, 'V-30100001', 'V-30100001', 'María', NULL, 'García', NULL, 'maria.garcia@test.com', NULL, '2026-07-03T00:40:36.189492', 1, 'aceptado', 0, 1, 0, NULL, FALSE, 81, NULL);
-INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (3, '29968304', '29968304', NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-19T00:39:34.619', 0, '0', 2, 1, 0, NULL, TRUE, 26, NULL);
--- --------------------------------------------------------
--- Tabla: t_user_key (19 registros)
--- --------------------------------------------------------
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (2, 2, '$2b$10$s.x52680CHsesnkUjVMmDO9kOfNdKKzsCsJDHdouwKLZzC3XQjVDu', '2026-06-16T13:40:51.50235', '2026-06-16T13:40:51.50235', 0, '2026-06-16T13:40:51.50235', 0, '2026-06-16T13:40:51.50235', 0, '2026-06-16T13:40:51.50235', 1, FALSE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (1, 1, '$2b$10$6R2dO.Z7PeiquiISByTD9OZADLzBVr3Caw2prmrRSO9ok93R.w/ae', '2026-06-16T03:18:06.430221', '2026-06-16T03:18:06.430221', 0, '2026-06-16T03:16:38.42954', 0, '2026-06-16T03:16:38.42954', 0, '2026-06-16T03:16:38.42954', 0, FALSE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (4, 1, '$2b$10$t7uDtn0s1BTzpiPQTDHxvOnC4ijrPJUlvO.1m6Pz/WoQ6Ck7BMEIm', '2026-06-17T02:36:08.993149', '2026-10-15T02:36:08.993149', 1, '2026-06-18T12:47:44.171851', 0, '2025-01-01T00:00:00', 0, '2025-01-01T00:00:00', 1, FALSE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (6, 4, '$2b$10$IZoTGuUMrRrDDj5R5F4NEOqqFD7BhUlLOBTQa2bFWcumhRXKNUQwa', '2026-06-19T00:57:31.464', '2026-06-26T00:57:31.464', 1, '2026-06-19T00:57:31.466', 1, '2026-06-19T00:57:31.466', 1, '2026-06-19T00:57:31.466', 1, TRUE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (7, 5, '$2b$10$LcVHaWLAwmmGhr.smwBHfuYRk1pC5wBqsWxgFG.vjF.QCAHMGERG.', '2026-06-19T03:54:35.648', '2026-06-26T03:54:35.648', 1, '2026-06-19T03:54:35.648', 1, '2026-06-19T03:54:35.648', 1, '2026-06-19T03:54:35.648', 0, TRUE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (12, 9, '$2b$10$2sS4l1LJghI/DLR.plAiPuJ9M0Z5IbUsgUefLw6OVax6.91QMx5zG', '2026-06-22T18:03:46.004', '2026-06-29T18:03:46.004', 1, '2026-06-22T18:03:46.008', 1, '2026-06-22T18:03:46.008', 1, '2026-06-22T18:03:46.008', 0, TRUE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (13, 9, '$2b$10$Qi0S3Ichqchmuhzo76OucugHf3XFTyvcjfzca4mc7inRySUSHrUEq', '2026-06-22T14:09:50', '2026-10-20T18:09:50.691', 9, '2026-06-22T14:09:50', 0, '2025-01-01T00:00:00', 0, '2025-01-01T00:00:00', 1, FALSE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (14, 10, '$2b$10$KP3OzKSEG1DGpToXR444vuq3w.zGjr3IBp14OCoFfodMRNwi7Fp7G', '2026-06-24T19:49:28.41', '2026-07-01T19:49:28.41', 1, '2026-06-24T19:49:28.41', 1, '2026-06-24T19:49:28.41', 1, '2026-06-24T19:49:28.41', 0, TRUE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (15, 10, '$2b$10$YPDgzxRjIJC8n.Xh1paqbebTNya4S4l9S3RvPGxNZ7d99Uq1Urnv.', '2026-06-24T20:05:11.405', '2026-07-01T20:05:11.405', 10, '2026-06-24T20:05:11.405', 10, '2026-06-24T20:05:11.405', 10, '2026-06-24T20:05:11.405', 0, TRUE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (16, 10, '$2b$10$shTOK9guOFBXe2TOB6BvLOByzaMal7lMbZaobZojrU/ElhsFhVN1W', '2026-06-24T20:07:10.202', '2026-07-01T20:07:10.202', 10, '2026-06-24T20:07:10.202', 10, '2026-06-24T20:07:10.202', 10, '2026-06-24T20:07:10.202', 0, TRUE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (17, 10, '$2b$10$tamPo.E0mFb1XOp0EvxI..KrewVrqaJP14KLHzzXh/6uMMy7.bTDC', '2026-06-24T20:15:22.507', '2026-07-01T20:15:22.507', 10, '2026-06-24T20:15:22.507', 10, '2026-06-24T20:15:22.507', 10, '2026-06-24T20:15:22.507', 0, TRUE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (18, 10, '$2b$10$tN6lkmIAzvjGAOm22kqUQ.rrGC1hAWIxfivbdyI7Bjhgv3n7A8oEK', '2026-06-24T20:26:07.205', '2026-07-01T20:26:07.205', 10, '2026-06-24T20:26:07.205', 10, '2026-06-24T20:26:07.205', 10, '2026-06-24T20:26:07.205', 0, TRUE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (19, 10, '$2b$10$Bu.LMNHxF6yoRwNhU7en3uwDdOafLjxwEFPSqc0NFnm8fEYsHLH6a', '2026-06-24T20:49:57.942', '2026-07-01T20:49:57.942', 10, '2026-06-24T20:49:57.943', 10, '2026-06-24T20:49:57.943', 10, '2026-06-24T20:49:57.943', 0, TRUE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (20, 10, '$2b$10$dTcZJ12l.KEkz0Klfj69G.MhW84GQFrnGFOBnMJHH6QqRmzE3B.me', '2026-06-24T17:05:02', '2026-10-22T21:05:02.822', 10, '2026-06-24T17:05:02', 0, '2025-01-01T00:00:00', 0, '2025-01-01T00:00:00', 1, FALSE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (5, 3, '$2b$10$YmkcrORjgh/Lk1fxaFsZP.qv8Bd.BCU6yTPdaiDB5bTC5uYcieqhu', '2026-06-19T00:39:34.978', '2026-06-26T00:39:34.978', 1, '2026-06-19T00:39:34.98', 1, '2026-06-19T00:39:34.98', 1, '2026-06-19T00:39:34.98', 0, TRUE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (24, 3, '$2b$10$scnHy5c058JgdHchNBvt.e9ty.vXEd8OEulMUPr1yK02uRtF1AVkO', '2026-07-01T01:28:00.808', '2026-07-08T01:28:00.808', 3, '2026-07-01T01:28:00.808', 3, '2026-07-01T01:28:00.808', 3, '2026-07-01T01:28:00.808', 1, TRUE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (28, 16, '$2b$10$qYbr8aYkY77UUhZx1VvPw.DWyK9YWH5MOS4Hiyj3oLtaxObkDV5Z6', '2026-07-03T00:40:50.729164', '2099-12-31T00:00:00', 16, '2026-07-03T00:40:50.729164', 0, '2026-07-03T00:40:50.729164', 0, '2026-07-03T00:40:50.729164', 1, FALSE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (29, 17, '$2b$10$D20a3w3pLfduWNLvppUNcO5kmiuwia4hi07xiQAILWYekfHExAhbi', '2026-07-03T00:40:50.729164', '2099-12-31T00:00:00', 17, '2026-07-03T00:40:50.729164', 0, '2026-07-03T00:40:50.729164', 0, '2026-07-03T00:40:50.729164', 1, FALSE);
-INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (11, 5, '$2b$10$TmJFPsNzR5YpLr8Wf1nA9.hwPturcXov1fm/x9PDHjt9GQH/CnMdS', '2026-06-22T08:42:03', '2026-10-20T12:42:03.77', 5, '2026-06-22T08:42:03', 0, '2025-01-01T00:00:00', 0, '2025-01-01T00:00:00', 1, FALSE);
--- --------------------------------------------------------
--- Tabla: t_user_questions (3 registros)
--- --------------------------------------------------------
-INSERT INTO "t_user_questions" ("USER_QUESTION_ID", "USER_ID", "QUESTION_TYPE", "PRESET_QUESTION_ID", "CUSTOM_QUESTION", "ANSWER", "ORDER_NUM", "CREATED_AT", "UPDATED_AT", "STATUS") VALUES (1, 1, 'CUSTOM', NULL, '1', '111', 1, '2026-06-25T12:34:05.43', '2026-06-25T12:34:05.43', 1);
-INSERT INTO "t_user_questions" ("USER_QUESTION_ID", "USER_ID", "QUESTION_TYPE", "PRESET_QUESTION_ID", "CUSTOM_QUESTION", "ANSWER", "ORDER_NUM", "CREATED_AT", "UPDATED_AT", "STATUS") VALUES (2, 1, 'CUSTOM', NULL, '2', '222', 2, '2026-06-25T12:34:05.43', '2026-06-25T12:34:05.43', 1);
-INSERT INTO "t_user_questions" ("USER_QUESTION_ID", "USER_ID", "QUESTION_TYPE", "PRESET_QUESTION_ID", "CUSTOM_QUESTION", "ANSWER", "ORDER_NUM", "CREATED_AT", "UPDATED_AT", "STATUS") VALUES (3, 1, 'CUSTOM', NULL, '3', '333', 3, '2026-06-25T12:34:05.43', '2026-06-25T12:34:05.43', 1);
--- --------------------------------------------------------
--- Tabla: t_user_roles (9 registros)
--- --------------------------------------------------------
-INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (1, 1);
-INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (2, 1);
-INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (4, 1);
-INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (9, 1);
-INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (5, 3);
-INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (10, 1);
-INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (3, 3);
-INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (16, 4);
-INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (17, 4);
--- --------------------------------------------------------
--- Tabla: t_user_theme (1 registros)
--- --------------------------------------------------------
-INSERT INTO "t_user_theme" ("USER_THEME_ID", "USER_ID", "BRAND_COLOR", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (1, 1, 'blue', '2026-06-25T12:34:12.92', 1, '2026-06-26T12:34:45.894', 0, '2026-06-25T12:34:12.92', 0, '2026-06-25T12:34:12.92', 1);
--- --------------------------------------------------------
--- Tabla: t_value_list (121 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (44, 'APROBADO', 'A', 14, '2026-06-16T04:00:19.860378', 1, '2026-06-16T04:00:19.860378', 1, '2026-06-16T04:00:19.860378', 1, '2026-06-16T04:00:19.860378', 1);
 INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (45, 'REPROBADO', 'R', 14, '2026-06-16T04:00:19.860378', 1, '2026-06-16T04:00:19.860378', 1, '2026-06-16T04:00:19.860378', 1, '2026-06-16T04:00:19.860378', 1);
@@ -5848,6 +4324,7 @@ INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", 
 INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (43, 'CORONEL', 'CNEL', 13, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1);
 INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (59, 'NO APLICA', NULL, 13, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1);
 INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (70, 'PASAPORTE', 'P', 3, '2026-06-24T01:42:04.291', 0, '2026-06-24T01:42:04.291', 0, '2026-06-24T01:42:04.291', 0, '2026-06-24T01:42:04.291', 1);
+
 -- ============================================================
 -- SECCIÓN 5: CONSTRAINTS
 -- ============================================================
@@ -5955,6 +4432,7 @@ ALTER TABLE "t_user_theme" ADD CONSTRAINT "fk_user_theme_user" FOREIGN KEY ("USE
 ALTER TABLE "t_value_list" ADD CONSTRAINT "fk_value_list_list" FOREIGN KEY ("LIST_ID") REFERENCES t_list("LIST_ID");
 ALTER TABLE "t_visit" ADD CONSTRAINT "fk_visit_practice" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES t_professional_practices("PROFESSIONAL_PRACTICE_ID");
 ALTER TABLE "t_visit" ADD CONSTRAINT "fk_visit_tutor" FOREIGN KEY ("TUTOR_ID") REFERENCES t_tutors("TUTOR_ID");
+
 -- Unique / Check
 ALTER TABLE "t_address" ADD CONSTRAINT "t_address_uuid_key" UNIQUE (uuid);
 ALTER TABLE "t_address_type" ADD CONSTRAINT "t_address_type_code_key" UNIQUE (code);
@@ -5991,6 +4469,7 @@ ALTER TABLE "t_system_institution" ADD CONSTRAINT "t_system_institution_status_c
 ALTER TABLE "t_system_nucleus" ADD CONSTRAINT "t_system_nucleus_nucleus_type_check" CHECK (((nucleus_type)::text = ANY ((ARRAY['NÚCLEO'::character varying, 'EXTENSIÓN'::character varying])::text[])));
 ALTER TABLE "t_system_nucleus" ADD CONSTRAINT "t_system_nucleus_status_check" CHECK ((status = ANY (ARRAY[0, 1])));
 ALTER TABLE "t_user_questions" ADD CONSTRAINT "chk_question_type" CHECK ((((("QUESTION_TYPE")::text = 'PRESET'::text) AND ("PRESET_QUESTION_ID" IS NOT NULL)) OR ((("QUESTION_TYPE")::text = 'CUSTOM'::text) AND ("CUSTOM_QUESTION" IS NOT NULL))));
+
 -- ============================================================
 -- SECCIÓN 6: ÍNDICES
 -- ============================================================
@@ -6102,6 +4581,7 @@ CREATE INDEX idx_user_questions_preset ON public.t_user_questions USING btree ("
 CREATE INDEX idx_user_questions_user ON public.t_user_questions USING btree ("USER_ID");
 CREATE UNIQUE INDEX "t_user_theme_USER_ID_key" ON public.t_user_theme USING btree ("USER_ID");
 CREATE INDEX idx_value_list_list_status ON public.t_value_list USING btree ("LIST_ID", "STATUS");
+
 -- ============================================================
 -- SECCIÓN 9: TABLAS SIN DATOS (vacías)
 -- ============================================================
@@ -6142,4 +4622,4 @@ CREATE INDEX idx_value_list_list_status ON public.t_value_list USING btree ("LIS
 
 -- ================================================================================
 -- FIN DEL RESPALDO — Réplica exacta lista para otro proyecto Supabase
--- ================================================================================;
+-- ================================================================================

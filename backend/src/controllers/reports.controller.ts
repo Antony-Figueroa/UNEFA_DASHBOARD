@@ -1132,6 +1132,8 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         };
 
         // ── 1. Query principal: tutores académicos con sus prácticas ──
+        // NOTA: NO anidar t_professional_practices_tutor dentro de t_professional_practices
+        // porque PostgREST no maneja auto-referencias anidadas de forma confiable.
         const { data: tutorPractices } = await supabase
           .from('t_professional_practices_tutor')
           .select(`
@@ -1154,46 +1156,81 @@ export const exportReportExcel = async (req: Request, res: Response) => {
               t_students (
                 STUDENTS_ID, STUDENT_TYPE, MILITARY_RANK
               ),
-              t_career (CAREER_ID, CAREER_NAME),
-              t_professional_practices_tutor (
-                TUTOR_TYPE,
-                t_tutors (
-                  TUTOR_ID, TITULO, person_id
-                )
-              )
+              t_career (CAREER_ID, CAREER_NAME)
             )
           `)
           .eq('TUTOR_TYPE', 'ACADEMICO');
 
         if (!tutorPractices) break;
 
-        // ── 2. Recolectar todos los person_id de estudiantes y tutores institucionales ──
+        // ── 2. Recolectar practice_ids y person_ids de estudiantes ──
         const raw = tutorPractices as any[];
-        const personIds = new Set<number>();
+        const practiceIds = new Set<number>();
+        const studentPersonIds = new Set<number>();
         raw.forEach((tp) => {
           const practice = tp.t_professional_practices;
           if (!practice) return;
-          if (practice.student_person_id) personIds.add(practice.student_person_id);
-          const instTutors = practice.t_professional_practices_tutor || [];
-          instTutors.forEach((t: any) => {
-            if (t.t_tutors?.person_id) personIds.add(t.t_tutors.person_id);
-          });
+          practiceIds.add(practice.PROFESSIONAL_PRACTICE_ID);
+          if (practice.student_person_id) studentPersonIds.add(practice.student_person_id);
         });
 
-        const personIdArray = [...personIds];
-        let studentPersonMap = new Map<number, any>();
+        // ── 2b. Fetch tutores institucionales separadamente (evita self-reference) ──
+        let instTutorMapByPractice = new Map<number, any>(); // practiceId → { TUTOR_ID, TITULO, person_id }
         let instTutorPersonMap = new Map<number, any>();
 
-        if (personIdArray.length > 0) {
-          const { data: persons } = await supabase
+        const practiceIdArray = [...practiceIds];
+        if (practiceIdArray.length > 0) {
+          const { data: instTutorAssignments } = await supabase
+            .from('t_professional_practices_tutor')
+            .select(`
+              TUTOR_ID,
+              TUTOR_TYPE,
+              t_tutors (
+                TUTOR_ID, TITULO, person_id
+              )
+            `)
+            .in('PROFESSIONAL_PRACTICE_ID', practiceIdArray)
+            .eq('TUTOR_TYPE', 'INSTITUCIONAL');
+
+          if (instTutorAssignments) {
+            const instPersonIds = new Set<number>();
+            for (const assignment of instTutorAssignments as any[]) {
+              const practiceId = assignment.PROFESSIONAL_PRACTICE_ID;
+              const tutorData = assignment.t_tutors;
+              if (tutorData) {
+                instTutorMapByPractice.set(practiceId, tutorData);
+                if (tutorData.person_id) instPersonIds.add(tutorData.person_id);
+              }
+            }
+
+            // Fetch person data for institutional tutors
+            if (instPersonIds.size > 0) {
+              const { data: instPersons } = await supabase
+                .from('t_persons')
+                .select('person_id, ci, first_name, middle_name, last_name, second_last_name, phone, email, gender')
+                .in('person_id', [...instPersonIds]);
+
+              if (instPersons) {
+                for (const p of instPersons as any[]) {
+                  instTutorPersonMap.set(p.person_id, p);
+                }
+              }
+            }
+          }
+        }
+
+        // ── 2c. Fetch person data for students ──
+        let studentPersonMap = new Map<number, any>();
+        const studentPersonIdArray = [...studentPersonIds];
+        if (studentPersonIdArray.length > 0) {
+          const { data: studentPersons } = await supabase
             .from('t_persons')
             .select('person_id, ci, first_name, middle_name, last_name, second_last_name, phone, email, gender')
-            .in('person_id', personIdArray);
+            .in('person_id', studentPersonIdArray);
 
-          if (persons) {
-            for (const p of persons as any[]) {
+          if (studentPersons) {
+            for (const p of studentPersons as any[]) {
               studentPersonMap.set(p.person_id, p);
-              instTutorPersonMap.set(p.person_id, p);
             }
           }
         }
@@ -1214,8 +1251,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           const institution = practice.t_institution;
           const studentPerson = practice.student_person_id ? studentPersonMap.get(practice.student_person_id) : null;
           const estudianteEntity = practice.t_students; // STUDENT_TYPE, MILITARY_RANK
-          const tutorInstArr = practice.t_professional_practices_tutor || [];
-          const instTutor = tutorInstArr.find((t: any) => t.TUTOR_TYPE === 'INSTITUCIONAL')?.t_tutors;
+          const instTutor = instTutorMapByPractice.get(practice.PROFESSIONAL_PRACTICE_ID);
           const instTutorPerson = instTutor?.person_id ? instTutorPersonMap.get(instTutor.person_id) : null;
 
           // ── General: agregar por tutor ──
@@ -1261,7 +1297,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           const instPhone = cleanVal(instTutorPerson?.phone || '');
           const instTitulo = instTutor?.TITULO || '';
           const tutorInstConcat = instTutorPerson
-            ? `${instTitulo} ${instName} ${instSurname}. TELEFONO:  ${formatPhone(instPhone)}`
+            ? `${instTitulo} ${instName} ${instSurname}.TELEFONO:  ${formatPhone(instPhone)}`
             : '';
 
           individualMap.get(tutorKey)!.rows.push({

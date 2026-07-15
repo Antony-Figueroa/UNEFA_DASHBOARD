@@ -2221,7 +2221,7 @@ INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding
 10-15 minutos
 
 ### Rol requerido
-Administrador o Asistente', NULL, '{"tags":["estudiantes","inscripcion","nuevo","registro"],"screen":"/students","relatedModules":["students","users"]}', '["0","1","2"]', TRUE, '2026-06-16T03:26:39.285393+00:00', '2026-06-16T03:26:39.285393+00:00');
+Administrador o Asistente', NULL, '{"tags":["estudiantes","inscripcion","nuevo","registro"],"screen":"/students","relatedModules":["students","users"]}', '{"0","1","2"}', TRUE, '2026-06-16T03:26:39.285393+00:00', '2026-06-16T03:26:39.285393+00:00');
 INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding", "metadata", "roles", "is_active", "created_at", "updated_at") VALUES ('b7b8254e-50cc-4787-84b1-276a6754059c', 'Registro de Pasantía', 'process', '## Registro de Pasantía / Práctica Profesional
 
 ### Requisitos
@@ -2243,7 +2243,7 @@ INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding
 15-20 minutos
 
 ### Rol requerido
-Administrador o Asistente', NULL, '{"tags":["pasantias","practicas","registro","tutores"],"screen":"/tracking","relatedModules":["tracking","tutors","institutions"]}', '["0","1","2"]', TRUE, '2026-06-16T03:26:39.668961+00:00', '2026-06-16T03:26:39.668961+00:00');
+Administrador o Asistente', NULL, '{"tags":["pasantias","practicas","registro","tutores"],"screen":"/tracking","relatedModules":["tracking","tutors","institutions"]}', '{"0","1","2"}', TRUE, '2026-06-16T03:26:39.668961+00:00', '2026-06-16T03:26:39.668961+00:00');
 INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding", "metadata", "roles", "is_active", "created_at", "updated_at") VALUES ('65a05f0a-5ae0-44c6-9d6c-4d685eb76ec6', 'Solicitud de Documentos', 'process', '## Solicitud de Documentos (Estudiante)
 
 ### Requisitos
@@ -2263,7 +2263,7 @@ INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding
 5 minutos
 
 ### Rol requerido
-Estudiante', NULL, '{"tags":["documentos","solicitudes","estudiante","certificados"],"screen":"/student/requests","relatedModules":["student-requests","documents"]}', '["3","4"]', TRUE, '2026-06-16T03:26:40.072496+00:00', '2026-06-16T03:26:40.072496+00:00');
+Estudiante', NULL, '{"tags":["documentos","solicitudes","estudiante","certificados"],"screen":"/student/requests","relatedModules":["student-requests","documents"]}', '{"3","4"}', TRUE, '2026-06-16T03:26:40.072496+00:00', '2026-06-16T03:26:40.072496+00:00');
 INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding", "metadata", "roles", "is_active", "created_at", "updated_at") VALUES ('545bbcda-1beb-4492-93ce-adec657b3c59', 'Configuración de Período Académico', 'process', '## Configuración de Período Académico
 
 ### Requisitos
@@ -2286,7 +2286,7 @@ INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding
 5 minutos
 
 ### Rol requerido
-Administrador', NULL, '{"tags":["periodos","configuracion","calendario","semestre"],"screen":"/periods","relatedModules":["periods"]}', '["0","1"]', TRUE, '2026-06-16T03:26:40.476273+00:00', '2026-06-16T03:26:40.476273+00:00');
+Administrador', NULL, '{"tags":["periodos","configuracion","calendario","semestre"],"screen":"/periods","relatedModules":["periods"]}', '{"0","1"}', TRUE, '2026-06-16T03:26:40.476273+00:00', '2026-06-16T03:26:40.476273+00:00');
 INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding", "metadata", "roles", "is_active", "created_at", "updated_at") VALUES ('11ab8521-f400-4335-bbf0-db94269503ba', '¿Cómo crear un reporte?', 'process', '## Creación de Reportes
 
 ### Paso a Paso
@@ -2361,7 +2361,7 @@ INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding
 - La institución receptora emite una constancia de culminación
 - La nota final se registra en el sistema de evaluaciones
 
-*Fuente: Reglamento General de la UNEFA. Para el texto completo, contacta a la Dirección de Asuntos Académicos.*', NULL, '{"tags":["reglamento","pasantias","practicas","normativa"],"source":"Reglamento General UNEFA"}', '["0","1","2"]', TRUE, '2026-06-16T03:26:41.326294+00:00', '2026-06-16T03:26:41.326294+00:00');
+*Fuente: Reglamento General de la UNEFA. Para el texto completo, contacta a la Dirección de Asuntos Académicos.*', NULL, '{"tags":["reglamento","pasantias","practicas","normativa"],"source":"Reglamento General UNEFA"}', '{"0","1","2"}', TRUE, '2026-06-16T03:26:41.326294+00:00', '2026-06-16T03:26:41.326294+00:00');
 
 -- --------------------------------------------------------
 -- Tabla: t_landing_config (13 registros)

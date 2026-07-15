@@ -501,12 +501,10 @@ export const getDataEvaluacionComite = async (req: Request, res: Response) => {
       .filter((e: any) => e.evaluatorType === 'COMITE')
       .sort((a: any, b: any) => (a.comiteMemberIndex || 0) - (b.comiteMemberIndex || 0));
 
-    // Promedio de las 3 evaluaciones del comité
+    // Promedio de las 3 evaluaciones del comité — sin redondeo, el frontend formatea
     let comiteTotalScore = 0;
     if (evaluacionesComite.length > 0) {
-      comiteTotalScore = parseFloat(
-        (evaluacionesComite.reduce((sum: number, e: any) => sum + e.totalScore, 0) / evaluacionesComite.length).toFixed(1)
-      );
+      comiteTotalScore = evaluacionesComite.reduce((sum: number, e: any) => sum + e.totalScore, 0) / evaluacionesComite.length;
     }
 
     const formatCoord = (c: any) => c ? {
@@ -1295,9 +1293,7 @@ export const getDataEvaluacionConsolidada = async (req: Request, res: Response) 
     let comiteTotalScore = 0;
     const realComite = evaluacionesComite.filter((e: any) => e.totalScore !== null);
     if (realComite.length > 0) {
-      comiteTotalScore = parseFloat(
-        (realComite.reduce((sum: number, e: any) => sum + e.totalScore, 0) / realComite.length).toFixed(1)
-      );
+      comiteTotalScore = realComite.reduce((sum: number, e: any) => sum + e.totalScore, 0) / realComite.length;
     }
 
     // Coordinadores

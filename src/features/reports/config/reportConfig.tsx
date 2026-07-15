@@ -239,7 +239,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       { header: "Extensión", accessor: "extension" },
       { header: "Nombre de la Empresa o Institución", accessor: "empresa" },
       { header: "Responsable", accessor: "responsable" },
-      { header: "Número de Contacto", accessor: "telefonoContacto", className: "text-center" },
+      { header: "Numero de Contacto", accessor: "telefonoContacto", className: "text-center" },
       { header: "Tipo de Empresa", accessor: "tipoEmpresa", className: "text-center" },
       { header: "Carreras", accessor: "carreras" },
       { header: "Cantidad de Estudiantes", accessor: "cantidadEstudiantes", className: "text-center font-bold" },

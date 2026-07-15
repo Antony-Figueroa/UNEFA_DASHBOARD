@@ -537,7 +537,7 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
   periodLabel: string,
 ): Promise<Workbook> {
   const workbook = new ExcelJS.Workbook();
-  const TOTAL = 9; // A-I
+  const TOTAL = 10; // A-J
 
   if (rows.length === 0) {
     const ws = workbook.addWorksheet('Sin Datos');
@@ -595,43 +595,71 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
   };
   const setH = (c: any, v: string) => { c.value = v; c.font = hdr.font; c.fill = hdr.fill; c.alignment = hdr.alignment; c.border = hdr.border; };
 
-  // ── Fila 6: HEADER ROW (36px) ──
-  ws.getRow(6).height = 36;
+  // ── Fila 6: HEADER ROW (24px) ──
+  ws.getRow(6).height = 24;
   setH(ws.getCell(6, 1), 'REGIÓN');
   setH(ws.getCell(6, 2), 'NÚCLEO');
   setH(ws.getCell(6, 3), 'EXTENSIÓN');
-  setH(ws.getCell(6, 4), 'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN');
+  setH(ws.getCell(6, 4), 'NOMBRE DE LA EMPRESA\nO INSTITUCIÓN');
   setH(ws.getCell(6, 5), 'RESPONSABLE');
-  setH(ws.getCell(6, 6), 'NÚMERO DE\nCONTACTO');
+  setH(ws.getCell(6, 6), 'NUMERO DE\nCONTACTO');
   setH(ws.getCell(6, 7), 'TIPO DE\nEMPRESA');
-  setH(ws.getCell(6, 8), 'CARRERAS');
-  setH(ws.getCell(6, 9), 'CANTIDAD DE\nESTUDIANTES');
+  setH(ws.getCell(6, 9), 'CARRERAS');
+  setH(ws.getCell(6, 10), 'CANTIDAD DE\nESTUDIANTES');
+
+  // ── Fila 7: Sub-headers para TIPO DE EMPRESA (PÚBLICA | PRIVADA) ──
+  ws.getRow(7).height = 20;
+  setH(ws.getCell(7, 7), 'PÚBLICA');
+  setH(ws.getCell(7, 8), 'PRIVADA');
+
+  // Merge header cells for TIPO DE EMPRESA
+  ws.mergeCells(6, 7, 6, 8); // "TIPO DE EMPRESA" spans columns 7-8
 
   // ── Column widths ──
   const empresaW = Math.min(Math.max(...rows.map(r => (r.empresa || '').length), 10) + 3, 55);
   const carrerasW = Math.min(Math.max(...rows.map(r => (r.carreras || '').length), 10) + 3, 35);
-  [12, 16, 16, empresaW, 30, 16, 12, carrerasW, 10].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  [12, 16, 16, empresaW, 30, 16, 8, 8, carrerasW, 10].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
-  // ── Data rows ──
+  // ── Phone format: 0000 - 0000000 ──
+  const formatPhone = (phone: string): string => {
+    const digits = (phone || '').replace(/\D/g, '');
+    if (digits.length >= 11) {
+      return `${digits.slice(0, 4)} - ${digits.slice(4, 11)}`;
+    }
+    if (digits.length >= 7) {
+      return `${digits.slice(0, 4)} - ${digits.slice(4)}`;
+    }
+    return phone || '';
+  };
+
+  // ── Data rows (start at row 8) ──
   const center = { vertical: 'middle' as const, wrapText: true, horizontal: 'center' as const };
   const left = { vertical: 'middle' as const, wrapText: true, horizontal: 'left' as const };
   const dataStyle = { font: { name: FONT, size: 9 }, border: { top: { style: 'thin' as const }, bottom: { style: 'thin' as const }, left: { style: 'thin' as const }, right: { style: 'thin' as const } } };
 
   rows.forEach((r, i) => {
-    const er = ws.getRow(7 + i);
+    const er = ws.getRow(8 + i);
     er.height = 24;
-    const vals = [r.region, r.nucleo, r.extension, r.empresa, r.responsable, r.telefonoContacto, r.tipoEmpresa, r.carreras, r.cantidadEstudiantes];
+    const tipo = (r.tipoEmpresa || '').toUpperCase();
+    const vals = [
+      r.region, r.nucleo, r.extension, r.empresa, r.responsable,
+      formatPhone(r.telefonoContacto),
+      tipo === 'PÚBLICA' ? 'X' : '',
+      tipo === 'PRIVADA' ? 'X' : '',
+      r.carreras,
+      r.cantidadEstudiantes,
+    ];
     vals.forEach((v, ci) => {
       const cell = er.getCell(ci + 1);
       cell.value = v !== null && v !== undefined ? (typeof v === 'string' ? v.toUpperCase() : v) : '';
       cell.font = dataStyle.font;
-      cell.alignment = [7, 9].includes(ci + 1) ? center : left;
+      cell.alignment = [7, 8, 10].includes(ci + 1) ? center : left;
       cell.border = dataStyle.border;
     });
   });
 
   // ── Subtotals ──
-  const dataEnd = 7 + rows.length;
+  const dataEnd = 8 + rows.length;
   const pub = rows.filter(r => r.tipoEmpresa.toUpperCase() === 'PÚBLICA').length;
   const priv = rows.filter(r => r.tipoEmpresa.toUpperCase() === 'PRIVADA').length;
   const totalEst = rows.reduce((s, r) => s + (r.cantidadEstudiantes || 0), 0);
@@ -646,7 +674,7 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
   ws.getRow(dataEnd).height = 24;
   ws.mergeCells(dataEnd, 2, dataEnd, 3);
   sub(ws.getCell(dataEnd, 2)); ws.getCell(dataEnd, 2).value = 'SUB-TOTALES';
-  [{ c: 4, v: rows.length }, { c: 7, v: pub }, { c: 8, v: priv }, { c: 9, v: totalEst }].forEach(({ c, v }) => {
+  [{ c: 4, v: rows.length }, { c: 7, v: pub }, { c: 8, v: priv }, { c: 10, v: totalEst }].forEach(({ c, v }) => {
     sub(ws.getCell(dataEnd, c));
     ws.getCell(dataEnd, c).value = v;
   });

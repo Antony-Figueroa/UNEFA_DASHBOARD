@@ -58,7 +58,7 @@ export const unefaBannerService = {
         lastError: 'Error de conexión',
         imageUrl: null,
         status: 'error',
-        fallbackImage: '/unefa-img/9360.jpg',
+        fallbackImage: '/banner.jpeg',
       };
     }
   },

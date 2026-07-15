@@ -18,7 +18,9 @@
     "docker:start": "node -e \"const { platform } = require('os'); const { spawn } = require('child_process'); const cmd = platform() === 'win32' ? 'setup-docker.bat' : './setup-docker.sh'; spawn(cmd, { stdio: 'inherit', shell: true });\"",
     "electron:dev": "concurrently -k \"vite --host --port 5173\" \"tsx electron/main.mjs\"",
     "electron:dev:backend": "concurrently -k \"vite --host --port 5173\" \"cd backend && npx tsx src/server-offline.ts\" \"tsx electron/main.mjs\"",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "db:local": "node scripts/switch-env.mjs local",
+    "db:cloud": "node scripts/switch-env.mjs cloud"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.4.6",

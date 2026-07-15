@@ -101,6 +101,12 @@ const LIST_REFERENCE_MAP: Record<string, Array<{ table: string; column: string }
   'TUTOR_TYPE': [
     { table: 't_professional_practices_tutor', column: 'TUTOR_TYPE' },
   ],
+  'SEMESTRE': [
+    { table: 't_professional_practices', column: 'SEMESTER' },
+  ],
+  'SECCION': [
+    { table: 't_professional_practices', column: 'SECTION' },
+  ],
 };
 
 // Cache local en memoria para resultados de verificación de uso

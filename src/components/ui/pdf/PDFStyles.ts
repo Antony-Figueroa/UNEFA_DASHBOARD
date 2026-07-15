@@ -45,13 +45,14 @@ export const pdfStyles = StyleSheet.create({
   reportTitle: {
     fontSize: 14,
     fontFamily: "Times-Bold",
-    color: "#21486e",
+    color: "#000000",
     textTransform: "capitalize",
     textAlign: "center",
   },
   reportSubtitle: {
     fontSize: 10,
-    color: "#64748B",
+    fontFamily: "Times-Bold",
+    color: "#000000",
     marginTop: 2,
     textAlign: "center",
   },

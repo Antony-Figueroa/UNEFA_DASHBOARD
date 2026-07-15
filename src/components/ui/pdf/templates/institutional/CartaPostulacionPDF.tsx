@@ -18,28 +18,28 @@ function renderTextoTemplate(texto: string, data: Record<string, string>) {
 }
 
 const styles = StyleSheet.create({
-  paragraph: { marginBottom: 14, textAlign: 'justify', textIndent: 36, lineHeight: 1.8 },
-  infoRow: { flexDirection: 'row', marginBottom: 12 },
+  paragraph: { marginBottom: 8, textAlign: 'justify', textIndent: 36, lineHeight: 1.3 },
+  infoRow: { flexDirection: 'row', marginBottom: 6 },
   infoFields: { flex: 1 },
-  fieldRow: { marginBottom: 4, lineHeight: 1.7 },
+  fieldRow: { marginBottom: 2, lineHeight: 1.3 },
   photoBox: {
-    width: 110,
-    height: 140,
+    width: 100,
+    height: 120,
     border: '2pt solid black',
-    marginLeft: 14,
+    marginLeft: 10,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 6,
+    padding: 4,
   },
   photoText: {
-    fontSize: 8,
+    fontSize: 7,
     textAlign: 'center',
     textTransform: 'uppercase',
   },
-  firmaContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 35 },
+  firmaContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 18 },
   firmaCol: { width: '45%', alignItems: 'center' },
-  firmaRaya: { fontSize: 11, marginBottom: 4 },
+  firmaRaya: { fontSize: 11, marginBottom: 2 },
   firmaLabel: { fontSize: 8, textAlign: 'center', textTransform: 'uppercase' },
 });
 
@@ -67,7 +67,7 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
   const trabaja = !!data.estudiante.empleo;
 
   return (
-    <PDFLayout title="SOLICITUD DE CARTA DE POSTULACIÓN (PRÁCTICAS PROFESIONALES)" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
+    <PDFLayout title="SOLICITUD DE CARTA DE POSTULACIÓN" subtitle="(PRÁCTICAS PROFESIONALES)" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
       <Text style={styles.paragraph}>
         {renderTextoTemplate(textos.cuerpo || '', {
           estudianteNombreCompleto: nombreCompleto,
@@ -84,12 +84,12 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
           <Text style={styles.fieldRow}>NÚMEROS DE CONTACTO:  <Text style={{ textDecoration: 'underline' }}>{(data.estudiante.telefono || '').toUpperCase()}</Text></Text>
           <Text style={styles.fieldRow}>CORREO ELECTRÓNICO:   <Text style={{ textDecoration: 'underline' }}>{(data.estudiante.email || '').toUpperCase()}</Text></Text>
           <Text style={styles.fieldRow}>
-            RÉGIMEN: <Text style={{ textDecoration: 'underline' }}>{esDiurno ? 'DIURNO (X)    NOCTURNO (  )' : 'DIURNO (  )    NOCTURNO (X)'}</Text>
+            RÉGIMEN: {esDiurno ? 'DIURNO (X)    NOCTURNO (  )' : 'DIURNO (  )    NOCTURNO (X)'}
           </Text>
           <Text style={styles.fieldRow}>CARRERA:    <Text style={{ textDecoration: 'underline' }}>{data.carrera.nombre.toUpperCase()}</Text></Text>
           <Text style={styles.fieldRow}>SEMESTRE:  <Text style={{ textDecoration: 'underline' }}>{(data.practica?.semester || '').toUpperCase()}</Text></Text>
           <Text style={styles.fieldRow}>
-            TRABAJO:  <Text style={{ textDecoration: 'underline' }}>{trabaja ? 'SI (X)  NO (  )' : 'SI (  )  NO (X)'}</Text>
+            TRABAJO:  {trabaja ? 'SI (X)  NO (  )' : 'SI (  )  NO (X)'}
           </Text>
         </View>
         <View style={styles.photoBox}>

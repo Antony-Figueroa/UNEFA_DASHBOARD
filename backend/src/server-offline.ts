@@ -22,7 +22,7 @@ const PORT = parseInt(process.env.OFFLINE_PORT || '3001', 10);
 const DATA_DIR = process.env.PGLITE_DATA_DIR || path.join(__projectRoot, 'data', 'pglite');
 const SCHEMA_FILE = path.join(__projectRoot, '..', 'DB-postgres.sql');
 const SEED_SYSTEM = path.join(__dirname, 'seed', 'seed_system.sql');
-const SEED_PRES = path.join(__dirname, 'seed', 'seed-presentacion.sql');
+const SEED_PRES = path.join(__dirname, 'seed', 'seed-empty.sql');
 
 // ─── SQL statement splitter ───
 // Character-by-character parser que respeta:

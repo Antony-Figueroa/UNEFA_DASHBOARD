@@ -44,11 +44,10 @@ Atentamente,`,
     firma: '___________________________________\n{{firmaNombre}}\n{{firmaCargo}}\n{{firmaOrden}}',
   },
   carta_postulacion: {
-    cuerpo: `CIUDADANO:
+    cuerpo: `Tengo el honor de dirigirme a usted en la oportunidad de solicitarle la Carta de Postulación correspondiente al proceso de Práctica Profesional; solicitud que respetuosamente hago llegar para su conocimiento y fines consiguientes.`,
+    cuerpoAddress: `CIUDADANO:
 DECANA UNEFA NÚCLEO PORTUGUESA
-SU DESPACHO
-
-Tengo el honor de dirigirme a usted en la oportunidad de solicitarle la Carta de Postulación correspondiente al proceso de Práctica Profesional; solicitud que respetuosamente hago llegar para su conocimiento y fines consiguientes.`,
+SU DESPACHO`,
     acta: `Quienes suscriben, Tutor Académico, Tutor Evaluador Especialista y Tutor Metodológico hacemos constar que el informe de Prácticas Profesionales de la carrera: {{carrera}}, presentado por el (la) bachiller: {{estudianteNombreCompleto}}, C.I. N° {{estudianteCi}}, está apto, revisado y aprobado para ser entregado a la coordinación de Prácticas Profesionales en los lapsos establecidos para tal fin, por lo que está autorizado para defensa y demás fines consiguientes.
 
 Sin otro particular,`,

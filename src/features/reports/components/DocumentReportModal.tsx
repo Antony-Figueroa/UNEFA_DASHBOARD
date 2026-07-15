@@ -424,6 +424,13 @@ const renderTemplate = useCallback(
                     </h4>
                   </div>
 
+                  <CustomInput
+                    label="Destinatario (Señor(a):)"
+                    placeholder="Nombre y título del destinatario"
+                    value={editableTextos.destinatario || ''}
+                    onChange={(e) => handleEditableTextChange('destinatario', e.target.value)}
+                  />
+
                   <div className="space-y-1.5">
                     <label className="block text-sm font-medium text-text-primary dark:text-white/90">
                       Horas Totales
@@ -577,18 +584,10 @@ const renderTemplate = useCallback(
                   />
 
                   <CustomInput
-                    label="Nombre del Gerente de Talento Humano"
+                    label="Nombre del Gerente de Talento Humano (en sección firma)"
                     placeholder="Nombre completo"
-                    value={
-                      editableData.tutorInstitucional
-                        ? [editableData.tutorInstitucional.primerNombre, editableData.tutorInstitucional.primerApellido].filter(Boolean).join(' ')
-                        : ''
-                    }
-                    onChange={(e) => {
-                      const parts = e.target.value.split(' ');
-                      handleDataChange('tutorInstitucional.primerNombre', parts[0] || '');
-                      handleDataChange('tutorInstitucional.primerApellido', parts.slice(1).join(' ') || '');
-                    }}
+                    value={editableTextos.gerenteTalentoHumano || ''}
+                    onChange={(e) => handleEditableTextChange('gerenteTalentoHumano', e.target.value)}
                   />
 
                   <CustomInput

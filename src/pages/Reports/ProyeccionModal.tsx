@@ -282,6 +282,7 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
                 return (
                   <div className="min-w-[920px] bg-white dark:bg-bg-primary shadow-xl rounded-lg overflow-hidden border border-border-light dark:border-white/10">
                     <table className="w-full border-collapse text-[10px]">
+                      <thead>
                       {/* Membrete institucional como fila de la tabla */}
                       <tr>
                         <td colSpan={7} className="p-4 sm:p-6 pb-0">
@@ -309,7 +310,6 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
                       </tr>
 
                       {/* Header de la tabla */}
-                      <thead>
                         <tr className="bg-[#95B3D7]">
                             <th rowSpan={2} className={`${borderTLR} p-1.5 text-center font-bold text-[10px]`}>REGIÓN</th>
                             <th rowSpan={2} className={`${borderTLR} p-1.5 text-center font-bold text-[10px]`}>NÚCLEO</th>

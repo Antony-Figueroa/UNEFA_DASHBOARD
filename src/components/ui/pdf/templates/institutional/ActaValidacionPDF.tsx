@@ -49,10 +49,10 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   footerBefore: {
-    marginTop: 8,
+    marginTop: 18,
   },
   footerAfter: {
-    marginTop: 40,
+    marginTop: 6,
   },
 });
 

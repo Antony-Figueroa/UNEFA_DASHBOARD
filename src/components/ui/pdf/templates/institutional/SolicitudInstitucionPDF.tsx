@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
     marginBottom: 2, 
     fontWeight: 'bold', 
     fontSize: 11,
-    color: '#000000',
+    color: '#dc2626',
   },
   paragraph: { 
     marginBottom: 10, 
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     textIndent: 30,
   },
   textRed: {
-    color: '#000000',
+    color: '#dc2626',
     fontWeight: 'bold',
   },
 
@@ -46,9 +46,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     textAlign: 'center',
   },
-  rightParagraph: { 
+  leftParagraph: { 
     marginBottom: 10, 
-    textAlign: 'right', 
+    textAlign: 'left', 
     fontSize: 11, 
     lineHeight: 1.4,
   },
@@ -64,11 +64,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   centeredFirmaCargo: { 
+    fontWeight: 'bold', 
     fontSize: 11,
     marginBottom: 2,
     textAlign: 'center',
   },
   centeredFirmaOrden: { 
+    fontWeight: 'bold', 
     fontSize: 10, 
     color: '#000000',
     textAlign: 'center',
@@ -146,7 +148,7 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
         </Text>
         
         {/* Despedida alineada a la derecha */}
-        <Text style={styles.rightParagraph}>
+        <Text style={styles.leftParagraph}>
           Agradeciendo la atención sobre este particular, quedo de usted.
         </Text>
         

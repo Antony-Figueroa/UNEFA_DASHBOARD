@@ -103,7 +103,7 @@ const INSTITUTIONAL_HEADER = [
   'DE LA FUERZA ARMADA NACIONAL BOLIVARIANA',
   'VICERRECTORADO DE LA REGIÓN LOS LLANOS',
   'NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA',
-  'EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES',
+  'COORDINACIÓN DE PLANIFICACIÓN ACADÉMICA',
 ];
 
 const MEMBRETE_TEXT = INSTITUTIONAL_HEADER.join('\n');
@@ -870,7 +870,7 @@ export async function generateResumenPasantiasWorkbook(
 
   const STYLE_HEADER = {
     font: { name: FONT, size: 8, bold: true },
-    fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF99CC00' } },
+    fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF92D050' } },
     alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
     border: {
       top: { style: 'thin' as const },
@@ -915,12 +915,8 @@ export async function generateResumenPasantiasWorkbook(
   ws.getRow(4).height = 60;
   ws.mergeCells(4, 1, 4, TOTAL);
   const titleCell = ws.getCell(4, 1);
-  titleCell.value = {
-    richText: [
-      { text: 'RESUMEN PASANTIAS', font: { name: FONT, size: 12, bold: true } },
-      { text: `\n${periodLabel}`, font: { name: FONT, size: 12, bold: true, color: { argb: 'FFFF0000' } } },
-    ],
-  };
+  titleCell.value = `RESUMEN PASANTIA ${periodLabel}`;
+  titleCell.font = { name: FONT, size: 12, bold: true };
   titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   titleCell.border = {
     top: { style: 'thin' },
@@ -1031,17 +1027,17 @@ function addResumenLogos(workbook: Workbook, ws: Worksheet): void {
   if (!logoPaths) return;
 
   try {
-    if (logoPaths.logo && fs.existsSync(logoPaths.logo)) {
-      const logoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.logo) as any, extension: 'png' });
-      ws.addImage(logoId, {
+    if (logoPaths.escudo && fs.existsSync(logoPaths.escudo)) {
+      const escudoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.escudo) as any, extension: 'png' });
+      ws.addImage(escudoId, {
         tl: { col: 0.1, row: 1.1 },
         ext: { width: 70, height: 70 },
       });
     }
 
-    if (logoPaths.escudo && fs.existsSync(logoPaths.escudo)) {
-      const escudoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.escudo) as any, extension: 'png' });
-      ws.addImage(escudoId, {
+    if (logoPaths.logo && fs.existsSync(logoPaths.logo)) {
+      const logoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.logo) as any, extension: 'png' });
+      ws.addImage(logoId, {
         tl: { col: 9.8, row: 1.1 },
         ext: { width: 70, height: 70 },
       });

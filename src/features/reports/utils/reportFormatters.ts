@@ -67,11 +67,10 @@ export function formatNombreCompleto(persona: {
 export function formatFecha(fecha: string | null): string {
   if (!fecha) return '';
   const date = new Date(fecha);
-  return date.toLocaleDateString('es-VE', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 export function formatFechaLapso(inicio: string | null, fin: string | null): string {

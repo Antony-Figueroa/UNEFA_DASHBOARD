@@ -22,13 +22,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginBottom: 12,
   },
-  labelText: { 
-    marginBottom: 2, 
+  labelText: {
     fontSize: 11,
   },
-  labelBold: { 
-    marginBottom: 2, 
-    fontSize: 11,
+  bold: {
     fontWeight: 'bold',
   },
   firmaContainer: { 
@@ -124,15 +121,15 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos, verificationHash
 
       {/* Sección izquierda: Destinatario (editable) */}
       <View style={styles.leftSection}>
-        <Text style={styles.labelBold}>Señor (a):</Text>
-        <Text style={styles.labelBold}>{destinatarioTexto}</Text>
-        <Text style={styles.labelBold}>{institucionNombre}</Text>
-        <Text style={styles.labelBold}>Presente.</Text>
+        <Text style={styles.labelText}>Señor (a):</Text>
+        <Text style={styles.labelText}>{destinatarioTexto}</Text>
+        <Text style={styles.labelText}>{institucionNombre}</Text>
+        <Text style={styles.labelText}>Presente.</Text>
       </View>
 
       {/* Sección derecha: Atnn. (editable desde textos) */}
       <View style={styles.rightSection}>
-        <Text style={styles.labelText}>Atnn. {textos.atnn || `${tutorTitulo} ${tutorName}.`}</Text>
+        <Text style={styles.labelText}><Text style={styles.bold}>Atnn.</Text> {textos.atnn || `${tutorTitulo} ${tutorName}.`}</Text>
       </View>
 
       {/* Cuerpo del texto — primer párrafo */}
@@ -151,7 +148,7 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos, verificationHash
       <View style={styles.firmaContainer}>
         <View style={styles.firmaLine} />
         <Text style={styles.firmaNombre}>{firmaNombre}</Text>
-        <Text style={styles.firmaData}>{firmaCargo}</Text>
+        <Text style={styles.firmaNombre}>{firmaCargo}</Text>
         <Text style={styles.firmaData}>{firmaOrden}</Text>
       </View>
     </PDFLayout>

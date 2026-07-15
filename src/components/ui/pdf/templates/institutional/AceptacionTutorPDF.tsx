@@ -30,9 +30,12 @@ const styles = StyleSheet.create({
     marginBottom: 3, 
     fontSize: 11,
   },
-  firmaData: { 
+  firmaData: {
     fontSize: 11,
     marginBottom: 3,
+  },
+  bold: {
+    fontWeight: 'bold',
   },
 });
 
@@ -61,9 +64,9 @@ export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Pr
   const carreraNombre = data.carrera.nombre.toUpperCase();
 
   return (
-    <PDFLayout title="ACEPTACIÓN DEL TUTOR ACADÉMICO" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
+    <PDFLayout title="ACEPTACIÓN DEL TUTOR ACADÉMICO" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
       <Text style={styles.paragraph}>
-        Yo, {tutorTitle}. {tutorName}, titular de la cedula de identidad {tutorCI}, hago constar por medio de la presente que acepto la tutoría académica de la práctica profesional por parte de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA) del (la) bachiller {estudianteNombre}, titular de la cedula de identidad {estudianteCI} para optar al grado de {carreraNombre}
+        Yo, <Text style={styles.bold}>{tutorTitle}</Text>. <Text style={styles.bold}>{tutorName}</Text>, titular de la cedula de identidad <Text style={styles.bold}>{tutorCI}</Text>, hago constar por medio de la presente que acepto la tutoría académica de la práctica profesional por parte de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA) del (la) bachiller <Text style={styles.bold}>{estudianteNombre}</Text>, titular de la cedula de identidad <Text style={styles.bold}>{estudianteCI}</Text> para optar al grado de <Text style={styles.bold}>{carreraNombre}</Text>
       </Text>
       
       <Text style={styles.paragraph}>
@@ -76,9 +79,9 @@ export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Pr
       
       <View style={styles.firmaContainer}>
         <View style={styles.firmaLine} />
-        <Text style={styles.firmaLabel}>Nombres y Apellidos</Text>
-        <Text style={styles.firmaData}>{tutorTitle}. {tutorName}</Text>
-        <Text style={styles.firmaData}>C.I.: {tutorCI}</Text>
+        <Text style={[styles.firmaLabel, styles.bold]}>Nombres y Apellidos</Text>
+        <Text style={[styles.firmaData, styles.bold]}>{tutorTitle}. {tutorName}</Text>
+        <Text style={[styles.firmaData, styles.bold]}>C.I.: {tutorCI}</Text>
       </View>
     </PDFLayout>
   );

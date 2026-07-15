@@ -12,7 +12,7 @@ const INSTITUTIONAL_HEADER = [
 ];
 
 const DEFAULT_FONT = { name: 'Arial', size: 9 };
-const HEADER_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF95B3D7' } };
+const HEADER_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF92D050' } };
 const GREEN_DARK_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF76923C' } };
 const GREEN_LIGHT_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFC2D69B' } };
 const THIN_BORDER = {
@@ -276,16 +276,12 @@ export async function generateResumenPasantiasExcel(data: any[], period: string,
   applyInstitutionalHeader(worksheet, totalCols);
   await addLogos(workbook, worksheet);
 
-  const titleRow = 7;
+  const titleRow = 8;
   worksheet.mergeCells(`A${titleRow}:K${titleRow}`);
   const tRow = worksheet.getRow(titleRow);
   tRow.height = 25;
-  tRow.getCell(1).value = {
-    richText: [
-      { text: 'RESUMEN PASANTIAS ', font: { ...DEFAULT_FONT, size: 11, bold: true } },
-      { text: period, font: { ...DEFAULT_FONT, size: 11, bold: true, color: { argb: 'FFFF0000' } } }
-    ]
-  };
+  tRow.getCell(1).value = `RESUMEN PASANTIA ${period}`;
+  tRow.getCell(1).font = { ...DEFAULT_FONT, size: 11, bold: true };
   tRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
 
   const row9 = worksheet.getRow(9);
@@ -386,7 +382,7 @@ export async function generateRelacionGeneralTutoresExcel(data: any[], period: s
     'DE LA FUERZA ARMADA NACIONAL BOLIVARIANA',
     'VICERRECTORADO DE LA REGIÓN LOS LLANOS',
     'NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA',
-    'EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES',
+  'COORDINACIÓN DE PLANIFICACIÓN ACADÉMICA',
   ].join('\n');
 
   // ── Anchos de columna (A-R) ──
@@ -672,7 +668,7 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
   applyInstitutionalHeader(worksheet, totalCols);
   await addLogos(workbook, worksheet);
 
-  applyTitleRow(worksheet, 7, `RELACIÓN DE INSTITUCIONES QUE SOLICITAN ASIGNACIÓN DE PASANTES - ${period}`, totalCols);
+  applyTitleRow(worksheet, 8, `RELACIÓN DE INSTITUCIONES QUE SOLICITAN ASIGNACIÓN DE PASANTES - ${period}`, totalCols);
 
   const row9 = worksheet.getRow(9);
   const row10 = worksheet.getRow(10);

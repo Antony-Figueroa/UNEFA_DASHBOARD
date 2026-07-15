@@ -36,20 +36,38 @@ const UnefaCarousel: React.FC = () => {
     return () => clearInterval(timer);
   }, [images.length]);
 
-  if (loading || images.length === 0) return null;
+  if (loading) return null;
 
-  // Si todas las imágenes fallaron, no mostrar la sección
-  if (failedImages.size >= images.length) return null;
+  // Si no hay imágenes cargadas o todas fallaron, usar banner.jpeg como fallback
+  const hasImages = images.length > 0;
+  const allFailed = hasImages && failedImages.size >= images.length;
+
+  if (!hasImages || allFailed) {
+    return (
+      <section className="py-12 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-text-primary dark:text-white">
+              Información de Interés
+            </h2>
+            <p className="text-text-secondary dark:text-text-tertiary mt-1">
+              Avisos y convocatorias del portal UNEFA
+            </p>
+          </div>
+          <div className="relative overflow-hidden rounded-2xl shadow-theme-md border border-border-light dark:border-border-dark">
+            <img
+              src="/banner.jpeg"
+              alt="Información UNEFA"
+              className="w-full h-auto block"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const current = images[currentIndex];
-
-  // Saltar al siguiente slide si el actual falló
-  if (failedImages.has(currentIndex) && images.length > 1) {
-    const nextIndex = (currentIndex + 1) % images.length;
-    if (nextIndex !== currentIndex && !failedImages.has(nextIndex)) {
-      // No hacer nada aquí, el siguiente render corregirá el índice
-    }
-  }
 
   return (
     <section className="py-12 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">

@@ -26,6 +26,10 @@ const IAButton: React.FC = () => {
     setIsVisible(show);
     localStorage.setItem(STORAGE_KEY, String(show));
     setShowOptions(false);
+    // Notificar a otros componentes (ej. ScrollToTop) que cambió la visibilidad
+    window.dispatchEvent(
+      new CustomEvent("unefa:ia-visibility-changed", { detail: { visible: show } })
+    );
   };
 
   if (!isVisible || isHiddenByPage) return null;

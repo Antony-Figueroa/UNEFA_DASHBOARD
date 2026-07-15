@@ -5,10 +5,56 @@ const ScrollToTop: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
+  // Detectar si el botón IA está visible para ajustar la posición vertical
+  // Lazy initializer para evitar flash de posicionamiento incorrecto
+  const [iaButtonVisible, setIaButtonVisible] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem("unefa_show_ia_button");
+    const hiddenByAttr = document.documentElement.dataset.hideIaButton !== undefined;
+    return stored !== "false" && !hiddenByAttr;
+  });
+
   // Only run on client
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Escuchar cambios de visibilidad del botón IA (misma pestaña vía custom event, otras pestañas vía storage)
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const handleVisibilityChange = (e: Event | CustomEvent) => {
+      if (e instanceof CustomEvent) {
+        setIaButtonVisible(e.detail.visible);
+      }
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "unefa_show_ia_button") {
+        setIaButtonVisible(e.newValue !== "false");
+      }
+    };
+
+    // Escuchar custom event disparado por IAButton en la misma pestaña
+    window.addEventListener("unefa:ia-visibility-changed", handleVisibilityChange as EventListener);
+    // Escuchar cambios de localStorage desde otras pestañas
+    window.addEventListener("storage", handleStorageChange);
+    // Observar cambios en data-hide-ia-button del dataset
+    const observer = new MutationObserver(() => {
+      const hiddenByAttr = document.documentElement.dataset.hideIaButton !== undefined;
+      setIaButtonVisible(prev => {
+        const stored = localStorage.getItem("unefa_show_ia_button");
+        return (stored !== "false") && !hiddenByAttr;
+      });
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-hide-ia-button"] });
+
+    return () => {
+      window.removeEventListener("unefa:ia-visibility-changed", handleVisibilityChange as EventListener);
+      window.removeEventListener("storage", handleStorageChange);
+      observer.disconnect();
+    };
+  }, [isMounted]);
 
   // Show button when page is scrolled more than 300px
   useEffect(() => {
@@ -48,7 +94,7 @@ const ScrollToTop: React.FC = () => {
           whileTap={{ scale: 0.9 }}
           onClick={scrollToTop}
           aria-label="Volver arriba"
-          className="fixed bottom-20 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[#2d90c4] text-white shadow-lg transition-colors hover:bg-[#2579a5] focus:outline-none focus:ring-2 focus:ring-[#2d90c4] focus:ring-offset-2"
+          className={`fixed right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[#2d90c4] text-white shadow-lg transition-all hover:bg-[#2579a5] focus:outline-none focus:ring-2 focus:ring-[#2d90c4] focus:ring-offset-2 ${iaButtonVisible ? 'bottom-20' : 'bottom-5'}`}
         >
           <svg
             className="h-6 w-6"

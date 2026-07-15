@@ -11,12 +11,6 @@ interface PeriodInfo {
   START_DATE: string;
 }
 
-/**
- * Helper: Supabase v2 a veces devuelve nested joins como arrays de 1 elemento
- * en vez del objeto directamente. `unwrap` maneja ambos casos.
- */
-const unwrap = (val: any) => Array.isArray(val) ? val[0] : val;
-
 function calcTrend(current: number, previous: number): { change: number; trend: 'up' | 'down' | 'stable' } {
   if (previous === 0) {
     return { change: current > 0 ? 100 : 0, trend: current > 0 ? 'up' : 'stable' };
@@ -349,7 +343,7 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
     const supabase = dbManager.getConnection();
     const sysLoc = await getSystemLocation(supabase);
 
-    let tutorQuery = supabase
+    const { data: tutorPractices, error } = await supabase
       .from('t_professional_practices_tutor')
       .select(`
         TUTOR_ID,
@@ -395,10 +389,6 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
       `)
       .eq('TUTOR_TYPE', 'ACADEMICO');
 
-    if (periodId) tutorQuery = tutorQuery.eq('t_professional_practices.PERIOD_ID', Number(periodId));
-
-    const { data: tutorPractices, error } = await tutorQuery;
-
     if (error) {
       console.error('Error in query:', error);
       throw error;
@@ -414,14 +404,15 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
     }>();
 
     (tutorPractices as unknown as any[])?.forEach((tp) => {
-      const tutor = unwrap(tp.t_tutors);
-      const practice = unwrap(tp.t_professional_practices);
-      const student = practice ? unwrap(practice.t_students) : null;
-      const career = practice ? unwrap(practice.t_career) : null;
-      const institution = practice ? unwrap(practice.t_institution) : null;
+      const tutor = tp.t_tutors;
+      const practice = tp.t_professional_practices;
+      const student = practice?.t_students;
+      const career = practice?.t_career;
+      const institution = practice?.t_institution;
 
       if (!tutor || !practice) return;
 
+      if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
       if (careerId && career?.CAREER_ID !== parseInt(careerId as string)) return;
       if (careerIds.length > 0 && (!career || !careerIds.includes(career.CAREER_ID))) return;
 
@@ -430,19 +421,18 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
       if (tutorMap.has(tutorKey)) {
         tutorMap.get(tutorKey)!.studentCount++;
       } else {
-        const persons = unwrap(tutor.t_persons);
         tutorMap.set(tutorKey, {
           tutor: {
-            name: getPersonField(persons, 'first_name') || '',
-            secondName: getPersonField(persons, 'middle_name') || '',
-            surname: getPersonField(persons, 'last_name') || '',
-            secondSurname: getPersonField(persons, 'second_last_name') || '',
-            ci: getPersonField(persons, 'ci'),
+            name: getPersonField(tutor.t_persons, 'first_name') || '',
+            secondName: getPersonField(tutor.t_persons, 'middle_name') || '',
+            surname: getPersonField(tutor.t_persons, 'last_name') || '',
+            secondSurname: getPersonField(tutor.t_persons, 'second_last_name') || '',
+            ci: getPersonField(tutor.t_persons, 'ci'),
             condition: tutor.CONDITION,
             dedication: tutor.DEDICATION,
             category: tutor.CATEGORY,
-            phone: getPersonField(persons, 'phone') || '',
-            email: getPersonField(persons, 'email'),
+            phone: getPersonField(tutor.t_persons, 'phone') || '',
+            email: getPersonField(tutor.t_persons, 'email'),
             gender: tutor.GENDER,
             tutorId: tutor.TUTOR_ID,
             titulo: tutor.TITULO
@@ -569,9 +559,9 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
     const summaryMap = new Map<string, any>();
 
     (practices as any[]).forEach(practice => {
-      const institution = unwrap(practice.t_institution);
-      const student = unwrap(practice.t_students);
-      const career = practice ? unwrap(practice.t_career) : null;
+      const institution = practice.t_institution;
+      const student = practice.t_students;
+      const career = practice?.t_career;
 
       if (!institution || !student || !career) return;
 
@@ -1091,12 +1081,12 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         const cleanVal = (v: string | null | undefined): string =>
           (!v || v.trim().toLowerCase() === 'null') ? '' : v.trim();
 
-        // Helper: formatea teléfono como XXXX-XXXXXXX
+        // Helper: formatea teléfono como XXXX - XXXXXXX
         const formatPhone = (phone: string): string => {
           if (!phone) return '';
           const digits = phone.replace(/[\s\-\(\)]/g, '');
           if (digits.length === 11) {
-            return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+            return `${digits.slice(0, 4)} - ${digits.slice(4)}`;
           }
           return phone;
         };
@@ -1116,8 +1106,45 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           return rif;
         };
 
+        // Helper: formatea cédula como V-12.345.678 o E-12.345.678
+        const formatCI = (ci: string | null | undefined): string => {
+          if (!ci) return '';
+          const raw = ci.trim();
+          // Si ya tiene prefijo (V-, E-, J-, etc.) conservarlo
+          const match = raw.match(/^([VEJPGRCvi\-]{1,3})[-.\s]?(\d[\d.]*)$/);
+          if (match) {
+            const prefix = match[1].replace(/-/g, '').toUpperCase();
+            const digits = match[2].replace(/\D/g, '');
+            // Formatear con separadores de puntos cada 3 dígitos desde la derecha
+            const parts: string[] = [];
+            for (let i = digits.length - 1, j = 0; i >= 0; i--, j++) {
+              if (j > 0 && j % 3 === 0) parts.unshift('.');
+              parts.unshift(digits[i]);
+            }
+            return `${prefix}-${parts.join('')}`;
+          }
+          // Sin prefijo detectado: asumir V-
+          const digits = raw.replace(/\D/g, '');
+          if (!digits) return raw;
+          const parts: string[] = [];
+          for (let i = digits.length - 1, j = 0; i >= 0; i--, j++) {
+            if (j > 0 && j % 3 === 0) parts.unshift('.');
+            parts.unshift(digits[i]);
+          }
+          return `V-${parts.join('')}`;
+        };
+
+        // Helper: normaliza STUDENT_TYPE a texto completo
+        const normalizeStudentType = (type: string | null | undefined): string => {
+          if (!type) return '';
+          const t = type.trim().toUpperCase();
+          if (t === 'CIV' || t === 'CIVIL') return 'CIVIL';
+          if (t === 'MIL' || t === 'MILITAR') return 'MILITAR';
+          return t;
+        };
+
         // ── 1. Query principal: tutores académicos con sus prácticas ──
-        let tutorExcelQuery = supabase
+        const { data: tutorPractices } = await supabase
           .from('t_professional_practices_tutor')
           .select(`
             TUTOR_ID,
@@ -1149,10 +1176,6 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             )
           `)
           .eq('TUTOR_TYPE', 'ACADEMICO');
-
-        if (periodId) tutorExcelQuery = tutorExcelQuery.eq('t_professional_practices.PERIOD_ID', Number(periodId));
-
-        const { data: tutorPractices } = await tutorExcelQuery;
 
         if (!tutorPractices) break;
 
@@ -1193,9 +1216,10 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         const individualMap = new Map<number, { tutorFirstNames: string; tutorLastNames: string; rows: IndividualTutorRow[] }>();
 
         raw.forEach((tp) => {
-          const tutor = unwrap(tp.t_tutors);
-          const practice = unwrap(tp.t_professional_practices);
+          const tutor = tp.t_tutors;
+          const practice = tp.t_professional_practices;
           if (!tutor || !practice) return;
+          if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
           if (careerIds.length > 0 && (!practice.t_career || !careerIds.includes(practice.t_career.CAREER_ID))) return;
 
           const careerName = practice.t_career?.CAREER_NAME || 'Sin Carrera';
@@ -1214,27 +1238,26 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           if (genTutorMap.has(tutorKey)) {
             genTutorMap.get(tutorKey)!.cantidadEstudiantes++;
           } else {
-            const persons = unwrap(tutor.t_persons);
             genTutorMap.set(tutorKey, {
               region: sysLoc.region,
               nucleo: sysLoc.nucleus,
               extension: sysLoc.extension,
               carrera: careerName,
-              nombreTutor: `${getPersonField(persons, 'first_name') || ''} ${getPersonField(persons, 'middle_name') || ''}`.trim(),
-              apellidoTutor: `${getPersonField(persons, 'last_name') || ''} ${getPersonField(persons, 'second_last_name') || ''}`.trim(),
-              cedula: getPersonField(persons, 'ci') || '',
+              nombreTutor: `${getPersonField(tutor.t_persons, 'first_name') || ''} ${getPersonField(tutor.t_persons, 'middle_name') || ''}`.trim(),
+              apellidoTutor: `${getPersonField(tutor.t_persons, 'last_name') || ''} ${getPersonField(tutor.t_persons, 'second_last_name') || ''}`.trim(),
+              cedula: formatCI(getPersonField(tutor.t_persons, 'ci')),
               condicion: tutor.CONDITION || '',
               dedicacion: tutor.DEDICATION || '',
               categoria: tutor.CATEGORY || '',
-               telefono: formatPhone(cleanVal(getPersonField(persons, 'phone'))),
-              correo: getPersonField(persons, 'email') || '',
+               telefono: formatPhone(cleanVal(getPersonField(tutor.t_persons, 'phone'))),
+              correo: getPersonField(tutor.t_persons, 'email') || '',
               cantidadEstudiantes: 1,
             });
           }
 
           // ── Individual: detalle por estudiante ──
-          const tutorFirstNames = `${getPersonField(persons, 'first_name') || ''} ${getPersonField(persons, 'middle_name') || ''}`.trim();
-          const tutorLastNames = `${getPersonField(persons, 'last_name') || ''} ${getPersonField(persons, 'second_last_name') || ''}`.trim();
+          const tutorFirstNames = `${getPersonField(tutor.t_persons, 'first_name') || ''} ${getPersonField(tutor.t_persons, 'middle_name') || ''}`.trim();
+          const tutorLastNames = `${getPersonField(tutor.t_persons, 'last_name') || ''} ${getPersonField(tutor.t_persons, 'second_last_name') || ''}`.trim();
 
           if (!individualMap.has(tutorKey)) {
             individualMap.set(tutorKey, { tutorFirstNames, tutorLastNames, rows: [] });
@@ -1250,7 +1273,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           const instPhone = cleanVal(instTutorPerson?.phone || '');
           const instTitulo = instTutor?.TITULO || '';
           const tutorInstConcat = instTutorPerson
-            ? `${instTitulo} ${instName} ${instSurname}. TEL: ${formatPhone(instPhone)}`
+            ? `${instTitulo} ${instName} ${instSurname}. TELEFONO:  ${formatPhone(instPhone)}`
             : '';
 
           individualMap.get(tutorKey)!.rows.push({
@@ -1261,9 +1284,9 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             carrera: careerName,
             estudianteNombre: studentPerson ? `${studentPerson.first_name || ''} ${studentPerson.middle_name || ''}`.trim() : '',
             estudianteApellido: studentPerson ? `${studentPerson.last_name || ''} ${studentPerson.second_last_name || ''}`.trim() : '',
-            estudianteCi: studentPerson?.ci || '',
+            estudianteCi: formatCI(studentPerson?.ci),
             sexo: studentPerson?.gender || '',
-            tipo: estudianteEntity?.STUDENT_TYPE || '',
+            tipo: normalizeStudentType(estudianteEntity?.STUDENT_TYPE),
             rango: estudianteEntity?.MILITARY_RANK || '',
             telefono: formatPhone(cleanVal(studentPerson?.phone || '')),
             institucion: institution?.INSTITUTION_NAME || '',

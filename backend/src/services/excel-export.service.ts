@@ -1182,7 +1182,7 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
   setH(h1.getCell(10), 'TIPO DE ESTUDIANTE');
 
   // Fila 8 — sub-encabezados
-  setH(h2.getCell(10), 'CIVIL');
+  setH(h2.getCell(10), 'CIVIL / MILITAR');
   setH(h2.getCell(11), 'RANGO\n(EN CASO DE SER MILITAR)');
   setH(h2.getCell(15), 'PÚBLICA / PRIVADA');
 
@@ -1199,7 +1199,7 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
       `${row.estudianteNombre} ${row.estudianteApellido}`.trim(),
       row.estudianteCi,
       row.sexo === 'F' ? 'FEMENINO' : row.sexo === 'M' ? 'MASCULINO' : '',
-      row.tipo === 'CIVIL' ? 'CIVIL' : row.tipo === 'MILITAR' ? 'MILITAR' : '',
+      row.tipo === 'CIVIL' || row.tipo === 'CIV' ? 'CIVIL' : row.tipo === 'MILITAR' || row.tipo === 'MIL' ? 'MILITAR' : (row.tipo || '').toUpperCase(),
       row.rango || '',
       row.telefono,
       row.institucion,
@@ -1373,30 +1373,35 @@ function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetS
   });
 
   // ============================================================
-  // Sección de firmas
+  // Sección de firmas (posicionadas dinámicamente después de los datos)
   // ============================================================
 
-  // Fila 10: separador vacío
-  ws.getRow(10).height = 10;
+  const lastDataRow = 5 + section.rows.length; // última fila de datos
+  const sigSepRow = lastDataRow + 1;   // separador vacío
+  const sigLineRow = sigSepRow + 1;    // líneas de firma
+  const sigLabelRow = sigLineRow + 1;   // etiquetas de firma
 
-  // Fila 11 (height 43.5): líneas de firma vacías (borde inferior thin)
-  ws.getRow(11).height = 43.5;
+  // Separador vacío
+  ws.getRow(sigSepRow).height = 10;
+
+  // Líneas de firma vacías (borde inferior thin)
+  ws.getRow(sigLineRow).height = 43.5;
   const sigLineRanges = [
-    { start: 2, end: 4 },    // B11:D11 (izquierda)
-    { start: 6, end: 8 },    // F11:H11 (centro-izquierda)
-    { start: 10, end: 15 },  // J11:O11 (centro-derecha)
+    { start: 2, end: 4 },    // B:D (izquierda)
+    { start: 6, end: 8 },    // F:H (centro-izquierda)
+    { start: 10, end: 15 },  // J:O (centro-derecha)
   ];
   sigLineRanges.forEach(({ start, end }) => {
-    ws.mergeCells(11, start, 11, end);
-    const cell = ws.getCell(11, start);
+    ws.mergeCells(sigLineRow, start, sigLineRow, end);
+    const cell = ws.getCell(sigLineRow, start);
     cell.value = '';
     cell.font = ANEXO4_FONT;
     cell.alignment = { horizontal: 'center' };
     cell.border = { bottom: { style: 'thin' } };
   });
 
-  // Fila 12 (height 48): etiquetas de firma (Arial 11pt bold, borde superior thin)
-  ws.getRow(12).height = 48;
+  // Etiquetas de firma (Arial 11pt bold, borde superior thin)
+  ws.getRow(sigLabelRow).height = 48;
   const sigLabels = section.signatures ?? [
     'NOMBRE APELLIDO\nFIRMA Y SELLO DEL COORDINADOR DE PRÁCTICAS PROFESIONALES',
     'NOMBRE APELLIDO\nFIRMA Y SELLO DEL JEFE ÁREA ACADÉMICA',
@@ -1408,8 +1413,8 @@ function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetS
     { start: 10, end: 15, text: sigLabels[2] || '' },
   ];
   sigLabelRanges.forEach(({ start, end, text }) => {
-    ws.mergeCells(12, start, 12, end);
-    const cell = ws.getCell(12, start);
+    ws.mergeCells(sigLabelRow, start, sigLabelRow, end);
+    const cell = ws.getCell(sigLabelRow, start);
     cell.value = text;
     cell.font = { ...ANEXO4_FONT, bold: true };
     cell.alignment = { horizontal: 'center', vertical: 'top', wrapText: true };
@@ -1420,7 +1425,7 @@ function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetS
   ws.pageSetup = {
     orientation: 'landscape',
     margins: { left: 0.709, right: 0.709, top: 0.748, bottom: 0.748, header: 0, footer: 0 },
-    printArea: `A1:O12`,
+    printArea: `A1:O${sigLabelRow}`,
   };
 }
 

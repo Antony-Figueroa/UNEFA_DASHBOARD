@@ -70,15 +70,15 @@ function applyInstitutionalHeader(worksheet: ExcelJS.Worksheet, totalCols: numbe
 
 async function addLogos(workbook: ExcelJS.Workbook, worksheet: ExcelJS.Worksheet) {
   try {
-    const responseEscudo = await fetch('/unefa-img/Escudo.png');
-    const bufferEscudo = await responseEscudo.arrayBuffer();
-    const imageIdEscudo = workbook.addImage({ buffer: bufferEscudo, extension: 'png' });
-    worksheet.addImage(imageIdEscudo, { tl: { col: 1, row: 0.2 }, ext: { width: 85, height: 85 } });
-
     const responseLogo = await fetch('/logo-nuevo.png');
     const bufferLogo = await responseLogo.arrayBuffer();
     const imageIdLogo = workbook.addImage({ buffer: bufferLogo, extension: 'png' });
-    worksheet.addImage(imageIdLogo, { tl: { col: 8.5, row: 0.2 }, ext: { width: 85, height: 85 } });
+    worksheet.addImage(imageIdLogo, { tl: { col: 0.2, row: 0.2 }, ext: { width: 85, height: 85 } });
+
+    const responseEscudo = await fetch('/unefa-img/Escudo.png');
+    const bufferEscudo = await responseEscudo.arrayBuffer();
+    const imageIdEscudo = workbook.addImage({ buffer: bufferEscudo, extension: 'png' });
+    worksheet.addImage(imageIdEscudo, { tl: { col: 8.5, row: 0.2 }, ext: { width: 85, height: 85 } });
   } catch {
     console.warn('No se pudo cargar las imágenes para el Excel');
   }
@@ -513,33 +513,38 @@ export async function generateRelacionGeneralTutoresExcel(data: any[], period: s
     });
   });
 
-  // ── Sección de firmas ──
-  worksheet.getRow(10).height = 10;
+  // ── Sección de firmas (posicionadas dinámicamente después de los datos) ──
+  const lastDataRow = 5 + data.length;
+  const sigSepRow = lastDataRow + 1;
+  const sigLineRow = sigSepRow + 1;
+  const sigLabelRow = sigLineRow + 1;
 
-  // Fila 11: líneas de firma vacías
-  worksheet.getRow(11).height = 43.5;
+  worksheet.getRow(sigSepRow).height = 10;
+
+  // Líneas de firma vacías
+  worksheet.getRow(sigLineRow).height = 43.5;
   [
     { start: 2, end: 4 },
     { start: 6, end: 8 },
     { start: 10, end: 15 },
   ].forEach(({ start, end }) => {
-    worksheet.mergeCells(11, start, 11, end);
-    const cell = worksheet.getCell(11, start);
+    worksheet.mergeCells(sigLineRow, start, sigLineRow, end);
+    const cell = worksheet.getCell(sigLineRow, start);
     cell.value = '';
     cell.font = ANEXO4_FONT;
     cell.alignment = { horizontal: 'center' };
     cell.border = { bottom: { style: 'thin' } };
   });
 
-  // Fila 12: etiquetas de firma
-  worksheet.getRow(12).height = 48;
+  // Etiquetas de firma
+  worksheet.getRow(sigLabelRow).height = 48;
   [
     { start: 2, end: 4, text: 'NOMBRE APELLIDO\nFIRMA Y SELLO DEL COORDINADOR DE PRÁCTICAS PROFESIONALES' },
     { start: 6, end: 8, text: 'NOMBRE APELLIDO\nFIRMA Y SELLO DEL JEFE ÁREA ACADÉMICA' },
     { start: 10, end: 15, text: 'NOMBRE APELLIDO\nFIRMA Y SELLO DEL DECANO (A)' },
   ].forEach(({ start, end, text }) => {
-    worksheet.mergeCells(12, start, 12, end);
-    const cell = worksheet.getCell(12, start);
+    worksheet.mergeCells(sigLabelRow, start, sigLabelRow, end);
+    const cell = worksheet.getCell(sigLabelRow, start);
     cell.value = text;
     cell.font = { ...ANEXO4_FONT, bold: true };
     cell.alignment = { horizontal: 'center', vertical: 'top', wrapText: true };
@@ -659,10 +664,13 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
 export async function generateRelacionInstitucionesSolicitanExcel(data: any[], period: string, fileName: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Relacion Instituciones');
-  const totalCols = 4;
+  const totalCols = 9;
 
   worksheet.columns = [
-    { key: 'empresa', width: 50 }, { key: 'tipoEmpresa', width: 20 },
+    { key: 'region', width: 18 }, { key: 'nucleo', width: 18 },
+    { key: 'extension', width: 18 }, { key: 'empresa', width: 45 },
+    { key: 'responsable', width: 30 }, { key: 'numeroContacto', width: 20 },
+    { key: 'tipoEmpresa', width: 18 },
     { key: 'carreras', width: 40 }, { key: 'estudiantes', width: 14 },
   ];
 
@@ -675,10 +683,11 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
   row9.height = 40;
 
   const headers = [
+    'REGIÓN', 'NÚCLEO', 'EXTENSIÓN',
     'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN',
+    'RESPONSABLE', 'NUMERO DE\nCONTACTO',
     'TIPO DE\nEMPRESA',
-    'CARRERAS',
-    'CANTIDAD DE\nESTUDIANTES',
+    'CARRERAS', 'CANTIDAD DE\nESTUDIANTES',
   ];
 
   headers.forEach((text, i) => {
@@ -689,13 +698,20 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
 
   let currentRow = 10;
   data.forEach(item => {
+    const tipo = (item.tipoEmpresa || '').toUpperCase();
+
     const row = worksheet.getRow(currentRow);
     row.height = 25;
 
-    applyDataCell(worksheet, currentRow, 1, (item.empresa || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 2, (item.tipoEmpresa || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 3, (item.carreras || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 4, item.cantidadEstudiantes || 0);
+    applyDataCell(worksheet, currentRow, 1, (item.region || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 2, (item.nucleo || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 3, (item.extension || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 4, (item.empresa || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 5, (item.responsable || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 6, (item.numeroContacto || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 7, tipo);
+    applyDataCell(worksheet, currentRow, 8, (item.carreras || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 9, item.cantidadEstudiantes || 0);
 
     currentRow++;
   });
@@ -938,7 +954,7 @@ export async function generateRelacionIndividualDocenteExcel(data: any[], period
   const subHeaders = [
     { text: 'NOMBRE', col: 7 },
     { text: 'APELLIDO', col: 8 },
-    { text: 'CIVIL', col: 11 },
+    { text: 'CIVIL / MILITAR', col: 11 },
     { text: 'RANGO', col: 12 },
   ];
 

@@ -158,8 +158,10 @@ export default function PeriodModal({
                 const coveredTypeIds = new Set(types.filter(t => initial[t.id] !== undefined).map(t => t.id));
                 const uncovered = types.filter(t => !coveredTypeIds.has(t.id));
                 setCoverageWarnings(uncovered.map(t => t.name));
-            } catch (error) {
-                console.error('[PeriodModal] Error al cargar tipos de pasantía:', error);
+            } catch (error: any) {
+                if (error?.response?.status !== 403) {
+                    console.error('[PeriodModal] Error al cargar tipos de pasantía:', error);
+                }
             }
         };
 

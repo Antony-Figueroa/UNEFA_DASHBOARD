@@ -1086,6 +1086,31 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         const cleanVal = (v: string | null | undefined): string =>
           (!v || v.trim().toLowerCase() === 'null') ? '' : v.trim();
 
+        // Helper: formatea teléfono como XXXX-XXXXXXX
+        const formatPhone = (phone: string): string => {
+          if (!phone) return '';
+          const digits = phone.replace(/[\s\-\(\)]/g, '');
+          if (digits.length === 11) {
+            return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+          }
+          return phone;
+        };
+
+        // Helper: formatea RIF como X-XXXXXXXX-X
+        const formatRif = (rif: string): string => {
+          if (!rif) return '';
+          const clean = rif.replace(/[\s\-]/g, '');
+          if (rif.includes('-')) return rif;
+          if (clean.length >= 2) {
+            const letter = clean.charAt(0).toUpperCase();
+            const numbers = clean.slice(1);
+            if (numbers.length >= 9) {
+              return `${letter}-${numbers.slice(0, 8)}-${numbers.slice(8, 9)}`;
+            }
+          }
+          return rif;
+        };
+
         // ── 1. Query principal: tutores académicos con sus prácticas ──
         const { data: tutorPractices } = await supabase
           .from('t_professional_practices_tutor')
@@ -1104,7 +1129,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
               PROFESSIONAL_PRACTICE_ID, PERIOD_ID, student_person_id,
               t_institution (
                 INSTITUTION_ID, INSTITUTION_NAME, REGION, NUCLEUS, EXTENSION,
-                INSTITUTION_TYPE, INSTITUTION_ADDRESS
+                INSTITUTION_TYPE, INSTITUTION_ADDRESS, RIF
               ),
               t_students (
                 STUDENTS_ID, STUDENT_TYPE, MILITARY_RANK
@@ -1192,7 +1217,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
               condicion: tutor.CONDITION || '',
               dedicacion: tutor.DEDICATION || '',
               categoria: tutor.CATEGORY || '',
-               telefono: cleanVal(getPersonField(tutor.t_persons, 'phone')),
+               telefono: formatPhone(cleanVal(getPersonField(tutor.t_persons, 'phone'))),
               correo: getPersonField(tutor.t_persons, 'email') || '',
               cantidadEstudiantes: 1,
             });
@@ -1213,11 +1238,10 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           const instSurname = instTutorPerson
             ? `${instTutorPerson.last_name || ''} ${instTutorPerson.second_last_name || ''}`.trim()
             : '';
-          const instCi = instTutorPerson?.ci || '';
           const instPhone = cleanVal(instTutorPerson?.phone || '');
-          const instEmail = cleanVal(instTutorPerson?.email || '');
+          const instTitulo = instTutor?.TITULO || '';
           const tutorInstConcat = instTutorPerson
-            ? `${instSurname}, ${instName}, C.I: ${instCi}/TLFNO: ${instPhone}/CORREO: ${instEmail}`
+            ? `${instTitulo} ${instName} ${instSurname}. TEL: ${formatPhone(instPhone)}`
             : '';
 
           individualMap.get(tutorKey)!.rows.push({
@@ -1232,8 +1256,9 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             sexo: studentPerson?.gender || '',
             tipo: estudianteEntity?.STUDENT_TYPE || '',
             rango: estudianteEntity?.MILITARY_RANK || '',
-            telefono: cleanVal(studentPerson?.phone || ''),
+            telefono: formatPhone(cleanVal(studentPerson?.phone || '')),
             institucion: institution?.INSTITUTION_NAME || '',
+            rifInstitucion: formatRif(institution?.RIF || ''),
             tipoInstitucion: institution?.INSTITUTION_TYPE || '',
             tutorInst: tutorInstConcat,
             direccion: institution?.INSTITUTION_ADDRESS || '',
@@ -1576,138 +1601,6 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         break;
       }
 
-      case 'acta-notas-finales': {
-        let actaQuery = supabase
-          .from('t_professional_practices')
-          .select(`
-            PROFESSIONAL_PRACTICE_ID, PERIOD_ID, GRADE,
-            t_students!inner(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
-            t_career!inner(CAREER_NAME),
-            t_institution(INSTITUTION_NAME, REGION, NUCLEUS, EXTENSION),
-            t_professional_practices_tutor(
-              TUTOR_TYPE,
-              t_tutors(TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME)
-            )
-          `)
-          .eq('STATUS', 1)
-          .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO]);
-
-        if (periodId) actaQuery = actaQuery.eq('PERIOD_ID', Number(periodId));
-        if (careerIds.length > 0) actaQuery = actaQuery.in('CAREER_ID', careerIds);
-
-        const { data: actaPractices } = await actaQuery;
-        const periodDesc = await getPeriodDescription(supabase, periodId as string);
-
-        if (actaPractices) {
-          const sections = [{
-            title: 'ACTA DE NOTAS FINALES',
-            periodLabel: periodDesc,
-            columns: [
-              { header: 'N°', key: 'nro', width: 5 },
-              { header: 'REGIÓN', key: 'region', width: 12 },
-              { header: 'NÚCLEO', key: 'nucleo', width: 14 },
-              { header: 'EXTENSIÓN', key: 'extension', width: 14 },
-              { header: 'CARRERA', key: 'carrera', width: 22 },
-              { header: 'CÉDULA', key: 'cedula', width: 14 },
-              { header: 'APELLIDOS', key: 'apellidos', width: 18 },
-              { header: 'NOMBRES', key: 'nombres', width: 18 },
-              { header: 'INSTITUCIÓN', key: 'institucion', width: 24 },
-              { header: 'NOTA FINAL', key: 'notaFinal', width: 12 },
-              { header: 'OBSERVACIONES', key: 'observaciones', width: 20 },
-            ],
-            rows: (actaPractices as any[]).map((p: any, i: number) => {
-              const student = p.t_students;
-              const career = p.t_career;
-              const institution = p.t_institution;
-              const tutors = p.t_professional_practices_tutor || [];
-              const tutorAcad = tutors.find((t: any) => t.TUTOR_TYPE === 'ACADEMICO')?.t_tutors;
-              return {
-                nro: i + 1,
-                region: sysLoc.region,
-                nucleo: sysLoc.nucleus,
-                extension: sysLoc.extension,
-                carrera: career?.CAREER_NAME || '',
-                cedula: student?.STUDENTS_CI || '',
-                apellidos: [student?.SURNAME, student?.SECOND_SURNAME].filter(Boolean).join(' '),
-                nombres: [student?.NAME, student?.SECOND_NAME].filter(Boolean).join(' '),
-                institucion: institution?.INSTITUTION_NAME || '',
-                notaFinal: p.GRADE ?? 0,
-                observaciones: '',
-              };
-            }),
-          }];
-          workbook = await generateWorkbook(sections);
-        }
-        break;
-      }
-
-      case 'evaluaciones-consolidadas': {
-        let evalQuery = supabase
-          .from('t_professional_practices')
-          .select(`
-            PROFESSIONAL_PRACTICE_ID, PERIOD_ID, GRADE,
-            t_students!inner(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
-            t_career!inner(CAREER_NAME),
-            t_institution(INSTITUTION_NAME, REGION, NUCLEUS, EXTENSION),
-            t_evaluation(EVALUATOR_TYPE, TOTAL_SCORE)
-          `)
-          .eq('STATUS', 1)
-          .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO]);
-
-        if (periodId) evalQuery = evalQuery.eq('PERIOD_ID', Number(periodId));
-        if (careerIds.length > 0) evalQuery = evalQuery.in('CAREER_ID', careerIds);
-
-        const { data: evalPractices } = await evalQuery;
-        const periodDescEval = await getPeriodDescription(supabase, periodId as string);
-
-        if (evalPractices) {
-          const sections = [{
-            title: 'EVALUACIONES CONSOLIDADAS',
-            periodLabel: periodDescEval,
-            columns: [
-              { header: 'N°', key: 'nro', width: 5 },
-              { header: 'REGIÓN', key: 'region', width: 12 },
-              { header: 'NÚCLEO', key: 'nucleo', width: 14 },
-              { header: 'EXTENSIÓN', key: 'extension', width: 14 },
-              { header: 'CARRERA', key: 'carrera', width: 22 },
-              { header: 'CÉDULA', key: 'cedula', width: 14 },
-              { header: 'APELLIDOS', key: 'apellidos', width: 18 },
-              { header: 'NOMBRES', key: 'nombres', width: 18 },
-              { header: 'INSTITUCIÓN', key: 'institucion', width: 24 },
-              { header: 'E. INST.', key: 'evalInstitucional', width: 10 },
-              { header: 'E. ACAD.', key: 'evalAcademico', width: 10 },
-              { header: 'E. COMITÉ', key: 'evalComite', width: 10 },
-              { header: 'NOTA FINAL', key: 'notaFinal', width: 12 },
-              { header: 'OBSERVACIONES', key: 'observaciones', width: 20 },
-            ],
-            rows: (evalPractices as any[]).map((p: any, i: number) => {
-              const student = p.t_students;
-              const career = p.t_career;
-              const institution = p.t_institution;
-              const evals = p.t_evaluation || [];
-              return {
-                nro: i + 1,
-                region: sysLoc.region,
-                nucleo: sysLoc.nucleus,
-                extension: sysLoc.extension,
-                carrera: career?.CAREER_NAME || '',
-                cedula: student?.STUDENTS_CI || '',
-                apellidos: [student?.SURNAME, student?.SECOND_SURNAME].filter(Boolean).join(' '),
-                nombres: [student?.NAME, student?.SECOND_NAME].filter(Boolean).join(' '),
-                institucion: institution?.INSTITUTION_NAME || '',
-                evalInstitucional: evals.find((e: any) => e.EVALUATOR_TYPE === 'INSTITUCIONAL')?.TOTAL_SCORE ?? '',
-                evalAcademico: evals.find((e: any) => e.EVALUATOR_TYPE === 'ACADEMICO')?.TOTAL_SCORE ?? '',
-                evalComite: evals.find((e: any) => e.EVALUATOR_TYPE === 'COMITE')?.TOTAL_SCORE ?? '',
-                notaFinal: p.GRADE ?? 0,
-                observaciones: '',
-              };
-            }),
-          }];
-          workbook = await generateWorkbook(sections);
-        }
-        break;
-      }
-
       case 'relacion-empresas': {
         let query = supabase
           .from('t_professional_practices')
@@ -1928,164 +1821,6 @@ async function getPeriodDescription(supabase: any, periodId?: string): Promise<s
     .single();
   return `Período: ${data?.DESCRIPTION || periodId}`;
 }
-
-export const getActaNotasFinalesReport = async (req: Request, res: Response) => {
-  try {
-    const supabase = dbManager.getConnection();
-    const sysLoc = await getSystemLocation(supabase);
-    const { periodId, careerId, careerIds: careerIdsQuery, page: pageQuery, limit: limitQuery } = req.query;
-    const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
-    const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
-    const careerIds = careerIdsQuery
-      ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
-      : [];
-
-    let query = supabase
-      .from('t_professional_practices')
-      .select(`
-        PROFESSIONAL_PRACTICE_ID,
-        PERIOD_ID,
-        GRADE,
-        PRACTICES_STATUS,
-        START_DATE,
-        END_DATE,
-        t_students!inner(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
-        t_career!inner(CAREER_NAME),
-        t_institution(INSTITUTION_NAME, REGION, NUCLEUS, EXTENSION),
-        t_professional_practices_tutor(
-          TUTOR_TYPE,
-          t_tutors(TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME)
-        )
-      `)
-      .eq('STATUS', 1)
-      .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO]);
-
-    if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
-    if (careerId) query = query.eq('CAREER_ID', Number(careerId));
-    if (careerIds.length > 0) query = query.in('CAREER_ID', careerIds);
-
-    const { data: practices, error } = await query;
-
-    if (error) {
-      console.error('[reports] getActaNotasFinalesReport error:', error);
-      throw error;
-    }
-
-    const reportData = (practices || []).map((p: any, idx: number) => {
-      const student: any = p.t_students;
-      const career: any = p.t_career;
-      const institution: any = p.t_institution;
-      const tutors: any[] = p.t_professional_practices_tutor || [];
-      const tutorAcad = tutors.find((t: any) => t.TUTOR_TYPE === 'ACADEMICO')?.t_tutors;
-
-      return {
-        nro: idx + 1,
-        region: sysLoc.region,
-        nucleo: sysLoc.nucleus,
-        extension: sysLoc.extension,
-        carrera: career?.CAREER_NAME || '',
-        estudianteCi: student?.STUDENTS_CI || '',
-        estudianteNombre: `${student?.NAME || ''} ${student?.SECOND_NAME || ''}`.trim(),
-        estudianteApellido: `${student?.SURNAME || ''} ${student?.SECOND_SURNAME || ''}`.trim(),
-        institucion: institution?.INSTITUTION_NAME || '',
-        tutorAcademico: tutorAcad ? `${tutorAcad.NAME || ''} ${tutorAcad.SURNAME || ''}`.trim() : '',
-        notaFinal: p.GRADE ?? 0,
-        observaciones: '',
-      };
-    });
-
-    const totalCount = reportData.length;
-    const paginatedData = reportData.slice(pageNum * limitNum, (pageNum + 1) * limitNum);
-    res.json({
-      success: true,
-      data: paginatedData,
-      meta: { total: totalCount, page: pageNum, limit: limitNum }
-    });
-
-  } catch (error) {
-    console.error('[reports] getActaNotasFinalesReport error:', error);
-    res.status(500).json({ message: 'Error al obtener acta de notas finales', error });
-  }
-};
-
-export const getEvaluacionesConsolidadasReport = async (req: Request, res: Response) => {
-  try {
-    const supabase = dbManager.getConnection();
-    const sysLoc = await getSystemLocation(supabase);
-    const { periodId, careerId, careerIds: careerIdsQuery, page: pageQuery, limit: limitQuery } = req.query;
-    const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
-    const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
-    const careerIds = careerIdsQuery
-      ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
-      : [];
-
-    let query = supabase
-      .from('t_professional_practices')
-      .select(`
-        PROFESSIONAL_PRACTICE_ID,
-        PERIOD_ID,
-        GRADE,
-        PRACTICES_STATUS,
-        t_students!inner(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
-        t_career!inner(CAREER_NAME),
-        t_institution(INSTITUTION_NAME, REGION, NUCLEUS, EXTENSION),
-        t_evaluation(EVALUATOR_TYPE, TOTAL_SCORE)
-      `)
-      .eq('STATUS', 1)
-      .in('PRACTICES_STATUS', [PRACTICES_STATUS.INSCRITO, PRACTICES_STATUS.CULMINADO]);
-
-    if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
-    if (careerId) query = query.eq('CAREER_ID', Number(careerId));
-    if (careerIds.length > 0) query = query.in('CAREER_ID', careerIds);
-
-    const { data: practices, error } = await query;
-
-    if (error) {
-      console.error('[reports] getEvaluacionesConsolidadasReport error:', error);
-      throw error;
-    }
-
-    const reportData = (practices || []).map((p: any, idx: number) => {
-      const student: any = p.t_students;
-      const career: any = p.t_career;
-      const institution: any = p.t_institution;
-      const evaluations: any[] = p.t_evaluation || [];
-
-      const evalInst = evaluations.find((e: any) => e.EVALUATOR_TYPE === 'INSTITUCIONAL');
-      const evalAcad = evaluations.find((e: any) => e.EVALUATOR_TYPE === 'ACADEMICO');
-      const evalComite = evaluations.find((e: any) => e.EVALUATOR_TYPE === 'COMITE');
-
-      return {
-        nro: idx + 1,
-        region: sysLoc.region,
-        nucleo: sysLoc.nucleus,
-        extension: sysLoc.extension,
-        carrera: career?.CAREER_NAME || '',
-        estudianteCi: student?.STUDENTS_CI || '',
-        estudianteNombre: `${student?.NAME || ''} ${student?.SECOND_NAME || ''}`.trim(),
-        estudianteApellido: `${student?.SURNAME || ''} ${student?.SECOND_SURNAME || ''}`.trim(),
-        institucion: institution?.INSTITUTION_NAME || '',
-        evalInstitucional: evalInst?.TOTAL_SCORE ?? null,
-        evalAcademico: evalAcad?.TOTAL_SCORE ?? null,
-        evalComite: evalComite?.TOTAL_SCORE ?? null,
-        notaFinal: p.GRADE ?? 0,
-        observaciones: '',
-      };
-    });
-
-    const totalCount = reportData.length;
-    const paginatedData = reportData.slice(pageNum * limitNum, (pageNum + 1) * limitNum);
-    res.json({
-      success: true,
-      data: paginatedData,
-      meta: { total: totalCount, page: pageNum, limit: limitNum }
-    });
-
-  } catch (error) {
-    console.error('[reports] getEvaluacionesConsolidadasReport error:', error);
-    res.status(500).json({ message: 'Error al obtener evaluaciones consolidadas', error });
-  }
-};
 
 export const getRelacionIndividualDocente = async (req: Request, res: Response) => {
   try {

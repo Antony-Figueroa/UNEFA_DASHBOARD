@@ -26,8 +26,6 @@ export type ReportType =
   | "relacion-empresas"
   | "relacion-instituciones-solicitan"
   | "proyeccion-pasantias"
-  | "acta-notas-finales"
-  | "evaluaciones-consolidadas"
   | "";
 
 export interface ReportConfigEntry {
@@ -80,8 +78,6 @@ export const DOCUMENT_SECTIONS: SectionGroup[] = [
       { id: "relacion-empresas", title: "Relación de Empresas", subtitle: "Instituciones que Demandan Pasantes", icon: "spreadsheet", type: "excel" },
       { id: "relacion-instituciones-solicitan", title: "Relación de Instituciones", subtitle: "Instituciones que Solicitan Asignación de Pasantes", icon: "spreadsheet", type: "excel" },
       { id: "proyeccion-pasantias", title: "Proyección de Pasantías", subtitle: "Proyección Prospectiva de Pasantías por Período Académico", icon: "table", type: "excel" },
-      { id: "acta-notas-finales", title: "Acta de Notas Finales", subtitle: "Notas Finales de Prácticas Profesionales por Período", icon: "spreadsheet", type: "excel" },
-      { id: "evaluaciones-consolidadas", title: "Evaluaciones Consolidadas", subtitle: "Consolidado de Evaluaciones por Estudiante", icon: "spreadsheet", type: "excel" },
     ],
   },
 ];
@@ -260,53 +256,6 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       { header: "Región", accessor: "region" },
       { header: "Carreras Cortas", accessor: "shortCareers" },
       { header: "Carreras Largas", accessor: "longCareers" },
-    ],
-  },
-  "acta-notas-finales": {
-    title: "Acta de Notas Finales",
-    subtitle: "Notas Finales de Prácticas Profesionales por Período",
-    type: "excel",
-    loadData: async (periodId, careerId, page, limit, careerIds) => {
-      const response = await reportsService.getActaNotasFinales(periodId, careerId, page, limit, careerIds);
-      return { data: response?.data || [], meta: response?.meta };
-    },
-    columns: [
-      { header: "N°", accessor: "nro" },
-      { header: "Región", accessor: "region" },
-      { header: "Núcleo", accessor: "nucleo" },
-      { header: "Extensión", accessor: "extension" },
-      { header: "Carrera", accessor: "carrera" },
-      { header: "Cédula", accessor: "estudianteCi" },
-      { header: "Apellidos", accessor: "estudianteApellido" },
-      { header: "Nombres", accessor: "estudianteNombre" },
-      { header: "Institución", accessor: "institucion" },
-      { header: "Nota Final", accessor: "notaFinal" },
-      { header: "Observaciones", accessor: "observaciones" },
-    ],
-  },
-  "evaluaciones-consolidadas": {
-    title: "Evaluaciones Consolidadas",
-    subtitle: "Consolidado de Evaluaciones por Estudiante",
-    type: "excel",
-    loadData: async (periodId, careerId, page, limit, careerIds) => {
-      const response = await reportsService.getEvaluacionesConsolidadas(periodId, careerId, page, limit, careerIds);
-      return { data: response?.data || [], meta: response?.meta };
-    },
-    columns: [
-      { header: "N°", accessor: "nro" },
-      { header: "Región", accessor: "region" },
-      { header: "Núcleo", accessor: "nucleo" },
-      { header: "Extensión", accessor: "extension" },
-      { header: "Carrera", accessor: "carrera" },
-      { header: "Cédula", accessor: "estudianteCi" },
-      { header: "Apellidos", accessor: "estudianteApellido" },
-      { header: "Nombres", accessor: "estudianteNombre" },
-      { header: "Institución", accessor: "institucion" },
-      { header: "E. Inst.", accessor: "evalInstitucional" },
-      { header: "E. Acad.", accessor: "evalAcademico" },
-      { header: "E. Comité", accessor: "evalComite" },
-      { header: "Nota Final", accessor: "notaFinal" },
-      { header: "Observaciones", accessor: "observaciones" },
     ],
   },
 };

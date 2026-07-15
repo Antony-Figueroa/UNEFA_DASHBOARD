@@ -8,8 +8,6 @@ import {
   generateRelacionEmpresasExcel,
   generateRelacionInstitucionesSolicitanExcel,
   generateProyeccionExcel,
-  generateActaNotasFinalesExcel,
-  generateEvaluacionesConsolidadasExcel,
 } from '../../../utils/unefaExcelReports';
 
 export function useReports() {
@@ -39,12 +37,6 @@ export function useReports() {
           break;
         case 'proyeccion-pasantias':
           await generateProyeccionExcel(data, period, fileName);
-          break;
-        case 'acta-notas-finales':
-          await generateActaNotasFinalesExcel(data, period, fileName);
-          break;
-        case 'evaluaciones-consolidadas':
-          await generateEvaluacionesConsolidadasExcel(data, period, fileName);
           break;
         default:
           addToast({ variant: "error", title: "No soportado", message: "Tipo de reporte no soportado" });

@@ -1,4 +1,4 @@
--- ================================================================================
+﻿-- ================================================================================
 -- UNEFA Dashboard - Respaldo COMPLETO para Réplica Exacta
 -- Nombre: 07/05/26-5-57pm
 -- Fecha: 2026-07-05T21:57:33.296Z
@@ -236,7 +236,7 @@ AS $function$
 BEGIN
     EXECUTE sql;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_all_constraints()
@@ -269,7 +269,7 @@ BEGIN
     END,
     c.conrelid::regclass::text;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_all_functions()
@@ -296,7 +296,7 @@ BEGIN
     )
   ORDER BY p.proname;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_all_indexes()
@@ -318,7 +318,7 @@ BEGIN
     AND i.indexdef NOT LIKE '%_pkey%'  -- PKs already in CREATE TABLE
   ORDER BY i.tablename, i.indexname;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_all_sequences()
@@ -367,7 +367,7 @@ BEGIN
   FROM seqs
   ORDER BY seqs.table_ref, seqs.col_name;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_all_table_definitions()
@@ -464,7 +464,7 @@ BEGIN
     RETURN QUERY SELECT rec.tname::text, def::text, has_rows::boolean;
   END LOOP;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_all_tables()
@@ -479,7 +479,7 @@ BEGIN
   WHERE schemaname = 'public'
   ORDER BY tablename;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_all_triggers()
@@ -501,7 +501,7 @@ BEGIN
   AND NOT tg.tgisinternal  -- exclude internal triggers (FK enforcement etc.)
   ORDER BY tg.tgrelid::regclass::text, tg.tgname;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_coincidence_stats()
@@ -572,7 +572,7 @@ BEGIN
       WHEN 'DIFFERENT_STATE' THEN 4
     END;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_institution_suggestions(p_person_id integer, p_career_id integer, p_internship_type_id integer DEFAULT NULL::integer)
@@ -629,7 +629,7 @@ BEGIN
       ))
   ORDER BY proximity_score DESC, i."INSTITUTION_NAME";
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_primary_address(p_entity_type text, p_entity_id integer)
@@ -679,7 +679,7 @@ BEGIN
     LIMIT 1;
   END IF;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_rls_policies()
@@ -732,7 +732,7 @@ BEGIN
   FROM policy_sql ps
   ORDER BY ps.tname, ps.polname;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_table_definition(table_name_param text)
@@ -773,7 +773,7 @@ BEGIN
     definition := definition || E'\n' || ');';
     RETURN definition;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.search_knowledge_base(query_embedding vector, match_threshold double precision DEFAULT 0.7, match_limit integer DEFAULT 5, filter_category text DEFAULT NULL::text, filter_roles integer[] DEFAULT NULL::integer[])
@@ -797,7 +797,7 @@ BEGIN
     ORDER BY kb.embedding <=> query_embedding
     LIMIT match_limit;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.trg_set_student_person_id()
@@ -812,7 +812,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.trg_set_tutor_person_id()
@@ -827,7 +827,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.update_kb_updated_at()
@@ -838,7 +838,7 @@ BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$function$
+$function$;
 
 
 -- ============================================================

@@ -1677,7 +1677,6 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         const empresaMap = new Map<string, {
           region: string; nucleo: string; extension: string;
           empresa: string; rif: string; tipo: string;
-          responsable: string; telefonoResponsable: string;
           carreras: Set<string>; estudiantes: number;
         }>();
 
@@ -1694,8 +1693,6 @@ export const exportReportExcel = async (req: Request, res: Response) => {
               empresa: inst.INSTITUTION_NAME || '',
               rif: inst.RIF || '',
               tipo: inst.INSTITUTION_TYPE || '',
-              responsable: inst.INSTITUTION_CONTACT || '',
-              telefonoResponsable: inst.INSTITUTION_CONTACT || '',
               carreras: new Set(),
               estudiantes: 0,
             });
@@ -1712,8 +1709,6 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           empresa: e.empresa,
           rif: e.rif,
           tipo: e.tipo,
-          responsable: e.responsable,
-          telefonoResponsable: e.telefonoResponsable,
           publica: (e.tipo || '').toUpperCase() === 'PÚBLICA' ? 'X' : '',
           privada: (e.tipo || '').toUpperCase() === 'PRIVADA' ? 'X' : '',
           carrera: Array.from(e.carreras).join(', '),

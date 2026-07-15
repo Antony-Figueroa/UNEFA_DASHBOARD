@@ -20,6 +20,7 @@ router.post('/', authenticateToken, requirePermission('users:create'), createUse
 router.put('/:id', authenticateToken, requirePermission('users:edit'), updateUser);
 router.get('/:id', authenticateToken, requirePermission('users:view'), getUserById);
 router.get('/:id/login-history', authenticateToken, requirePermission('users:view'), getUserLoginHistory);
+router.patch('/:id/status', authenticateToken, requirePermission('users:edit'), updateUser);
 router.delete('/:id', authenticateToken, requirePermission('users:delete'), deleteUser);
 router.post('/:id/reset-password', authenticateToken, requirePermission('users:edit'), resetUserPassword);
 

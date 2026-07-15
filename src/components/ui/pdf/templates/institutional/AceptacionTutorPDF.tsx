@@ -66,8 +66,6 @@ export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Pr
   const tutorTitle = data.tutor ? getTutorTitle(data.tutor.titulo) : 'MAESTR';
   const tutorName = data.tutor ? formatNombreCompleto(data.tutor).toUpperCase() : '';
   const tutorCI = data.tutor ? formatCI(data.tutor.ci) : '';
-  const tutorTelefono = data.tutor?.telefono || '';
-  
   const estudianteNombre = formatNombreCompleto(data.estudiante).toUpperCase();
   const estudianteCI = formatCI(data.estudiante.ci);
   const carreraNombre = data.carrera.nombre;
@@ -91,7 +89,6 @@ export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Pr
         <Text style={styles.firmaLabel}>Nombres y Apellidos</Text>
         <Text style={styles.firmaData}>{tutorTitle}. {tutorName}</Text>
         <Text style={styles.firmaData}>C.I.: {tutorCI}</Text>
-        <Text style={styles.firmaData}>Teléfono: {tutorTelefono}</Text>
       </View>
     </PDFLayout>
   );

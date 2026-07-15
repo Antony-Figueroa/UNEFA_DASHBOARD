@@ -12,6 +12,9 @@
 -- ================================================================================
 
 -- Extensiones requeridas
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA public SCHEMA pg_catalog;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public SCHEMA pg_catalog;
+CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA public;
 
 -- ============================================================
 -- SECCIÓN 1: SEQUENCES

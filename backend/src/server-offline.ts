@@ -22,15 +22,18 @@ const PORT = parseInt(process.env.OFFLINE_PORT || '3001', 10);
 const DATA_DIR = process.env.PGLITE_DATA_DIR || path.join(__projectRoot, 'data', 'pglite');
 const SCHEMA_FILE = path.join(__projectRoot, '..', 'DB-postgres.sql');
 const SEED_SYSTEM = path.join(__dirname, 'seed', 'seed_system.sql');
-const SEED_PRES = path.join(__dirname, 'seed', 'seed-presentacion.sql');
+const SEED_PRES = path.join(__dirname, 'seed', 'seed-empty.sql');
 
 // ─── SQL statement splitter ───
-// Divide SQL en statements individuales respetando DO $$ ... $$ blocks
-// (cuyos ; internos NO son separadores de statement)
+// Character-by-character parser que respeta:
+//   - '...' strings literales (con '' escapado)
+//   - $tag$ ... $tag$ blocks (incluyendo $$, $function$, etc.)
+// Los ; dentro de estos contextos NO son separadores.
 function splitStatements(sql: string): string[] {
   const stmts: string[] = [];
   let cur = '';
   let inDollar = false;
+  let dollarTag = '';
   let inQuote = false;
   let i = 0;
 
@@ -38,20 +41,34 @@ function splitStatements(sql: string): string[] {
     const c = sql[i];
     const nxt = sql[i + 1] || '';
 
-    // $$ dollar-quote block
-    if (c === '$' && nxt === '$') {
-      inDollar = !inDollar;
-      cur += '$$';
-      i += 2;
-      continue;
+    // $[tag]$ dollar-quote block — busca el tag completo
+    if (c === '$' && !inQuote) {
+      let tag = '';
+      let j = i + 1;
+      while (j < sql.length && /[a-zA-Z0-9_]/.test(sql[j])) { tag += sql[j]; j++; }
+      if (j < sql.length && sql[j] === '$') {
+        const delim = '$' + tag + '$';
+        if (!inDollar) {
+          inDollar = true;
+          dollarTag = delim;
+          cur += delim;
+          i = j + 1;
+          continue;
+        } else if (delim === dollarTag) {
+          inDollar = false;
+          dollarTag = '';
+          cur += delim;
+          i = j + 1;
+          continue;
+        }
+      }
     }
 
-    // ' single-quote string (solo fuera de $$), maneja '' escapado
+    // ' single-quote string (solo fuera de $...$), maneja '' escapado
     if (c === "'" && !inDollar) {
       cur += "'";
       i += 1;
       if (inQuote && nxt === "'") {
-        // '' dentro de string = comilla escapada, NO toggle
         cur += "'";
         i += 1;
       } else {
@@ -60,7 +77,7 @@ function splitStatements(sql: string): string[] {
       continue;
     }
 
-    // ; fuera de string = boundary
+    // ; fuera de string y fuera de $...$ = boundary
     if (c === ';' && !inQuote && !inDollar) {
       const t = cur.trim();
       if (t) stmts.push(t);
@@ -187,9 +204,7 @@ async function main() {
 
   await initSchema(pglite);
   await runSeed(pglite, SEED_SYSTEM, 'system');
-  // seed-presentacion.sql tiene ; dentro de strings literales — el splitter
-  // por ; no los respeta. Saltamos por ahora, los datos demo no son críticos.
-  // await runSeed(pglite, SEED_PRES, 'presentacion');
+  await runSeed(pglite, SEED_PRES, 'presentacion');
 
   // Configurar modo offline
   console.log('[Offline] 🔄 Configurando adaptador offline...');

@@ -9,8 +9,8 @@ En {{lugar}}, a los {{dia}} días del mes de {{mes}} del {{anio}}.
 _________________________________
 {{tutorTitulo}} {{tutorNombreCompleto}}
 C.I.: {{tutorCi}}
-Teléfono: {{tutorTelefono}}`,
-    firma: '___________________________________\n{{tutorTitulo}} {{tutorNombreCompleto}}\nTutor(a) Académico(a)\nC.I.: {{tutorCi}}\nTeléfono: {{tutorTelefono}}',
+`,
+    firma: '___________________________________\n{{tutorTitulo}} {{tutorNombreCompleto}}\nTutor(a) Académico(a)\nC.I.: {{tutorCi}}',
   },
   solicitud_institucion: {
     encabezado: `REPÚBLICA BOLIVARIANA DE VENEZUELA

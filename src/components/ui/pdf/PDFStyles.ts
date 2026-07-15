@@ -6,11 +6,11 @@ import { StyleSheet } from "@react-pdf/renderer";
  */
 export const pdfStyles = StyleSheet.create({
   page: {
-    paddingTop: 30,
-    paddingBottom: 60,
-    paddingHorizontal: 35,
-    fontFamily: "Times-Roman",
-    fontSize: 11,
+    paddingTop: 55,
+    paddingBottom: 55,
+    paddingHorizontal: 50,
+    fontFamily: "Times-Bold",
+    fontSize: 12,
     color: "#1C2434", // text-primary
   },
   // Encabezado Institucional (Membrete)
@@ -33,8 +33,6 @@ export const pdfStyles = StyleSheet.create({
   },
   institutionalText: {
     fontSize: 8,
-    fontFamily: "Times-Roman",
-    fontWeight: "bold",
     color: "#000000",
     lineHeight: 1.2,
   },
@@ -46,8 +44,7 @@ export const pdfStyles = StyleSheet.create({
   },
   reportTitle: {
     fontSize: 14,
-    fontFamily: "Times-Roman",
-    fontWeight: "bold",
+    fontFamily: "Times-Bold",
     color: "#21486e",
     textTransform: "capitalize",
     textAlign: "center",
@@ -76,9 +73,7 @@ export const pdfStyles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: "Times-Roman",
-    fontWeight: "bold",
-    color: "#1C2434",
+    fontFamily: "Times-Bold",
     marginBottom: 4,
   },
   subtitle: {
@@ -93,8 +88,7 @@ export const pdfStyles = StyleSheet.create({
     marginBottom: 4,
   },
   infoLabel: {
-    fontFamily: "Times-Roman",
-    fontWeight: "bold",
+    fontFamily: "Times-Bold",
     width: 100,
   },
   infoValue: {
@@ -116,14 +110,13 @@ export const pdfStyles = StyleSheet.create({
   },
   tableHeader: {
     backgroundColor: "#F8FAFC",
-    fontFamily: "Times-Roman",
-    fontWeight: "bold",
+    fontFamily: "Times-Bold",
   },
   tableCell: {
     flex: 1,
     padding: 6,
     fontSize: 10,
-    fontFamily: "Times-Roman",
+    fontFamily: "Times-Bold",
   },
   footer: {
     position: "absolute",
@@ -138,7 +131,7 @@ export const pdfStyles = StyleSheet.create({
     alignItems: "center",
     color: "#64748B",
     fontSize: 9,
-    fontFamily: "Times-Roman",
+    fontFamily: "Times-Bold",
   },
   footerLeft: {
     flexDirection: "row",
@@ -153,7 +146,7 @@ export const pdfStyles = StyleSheet.create({
   },
   pageNumber: {
     textAlign: "right",
-    fontFamily: "Times-Roman",
+    fontFamily: "Times-Bold",
   },
   // Variantes para Badges
   badge: {
@@ -161,14 +154,12 @@ export const pdfStyles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
     fontSize: 8,
-    fontFamily: "Times-Roman",
-    fontWeight: "bold",
+    fontFamily: "Times-Bold",
     textAlign: "center",
   },
   badgeText: {
     fontSize: 8,
-    fontFamily: "Times-Roman",
-    fontWeight: "bold",
+    fontFamily: "Times-Bold",
   },
   badgeSuccess: {
     backgroundColor: "#DCFCE7",

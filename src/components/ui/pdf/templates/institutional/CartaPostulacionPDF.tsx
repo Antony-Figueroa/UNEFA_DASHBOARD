@@ -1,15 +1,27 @@
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
 import { formatNombreCompleto, formatCI, getFechaParts } from '@/features/reports/utils/reportFormatters';
-import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
+
+function renderTextoTemplate(texto: string, data: Record<string, string>) {
+  const parts = texto.split(/(\{\{[^}]+\}\})/g);
+  return parts.map((part, i) => {
+    const m = part.match(/\{\{(\w+)\}\}/);
+    if (m) {
+      const value = data[m[1]];
+      if (value !== undefined) {
+        return <Text key={i} style={{ textDecoration: 'underline' }}>{value.toUpperCase()}</Text>;
+      }
+      return `[${m[1]}]`;
+    }
+    return part;
+  });
+}
 
 const styles = StyleSheet.create({
-  paragraph: { marginBottom: 14, textAlign: 'justify', fontSize: 11, lineHeight: 1.8 },
-  // Student info row: fields left, photo right
+  paragraph: { marginBottom: 14, textAlign: 'justify', textIndent: 36, lineHeight: 1.8 },
   infoRow: { flexDirection: 'row', marginBottom: 12 },
   infoFields: { flex: 1 },
-  fieldRow: { marginBottom: 4, fontSize: 10, lineHeight: 1.7 },
-  // Photo box on the right
+  fieldRow: { marginBottom: 4, lineHeight: 1.7 },
   photoBox: {
     width: 110,
     height: 140,
@@ -22,15 +34,13 @@ const styles = StyleSheet.create({
   },
   photoText: {
     fontSize: 8,
-    fontWeight: 'bold',
     textAlign: 'center',
     textTransform: 'uppercase',
   },
-  // Signature section
   firmaContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 35 },
   firmaCol: { width: '45%', alignItems: 'center' },
   firmaRaya: { fontSize: 11, marginBottom: 4 },
-  firmaLabel: { fontSize: 8, fontWeight: 'bold', textAlign: 'center', textTransform: 'uppercase' },
+  firmaLabel: { fontSize: 8, textAlign: 'center', textTransform: 'uppercase' },
 });
 
 interface Props {
@@ -56,32 +66,30 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
   const esDiurno = (data.practica?.regime || '').toUpperCase() === 'DIURNO';
   const trabaja = !!data.estudiante.empleo;
 
-  const cuerpo = renderDocumentText(textos.cuerpo || '', {
-    estudianteNombreCompleto: nombreCompleto,
-    estudianteCi: ci,
-    carrera: data.carrera.nombre,
-    fechaValidacion,
-  });
-
   return (
-    <PDFLayout title="SOLICITUD DE CARTA DE POSTULACIÓN" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
-      {/* Cover letter opening — desde textos editables */}
-      <Text style={styles.paragraph}>{cuerpo}</Text>
+    <PDFLayout title="SOLICITUD DE CARTA DE POSTULACIÓN (PRÁCTICAS PROFESIONALES)" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
+      <Text style={styles.paragraph}>
+        {renderTextoTemplate(textos.cuerpo || '', {
+          estudianteNombreCompleto: nombreCompleto,
+          estudianteCi: ci,
+          carrera: data.carrera.nombre,
+          fechaValidacion,
+        })}
+      </Text>
 
-      {/* Student info + photo box */}
       <View style={styles.infoRow}>
         <View style={styles.infoFields}>
-          <Text style={styles.fieldRow}>NOMBRES Y APELLIDOS:    <Text style={{ fontWeight: 'bold' }}>{nombreCompleto}</Text></Text>
-          <Text style={styles.fieldRow}>CÉDULA DE IDENTIDAD:     <Text style={{ fontWeight: 'bold' }}>{ci}</Text></Text>
-          <Text style={styles.fieldRow}>NÚMEROS DE CONTACTO:  <Text style={{ fontWeight: 'bold' }}>{data.estudiante.telefono || ''}</Text></Text>
-          <Text style={styles.fieldRow}>CORREO ELECTRÓNICO:   <Text style={{ fontWeight: 'bold' }}>{(data.estudiante.email || '').toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>NOMBRES Y APELLIDOS:    <Text style={{ textDecoration: 'underline' }}>{nombreCompleto.toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>CÉDULA DE IDENTIDAD:     <Text style={{ textDecoration: 'underline' }}>{ci.toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>NÚMEROS DE CONTACTO:  <Text style={{ textDecoration: 'underline' }}>{(data.estudiante.telefono || '').toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>CORREO ELECTRÓNICO:   <Text style={{ textDecoration: 'underline' }}>{(data.estudiante.email || '').toUpperCase()}</Text></Text>
           <Text style={styles.fieldRow}>
-            RÉGIMEN: {esDiurno ? 'DIURNO (X)    NOCTURNO (  )' : 'DIURNO (  )    NOCTURNO (X)'}
+            RÉGIMEN: <Text style={{ textDecoration: 'underline' }}>{esDiurno ? 'DIURNO (X)    NOCTURNO (  )' : 'DIURNO (  )    NOCTURNO (X)'}</Text>
           </Text>
-          <Text style={styles.fieldRow}>CARRERA:    <Text style={{ fontWeight: 'bold' }}>{data.carrera.nombre}</Text></Text>
-          <Text style={styles.fieldRow}>SEMESTRE:  <Text style={{ fontWeight: 'bold' }}>{data.practica?.semester || ''}</Text></Text>
+          <Text style={styles.fieldRow}>CARRERA:    <Text style={{ textDecoration: 'underline' }}>{data.carrera.nombre.toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>SEMESTRE:  <Text style={{ textDecoration: 'underline' }}>{(data.practica?.semester || '').toUpperCase()}</Text></Text>
           <Text style={styles.fieldRow}>
-            TRABAJO:  <Text style={{ fontWeight: 'bold' }}>{trabaja ? 'SI (X)  NO (  )' : 'SI (  )  NO (X)'}</Text>
+            TRABAJO:  <Text style={{ textDecoration: 'underline' }}>{trabaja ? 'SI (X)  NO (  )' : 'SI (  )  NO (X)'}</Text>
           </Text>
         </View>
         <View style={styles.photoBox}>
@@ -89,15 +97,13 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
         </View>
       </View>
 
-      {/* Institution & HR manager */}
       <Text style={styles.fieldRow}>
-        NOMBRE DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: <Text style={{ fontWeight: 'bold' }}>{data.institucion?.nombre || '________________________'}</Text>
+        NOMBRE DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: <Text style={{ textDecoration: 'underline' }}>{(data.institucion?.nombre || '________________________').toUpperCase()}</Text>
       </Text>
       <Text style={styles.fieldRow}>
-        NOMBRE Y APELLIDOS DEL (DE LA) GERENTE DE TALENTO HUMANO DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS: <Text style={{ fontWeight: 'bold' }}>{data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '________________________'}</Text>
+        NOMBRE Y APELLIDOS DEL (DE LA) GERENTE DE TALENTO HUMANO DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS: <Text style={{ textDecoration: 'underline' }}>{(data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '________________________').toUpperCase()}</Text>
       </Text>
 
-      {/* Signatures */}
       <View style={styles.firmaContainer}>
         <View style={styles.firmaCol}>
           <Text style={styles.firmaRaya}>_________________________________</Text>

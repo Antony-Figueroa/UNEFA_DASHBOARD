@@ -659,11 +659,10 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
 export async function generateRelacionInstitucionesSolicitanExcel(data: any[], period: string, fileName: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Relacion Instituciones');
-  const totalCols = 6;
+  const totalCols = 4;
 
   worksheet.columns = [
-    { key: 'empresa', width: 50 }, { key: 'responsable', width: 35 },
-    { key: 'contacto', width: 20 }, { key: 'tipoEmpresa', width: 20 },
+    { key: 'empresa', width: 50 }, { key: 'tipoEmpresa', width: 20 },
     { key: 'carreras', width: 40 }, { key: 'estudiantes', width: 14 },
   ];
 
@@ -677,8 +676,6 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
 
   const headers = [
     'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN',
-    'RESPONSABLE',
-    'NÚMERO DE\nCONTACTO',
     'TIPO DE\nEMPRESA',
     'CARRERAS',
     'CANTIDAD DE\nESTUDIANTES',
@@ -696,11 +693,9 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
     row.height = 25;
 
     applyDataCell(worksheet, currentRow, 1, (item.empresa || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 2, (item.responsable || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 3, (item.numeroContacto || 'N/A').toUpperCase());
-    applyDataCell(worksheet, currentRow, 4, (item.tipoEmpresa || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 5, (item.carreras || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 6, item.cantidadEstudiantes || 0);
+    applyDataCell(worksheet, currentRow, 2, (item.tipoEmpresa || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 3, (item.carreras || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 4, item.cantidadEstudiantes || 0);
 
     currentRow++;
   });

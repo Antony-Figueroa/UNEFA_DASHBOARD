@@ -11,6 +11,7 @@ import { getInstitutions, getInstitutionCareers } from "../../features/instituti
 import { generateRelacionInstitucionesSolicitanExcel } from "../../utils/unefaExcelReports";
 import { XIcon } from "lucide-react";
 import apiClient from "../../api/apiClient";
+import { useCurrentPeriod } from "../../features/periods/hooks/useCurrentPeriod";
 
 interface Period {
   periodId: string;
@@ -38,6 +39,7 @@ interface RelacionInstitucionesModalProps {
 
 export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstitucionesModalProps) {
   const { addToast } = useToast();
+  const { currentPeriod } = useCurrentPeriod();
   const [periods, setPeriods] = useState<{ value: string; label: string; periodId: string }[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [allInstitutions, setAllInstitutions] = useState<Institution[]>([]);
@@ -81,6 +83,11 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
         const institutions = Array.isArray(instList) ? instList : (instList?.data ?? []);
         setAllInstitutions(institutions);
         setAllResponsables(respList?.data || []);
+
+        // Auto-seleccionar el periodo actual
+        if (currentPeriod) {
+          setSelectedPeriodId(currentPeriod.periodId);
+        }
       } catch (error) {
         console.error("Error loading data:", error);
         addToast(TOAST.loadError());
@@ -90,7 +97,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
     };
 
     load();
-  }, [isOpen]);
+  }, [isOpen, currentPeriod]);
 
   // Load careers when institutions are selected
   useEffect(() => {

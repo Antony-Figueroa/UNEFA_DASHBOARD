@@ -129,8 +129,6 @@ export interface RelacionInstitucionesSolicitanRow {
   extension: string;
   empresa: string;
   rif: string;
-  responsable: string;
-  numeroContacto: string;
   tipoEmpresa: string;
   carreras: string;
   cantidadEstudiantes: number;

@@ -983,11 +983,6 @@ export const getRelacionInstitucionesSolicitan = async (req: Request, res: Respo
     const result = Array.from(instMap.values()).map(e => ({
       empresa: e.empresa,
       rif: e.rif,
-      responsable: e.manager
-        ? [e.manager.NAME, e.manager.SECOND_NAME, e.manager.SURNAME, e.manager.SECOND_SURNAME]
-            .filter(Boolean).join(' ')
-        : 'N/A',
-      numeroContacto: e.telefono,
       tipoEmpresa: e.tipo,
       carreras: Array.from(e.carreras).join(', '),
       cantidadEstudiantes: e.estudiantes,
@@ -1782,21 +1777,24 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           entry.estudiantes++;
         });
 
-        const rows = Array.from(instMap.values()).map((e) => ({
-          region: sysLoc.region,
-          nucleo: sysLoc.nucleus,
-          extension: sysLoc.extension,
-          empresa: e.empresa,
-          rif: e.rif,
-          responsable: e.manager
-            ? [e.manager.NAME, e.manager.SECOND_NAME, e.manager.SURNAME, e.manager.SECOND_SURNAME]
-                .filter(Boolean).join(' ')
-            : 'N/A',
-          telefono: e.telefono,
-          tipoEmpresa: e.tipo,
-          carreras: Array.from(e.carreras).join(', '),
-          cantidadEstudiantes: e.estudiantes,
-        }));
+        const rows = Array.from(instMap.values()).map((e) => {
+          const mgr = e.manager;
+          const responsable = mgr
+            ? `${mgr.NAME || ''} ${mgr.SECOND_NAME || ''} ${mgr.SURNAME || ''} ${mgr.SECOND_SURNAME || ''}`.replace(/\s+/g, ' ').trim()
+            : 'N/A';
+          const telefono = e.telefono || 'N/A';
+          return {
+            region: sysLoc.region,
+            nucleo: sysLoc.nucleus,
+            extension: sysLoc.extension,
+            empresa: e.empresa,
+            responsable,
+            telefonoContacto: telefono,
+            tipoEmpresa: e.tipo,
+            carreras: Array.from(e.carreras).join(', '),
+            cantidadEstudiantes: e.estudiantes,
+          };
+        });
 
         workbook = await generateRelacionInstitucionesSolicitanWorkbook(rows, periodDesc);
         break;

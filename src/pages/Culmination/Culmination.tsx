@@ -28,6 +28,7 @@ import { reportsService } from "../../features/reports/services/reportsService";
 import { useToast } from "../../context/toast";
 import { TOAST } from "../../components/ui/dialog/DialogConfig";
 import { matchSearch } from "../../utils/searchNormalizer";
+import { useCurrentPeriod } from "../../features/periods/hooks/useCurrentPeriod";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente",
@@ -43,6 +44,7 @@ const BADGE_COLORS: Record<string, "warning" | "primary" | "success"> = {
 
 export default function CulminationPage() {
   const { addToast } = useToast();
+  const { currentPeriod } = useCurrentPeriod();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CulminationGroup[]>([]);
   const [meta, setMeta] = useState<CulminationMeta>({ total: 0, completed: 0, inProgress: 0 });
@@ -89,6 +91,13 @@ export default function CulminationPage() {
   useEffect(() => {
     fetchData();
   }, [statusFilter, periodFilter]);
+
+  // Auto-seleccionar el periodo actual cuando se carga por primera vez
+  useEffect(() => {
+    if (currentPeriod && !periodFilter) {
+      setPeriodFilter(currentPeriod.description);
+    }
+  }, [currentPeriod, periodFilter]);
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;

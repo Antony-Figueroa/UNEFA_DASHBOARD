@@ -6,7 +6,8 @@ import Button from "../../components/ui/button/Button";
 import CustomSelect from "../../components/form/CustomSelect";
 import MultiSelect from "../../components/form/MultiSelect";
 import type { MultiSelectOption } from "../../components/form/MultiSelect";
-import { getPeriodsForReports } from "../../features/periods/services/periodService";
+import { useCurrentPeriod } from "../../features/periods/hooks/useCurrentPeriod";
+import { getPeriods, getPeriodsForReports } from "../../features/periods/services/periodService";
 import { getCareers } from "../../features/careers/services/careersService";
 import { reportsService, CareerData, PeriodData, TutorAcademicReportRow } from "../../features/reports/services/reportsService";
 import { TablePreviewModal } from "../../components/ui/table/TablePreviewModal";
@@ -25,6 +26,7 @@ import { SearchInput } from "../../components/common/SearchInput";
 
 export default function ReportsPage() {
   const { addToast } = useToast();
+  const { currentPeriod } = useCurrentPeriod();
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<{ label: string; value: number | string; change?: number; trend?: "up" | "down" | "stable" }[]>([]);
   const [careerData, setCareerData] = useState<CareerData[]>([]);
@@ -118,6 +120,13 @@ export default function ReportsPage() {
   useEffect(() => {
     fetchDashboardData();
   }, [periodFilter]);
+
+  // Auto-seleccionar el periodo actual cuando se carga por primera vez
+  useEffect(() => {
+    if (currentPeriod && !periodFilter) {
+      setPeriodFilter(currentPeriod.description);
+    }
+  }, [currentPeriod, periodFilter]);
 
   const loadReportPage = useCallback(async (type: string, page: number, limit = 50, careerIds?: number[]) => {
     const config = getReportConfig(type);

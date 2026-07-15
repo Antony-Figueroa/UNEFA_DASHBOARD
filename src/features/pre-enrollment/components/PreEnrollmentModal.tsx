@@ -35,6 +35,7 @@ import { generateMatricula } from "../../../utils/matricula";
 import { formatCedulaDisplay, formatPhoneDisplay, CEDULA_MAX_DIGITS, CEDULA_MAX_LENGTH, PASSPORT_MAX_LENGTH } from "../../../utils/inputFormat";
 import { UserCircleIcon, ShieldCheckIcon, DocsIcon, InfoIcon, SearchIcon, PlusIcon } from "../../../icons";
 import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
+import { useCurrentPeriod } from "../../periods/hooks/useCurrentPeriod";
 
 /**
  * Propiedades del componente PreEnrollmentModal.
@@ -123,6 +124,7 @@ export default function PreEnrollmentModal({
   initialCi = null,
   careerOptions = [],
 }: PreEnrollmentModalProps) {
+  const { currentPeriod } = useCurrentPeriod();
   const [isSearching, setIsSearching] = useState(false);
   const [periods, setPeriods] = useState<Periodo[]>([]);
   const [suggestions, setSuggestions] = useState<Student[]>([]);
@@ -285,7 +287,7 @@ export default function PreEnrollmentModal({
 
   /**
    * Efecto para cargar períodos académicos y tipos de práctica.
-   * Filtra y selecciona el período más cercano disponible.
+   * Usa el hook centralizado para obtener el periodo actual.
    */
   useEffect(() => {
     const fetchData = async () => {
@@ -299,37 +301,29 @@ export default function PreEnrollmentModal({
           internshipTypesData.map((t: any) => ({ value: t.name || "", label: t.name || "" }))
         );
         
-        const activePeriods = periodData
-          .filter((p: Periodo) => p.periodStatus === 2 && p.status);
+        // Usar hook centralizado para periodo actual
+        const activePeriod = currentPeriod || (periodData.length > 0 
+          ? periodData.find((p: Periodo) => p.periodStatus === 1 && p.status) 
+          : null);
         
-        const pendingPeriods = periodData
-          .filter((p: Periodo) => p.periodStatus === 1 && p.status)
-          .sort((a: Periodo, b: Periodo) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-        
-        // Mostrar solo el periodo activo, o si no hay activos, el próximo pendiente
         let selectedPeriods: Periodo[] = [];
-        if (activePeriods.length > 0) {
-          selectedPeriods = [activePeriods[0]];
-        } else if (pendingPeriods.length > 0) {
-          selectedPeriods = [pendingPeriods[0]];
+        if (activePeriod) {
+          selectedPeriods = [activePeriod];
         }
         
         // Si estamos editando, asegurar que el período original esté incluido
         if (editingEntry) {
-          const exists = selectedPeriods.some((p: Periodo) => p.description === editingEntry.period);
-          if (!exists) {
-            const originalPeriod = periodData.find((p: Periodo) => p.description === editingEntry.period);
-            if (originalPeriod) {
-              selectedPeriods.push(originalPeriod);
-            }
+          const originalPeriod = periodData.find((p: Periodo) => p.description === editingEntry.period);
+          if (originalPeriod && originalPeriod.periodId !== activePeriod?.periodId) {
+            selectedPeriods.push(originalPeriod);
           }
         }
 
         setPeriods(selectedPeriods);
         
         // Auto-seleccionar
-        if (!editingEntry && !getValues("period") && selectedPeriods.length > 0) {
-          setValue("period", selectedPeriods[0].description);
+        if (!editingEntry && !getValues("period") && activePeriod) {
+          setValue("period", activePeriod.description);
         }
       } catch (error) {
         console.error("[PreEnrollmentModal] Error al cargar períodos/tipos:", error);
@@ -339,7 +333,7 @@ export default function PreEnrollmentModal({
     if (isOpen) {
       fetchData();
     }
-  }, [isOpen, editingEntry, setValue, getValues]);
+  }, [isOpen, editingEntry, setValue, getValues, currentPeriod]);
 
   /**
    * Efecto para cargar listas desplegables dinámicas (ej. Nacionalidad).

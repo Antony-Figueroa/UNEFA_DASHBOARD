@@ -11,6 +11,7 @@ import { getCareers } from "../../features/careers/services/careersService";
 import { generateProyeccionExcel } from "../../utils/unefaExcelReports";
 import { XIcon } from "lucide-react";
 import apiClient from "../../api/apiClient";
+import { useCurrentPeriod } from "../../features/periods/hooks/useCurrentPeriod";
 
 interface Career {
   careerId: number;
@@ -25,6 +26,7 @@ interface ProyeccionModalProps {
 
 export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
   const { addToast } = useToast();
+  const { currentPeriod } = useCurrentPeriod();
   const [periods, setPeriods] = useState<{ value: string; label: string; periodId: string }[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [allCareers, setAllCareers] = useState<Career[]>([]);
@@ -62,6 +64,11 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
         setPeriods(periodOptions);
         const careers = (Array.isArray(careerList) ? careerList : (careerList?.data ?? [])) as Career[];
         setAllCareers(careers);
+
+        // Auto-seleccionar el periodo actual
+        if (currentPeriod) {
+          setSelectedPeriodId(currentPeriod.periodId);
+        }
       } catch (error) {
         console.error("Error loading data:", error);
         addToast(TOAST.loadError());
@@ -71,7 +78,7 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
     };
 
     load();
-  }, [isOpen]);
+  }, [isOpen, currentPeriod]);
 
   // Handle projected students change
   const handleProyectadosChange = useCallback((careerId: number, value: string) => {

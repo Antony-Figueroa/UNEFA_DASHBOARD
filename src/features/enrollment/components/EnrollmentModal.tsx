@@ -36,6 +36,7 @@ import { UserCircleIcon, ShieldCheckIcon, DocsIcon, SearchIcon, UsersIcon, PlusI
 import { cn } from "../../../utils/cn";
 import Badge from "../../../components/ui/badge/Badge";
 import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
+import { useCurrentPeriod } from "../../periods/hooks/useCurrentPeriod";
 
 // Inline icons for missing ones
 const BookOpenIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -128,6 +129,7 @@ export default function EnrollmentModal({
   isLoading = false,
   initialData,
 }: EnrollmentModalProps) {
+  const { currentPeriod } = useCurrentPeriod();
   const [isSearching, setIsSearching] = useState(false);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
@@ -257,32 +259,23 @@ export default function EnrollmentModal({
         setPracticeOptions(mapToOptions(practiceData));
         setCareersState(unwrapData(careerData).filter((c: Career) => c.status));
         
-        // Lógica de periodos (Replicada de PreEnrollmentModal)
-        const currentPeriod = periodData.find(p => p.periodStatus === 2);
-        const pendingPeriods = periodData.filter(p => p.periodStatus === 1).sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-        
-        let filteredPeriods: Periodo[] = [];
-        if (currentPeriod) {
-          filteredPeriods = [currentPeriod];
-        } else if (pendingPeriods.length > 0) {
-          filteredPeriods = [pendingPeriods[0]];
-        }
+        // Usar hook centralizado para periodo actual
+        const activePeriod = currentPeriod || (periodData.length > 0 
+          ? periodData.find(p => p.periodStatus === 1 && p.status) 
+          : null);
 
         if (editingEntry) {
-          const exists = filteredPeriods.some(p => p.description === editingEntry.period);
-          if (!exists) {
-            const originalPeriod = periodData.find(p => p.description === editingEntry.period);
-            if (originalPeriod) {
-              filteredPeriods.push(originalPeriod);
-            }
+          const originalPeriod = periodData.find(p => p.description === editingEntry.period);
+          if (originalPeriod && originalPeriod.periodId !== activePeriod?.periodId) {
+            // Si editamos un periodo diferente al actual, incluirlo
           }
         }
         
         setTutors(unwrapData(tutorData).filter((t: Tutor) => t.status));
         setInstitutions(unwrapData(institutionData).filter((i: Institution) => i.status));
 
-        if (!editingEntry && filteredPeriods.length > 0) {
-          setValue("period", filteredPeriods[0].description);
+        if (!editingEntry && activePeriod) {
+          setValue("period", activePeriod.description);
         }
       } catch (error) {
         console.error("Error al cargar datos:", error);

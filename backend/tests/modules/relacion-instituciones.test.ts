@@ -16,14 +16,15 @@ import type { RelacionInstitucionesExcelRow } from '../../src/services/excel-exp
 // ============================================================
 
 describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => {
-  it('generates workbook with 8 columns and correct headers', async () => {
+  it('generates workbook with 9 columns and correct headers', async () => {
     const rows: RelacionInstitucionesExcelRow[] = [
       {
         region: 'Región Capital',
         nucleo: 'Caracas',
         extension: 'UCV',
         empresa: 'Empresa Test',
-        rif: 'J-12345678-9',
+        responsable: 'Juan Pérez',
+        telefonoContacto: '0412-1234567',
         tipoEmpresa: 'PÚBLICA',
         carreras: 'Ing. Sistemas, Contaduría',
         cantidadEstudiantes: 5,
@@ -44,7 +45,8 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
       'NÚCLEO',
       'EXTENSIÓN',
       'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN',
-      'RIF',
+      'RESPONSABLE',
+      'NÚMERO DE\nCONTACTO',
       'TIPO DE\nEMPRESA',
       'CARRERAS',
       'CANTIDAD DE\nESTUDIANTES',
@@ -70,7 +72,8 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
         nucleo: 'Caracas',
         extension: 'UCV',
         empresa: 'Empresa Test',
-        rif: 'J-12345678-9',
+        responsable: 'María García',
+        telefonoContacto: '0414-7654321',
         tipoEmpresa: 'PRIVADA',
         carreras: 'Ing. Sistemas',
         cantidadEstudiantes: 3,
@@ -101,7 +104,8 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
         nucleo: 'Caracas',
         extension: 'UCV',
         empresa: 'Empresa 1',
-        rif: 'J-12345678-9',
+        responsable: 'Ana López',
+        telefonoContacto: '0412-1111111',
         tipoEmpresa: 'PÚBLICA',
         carreras: 'Ing. Sistemas',
         cantidadEstudiantes: 3,
@@ -111,7 +115,8 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
         nucleo: 'Caracas',
         extension: 'UCV',
         empresa: 'Empresa 2',
-        rif: 'J-98765432-1',
+        responsable: 'Carlos Ruiz',
+        telefonoContacto: '0424-2222222',
         tipoEmpresa: 'PRIVADA',
         carreras: 'Contaduría',
         cantidadEstudiantes: 2,
@@ -135,7 +140,8 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
         nucleo: 'Caracas',
         extension: 'UCV',
         empresa: 'Empresa 1',
-        rif: 'J-12345678-9',
+        responsable: 'Ana López',
+        telefonoContacto: '0412-1111111',
         tipoEmpresa: 'PÚBLICA',
         carreras: 'Ing. Sistemas',
         cantidadEstudiantes: 3,
@@ -145,7 +151,8 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
         nucleo: 'Caracas',
         extension: 'UCV',
         empresa: 'Empresa 2',
-        rif: 'J-98765432-1',
+        responsable: 'Carlos Ruiz',
+        telefonoContacto: '0424-2222222',
         tipoEmpresa: 'PRIVADA',
         carreras: 'Contaduría',
         cantidadEstudiantes: 2,
@@ -159,17 +166,18 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
     const subtotalsRow = sheet.getRow(9);
     expect(subtotalsRow.getCell(2).value).toBe('SUB-TOTALES');
     expect(subtotalsRow.getCell(4).value).toBe(2); // Institution count
-    expect(subtotalsRow.getCell(8).value).toBe(5); // Total students (column 8)
+    expect(subtotalsRow.getCell(9).value).toBe(5); // Total students (column 9)
   });
 
-  it('does NOT contain RESPONSABLE or TELÉFONO columns', async () => {
+  it('contains RESPONSABLE and NÚMERO DE CONTACTO columns', async () => {
     const rows: RelacionInstitucionesExcelRow[] = [
       {
         region: 'Región Capital',
         nucleo: 'Caracas',
         extension: 'UCV',
         empresa: 'Empresa Test',
-        rif: 'J-12345678-9',
+        responsable: 'Pedro Martínez',
+        telefonoContacto: '0416-3333333',
         tipoEmpresa: 'PÚBLICA',
         carreras: 'Ing. Sistemas',
         cantidadEstudiantes: 1,
@@ -180,14 +188,13 @@ describe('generateRelacionInstitucionesSolicitanWorkbook — Unit Tests', () => 
     const sheet = workbook.worksheets[0];
     const headerRow = sheet.getRow(6);
 
-    // Ensure no RESPONSABLE or TELÉFONO header exists
+    // Ensure RESPONSABLE and NÚMERO DE CONTACTO headers exist
     const headerValues: string[] = [];
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 9; i++) {
       headerValues.push(String(headerRow.getCell(i).value));
     }
-    expect(headerValues).not.toContain('RESPONSABLE');
-    expect(headerValues).not.toContain('NÚMERO DE\nCONTACTO');
-    expect(headerValues).not.toContain('TELÉFONO RESPONSABLE');
+    expect(headerValues).toContain('RESPONSABLE');
+    expect(headerValues).toContain('NÚMERO DE\nCONTACTO');
   });
 });
 

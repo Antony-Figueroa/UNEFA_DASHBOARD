@@ -21,6 +21,7 @@ import { BatchPreEnrollRequest, BatchResult } from "../services/preEnrollmentSer
 import { Student } from "../../students/types";
 import { cn } from "../../../utils/cn";
 import { CheckCircleIcon, ErrorIcon, UsersIcon, ShieldCheckIcon } from "../../../icons";
+import { useCurrentPeriod } from "../../periods/hooks/useCurrentPeriod";
 
 /**
  * Schema de validación para el formulario batch.
@@ -53,6 +54,7 @@ export default function BatchPreEnrollModal({
   onBatchPreEnroll,
   onComplete,
 }: BatchPreEnrollModalProps) {
+  const { currentPeriod } = useCurrentPeriod();
   const [step, setStep] = useState<ModalStep>("form");
   const [result, setResult] = useState<BatchResult | null>(null);
   const [periods, setPeriods] = useState<Periodo[]>([]);
@@ -99,22 +101,15 @@ export default function BatchPreEnrollModal({
           fetchMultipleLists(["Semestre", "Seccion", "Regimen/Turno"]),
         ]);
 
-        // Periods: active or next pending
-        const activePeriods = periodData
-          .filter((p: Periodo) => p.periodStatus === 2 && p.status);
-        const pendingPeriods = periodData
-          .filter((p: Periodo) => p.periodStatus === 1 && p.status)
-          .sort((a: Periodo, b: Periodo) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+        // Usar hook centralizado para periodo actual
+        const activePeriod = currentPeriod || (periodData.length > 0 
+          ? periodData.find((p: Periodo) => p.periodStatus === 1 && p.status) 
+          : null);
 
-        const selectedPeriods = activePeriods.length > 0
-          ? [activePeriods[0]]
-          : pendingPeriods.length > 0
-            ? [pendingPeriods[0]]
-            : [];
-
+        const selectedPeriods = activePeriod ? [activePeriod] : [];
         setPeriods(selectedPeriods);
-        if (selectedPeriods.length > 0) {
-          setValue("period", selectedPeriods[0].description);
+        if (activePeriod) {
+          setValue("period", activePeriod.description);
         }
 
         // Career options
@@ -146,7 +141,7 @@ export default function BatchPreEnrollModal({
     loadData();
     setStep("form");
     setResult(null);
-  }, [isOpen, setValue, fetchMultipleLists]);
+  }, [isOpen, setValue, fetchMultipleLists, currentPeriod]);
 
   // Auto-fill semester when career changes
   useEffect(() => {

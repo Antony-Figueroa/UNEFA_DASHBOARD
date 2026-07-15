@@ -8,6 +8,7 @@ const styles = StyleSheet.create({
     marginBottom: 4, 
     fontSize: 11, 
     textAlign: 'right',
+    fontFamily: 'Times-Roman',
   },
   leftSection: {
     alignItems: 'flex-start',
@@ -20,11 +21,13 @@ const styles = StyleSheet.create({
   destinatario: { 
     marginBottom: 2, 
     fontSize: 11,
+    fontFamily: 'Times-Roman',
   },
   destinatarioRed: {
     marginBottom: 2, 
     fontSize: 11,
     color: '#000000',
+    fontFamily: 'Times-Roman',
   },
   paragraph: { 
     marginBottom: 10, 
@@ -32,9 +35,11 @@ const styles = StyleSheet.create({
     fontSize: 11, 
     lineHeight: 1.4,
     textIndent: 30,
+    fontFamily: 'Times-Roman',
   },
   textRed: {
     color: '#000000',
+    fontFamily: 'Times-Roman',
   },
 
   centeredContainer: {
@@ -47,26 +52,31 @@ const styles = StyleSheet.create({
     textAlign: 'left', 
     fontSize: 11, 
     lineHeight: 1.4,
+    fontFamily: 'Times-Roman',
   },
   centeredAtentamente: {
     marginBottom: 20,
     fontSize: 11,
     textAlign: 'center',
+    fontFamily: 'Times-Roman',
   },
   centeredFirmaNombre: { 
     fontSize: 11,
     marginBottom: 2,
     textAlign: 'center',
+    fontFamily: 'Times-Roman',
   },
   centeredFirmaCargo: { 
     fontSize: 11,
     marginBottom: 2,
     textAlign: 'center',
+    fontFamily: 'Times-Roman',
   },
   centeredFirmaOrden: { 
     fontSize: 10, 
     color: '#000000',
     textAlign: 'center',
+    fontFamily: 'Times-Roman',
   },
 
 });

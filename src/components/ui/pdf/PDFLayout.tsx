@@ -88,7 +88,7 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
         )}
 
         {/* Content */}
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, fontFamily: 'Times-Roman' }}>
           {children}
         </View>
 

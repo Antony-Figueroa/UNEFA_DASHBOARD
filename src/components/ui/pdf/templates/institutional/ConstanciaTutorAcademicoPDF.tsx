@@ -4,11 +4,11 @@ import { formatNombreCompleto, formatCI, formatFecha, getFechaParts, getTutorTit
 import { renderDocumentTextFormatted } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
-  paragraph: { marginBottom: 20, textAlign: 'justify', fontSize: 12, lineHeight: 2, marginLeft: 30, marginRight: 30, textIndent: 30 },
+  paragraph: { marginBottom: 20, textAlign: 'justify', fontSize: 12, lineHeight: 2, marginLeft: 30, marginRight: 30, textIndent: 30, fontFamily: 'Times-Roman' },
   firmaContainer: { marginTop: 60, alignItems: 'center' },
   firmaLine: { marginBottom: 5 },
-  firmaNombre: { fontSize: 11 },
-  firmaRol: { fontSize: 10, color: '#000000' },
+  firmaNombre: { fontSize: 11, fontFamily: 'Times-Roman' },
+  firmaRol: { fontSize: 10, color: '#000000', fontFamily: 'Times-Roman' },
 });
 
 interface Props {

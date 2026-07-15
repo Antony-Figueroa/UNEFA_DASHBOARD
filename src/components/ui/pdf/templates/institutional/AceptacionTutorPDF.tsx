@@ -9,12 +9,14 @@ const styles = StyleSheet.create({
     fontSize: 11, 
     lineHeight: 1.5,
     textIndent: 30,
+    fontFamily: 'Times-Roman',
   },
   dateSection: { 
     marginTop: 5,
     marginBottom: 40, 
     fontSize: 11,
     textIndent: 30,
+    fontFamily: 'Times-Roman',
   },
   firmaContainer: { 
     marginTop: 40, 
@@ -29,10 +31,12 @@ const styles = StyleSheet.create({
   firmaLabel: { 
     marginBottom: 3, 
     fontSize: 11,
+    fontFamily: 'Times-Roman',
   },
   firmaData: {
     fontSize: 11,
     marginBottom: 3,
+    fontFamily: 'Times-Roman',
   },
 });
 

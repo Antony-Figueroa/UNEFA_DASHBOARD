@@ -18,10 +18,10 @@ function renderTextoTemplate(texto: string, data: Record<string, string>) {
 }
 
 const styles = StyleSheet.create({
-  paragraph: { marginBottom: 8, textAlign: 'justify', textIndent: 36, lineHeight: 1.3 },
+  paragraph: { marginBottom: 8, textAlign: 'justify', textIndent: 36, lineHeight: 1.3, fontFamily: 'Times-Roman' },
   infoRow: { flexDirection: 'row', marginBottom: 6 },
   infoFields: { flex: 1 },
-  fieldRow: { marginBottom: 2, lineHeight: 1.3 },
+  fieldRow: { marginBottom: 2, lineHeight: 1.3, fontFamily: 'Times-Roman' },
   photoBox: {
     width: 100,
     height: 120,
@@ -36,11 +36,12 @@ const styles = StyleSheet.create({
     fontSize: 7,
     textAlign: 'center',
     textTransform: 'uppercase',
+    fontFamily: 'Times-Roman',
   },
   firmaContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 18 },
   firmaCol: { width: '45%', alignItems: 'center' },
-  firmaRaya: { fontSize: 11, marginBottom: 2 },
-  firmaLabel: { fontSize: 8, textAlign: 'center', textTransform: 'uppercase' },
+  firmaRaya: { fontSize: 11, marginBottom: 2, fontFamily: 'Times-Roman' },
+  firmaLabel: { fontSize: 8, textAlign: 'center', textTransform: 'uppercase', fontFamily: 'Times-Roman' },
 });
 
 interface Props {
@@ -70,7 +71,7 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
     <PDFLayout title="SOLICITUD DE CARTA DE POSTULACIÓN" subtitle="(PRÁCTICAS PROFESIONALES)" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
           {/* Bloque de dirección alineado a la derecha */}
       {textos.cuerpoAddress && (
-        <Text style={{ marginBottom: 10, textAlign: 'right', fontSize: 11, lineHeight: 1.5 }}>
+        <Text style={{ marginBottom: 10, textAlign: 'right', fontSize: 11, lineHeight: 1.5, fontFamily: 'Times-Roman' }}>
           {textos.cuerpoAddress}
         </Text>
       )}

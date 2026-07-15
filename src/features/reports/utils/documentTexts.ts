@@ -74,6 +74,10 @@ Sin otro particular,`,
     cuerpo: `Quien suscribe, MARBELYS DEL VALLE RIVERO, Decana del Núcleo Portuguesa de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA), hace constar por medio de la presente, que el (la) ciudadano (a) {{tutorTitulo}} {{tutorNombreCompleto}}, titular de la Cédula de Identidad Nº {{tutorCi}}, Docente, {{tutorCondicion}}, a tiempo, {{tutorDedicacion}}, se desempeñó como Tutor Académico de la asignatura Pasantía, del (de la) estudiante {{estudianteNombreCompleto}}, titular de la Cédula de Identidad Nº {{estudianteCi}}, cumpliendo un total de {{totalHours}} horas académicas efectuadas en el periodo académico {{periodo}}, comprendido entre las fechas {{inicioLapso}} y {{finLapso}}.
 
 Constancia que se expide a petición de parte interesada, en Guanare, a los {{dia}} días del mes de {{mes}} del {{anio}}.`,
+    firmaCodigo: 'MVR/',
+    firmaNombre: 'MSc. Marbelys del Valle Rivero',
+    firmaCargo: 'Decana del Núcleo Portuguesa',
+    firmaOrden: 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022',
     firma: '___________________________________\nMSc. Marbelys del Valle Rivero\nDecana del Núcleo Portuguesa\nSegún Orden administrativa N° 0005 de fecha 18 de Marzo 2022',
   },
   constancia_tutor_institucional: {

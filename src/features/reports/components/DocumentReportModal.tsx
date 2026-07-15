@@ -664,6 +664,40 @@ const renderTemplate = useCallback(
                     value={editableData.periodo?.endDate || ''}
                     onChange={(e) => handleDataChange('periodo.endDate', e.target.value)}
                   />
+
+                  <div className="border-t border-border-light dark:border-white/10 pt-3 mt-3">
+                    <h5 className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary dark:text-white/60 mb-2">
+                      Sección de Firma
+                    </h5>
+
+                    <CustomInput
+                      label="Código de Referencia"
+                      placeholder="Ej: MVR/"
+                      value={editableTextos.firmaCodigo || ''}
+                      onChange={(e) => handleEditableTextChange('firmaCodigo', e.target.value)}
+                    />
+
+                    <CustomInput
+                      label="Nombre de la Firmante"
+                      placeholder="Ej: MSc. Marbelys del Valle Rivero"
+                      value={editableTextos.firmaNombre || ''}
+                      onChange={(e) => handleEditableTextChange('firmaNombre', e.target.value)}
+                    />
+
+                    <CustomInput
+                      label="Cargo de la Firmante"
+                      placeholder="Ej: Decana del Núcleo Portuguesa"
+                      value={editableTextos.firmaCargo || ''}
+                      onChange={(e) => handleEditableTextChange('firmaCargo', e.target.value)}
+                    />
+
+                    <CustomInput
+                      label="Orden Administrativa"
+                      placeholder="Ej: Según Orden administrativa N° 0005..."
+                      value={editableTextos.firmaOrden || ''}
+                      onChange={(e) => handleEditableTextChange('firmaOrden', e.target.value)}
+                    />
+                  </div>
                 </div>
               )}
 

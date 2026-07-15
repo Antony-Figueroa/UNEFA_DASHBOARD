@@ -1,31 +1,4 @@
-import { StyleSheet, Font } from "@react-pdf/renderer";
-
-// Registro de la fuente Nunito
-Font.register({
-  family: "Nunito",
-  fonts: [
-    {
-      src: "https://fonts.gstatic.com/s/nunito/v32/XRXI3I6Li01BKofiOc5wtlZ2di8HDLshRTM.ttf",
-      fontWeight: "normal",
-      fontStyle: "normal",
-    },
-    {
-      src: "https://fonts.gstatic.com/s/nunito/v32/XRXQ3I6Li01BKofIMN4oYVv_Ek8.ttf",
-      fontWeight: "normal",
-      fontStyle: "italic",
-    },
-    {
-      src: "https://fonts.gstatic.com/s/nunito/v32/XRXI3I6Li01BKofiOc5wtlZ2di8HDFwmRTM.ttf",
-      fontWeight: "bold",
-      fontStyle: "normal",
-    },
-    {
-      src: "https://fonts.gstatic.com/s/nunito/v32/XRXQ3I6Li01BKofIMN7AXVv_Ek8.ttf",
-      fontWeight: "bold",
-      fontStyle: "italic",
-    },
-  ],
-});
+import { StyleSheet } from "@react-pdf/renderer";
 
 /**
  * Sistema de estilos consistentes para los reportes PDF.
@@ -36,7 +9,7 @@ export const pdfStyles = StyleSheet.create({
     paddingTop: 30,
     paddingBottom: 60,
     paddingHorizontal: 35,
-    fontFamily: "Nunito",
+    fontFamily: "Times-Roman",
     fontSize: 11,
     color: "#1C2434", // text-primary
   },
@@ -60,7 +33,7 @@ export const pdfStyles = StyleSheet.create({
   },
   institutionalText: {
     fontSize: 8,
-    fontFamily: "Nunito",
+    fontFamily: "Times-Roman",
     fontWeight: "bold",
     color: "#000000",
     lineHeight: 1.2,
@@ -73,7 +46,7 @@ export const pdfStyles = StyleSheet.create({
   },
   reportTitle: {
     fontSize: 14,
-    fontFamily: "Nunito",
+    fontFamily: "Times-Roman",
     fontWeight: "bold",
     color: "#21486e",
     textTransform: "capitalize",
@@ -103,7 +76,7 @@ export const pdfStyles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: "Nunito",
+    fontFamily: "Times-Roman",
     fontWeight: "bold",
     color: "#1C2434",
     marginBottom: 4,
@@ -120,7 +93,7 @@ export const pdfStyles = StyleSheet.create({
     marginBottom: 4,
   },
   infoLabel: {
-    fontFamily: "Nunito",
+    fontFamily: "Times-Roman",
     fontWeight: "bold",
     width: 100,
   },
@@ -143,14 +116,14 @@ export const pdfStyles = StyleSheet.create({
   },
   tableHeader: {
     backgroundColor: "#F8FAFC",
-    fontFamily: "Nunito",
+    fontFamily: "Times-Roman",
     fontWeight: "bold",
   },
   tableCell: {
     flex: 1,
     padding: 6,
     fontSize: 10,
-    fontFamily: "Nunito",
+    fontFamily: "Times-Roman",
   },
   footer: {
     position: "absolute",
@@ -165,7 +138,7 @@ export const pdfStyles = StyleSheet.create({
     alignItems: "center",
     color: "#64748B",
     fontSize: 9,
-    fontFamily: "Nunito",
+    fontFamily: "Times-Roman",
   },
   footerLeft: {
     flexDirection: "row",
@@ -180,7 +153,7 @@ export const pdfStyles = StyleSheet.create({
   },
   pageNumber: {
     textAlign: "right",
-    fontFamily: "Nunito",
+    fontFamily: "Times-Roman",
   },
   // Variantes para Badges
   badge: {
@@ -188,13 +161,13 @@ export const pdfStyles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
     fontSize: 8,
-    fontFamily: "Nunito",
+    fontFamily: "Times-Roman",
     fontWeight: "bold",
     textAlign: "center",
   },
   badgeText: {
     fontSize: 8,
-    fontFamily: "Nunito",
+    fontFamily: "Times-Roman",
     fontWeight: "bold",
   },
   badgeSuccess: {

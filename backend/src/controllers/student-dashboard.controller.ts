@@ -784,6 +784,65 @@ export const updateStudentProfile = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/**
+ * GET /api/student/practices
+ * Retorna todas las prácticas del estudiante actual con su tipo e institución.
+ * Se usa en StudentReports para detectar si el estudiante tiene múltiples tipos de práctica.
+ */
+export const getStudentPractices = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const supabase = dbManager.getConnection();
+
+    const { data: userData } = await supabase
+      .from('t_user')
+      .select('person_id')
+      .eq('USER_ID', userId)
+      .single();
+
+    if (!userData) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
+    const { data: studentData } = await supabase
+      .from('t_students')
+      .select('STUDENTS_ID')
+      .eq('person_id', userData.person_id)
+      .single();
+
+    if (!studentData) {
+      return res.status(404).json({ success: false, message: 'Estudiante no encontrado' });
+    }
+
+    const { data: practices } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        PRACTICES_STATUS,
+        REGISTRATION_DATE,
+        t_internship_type (NAME),
+        t_institution (INSTITUTION_NAME),
+        t_internships_period (DESCRIPTION)
+      `)
+      .eq('STUDENTS_ID', studentData.STUDENTS_ID)
+      .eq('STATUS', 1)
+      .order('REGISTRATION_DATE', { ascending: false });
+
+    const result = (practices || []).map((p: any) => ({
+      practiceId: p.PROFESSIONAL_PRACTICE_ID,
+      practiceTypeName: p.t_internship_type?.NAME || 'Sin tipo',
+      institutionName: p.t_institution?.INSTITUTION_NAME || '',
+      period: p.t_internships_period?.DESCRIPTION || '',
+      status: p.PRACTICES_STATUS,
+    }));
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('[StudentDashboard] Error getting practices:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener prácticas' });
+  }
+};
+
 export const getAvailableOptions = async (req: AuthRequest, res: Response) => {
   try {
     const supabase = dbManager.getConnection();

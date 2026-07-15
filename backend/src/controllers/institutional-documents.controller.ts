@@ -1239,6 +1239,17 @@ export const getDataEvaluacionConsolidada = async (req: Request, res: Response) 
     const carrera: any = practice.t_career;
     const institucion: any = practice.t_institution;
     const periodo: any = practice.t_internships_period;
+    const practiceType: any = practice.t_internship_type;
+
+    // Verificar si el estudiante tiene múltiples tipos de práctica
+    const { data: allStudentPractices } = await supabase
+      .from('t_professional_practices')
+      .select('INTERNSHIP_TYPE_ID')
+      .eq('STUDENTS_ID', estudiante.STUDENTS_ID)
+      .eq('STATUS', 1);
+    const uniquePracticeTypeIds = [...new Set((allStudentPractices || []).map((p: any) => p.INTERNSHIP_TYPE_ID))];
+    const hasMultiplePracticeTypes = uniquePracticeTypeIds.length > 1;
+    const practiceTypeName = practiceType?.NAME || '';
 
     const tutors = await getPracticeTutors(supabase, practiceId);
     const tutorInst = tutors.find((t: any) => t.tutorType === 'INSTITUCIONAL');
@@ -1324,6 +1335,8 @@ export const getDataEvaluacionConsolidada = async (req: Request, res: Response) 
         practiceId,
         estudiante: formatPersona(estudiante),
         carrera: { nombre: carrera.CAREER_NAME },
+        practiceTypeName,
+        hasMultiplePracticeTypes,
         institucion: institucion ? { nombre: institucion.INSTITUTION_NAME } : null,
         periodo: periodo ? {
           description: periodo.DESCRIPTION || '',

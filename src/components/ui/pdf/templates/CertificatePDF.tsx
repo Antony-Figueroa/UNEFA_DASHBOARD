@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     paddingTop: 30,
     paddingBottom: 40,
     paddingHorizontal: 45,
-    fontFamily: 'Helvetica',
+    fontFamily: 'Times-Roman',
     fontSize: 9,
     color: '#000000',
   },

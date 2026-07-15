@@ -9,7 +9,7 @@ const styles = StyleSheet.create({
     paddingTop: 30,
     paddingBottom: 40,
     paddingHorizontal: 45,
-    fontFamily: 'Helvetica',
+    fontFamily: 'Times-Roman',
     fontSize: 9,
     color: '#000000',
   },
@@ -225,6 +225,8 @@ interface Props {
     practiceId: number;
     estudiante: { ci: string; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string };
     carrera: { nombre: string };
+    practiceTypeName: string;
+    hasMultiplePracticeTypes: boolean;
     institucion: { nombre: string } | null;
     periodo: { description: string; startDate: string; endDate: string } | null;
     department: string | null;
@@ -252,7 +254,7 @@ interface Props {
 const weightToPercent = (w: number) => Math.round(w * 100);
 
 function calcProp(parcial: number, weight: number): string {
-  return ((parcial * weightToPercent(weight)) / 100).toFixed(2);
+  return formatScore((parcial * weightToPercent(weight)) / 100);
 }
 
 function calcSubTotal(parciales: any, weights: any): string {
@@ -260,7 +262,7 @@ function calcSubTotal(parciales: any, weights: any): string {
   if (parciales.institucional !== null) total += (parciales.institucional * weightToPercent(weights.institucional)) / 100;
   if (parciales.academico !== null) total += (parciales.academico * weightToPercent(weights.academico)) / 100;
   if (parciales.comite !== null) total += (parciales.comite * weightToPercent(weights.comite)) / 100;
-  return total.toFixed(2);
+  return formatScore(total);
 }
 
 function formatTutorCompleto(tutor: any): string {
@@ -273,6 +275,21 @@ function formatTutorNombre(tutor: any): string {
   if (!tutor) return 'No asignado';
   return formatNombreCompleto(tutor).toUpperCase();
 }
+
+function getCarreraOrPasantiaLabel(data: Props['data']): string {
+  if (data.hasMultiplePracticeTypes && data.practiceTypeName) {
+    return `PASANTÍA ${data.practiceTypeName.toUpperCase()}`;
+  }
+  return data.carrera.nombre.toUpperCase();
+}
+
+function formatScore(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '';
+  if (Number.isInteger(value)) return value.toString();
+  return value.toFixed(2);
+}
+
+
 
 /* ───────────────────────────────────────────
    Encabezado reusable con Escudo + Logo
@@ -317,8 +334,9 @@ const HeaderFinal = () => (
    ─────────────────────────────────────────── */
 const TOTAL_COMITE = 15;
 
-function PageComite({ data, textos }: Props) {
-  const criterios = data.evaluacionesComite?.[0]?.criterios || [];
+function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: number }) {
+  const comiteEval = data.evaluacionesComite?.[comiteIndex];
+  const criterios = comiteEval?.criterios || [];
   const subtotal = criterios.reduce((acc, c) => acc + (c.score || 0), 0);
 
   return (
@@ -341,7 +359,7 @@ function PageComite({ data, textos }: Props) {
             </View>
             <View style={styles.infoRowLast}>
               <Text style={[styles.infoCellHeader, { width: '14%' }]}>Carrera:</Text>
-              <Text style={[styles.infoCellData, { width: '46%' }]}>{data.carrera.nombre.toUpperCase()}</Text>
+              <Text style={[styles.infoCellData, { width: '46%' }]}>{getCarreraOrPasantiaLabel(data)}</Text>
               <Text style={[styles.infoCellHeader, { width: '20%' }]}>Período Académico:</Text>
               <Text style={[styles.infoCellDataLast, { width: '20%' }]}>{data.periodo?.description}</Text>
             </View>
@@ -384,16 +402,16 @@ function PageComite({ data, textos }: Props) {
                 <Text style={styles.colNum}>{c.itemNumber}</Text>
                 <Text style={styles.colAspect}>{c.description}</Text>
                 <Text style={styles.colRange}>0-20</Text>
-                <Text style={styles.colScore}>{c.score ?? ''}</Text>
+                <Text style={styles.colScore}>{formatScore(c.score)}</Text>
               </View>
             ))}
             <View style={styles.totalRow}>
               <Text style={styles.subtotalLabel}>Subtotal ({TOTAL_COMITE})</Text>
-              <Text style={styles.subtotalValue}>{subtotal.toFixed(2)}</Text>
+              <Text style={styles.subtotalValue}>{formatScore(subtotal)}</Text>
             </View>
           </View>
 
-          <Text style={styles.finalCalcText}>Calificación final = (Subtotal/{TOTAL_COMITE}): {(subtotal / TOTAL_COMITE).toFixed(2)}</Text>
+          <Text style={styles.finalCalcText}>Calificación final = (Subtotal/{TOTAL_COMITE}): {formatScore(subtotal / TOTAL_COMITE)}</Text>
         </View>
 
         {/* Firmas al fondo */}
@@ -447,7 +465,7 @@ function PageTutorAcademico({ data, textos }: Props) {
             </View>
             <View style={styles.infoRow}>
               <Text style={[styles.infoCellHeader, { width: '32%' }]}>Carrera que cursa:</Text>
-              <Text style={[styles.infoCellData, { width: '68%' }]}>{data.carrera.nombre.toUpperCase()}</Text>
+              <Text style={[styles.infoCellData, { width: '68%' }]}>{getCarreraOrPasantiaLabel(data)}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={[styles.infoCellHeader, { width: '32%' }]}>Apellidos y Nombres del Tutor Académico:</Text>
@@ -476,12 +494,12 @@ function PageTutorAcademico({ data, textos }: Props) {
                 <Text style={styles.colNum}>{c.itemNumber}</Text>
                 <Text style={styles.colAspect}>{c.description}</Text>
                 <Text style={styles.colRange}>0-20</Text>
-                <Text style={styles.colScore}>{c.score ?? ''}</Text>
+                <Text style={styles.colScore}>{formatScore(c.score)}</Text>
               </View>
             ))}
             <View style={styles.totalRow}>
               <Text style={styles.subtotalLabel}>Subtotal ({TOTAL_ACADEMICO})</Text>
-              <Text style={styles.subtotalValue}>{subtotal.toFixed(2)}</Text>
+              <Text style={styles.subtotalValue}>{formatScore(subtotal)}</Text>
             </View>
           </View>
 
@@ -524,7 +542,7 @@ function PageTutorInstitucional({ data, textos }: Props) {
         </View>
         <View style={styles.infoRow}>
           <Text style={[styles.infoCellHeader, { width: '24%' }]}>Carrera que cursa:</Text>
-          <Text style={[styles.infoCellData, { width: '36%' }]}>{data.carrera.nombre.toUpperCase()}</Text>
+          <Text style={[styles.infoCellData, { width: '36%' }]}>{getCarreraOrPasantiaLabel(data)}</Text>
           <Text style={[styles.infoCellHeader, { width: '16%' }]}>Período:</Text>
           <Text style={[styles.infoCellDataLast, { width: '24%' }]}>{data.periodo?.description}</Text>
         </View>
@@ -563,13 +581,12 @@ function PageTutorInstitucional({ data, textos }: Props) {
           <View style={idx === criterios.length - 1 ? styles.tRowLast : styles.tRow} key={c.itemNumber}>
             <Text style={styles.colNum}>{c.itemNumber}</Text>
             <Text style={styles.colAspect}>{c.description}</Text>
-            <Text style={styles.colRange}>0-20</Text>
-            <Text style={styles.colScore}>{c.score ?? ''}</Text>
-          </View>
-        ))}
-        <View style={styles.totalRow}>
-          <Text style={styles.subtotalLabel}>Subtotal ({TOTAL_INSTITUCIONAL})</Text>
-          <Text style={styles.subtotalValue}>{subtotal.toFixed(2)}</Text>
+            <Text style={styles.colRange}>0-20</Text>                <Text style={styles.colScore}>{formatScore(c.score)}</Text>
+              </View>
+            ))}
+            <View style={styles.totalRow}>
+              <Text style={styles.subtotalLabel}>Subtotal ({TOTAL_INSTITUCIONAL})</Text>
+              <Text style={styles.subtotalValue}>{formatScore(subtotal)}</Text>
         </View>
         </View>
 
@@ -617,7 +634,7 @@ function PageEvaluacionFinal({ data, textos }: Props) {
         <View style={styles.gridRow}>
           <View style={[styles.gridCell, { width: '100%' }]}>
             <Text style={styles.cellHeader}>CARRERA QUE CURSA:</Text>
-            <Text style={styles.cellData}>{data.carrera.nombre.toUpperCase()}</Text>
+            <Text style={styles.cellData}>{getCarreraOrPasantiaLabel(data)}</Text>
           </View>
         </View>
         <View style={[styles.gridRow, { borderBottomWidth: 0 }]}>
@@ -648,7 +665,7 @@ function PageEvaluacionFinal({ data, textos }: Props) {
         <View style={styles.tRowFinal}>
           <Text style={styles.colA}>A. Por parte del (de la) Tutor (a) Institucional.</Text>
           <Text style={styles.colB}>{weightToPercent(evaluacionFinal.weights.institucional)} %</Text>
-          <Text style={styles.colC}>{evaluacionFinal.parciales.institucional?.toFixed(2) || ''}</Text>
+          <Text style={styles.colC}>{formatScore(evaluacionFinal.parciales.institucional)}</Text>
           <Text style={styles.colD}>
             {evaluacionFinal.parciales.institucional !== null ? calcProp(evaluacionFinal.parciales.institucional, evaluacionFinal.weights.institucional) : ''}
           </Text>
@@ -656,7 +673,7 @@ function PageEvaluacionFinal({ data, textos }: Props) {
         <View style={styles.tRowFinal}>
           <Text style={styles.colA}>B. Por parte del (dela) Tutor (a) Académico</Text>
           <Text style={styles.colB}>{weightToPercent(evaluacionFinal.weights.academico)} %</Text>
-          <Text style={styles.colC}>{evaluacionFinal.parciales.academico?.toFixed(2) || ''}</Text>
+          <Text style={styles.colC}>{formatScore(evaluacionFinal.parciales.academico)}</Text>
           <Text style={styles.colD}>
             {evaluacionFinal.parciales.academico !== null ? calcProp(evaluacionFinal.parciales.academico, evaluacionFinal.weights.academico) : ''}
           </Text>
@@ -664,7 +681,7 @@ function PageEvaluacionFinal({ data, textos }: Props) {
         <View style={styles.tRowFinal}>
           <Text style={styles.colA}>C. Por parte del Comité Evaluador</Text>
           <Text style={styles.colB}>{weightToPercent(evaluacionFinal.weights.comite)} %</Text>
-          <Text style={styles.colC}>{evaluacionFinal.parciales.comite?.toFixed(2) || ''}</Text>
+          <Text style={styles.colC}>{formatScore(evaluacionFinal.parciales.comite)}</Text>
           <Text style={styles.colD}>
             {evaluacionFinal.parciales.comite !== null ? calcProp(evaluacionFinal.parciales.comite, evaluacionFinal.weights.comite) : ''}
           </Text>
@@ -684,7 +701,7 @@ function PageEvaluacionFinal({ data, textos }: Props) {
           <View style={styles.colMergedLeft} />
           <Text style={[styles.colC, { textAlign: 'right' }]}>Calificación final:</Text>
           <Text style={styles.colD}>
-            {evaluacionFinal.notaFinal.toFixed(2)}
+            {Math.round(evaluacionFinal.notaFinal)}
           </Text>
         </View>
       </View>
@@ -730,9 +747,14 @@ function PageEvaluacionFinal({ data, textos }: Props) {
    Componente Principal
    ─────────────────────────────────────────── */
 export function EvaluacionConsolidadaPDF({ data, textos }: Props) {
+  // Generar una página por cada miembro del comité evaluador
+  const committeePages = data.evaluacionesComite.map((_, idx) => (
+    <PageComite key={`comite-${idx}`} data={data} textos={textos} comiteIndex={idx} />
+  ));
+
   return (
     <Document title="EVALUACIÓN CONSOLIDADA DE LA PRÁCTICA PROFESIONAL">
-      <PageComite data={data} textos={textos} />
+      {committeePages}
       <PageTutorAcademico data={data} textos={textos} />
       <PageTutorInstitucional data={data} textos={textos} />
       <PageEvaluacionFinal data={data} textos={textos} />

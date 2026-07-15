@@ -6,6 +6,7 @@ import {
   getRequestTypes,
   getStudentRequests,
   getStudentTracking,
+  getStudentPractices,
   getAvailableOptions,
   createStudentRequest,
   updateStudentProfile
@@ -21,6 +22,7 @@ router.get('/profile', getStudentProfile);
 router.patch('/profile', updateStudentProfile);
 router.get('/request-types', getRequestTypes);
 router.get('/tracking', getStudentTracking);
+router.get('/practices', getStudentPractices);
 router.get('/requests', getStudentRequests);
 router.post('/requests', createStudentRequest);
 router.get('/available-options', getAvailableOptions);

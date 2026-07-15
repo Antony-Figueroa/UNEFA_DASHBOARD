@@ -53,8 +53,20 @@ export default function ReportsPage() {
 
   const [paginationInfo, setPaginationInfo] = useState<{ page: number; totalPages: number; totalRecords: number } | null>(null);
   const activeReportConfigRef = useRef<{ type: string; periodNum?: number } | null>(null);
+  const periodsRef = useRef<any[]>([]);
 
   const { fetchData: fetchReportData, exportExcel } = useReports();
+
+  /** Resuelve el PERIOD_ID numérico a partir de la descripción del período */
+  const resolvePeriodId = useCallback((desc: string | undefined): number | undefined => {
+    if (!desc) return undefined;
+    const found = periodsRef.current.find(
+      (p: any) => p.description === desc || p.DESCRIPTION === desc
+    );
+    if (!found) return undefined;
+    const rawId = found.PERIOD_ID ?? found.periodId;
+    return rawId !== undefined ? Number(rawId) : undefined;
+  }, []);
 
   /** Descarga un blob como archivo */
   const downloadBlob = useCallback((blob: Blob, filename: string) => {
@@ -84,6 +96,7 @@ export default function ReportsPage() {
           label: p.description
         }))
       );
+      periodsRef.current = apiPeriods || [];
       setCareerOptions(
         (Array.isArray(careers) ? careers : (careers as any)?.data || [])
           .map((c: any) => ({
@@ -110,7 +123,7 @@ export default function ReportsPage() {
     const config = getReportConfig(type);
     if (!config) return;
     try {
-      const periodNum = periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined;
+      const periodNum = resolvePeriodId(periodFilter || undefined);
       const result = await fetchReportData(type, periodNum, undefined, page, limit, careerIds);
       if (!result?.data) {
         addToast({ variant: "error", title: "Sin datos", message: "No se encontraron datos" });
@@ -122,7 +135,7 @@ export default function ReportsPage() {
       addToast(TOAST.loadError());
       return null;
     }
-  }, [periodFilter, fetchReportData]);
+  }, [periodFilter, fetchReportData, resolvePeriodId]);
 
   const handleViewReport = useCallback(async (type: string) => {
     if (type === "proyeccion-pasantias") {
@@ -152,7 +165,7 @@ export default function ReportsPage() {
       setTableData(loaded.data);
       const totalPages = loaded.meta?.total ? Math.ceil(loaded.meta.total / (loaded.meta?.limit || 50)) : 1;
       setPaginationInfo({ page: 0, totalPages, totalRecords: loaded.meta?.total || loaded.data.length });
-      activeReportConfigRef.current = { type, periodNum: periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined };
+      activeReportConfigRef.current = { type, periodNum: resolvePeriodId(periodFilter || undefined) };
       setActiveReportId(type as ReportType);
       setIsTableModalOpen(true);
     } else {
@@ -182,7 +195,7 @@ export default function ReportsPage() {
     // ponytail: sync parent state so MultiSelect reflects selection
     setCareerIdsFilter(careerIds);
     if (period !== undefined) setPeriodFilter(period);
-    const periodNum = period ? parseInt(period.split('-')[0]) : undefined;
+    const periodNum = resolvePeriodId(period || undefined);
     const effectiveCareerIds = careerIds.length > 0 ? careerIds : undefined;
     try {
       const result = await fetchReportData(ref.type, periodNum, undefined, 0, 50, effectiveCareerIds);
@@ -196,7 +209,7 @@ export default function ReportsPage() {
     } catch (error) {
       addToast(TOAST.loadError());
     }
-  }, [fetchReportData]);
+  }, [fetchReportData, resolvePeriodId]);
 
   const handleExportExcel = useCallback(async (type: string) => {
     if (type === "proyeccion-pasantias") {
@@ -210,7 +223,7 @@ export default function ReportsPage() {
 
     setLoadingExcelId(type);
     try {
-      const periodNum = periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined;
+      const periodNum = resolvePeriodId(periodFilter || undefined);
       const effectiveCareerIds = careerIdsFilter.length > 0 ? careerIdsFilter : undefined;
       const label = periodFilter || "Todos";
       const safeLabel = label.replace(/\s+/g, '_');
@@ -227,13 +240,13 @@ export default function ReportsPage() {
     } finally {
       setLoadingExcelId(null);
     }
-  }, [periodFilter, downloadBlob, careerIdsFilter]);
+  }, [periodFilter, downloadBlob, careerIdsFilter, resolvePeriodId]);
 
   const exportTableToExcel = async (data: any[], fileName: string) => {
     try {
       const config = getReportConfig(activeReportId);
       if (!config) return;
-      const periodNum = periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined;
+      const periodNum = resolvePeriodId(periodFilter || undefined);
       const effectiveCareerIds = careerIdsFilter.length > 0 ? careerIdsFilter : undefined;
       const blob = await reportsService.exportReportExcel(activeReportId, periodNum, undefined, effectiveCareerIds);
       downloadBlob(blob, `${fileName}.xlsx`);

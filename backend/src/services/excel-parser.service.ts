@@ -113,7 +113,23 @@ export const normalizeCedula = (prefix: string, number: string): string => {
  * Calcula la edad
  */
 export const calculateAge = (birthDate: string): number => {
-  const birth = new Date(birthDate);
+  let birth: Date;
+  const dateStr = birthDate.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    birth = new Date(dateStr);
+  } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    const [d, m, y] = dateStr.split('/');
+    birth = new Date(`${y}-${m}-${d}`);
+  } else if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+    const [d, m, y] = dateStr.split('-');
+    birth = new Date(`${y}-${m}-${d}`);
+  } else if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateStr)) {
+    const [d, m, y] = dateStr.split('.');
+    birth = new Date(`${y}-${m}-${d}`);
+  } else {
+    birth = new Date(dateStr);
+  }
+  
   if (isNaN(birth.getTime())) return 0;
   
   const today = new Date();
@@ -388,11 +404,28 @@ export const validateRow = (
   if (!row.birthDate) {
     messages.push('Fecha de nacimiento requerida');
   } else {
-    const birthDate = new Date(row.birthDate);
+    // Aceptar YYYY-MM-DD o DD/MM/YYYY
+    let birthDate: Date;
+    const dateStr = row.birthDate.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      birthDate = new Date(dateStr);
+    } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+      const [d, m, y] = dateStr.split('/');
+      birthDate = new Date(`${y}-${m}-${d}`);
+    } else if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+      const [d, m, y] = dateStr.split('-');
+      birthDate = new Date(`${y}-${m}-${d}`);
+    } else if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateStr)) {
+      const [d, m, y] = dateStr.split('.');
+      birthDate = new Date(`${y}-${m}-${d}`);
+    } else {
+      birthDate = new Date(dateStr);
+    }
+    
     if (isNaN(birthDate.getTime())) {
       messages.push('Fecha de nacimiento inválida');
     } else {
-      age = calculateAge(row.birthDate);
+      age = calculateAge(dateStr);
       if (age < 16) {
         messages.push(`El estudiante debe tener al menos 16 años (tiene ${age} años)`);
       }
@@ -453,6 +486,152 @@ export const validateRow = (
     age,
     originalRow: row
   };
+};
+
+/**
+ * Auto-formatea/normaliza una fila corrigiendo errores comunes
+ */
+export const autoFormatRow = (
+  row: StudentImportRow,
+  config: TemplateConfig
+): StudentImportRow => {
+  const formatted = { ...row };
+
+  // 1. Cédula: normalizar prefijo y limpiar número
+  if (formatted.cedulaPrefix || formatted.cedulaNumber) {
+    const validPrefixes = config.prefixes.map(p => (p.abbreviation || p.name).toUpperCase());
+    const prefix = formatted.cedulaPrefix?.toUpperCase().trim() || '';
+    if (prefix && validPrefixes.includes(prefix)) {
+      formatted.cedulaPrefix = prefix;
+    } else if (prefix) {
+      // Intentar mapear por nombre
+      const matched = config.prefixes.find(p => 
+        p.name.toUpperCase().includes(prefix) || prefix.includes(p.name.toUpperCase())
+      );
+      formatted.cedulaPrefix = matched?.abbreviation || matched?.name || 'V';
+    } else {
+      formatted.cedulaPrefix = 'V';
+    }
+    formatted.cedulaNumber = formatted.cedulaNumber?.replace(/\D/g, '') || '';
+  }
+
+  // 2. Nombres: capitalizar correctamente
+  const capitalize = (str?: string) => 
+    str?.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) || '';
+  
+  formatted.firstName = capitalize(formatted.firstName);
+  formatted.middleName = formatted.middleName ? capitalize(formatted.middleName) : undefined;
+  formatted.lastName = capitalize(formatted.lastName);
+  formatted.secondLastName = formatted.secondLastName ? capitalize(formatted.secondLastName) : undefined;
+
+  // 3. Sexo: normalizar a M/F
+  if (formatted.sex) {
+    const sexUpper = formatted.sex.toUpperCase().trim();
+    if (['M', 'MASCULINO', 'MALE', 'HOMBRE'].includes(sexUpper)) formatted.sex = 'M';
+    else if (['F', 'FEMENINO', 'FEMALE', 'MUJER'].includes(sexUpper)) formatted.sex = 'F';
+    else {
+      const validSexes = config.sexes.map(s => (s.abbreviation || s.name).toUpperCase());
+      const matched = config.sexes.find(s => 
+        (s.abbreviation || s.name).toUpperCase() === sexUpper ||
+        s.name.toUpperCase().includes(sexUpper)
+      );
+      formatted.sex = matched?.abbreviation || matched?.name || '';
+    }
+  }
+
+  // 4. Fecha nacimiento: normalizar a DD/MM/YYYY
+  if (formatted.birthDate) {
+    const dateStr = formatted.birthDate.trim();
+    // Intentar varios formatos
+    const formats = [
+      /^\d{4}-\d{2}-\d{2}$/,     // YYYY-MM-DD
+      /^\d{2}\/\d{2}\/\d{4}$/,   // DD/MM/YYYY
+      /^\d{2}-\d{2}-\d{4}$/,     // DD-MM-YYYY
+      /^\d{2}\.\d{2}\.\d{4}$/,   // DD.MM.YYYY
+    ];
+    let parsed: Date | null = null;
+    if (formats[0].test(dateStr)) {
+      parsed = new Date(dateStr);
+    } else if (formats[1].test(dateStr)) {
+      const [d, m, y] = dateStr.split('/');
+      parsed = new Date(`${y}-${m}-${d}`);
+    } else if (formats[2].test(dateStr)) {
+      const [d, m, y] = dateStr.split('-');
+      parsed = new Date(`${y}-${m}-${d}`);
+    } else if (formats[3].test(dateStr)) {
+      const [d, m, y] = dateStr.split('.');
+      parsed = new Date(`${y}-${m}-${d}`);
+    }
+    if (parsed && !isNaN(parsed.getTime())) {
+      const day = String(parsed.getDate()).padStart(2, '0');
+      const month = String(parsed.getMonth() + 1).padStart(2, '0');
+      const year = parsed.getFullYear();
+      formatted.birthDate = `${day}/${month}/${year}`;
+    }
+  }
+
+  // 5. Email: lowercase y trim
+  if (formatted.email) {
+    formatted.email = formatted.email.toLowerCase().trim();
+  }
+
+  // 6. Teléfono: limpiar y separar prefijo/número
+  if (formatted.phonePrefix || formatted.phoneNumber) {
+    const fullPhone = `${formatted.phonePrefix || ''}${formatted.phoneNumber || ''}`.replace(/\D/g, '');
+    const validPrefixes = config.phonePrefixes.map(p => (p.abbreviation || p.name).replace(/\D/g, ''));
+    let matchedPrefix = '';
+    for (const vp of validPrefixes) {
+      if (fullPhone.startsWith(vp)) {
+        matchedPrefix = vp;
+        break;
+      }
+    }
+    if (matchedPrefix) {
+      formatted.phonePrefix = matchedPrefix;
+      formatted.phoneNumber = fullPhone.slice(matchedPrefix.length);
+    } else if (fullPhone.length >= 7) {
+      // Asumir prefijo de 4 dígitos si no coincide
+      formatted.phonePrefix = fullPhone.slice(0, 4);
+      formatted.phoneNumber = fullPhone.slice(4);
+    }
+  }
+
+  // 7. Estado civil: normalizar contra opciones válidas
+  if (formatted.civilStatus) {
+    const civilResult = normalizeValue(formatted.civilStatus, config.civilStatuses);
+    if (civilResult.matched) {
+      formatted.civilStatus = civilResult.value;
+    }
+  }
+
+  // 8. Tipo estudiante: normalizar
+  if (formatted.studentType) {
+    const typeResult = normalizeValue(formatted.studentType, config.studentTypes);
+    if (typeResult.matched) {
+      formatted.studentType = typeResult.value;
+    }
+  }
+
+  // 9. Rango militar: normalizar
+  if (formatted.militaryRank) {
+    const rankResult = normalizeValue(formatted.militaryRank, config.militaryRanks);
+    if (rankResult.matched) {
+      formatted.militaryRank = rankResult.value;
+    }
+  }
+
+  // 10. Trabaja: normalizar a SI/NO
+  if (formatted.works) {
+    const workUpper = formatted.works.toUpperCase().trim();
+    if (['SI', 'SÍ', 'YES', 'TRUE', '1'].includes(workUpper)) formatted.works = 'SI';
+    else if (['NO', 'NOT', 'FALSE', '0'].includes(workUpper)) formatted.works = 'NO';
+    else {
+      const workResult = normalizeValue(formatted.works, config.workOptions);
+      if (workResult.matched) formatted.works = workResult.value;
+    }
+  }
+
+  return formatted;
 };
 
 /**

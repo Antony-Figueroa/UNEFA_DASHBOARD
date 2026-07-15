@@ -329,6 +329,21 @@ export const downloadTemplate = async (): Promise<Blob> => {
 };
 
 /**
+ * Auto-formatea una fila para corregir errores comunes
+ * @param row - Fila a formatear
+ * @returns Fila formateada y su validación
+ */
+export const autoFormatRow = async (row: any): Promise<{ row: any; validation: ImportValidationRow }> => {
+  try {
+    const response = await apiClient.post(`${API_URL}/import/auto-format`, { row });
+    return response.data;
+  } catch (error: any) {
+    console.error("[studentsService] Error al auto-formatear:", error);
+    throw error;
+  }
+};
+
+/**
  * Descarga estudiantes en el formato seleccionado.
  * @param format - 'json' (completo con relaciones), 'sql' (INSERTs), 'csv' (plano), 'xlsx' (importable)
  */

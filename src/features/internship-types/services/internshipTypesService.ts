@@ -150,7 +150,7 @@ export const mapToOptions = (types: InternshipType[]): InternshipTypeOption[] =>
     const label = t.name.toUpperCase();
     return {
       id: t.id,
-      value: label,
+      value: String(t.id), // Usar ID como value para que el filtrado funcione
       label: label,
       text: label,
     };

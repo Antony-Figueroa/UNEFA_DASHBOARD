@@ -69,8 +69,8 @@ interface InstitutionModalProps {
   onEditResponsible?: (data: UpdateInstitutionalResponsiblePayload) => Promise<void>;
   /** Institution options for responsible modal */
   institutionOptions?: { value: string; label: string }[];
-  /** Career options for institution (with priorities for filtering) */
-  careerOptions?: { value: string; text: string; internshipPriorities?: string[] }[];
+  /** Career options for institution (with type IDs for filtering) */
+  careerOptions?: { value: string; text: string; internshipTypeIds?: string[] }[];
   /** Options for internship types (from t_internship_type table) - debe incluir id para filtrado */
   internshipTypeOptions?: { value: string; label: string; id?: number }[];
   /** Callback when a new career is created from this modal */
@@ -500,13 +500,14 @@ export default function InstitutionModal({
     }
 
     if (!selectedInternshipType) {
-      return [];
+      // Si no hay tipo de práctica seleccionado, mostrar todas las carreras
+      return careerOptions;
     }
 
     // El selectedInternshipType es el ID del tipo de práctica (1, 2, o 3)
     // Filtrar carreras que tienen este tipo de práctica en su campo internshipTypeIds
     const filtered = careerOptions.filter(career => {
-      const typeIds = career.internshipPriorities || [];
+      const typeIds = career.internshipTypeIds || [];
       // Comparar usando string - ambos deben ser string para el includes
       return typeIds.includes(String(selectedInternshipType));
     });

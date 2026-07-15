@@ -31,6 +31,7 @@ import {
   validateImportJson,
   executeImportJson,
   downloadTemplate,
+  autoFormatRow,
   ImportValidationRow,
   ImportExecuteResponse
 } from "../services/studentsService";
@@ -165,6 +166,25 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Error desconocido";
       setError("Error al re-validar: " + message);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const handleAutoFix = async () => {
+    if (!editingRow) return;
+    setIsValidating(true);
+    setError(null);
+    try {
+      const result = await autoFormatRow(editingRow);
+      setEditingRow(result.row);
+      // Mostrar la validación resultante en los mensajes
+      if (result.validation?.messages?.length > 0) {
+        setError(result.validation.messages.join(", "));
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error desconocido";
+      setError("Error al auto-corregir: " + message);
     } finally {
       setIsValidating(false);
     }
@@ -364,9 +384,10 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
 
       {/* Tabla de preview con más datos */}
       {validationRows.length > 0 && (
-        <div className="border rounded-lg overflow-hidden max-h-[500px] overflow-x-auto">
-                      <table className="w-full text-xs min-w-[900px]">
-            <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+        <div className="border rounded-lg overflow-hidden">
+          <div className="max-h-[500px] overflow-y-auto overflow-x-auto">
+                    <table className="w-full text-xs min-w-[900px]">
+              <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
               <tr>
                 <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">#</th>
                 <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Cédula</th>
@@ -412,7 +433,8 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
             </div>
           )}
         </div>
-      )}
+      </div>
+    )}
 
       {/* Error display */}
       {error && (
@@ -453,6 +475,31 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
             </ul>
           </div>
         )}
+
+        <div className="flex gap-2 mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleAutoFix}
+            disabled={isValidating}
+            className="flex items-center gap-1"
+          >
+            {isValidating ? (
+              <>
+                <RotateCw className="w-3 h-3 animate-spin" />
+                Corrigiendo...
+              </>
+            ) : (
+              <>
+                <RotateCw className="w-3 h-3" />
+                Auto-corregir
+              </>
+            )}
+          </Button>
+          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Formatea: cédula, nombres, email, fechas, teléfonos y listas desplegables
+          </span>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1">
           <div>

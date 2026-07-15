@@ -170,7 +170,7 @@ export default function EnrollmentPage() {
         careers.filter(c => c.status).map(c => ({ 
             value: String(c.careerId), 
             text: toTitleCase(c.careerName),
-            internshipPriorities: c.internshipTypeIds || []
+            internshipTypeIds: c.internshipTypeIds || []
         })),
     [careers]);
 

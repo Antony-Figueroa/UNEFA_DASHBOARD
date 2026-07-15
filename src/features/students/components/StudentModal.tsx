@@ -636,8 +636,9 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         Object.entries(finalData).forEach(([key, values]) => {
           if (!values) return;
+          const normalizedKey = key.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           mappedOptions[key] = values.map(v => {
-            const useAbbreviation = (key === "Nacionalidad" || key === "PREFIJO") && v.abbreviation;
+            const useAbbreviation = (normalizedKey === "NACIONALIDAD" || normalizedKey === "PREFIJO") && v.abbreviation;
             const value = useAbbreviation ? v.abbreviation.toUpperCase() : v.name.toUpperCase();
             return { value, label: value };
           });
@@ -1197,16 +1198,16 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                   render={({ field }) => (
                     <CustomSelect
                       id="civilStatus"
-                      options={(options["Registro Civil"] || []).map(o => ({ value: String(o.value), label: o.label }))}
-                      placeholder="Seleccionar"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={String(field.value || "")}
-                      disabled={viewOnlyMode}
-                      error={!!errors.civilStatus}
-                      success={isFieldValid('civilStatus')}
-                      onAddNew={openAddValueModal ? () => openAddValueModal("Registro Civil", "civilStatus", "Agregar Estado Civil") : undefined}
-                      addNewLabel="Agregar Estado Civil"
+options={(options["Registro Civil"] || []).map(o => ({ value: String(o.value), label: o.label }))}
+                       placeholder="Seleccionar"
+                       onChange={field.onChange}
+                       onBlur={field.onBlur}
+                       value={String(field.value || "")}
+                       disabled={viewOnlyMode}
+                       error={!!errors.civilStatus}
+                       success={isFieldValid('civilStatus')}
+                       onAddNew={openAddValueModal ? () => openAddValueModal("Registro Civil", "civilStatus", "Agregar Estado Civil") : undefined}
+                       addNewLabel="Agregar Estado Civil"
                     />
                   )}
                 />
@@ -1569,6 +1570,17 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         onClose={() => !confirmSaving && setConfirmSaveOpen(false)}
         onConfirm={async () => {
           if (confirmSaving) return;
+          
+          // Validar dirección antes de guardar estudiante
+          if (inlineAddress.streetAddress && !inlineAddress.parroquiaId) {
+            addToast({
+              variant: "error",
+              title: "Dirección incompleta",
+              message: "Debe seleccionar Estado, Municipio y Parroquia para la dirección de residencia.",
+            });
+            return;
+          }
+          
           setConfirmSaving(true);
           try {
             if (pendingSave) {

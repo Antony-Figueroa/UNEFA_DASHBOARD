@@ -19,823 +19,193 @@
 
 CREATE SEQUENCE IF NOT EXISTS "t_activity_logs_ACTIVITY_LOG_ID_seq" START WITH 1;
 SELECT setval('"t_activity_logs_ACTIVITY_LOG_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_address_address_id_seq" START WITH 1;
 SELECT setval('"t_address_address_id_seq"', 32, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_auth_log_ID_seq" START WITH 1;
 SELECT setval('"t_auth_log_ID_seq"', 613, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_career_CAREER_ID_seq" START WITH 1;
 SELECT setval('"t_career_CAREER_ID_seq"', 7, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_career_internship_type_ID_CAREER_INTERNSHIP_TYPE_ID_seq" START WITH 1;
 SELECT setval('"t_career_internship_type_ID_CAREER_INTERNSHIP_TYPE_ID_seq"', 22, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_change_log_CHANGE_LOG_ID_seq" START WITH 1;
 SELECT setval('"t_change_log_CHANGE_LOG_ID_seq"', 871, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_columns_COLUMN_ID_seq" START WITH 1;
 SELECT setval('"t_columns_COLUMN_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_committee_assignment_ASSIGNMENT_ID_seq" START WITH 1;
 SELECT setval('"t_committee_assignment_ASSIGNMENT_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_config_CONFIG_ID_seq" START WITH 1;
 SELECT setval('"t_config_CONFIG_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_coordinadores_COORDINADOR_ID_seq" START WITH 1;
 SELECT setval('"t_coordinadores_COORDINADOR_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_credential_tokens_id_seq" START WITH 1;
 SELECT setval('"t_credential_tokens_id_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_culmination_reversals_REVERSAL_ID_seq" START WITH 1;
 SELECT setval('"t_culmination_reversals_REVERSAL_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_email_templates_id_seq" START WITH 1;
 SELECT setval('"t_email_templates_id_seq"', 8, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_enrollment_field_changes_CHANGE_ID_seq" START WITH 1;
 SELECT setval('"t_enrollment_field_changes_CHANGE_ID_seq"', 13, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_evaluation_EVALUATION_ID_seq" START WITH 1;
 SELECT setval('"t_evaluation_EVALUATION_ID_seq"', 46, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_evaluation_criteria_CRITERIA_ID_seq" START WITH 1;
 SELECT setval('"t_evaluation_criteria_CRITERIA_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_evaluation_detail_DETAIL_ID_seq" START WITH 1;
 SELECT setval('"t_evaluation_detail_DETAIL_ID_seq"', 617, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_institution_INSTITUTION_ID_seq" START WITH 1;
 SELECT setval('"t_institution_INSTITUTION_ID_seq"', 20, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_institution_address_institution_address_id_seq" START WITH 1;
 SELECT setval('"t_institution_address_institution_address_id_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_institution_career_INSTITUTION_CAREER_ID_seq" START WITH 1;
 SELECT setval('"t_institution_career_INSTITUTION_CAREER_ID_seq"', 17, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_institution_internship_type_INSTITUTION_INTERNSHIP_TYPE_ID_se" START WITH 1;
 SELECT setval('"t_institution_internship_type_INSTITUTION_INTERNSHIP_TYPE_ID_se"', 5, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_institution_manager_MANAGER_ID_seq" START WITH 1;
 SELECT setval('"t_institution_manager_MANAGER_ID_seq"', 6, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_institution_manager_institution_INSTITUTION_MANAGER_INSTITUTI" START WITH 1;
 SELECT setval('"t_institution_manager_institution_INSTITUTION_MANAGER_INSTITUTI"', 5, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_internship_type_INTERNSHIP_TYPE_ID_seq" START WITH 1;
 SELECT setval('"t_internship_type_INTERNSHIP_TYPE_ID_seq"', 4, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_internships_period_PERIOD_ID_seq" START WITH 1;
 SELECT setval('"t_internships_period_PERIOD_ID_seq"', 10, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_key_history_KEY_HISTORY_ID_seq" START WITH 1;
 SELECT setval('"t_key_history_KEY_HISTORY_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_landing_config_config_id_seq" START WITH 1;
 SELECT setval('"t_landing_config_config_id_seq"', 24, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_list_LIST_ID_seq" START WITH 1;
 SELECT setval('"t_list_LIST_ID_seq"', 1, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_municipio_municipio_id_seq" START WITH 1;
 SELECT setval('"t_municipio_municipio_id_seq"', 335, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_notifications_NOTIFICATION_ID_seq" START WITH 1;
 SELECT setval('"t_notifications_NOTIFICATION_ID_seq"', 219, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_nucleus_career_nucleus_career_id_seq" START WITH 1;
 SELECT setval('"t_nucleus_career_nucleus_career_id_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_operation_OPERATION_ID_seq" START WITH 1;
 SELECT setval('"t_operation_OPERATION_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_parroquia_parroquia_id_seq" START WITH 1;
 SELECT setval('"t_parroquia_parroquia_id_seq"', 1139, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_password_history_HISTORY_ID_seq" START WITH 1;
 SELECT setval('"t_password_history_HISTORY_ID_seq"', 3, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_permissions_PERMISSIONS_ID_seq" START WITH 1;
 SELECT setval('"t_permissions_PERMISSIONS_ID_seq"', 34535, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_person_address_person_address_id_seq" START WITH 1;
 SELECT setval('"t_person_address_person_address_id_seq"', 31, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_person_merge_log_log_id_seq" START WITH 1;
 SELECT setval('"t_person_merge_log_log_id_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_persons_person_id_seq" START WITH 1;
 SELECT setval('"t_persons_person_id_seq"', 96, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_practice_visits_VISIT_ID_seq" START WITH 1;
 SELECT setval('"t_practice_visits_VISIT_ID_seq"', 13, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_preset_questions_PRESET_QUESTION_ID_seq" START WITH 1;
 SELECT setval('"t_preset_questions_PRESET_QUESTION_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_professional_practices_PROFESSIONAL_PRACTICE_ID_seq" START WITH 1;
 SELECT setval('"t_professional_practices_PROFESSIONAL_PRACTICE_ID_seq"', 26, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_professional_practices_tuto_PROFESSIONAL_PRACTICES_TUTOR__seq" START WITH 1;
 SELECT setval('"t_professional_practices_tuto_PROFESSIONAL_PRACTICES_TUTOR__seq"', 37, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_prospect_list_items_ITEM_ID_seq" START WITH 1;
 SELECT setval('"t_prospect_list_items_ITEM_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_prospect_lists_LIST_ID_seq" START WITH 1;
 SELECT setval('"t_prospect_lists_LIST_ID_seq"', 1, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_recovery_tokens_TOKEN_ID_seq" START WITH 1;
 SELECT setval('"t_recovery_tokens_TOKEN_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_report_text_templates_TEMPLATE_ID_seq" START WITH 1;
 SELECT setval('"t_report_text_templates_TEMPLATE_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_request_types_REQUEST_TYPE_ID_seq" START WITH 1;
 SELECT setval('"t_request_types_REQUEST_TYPE_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_roles_ID_ROLS_seq" START WITH 1;
 SELECT setval('"t_roles_ID_ROLS_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_security_questions_SECURITY_QUESTIONS_ID_seq" START WITH 1;
 SELECT setval('"t_security_questions_SECURITY_QUESTIONS_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_session_SESSION_ID_seq" START WITH 1;
 SELECT setval('"t_session_SESSION_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_session_attempts_ATTEMPT_ID_seq" START WITH 1;
 SELECT setval('"t_session_attempts_ATTEMPT_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_session_history_SESSION_HISTORY_ID_seq" START WITH 1;
 SELECT setval('"t_session_history_SESSION_HISTORY_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_student_documents_DOCUMENT_ID_seq" START WITH 1;
 SELECT setval('"t_student_documents_DOCUMENT_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_student_requests_REQUEST_ID_seq" START WITH 1;
 SELECT setval('"t_student_requests_REQUEST_ID_seq"', 9, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_students_STUDENTS_ID_seq" START WITH 1;
 SELECT setval('"t_students_STUDENTS_ID_seq"', 83, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_system_institution_system_institution_id_seq" START WITH 1;
 SELECT setval('"t_system_institution_system_institution_id_seq"', 1, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_system_nucleus_nucleus_id_seq" START WITH 1;
 SELECT setval('"t_system_nucleus_nucleus_id_seq"', 2, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_tables_TABLE_ID_seq" START WITH 1;
 SELECT setval('"t_tables_TABLE_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_tutor_career_TUTOR_CAREER_ID_seq" START WITH 1;
 SELECT setval('"t_tutor_career_TUTOR_CAREER_ID_seq"', 49, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_tutors_TUTOR_ID_seq" START WITH 1;
 SELECT setval('"t_tutors_TUTOR_ID_seq"', 89, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_user_USER_ID_seq" START WITH 1;
 SELECT setval('"t_user_USER_ID_seq"', 17, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_user_key_USER_KEY_ID_seq" START WITH 1;
 SELECT setval('"t_user_key_USER_KEY_ID_seq"', 29, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_user_notification_prefs_ID_seq" START WITH 1;
 SELECT setval('"t_user_notification_prefs_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_user_questions_USER_QUESTION_ID_seq" START WITH 1;
 SELECT setval('"t_user_questions_USER_QUESTION_ID_seq"', 3, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_user_theme_USER_THEME_ID_seq" START WITH 1;
 SELECT setval('"t_user_theme_USER_THEME_ID_seq"', 1, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_value_list_VALUE_LIST_ID_seq" START WITH 1;
 SELECT setval('"t_value_list_VALUE_LIST_ID_seq"', 70, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_visit_VISIT_ID_seq" START WITH 1;
 SELECT setval('"t_visit_VISIT_ID_seq"', 0, true);
-
 CREATE SEQUENCE IF NOT EXISTS "t_list_list_id_seq" START WITH 1;
 SELECT setval('"t_list_list_id_seq"', 503, true);
-
 -- ============================================================
 -- SECCIÓN 2: FUNCIONES (RPCs)
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.execute_sql(sql text)
- RETURNS void
- LANGUAGE plpgsql
- SECURITY DEFINER
-AS $function$
-BEGIN
-    EXECUTE sql;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_all_constraints()
- RETURNS TABLE(table_name text, constraint_name text, constraint_type text, definition text)
- LANGUAGE plpgsql
- SECURITY DEFINER
-AS $function$
-BEGIN
-  RETURN QUERY
-  SELECT
-    c.conrelid::regclass::text AS table_name,
-    c.conname::text AS constraint_name,
-    CASE c.contype
-      WHEN 'f' THEN 'FOREIGN KEY'
-      WHEN 'u' THEN 'UNIQUE'
-      WHEN 'c' THEN 'CHECK'
-      ELSE 'OTHER'
-    END::text AS constraint_type,
-    pg_get_constraintdef(c.oid)::text AS definition
-  FROM pg_constraint c
-  JOIN pg_namespace n ON n.oid = c.connamespace
-  WHERE n.nspname = 'public'
-    AND c.contype IN ('f', 'u', 'c')
-    AND c.conname NOT LIKE '%_pkey%'  -- PKs already in CREATE TABLE
-  ORDER BY
-    CASE c.contype
-      WHEN 'u' THEN 1
-      WHEN 'f' THEN 2
-      ELSE 3
-    END,
-    c.conrelid::regclass::text;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_all_functions()
- RETURNS TABLE(function_name text, definition text)
- LANGUAGE plpgsql
- SECURITY DEFINER
-AS $function$
-BEGIN
-  RETURN QUERY
-  SELECT
-    (p.proname::text || '(' || pg_get_function_arguments(p.oid) || ')')::text AS function_name,
-    pg_get_functiondef(p.oid)::text AS definition
-  FROM pg_proc p
-  JOIN pg_namespace n ON n.oid = p.pronamespace
-  WHERE n.nspname = 'public'
-    AND p.prokind = 'f'  -- only normal functions, not aggregates
-    AND p.proname NOT LIKE 'pgrst_%'  -- exclude Supabase internal
-    AND NOT EXISTS (     -- exclude extension-owned functions
-      SELECT 1 FROM pg_depend d
-      WHERE d.objid = p.oid
-        AND d.classid = 'pg_proc'::regclass
-        AND d.deptype = 'e'
-        AND d.refclassid = 'pg_extension'::regclass
-    )
-  ORDER BY p.proname;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_all_indexes()
- RETURNS TABLE(index_name text, table_name text, index_def text, is_unique boolean, is_primary boolean)
- LANGUAGE plpgsql
- SECURITY DEFINER
-AS $function$
-BEGIN
-  RETURN QUERY
-  SELECT
-    i.indexname::text,
-    i.tablename::text,
-    i.indexdef::text,
-    i.indexdef LIKE 'CREATE UNIQUE%' AS is_unique,
-    i.indexdef LIKE 'CREATE UNIQUE INDEX%' AND i.indexdef LIKE '%pkey%' AS is_primary
-  FROM pg_indexes i
-  WHERE i.schemaname = 'public'
-    AND i.tablename NOT IN ('_prisma_migrations')
-    AND i.indexdef NOT LIKE '%_pkey%'  -- PKs already in CREATE TABLE
-  ORDER BY i.tablename, i.indexname;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_all_sequences()
- RETURNS TABLE(seq_name text, table_name text, column_name text, current_value bigint)
- LANGUAGE plpgsql
- SECURITY DEFINER
-AS $function$
-BEGIN
-  RETURN QUERY
-  WITH seqs AS (
-    SELECT
-      c.relname::text AS seq_name,
-      COALESCE(
-        (SELECT refn.nspname || '.' || refc.relname
-         FROM pg_depend d
-         JOIN pg_class refc ON refc.oid = d.refobjid
-         JOIN pg_namespace refn ON refn.oid = refc.relnamespace
-         WHERE d.objid = c.oid
-           AND d.deptype = 'a'
-           AND d.classid = 'pg_class'::regclass
-           AND d.refclassid = 'pg_class'::regclass
-           AND refc.relkind = 'r'),
-        'public.unknown'
-      )::text AS table_ref,
-      COALESCE(
-        (SELECT a.attname::text
-         FROM pg_depend d
-         JOIN pg_attribute a ON a.attrelid = d.refobjid AND a.attnum = d.refobjsubid
-         WHERE d.objid = c.oid
-           AND d.deptype = 'a'
-           AND d.classid = 'pg_class'::regclass
-           AND d.refclassid = 'pg_class'::regclass
-           AND a.attnum > 0),
-        'unknown'
-      )::text AS col_name,
-      pg_sequence_last_value(c.oid)::bigint AS cur_val
-    FROM pg_class c
-    JOIN pg_namespace n ON n.oid = c.relnamespace
-    WHERE c.relkind = 'S' AND n.nspname = 'public'
-  )
-  SELECT
-    seqs.seq_name,
-    split_part(seqs.table_ref, '.', 2)::text AS table_name,
-    seqs.col_name,
-    COALESCE(seqs.cur_val, 0)::bigint
-  FROM seqs
-  ORDER BY seqs.table_ref, seqs.col_name;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_all_table_definitions()
- RETURNS TABLE(table_name text, definition text, has_data boolean)
- LANGUAGE plpgsql
- SECURITY DEFINER
-AS $function$
-DECLARE
-  rec RECORD;
-  col_rec RECORD;
-  pk_cols text[];
-  def text;
-  has_rows boolean;
-BEGIN
-  FOR rec IN
-    SELECT tablename::text AS tname
-    FROM pg_catalog.pg_tables
-    WHERE schemaname = 'public'
-    ORDER BY tablename
-  LOOP
-    def := 'CREATE TABLE IF NOT EXISTS public.' || quote_ident(rec.tname) || ' (' || E'\n';
-
-    FOR col_rec IN
-      SELECT
-        c.column_name,
-        c.is_nullable,
-        c.column_default,
-        c.udt_name,
-        c.character_maximum_length,
-        c.numeric_precision,
-        c.numeric_scale
-      FROM information_schema.columns c
-      WHERE c.table_schema = 'public' AND c.table_name = rec.tname
-      ORDER BY c.ordinal_position
-    LOOP
-      def := def || '  ' || quote_ident(col_rec.column_name) || ' ';
-      CASE col_rec.udt_name
-        WHEN 'int4' THEN def := def || 'INTEGER';
-        WHEN 'int8' THEN def := def || 'BIGINT';
-        WHEN 'int2' THEN def := def || 'SMALLINT';
-        WHEN 'varchar' THEN
-          IF col_rec.character_maximum_length IS NOT NULL THEN
-            def := def || 'VARCHAR(' || col_rec.character_maximum_length || ')';
-          ELSE
-            def := def || 'VARCHAR';
-          END IF;
-        WHEN 'text' THEN def := def || 'TEXT';
-        WHEN 'bool' THEN def := def || 'BOOLEAN';
-        WHEN 'float4' THEN def := def || 'REAL';
-        WHEN 'float8' THEN def := def || 'DOUBLE PRECISION';
-        WHEN 'numeric' THEN
-          IF col_rec.numeric_precision IS NOT NULL AND col_rec.numeric_scale IS NOT NULL THEN
-            def := def || 'NUMERIC(' || col_rec.numeric_precision || ', ' || col_rec.numeric_scale || ')';
-          ELSE
-            def := def || 'NUMERIC';
-          END IF;
-        WHEN 'timestamp' THEN def := def || 'TIMESTAMP';
-        WHEN 'timestamptz' THEN def := def || 'TIMESTAMPTZ';
-        WHEN 'date' THEN def := def || 'DATE';
-        WHEN 'time' THEN def := def || 'TIME';
-        WHEN 'uuid' THEN def := def || 'UUID';
-        WHEN 'json' THEN def := def || 'JSON';
-        WHEN 'jsonb' THEN def := def || 'JSONB';
-        ELSE def := def || col_rec.udt_name;
-      END CASE;
-
-      IF col_rec.column_default IS NOT NULL THEN
-        def := def || ' DEFAULT ' || col_rec.column_default;
-      END IF;
-      IF col_rec.is_nullable = 'NO' THEN
-        def := def || ' NOT NULL';
-      END IF;
-      def := def || ',' || E'\n';
-    END LOOP;
-
-    SELECT array_agg(kcu.column_name::text) INTO pk_cols
-    FROM information_schema.table_constraints tc
-    JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
-    WHERE tc.table_schema = 'public'
-      AND tc.table_name = rec.tname
-      AND tc.constraint_type = 'PRIMARY KEY';
-
-    IF pk_cols IS NOT NULL AND array_length(pk_cols, 1) > 0 THEN
-      def := def || '  PRIMARY KEY (' || (SELECT string_agg(quote_ident(p), ', ') FROM unnest(pk_cols) p) || '),' || E'\n';
-    END IF;
-
-    -- Remove trailing comma
-    IF def LIKE '%,' || E'\n' THEN
-      def := left(def, length(def) - 2) || E'\n';
-    END IF;
-    def := def || ');';
-
-    EXECUTE format('SELECT EXISTS (SELECT 1 FROM %I LIMIT 1)', rec.tname) INTO has_rows;
-    RETURN QUERY SELECT rec.tname::text, def::text, has_rows::boolean;
-  END LOOP;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_all_tables()
- RETURNS TABLE(table_name text)
- LANGUAGE plpgsql
- SECURITY DEFINER
-AS $function$
-BEGIN
-  RETURN QUERY
-  SELECT tablename::text
-  FROM pg_catalog.pg_tables
-  WHERE schemaname = 'public'
-  ORDER BY tablename;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_all_triggers()
- RETURNS TABLE(table_name text, trigger_name text, definition text)
- LANGUAGE plpgsql
- SECURITY DEFINER
-AS $function$
-BEGIN
-  RETURN QUERY
-  SELECT
-    tg.tgrelid::regclass::text AS table_name,
-    tg.tgname::text AS trigger_name,
-    pg_get_triggerdef(tg.oid, true)::text AS definition
-  FROM pg_trigger tg
-  WHERE tg.tgrelid IN (
-    SELECT c.oid FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-    WHERE n.nspname = 'public'
-  )
-  AND NOT tg.tgisinternal  -- exclude internal triggers (FK enforcement etc.)
-  ORDER BY tg.tgrelid::regclass::text, tg.tgname;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_coincidence_stats()
- RETURNS TABLE(level text, count bigint, percentage numeric)
- LANGUAGE plpgsql
-AS $function$
-DECLARE
-  total_enrollments BIGINT;
-BEGIN
-  SELECT COUNT(*) INTO total_enrollments
-  FROM t_professional_practices pp
-  WHERE pp."INTERNSHIP_STATUS" IS NOT NULL
-    AND pp."STATUS" = 1;
-
-  IF total_enrollments = 0 THEN
-    RETURN;
-  END IF;
-
-  RETURN QUERY
-  WITH enrollment_addresses AS (
-    SELECT
-      pp."PROFESSIONAL_PRACTICE_ID" AS practice_id,
-      s.person_id AS student_person_id,
-      pp."INSTITUTION_ID" AS institution_id
-    FROM t_professional_practices pp
-    JOIN t_students s ON s."STUDENTS_ID" = pp."STUDENTS_ID"
-    WHERE pp."INTERNSHIP_STATUS" IS NOT NULL
-      AND pp."STATUS" = 1
-  ),
-  student_primary AS (
-    SELECT ea.practice_id, p.parroquia_id, p.municipio_id, m.estado_id
-    FROM enrollment_addresses ea
-    JOIN t_person_address pa ON pa.person_id = ea.student_person_id AND pa.is_primary = TRUE
-    JOIN t_address a ON a.address_id = pa.address_id
-    JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
-    JOIN t_municipio m ON m.municipio_id = p.municipio_id
-  ),
-  institution_primary AS (
-    SELECT ea.practice_id, p.parroquia_id, p.municipio_id, m.estado_id
-    FROM enrollment_addresses ea
-    JOIN t_institution_address ia ON ia.institution_id = ea.institution_id AND ia.is_primary = TRUE
-    JOIN t_address a ON a.address_id = ia.address_id
-    JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
-    JOIN t_municipio m ON m.municipio_id = p.municipio_id
-  ),
-  level_counts AS (
-    SELECT
-      CASE
-        WHEN sp.parroquia_id = ip.parroquia_id THEN 'SAME_PARROQUIA'
-        WHEN sp.municipio_id = ip.municipio_id THEN 'SAME_MUNICIPIO'
-        WHEN sp.estado_id = ip.estado_id THEN 'SAME_STATE'
-        ELSE 'DIFFERENT_STATE'
-      END AS match_level
-    FROM student_primary sp
-    JOIN institution_primary ip ON ip.practice_id = sp.practice_id
-  )
-  SELECT
-    lc.match_level AS level,
-    COUNT(*)::BIGINT AS count,
-    ROUND((COUNT(*)::NUMERIC / total_enrollments) * 100, 1) AS percentage
-  FROM level_counts lc
-  GROUP BY lc.match_level
-  ORDER BY
-    CASE lc.match_level
-      WHEN 'SAME_PARROQUIA' THEN 1
-      WHEN 'SAME_MUNICIPIO' THEN 2
-      WHEN 'SAME_STATE' THEN 3
-      WHEN 'DIFFERENT_STATE' THEN 4
-    END;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_institution_suggestions(p_person_id integer, p_career_id integer, p_internship_type_id integer DEFAULT NULL::integer)
- RETURNS TABLE(institution_id integer, institution_name character varying, institution_address text, estado character varying, municipio character varying, proximity_score integer)
- LANGUAGE plpgsql
-AS $function$
-DECLARE
-  v_student_parroquia_id INT;
-  v_student_municipio_id BIGINT;
-  v_student_estado_id INT;
-BEGIN
-  SELECT p.parroquia_id, p.municipio_id, m.estado_id
-  INTO v_student_parroquia_id, v_student_municipio_id, v_student_estado_id
-  FROM t_person_address pa
-  JOIN t_address a ON a.address_id = pa.address_id
-  JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
-  JOIN t_municipio m ON m.municipio_id = p.municipio_id
-  WHERE pa.person_id = p_person_id
-    AND pa.is_primary = TRUE
-  LIMIT 1;
-
-  IF v_student_parroquia_id IS NULL THEN
-    RETURN;
-  END IF;
-
-  RETURN QUERY
-  SELECT
-    i."INSTITUTION_ID"::INT,
-    i."INSTITUTION_NAME"::VARCHAR(255),
-    i."INSTITUTION_ADDRESS"::TEXT,
-    e.name::VARCHAR(100),
-    m.name::VARCHAR(100),
-    CASE
-      WHEN p.parroquia_id = v_student_parroquia_id THEN 10
-      WHEN p.municipio_id = v_student_municipio_id THEN 5
-      WHEN m.estado_id = v_student_estado_id THEN 3
-      ELSE 0
-    END::INT AS proximity_score
-  FROM t_institution i
-  JOIN t_institution_career ic ON ic."INSTITUTION_ID" = i."INSTITUTION_ID"
-  JOIN t_institution_address ia ON ia.institution_id = i."INSTITUTION_ID" AND ia.is_primary = TRUE
-  JOIN t_address a ON a.address_id = ia.address_id
-  JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
-  JOIN t_municipio m ON m.municipio_id = p.municipio_id
-  JOIN t_estado e ON e.estado_id = m.estado_id
-  WHERE ic."CAREER_ID" = p_career_id
-    AND i."STATUS" = 1
-    AND (p_internship_type_id IS NULL
-      OR i."PRACTICE_TYPE" = p_internship_type_id::TEXT
-      OR EXISTS (
-        SELECT 1 FROM t_institution_internship_type iit
-        WHERE iit."INSTITUTION_ID" = i."INSTITUTION_ID"
-          AND iit."INTERNSHIP_TYPE_ID" = p_internship_type_id
-      ))
-  ORDER BY proximity_score DESC, i."INSTITUTION_NAME";
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_primary_address(p_entity_type text, p_entity_id integer)
- RETURNS TABLE(address_id bigint, street_address character varying, reference text, parroquia_id bigint, parroquia_name character varying, municipio_id bigint, municipio_name character varying, estado_id integer, estado_name character varying)
- LANGUAGE plpgsql
-AS $function$
-BEGIN
-  IF p_entity_type = 'person' THEN
-    RETURN QUERY
-    SELECT
-      a.address_id,
-      a.street_address,
-      a.reference,
-      p.parroquia_id,
-      p.name::VARCHAR(200),
-      m.municipio_id,
-      m.name::VARCHAR(100),
-      e.estado_id,
-      e.name::VARCHAR(100)
-    FROM t_person_address pa
-    JOIN t_address a ON a.address_id = pa.address_id
-    JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
-    JOIN t_municipio m ON m.municipio_id = p.municipio_id
-    JOIN t_estado e ON e.estado_id = m.estado_id
-    WHERE pa.person_id = p_entity_id
-      AND pa.is_primary = TRUE
-    LIMIT 1;
-  ELSIF p_entity_type = 'institution' THEN
-    RETURN QUERY
-    SELECT
-      a.address_id,
-      a.street_address,
-      a.reference,
-      p.parroquia_id,
-      p.name::VARCHAR(200),
-      m.municipio_id,
-      m.name::VARCHAR(100),
-      e.estado_id,
-      e.name::VARCHAR(100)
-    FROM t_institution_address ia
-    JOIN t_address a ON a.address_id = ia.address_id
-    JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
-    JOIN t_municipio m ON m.municipio_id = p.municipio_id
-    JOIN t_estado e ON e.estado_id = m.estado_id
-    WHERE ia.institution_id = p_entity_id
-      AND ia.is_primary = TRUE
-    LIMIT 1;
-  END IF;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_rls_policies()
- RETURNS TABLE(table_name text, definition text)
- LANGUAGE plpgsql
- SECURITY DEFINER
-AS $function$
-BEGIN
-  RETURN QUERY
-  WITH policy_sql AS (
-    SELECT
-      n.nspname::text || '.' || c.relname::text AS full_table,
-      c.relname::text AS tname,
-      p.polname::text AS polname,
-      CASE
-        WHEN p.polpermissive THEN 'PERMISSIVE'
-        ELSE 'RESTRICTIVE'
-      END AS permissive,
-      CASE p.polcmd
-        WHEN 'r' THEN 'SELECT'
-        WHEN 'a' THEN 'INSERT'
-        WHEN 'w' THEN 'UPDATE'
-        WHEN 'd' THEN 'DELETE'
-        WHEN '*' THEN 'ALL'
-        ELSE 'ALL'
-      END AS cmd,
-      COALESCE(
-        (SELECT string_agg(rolname, ', ') FROM pg_catalog.pg_roles WHERE oid = ANY(p.polroles)),
-        'public'
-      ) AS roles,
-      pg_get_expr(p.polqual, p.polrelid) AS using_expr,
-      COALESCE(pg_get_expr(p.polwithcheck, p.polrelid), '') AS withcheck_expr
-    FROM pg_policy p
-    JOIN pg_class c ON c.oid = p.polrelid
-    JOIN pg_namespace n ON n.oid = c.relnamespace
-    WHERE n.nspname = 'public'
-  )
-  SELECT
-    ps.tname::text AS table_name,
-    format(
-      'CREATE POLICY %s ON %s AS %s FOR %s TO %s%s%s;',
-      quote_ident(ps.polname),
-      quote_ident(ps.tname),
-      ps.permissive,
-      ps.cmd,
-      ps.roles,
-      CASE WHEN ps.using_expr != '' THEN ' USING (' || ps.using_expr || ')' ELSE '' END,
-      CASE WHEN ps.withcheck_expr != '' THEN ' WITH CHECK (' || ps.withcheck_expr || ')' ELSE '' END
-    )::text AS definition
-  FROM policy_sql ps
-  ORDER BY ps.tname, ps.polname;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.get_table_definition(table_name_param text)
- RETURNS text
- LANGUAGE plpgsql
- SECURITY DEFINER
-AS $function$
-DECLARE
-    definition text := '';
-    col_record record;
-    constraint_record record;
-    first_col boolean := true;
-BEGIN
-    definition := 'CREATE TABLE IF NOT EXISTS "' || table_name_param || '" (' || E'\n';
-    
-    FOR col_record IN 
-        SELECT column_name, data_type, character_maximum_length,
-               numeric_precision, numeric_scale, is_nullable, column_default
-        FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = table_name_param
-        ORDER BY ordinal_position
-    LOOP
-        IF NOT first_col THEN definition := definition || ',' || E'\n'; END IF;
-        first_col := false;
-        definition := definition || '  "' || col_record.column_name || '" ';
-        IF col_record.character_maximum_length IS NOT NULL THEN
-            definition := definition || col_record.data_type || '(' || col_record.character_maximum_length || ')';
-        ELSIF col_record.numeric_precision IS NOT NULL THEN
-            definition := definition || col_record.data_type || '(' || col_record.numeric_precision || ')';
-        ELSE
-            definition := definition || col_record.data_type;
-        END IF;
-        IF col_record.is_nullable = 'NO' THEN definition := definition || ' NOT NULL'; END IF;
-        IF col_record.column_default IS NOT NULL THEN
-            definition := definition || ' DEFAULT ' || col_record.column_default;
-        END IF;
-    END LOOP;
-    definition := definition || E'\n' || ');';
-    RETURN definition;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.search_knowledge_base(query_embedding vector, match_threshold double precision DEFAULT 0.7, match_limit integer DEFAULT 5, filter_category text DEFAULT NULL::text, filter_roles integer[] DEFAULT NULL::integer[])
- RETURNS TABLE(id uuid, title text, category text, content text, metadata jsonb, similarity double precision)
- LANGUAGE plpgsql
-AS $function$
-BEGIN
-    RETURN QUERY
-    SELECT
-        kb.id,
-        kb.title,
-        kb.category,
-        kb.content,
-        kb.metadata,
-        1 - (kb.embedding <=> query_embedding) AS similarity
-    FROM t_knowledge_base kb
-    WHERE kb.is_active = true
-      AND (filter_category IS NULL OR kb.category = filter_category)
-      AND (filter_roles IS NULL OR kb.roles IS NULL OR kb.roles && filter_roles)
-      AND 1 - (kb.embedding <=> query_embedding) >= match_threshold
-    ORDER BY kb.embedding <=> query_embedding
-    LIMIT match_limit;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.trg_set_student_person_id()
- RETURNS trigger
- LANGUAGE plpgsql
-AS $function$
-BEGIN
-  IF NEW.student_person_id IS NULL AND NEW."STUDENTS_ID" IS NOT NULL THEN
-    SELECT person_id INTO NEW.student_person_id
-    FROM "t_students"
-    WHERE "STUDENTS_ID" = NEW."STUDENTS_ID";
-  END IF;
-  RETURN NEW;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.trg_set_tutor_person_id()
- RETURNS trigger
- LANGUAGE plpgsql
-AS $function$
-BEGIN
-  IF NEW.tutor_person_id IS NULL AND NEW."TUTOR_ID" IS NOT NULL THEN
-    SELECT person_id INTO NEW.tutor_person_id
-    FROM "t_tutors"
-    WHERE "TUTOR_ID" = NEW."TUTOR_ID";
-  END IF;
-  RETURN NEW;
-END;
-$function$
 
 
-CREATE OR REPLACE FUNCTION public.update_kb_updated_at()
- RETURNS trigger
- LANGUAGE plpgsql
-AS $function$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$function$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 -- ============================================================
@@ -856,7 +226,6 @@ CREATE TABLE IF NOT EXISTS public.t_academic_config (
   "LOCK_API_LOADED_FIELDS" BOOLEAN DEFAULT true NOT NULL,
   PRIMARY KEY ("CONFIG_ID")
 );
-
 -- Tabla: t_activity_logs
 CREATE TABLE IF NOT EXISTS public.t_activity_logs (
   "ACTIVITY_LOG_ID" INTEGER DEFAULT nextval('"t_activity_logs_ACTIVITY_LOG_ID_seq"'::regclass) NOT NULL,
@@ -881,7 +250,6 @@ CREATE TABLE IF NOT EXISTS public.t_activity_logs (
   student_person_id INTEGER NOT NULL,
   PRIMARY KEY ("ACTIVITY_LOG_ID")
 );
-
 -- Tabla: t_address
 CREATE TABLE IF NOT EXISTS public.t_address (
   address_id BIGINT DEFAULT nextval('t_address_address_id_seq'::regclass) NOT NULL,
@@ -896,7 +264,6 @@ CREATE TABLE IF NOT EXISTS public.t_address (
   deleted_at TIMESTAMPTZ,
   PRIMARY KEY (address_id)
 );
-
 -- Tabla: t_address_type
 CREATE TABLE IF NOT EXISTS public.t_address_type (
   address_type_id BIGINT NOT NULL,
@@ -906,7 +273,6 @@ CREATE TABLE IF NOT EXISTS public.t_address_type (
   status SMALLINT DEFAULT 1 NOT NULL,
   PRIMARY KEY (address_type_id)
 );
-
 -- Tabla: t_auth_log
 CREATE TABLE IF NOT EXISTS public.t_auth_log (
   "ID" INTEGER DEFAULT nextval('"t_auth_log_ID_seq"'::regclass) NOT NULL,
@@ -919,7 +285,6 @@ CREATE TABLE IF NOT EXISTS public.t_auth_log (
   "CREATED_AT" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("ID")
 );
-
 -- Tabla: t_career
 CREATE TABLE IF NOT EXISTS public.t_career (
   "CAREER_ID" INTEGER DEFAULT nextval('"t_career_CAREER_ID_seq"'::regclass) NOT NULL,
@@ -939,7 +304,6 @@ CREATE TABLE IF NOT EXISTS public.t_career (
   "SEMESTER" VARCHAR(10),
   PRIMARY KEY ("CAREER_ID")
 );
-
 -- Tabla: t_career_internship_type
 CREATE TABLE IF NOT EXISTS public.t_career_internship_type (
   "ID_CAREER_INTERNSHIP_TYPE_ID" INTEGER DEFAULT nextval('"t_career_internship_type_ID_CAREER_INTERNSHIP_TYPE_ID_seq"'::regclass) NOT NULL,
@@ -947,7 +311,6 @@ CREATE TABLE IF NOT EXISTS public.t_career_internship_type (
   "INTERNSHIP_TYPE_ID" INTEGER NOT NULL,
   PRIMARY KEY ("ID_CAREER_INTERNSHIP_TYPE_ID")
 );
-
 -- Tabla: t_change_log
 CREATE TABLE IF NOT EXISTS public.t_change_log (
   "CHANGE_LOG_ID" INTEGER DEFAULT nextval('"t_change_log_CHANGE_LOG_ID_seq"'::regclass) NOT NULL,
@@ -964,7 +327,6 @@ CREATE TABLE IF NOT EXISTS public.t_change_log (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("CHANGE_LOG_ID", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID")
 );
-
 -- Tabla: t_chat_config
 CREATE TABLE IF NOT EXISTS public.t_chat_config (
   config_id UUID DEFAULT gen_random_uuid() NOT NULL,
@@ -976,7 +338,6 @@ CREATE TABLE IF NOT EXISTS public.t_chat_config (
   updated_at TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY (config_id)
 );
-
 -- Tabla: t_chat_sessions
 CREATE TABLE IF NOT EXISTS public.t_chat_sessions (
   "SESSION_ID" UUID DEFAULT gen_random_uuid() NOT NULL,
@@ -988,7 +349,6 @@ CREATE TABLE IF NOT EXISTS public.t_chat_sessions (
   "STATUS" SMALLINT DEFAULT 1 NOT NULL,
   PRIMARY KEY ("SESSION_ID")
 );
-
 -- Tabla: t_columns
 CREATE TABLE IF NOT EXISTS public.t_columns (
   "COLUMN_ID" INTEGER DEFAULT nextval('"t_columns_COLUMN_ID_seq"'::regclass) NOT NULL,
@@ -997,7 +357,6 @@ CREATE TABLE IF NOT EXISTS public.t_columns (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("COLUMN_ID")
 );
-
 -- Tabla: t_committee_assignment
 CREATE TABLE IF NOT EXISTS public.t_committee_assignment (
   "ASSIGNMENT_ID" INTEGER DEFAULT nextval('"t_committee_assignment_ASSIGNMENT_ID_seq"'::regclass) NOT NULL,
@@ -1010,7 +369,6 @@ CREATE TABLE IF NOT EXISTS public.t_committee_assignment (
   "UPDATED_AT" TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY ("ASSIGNMENT_ID")
 );
-
 -- Tabla: t_config
 CREATE TABLE IF NOT EXISTS public.t_config (
   "CONFIG_ID" INTEGER DEFAULT nextval('"t_config_CONFIG_ID_seq"'::regclass) NOT NULL,
@@ -1049,7 +407,6 @@ CREATE TABLE IF NOT EXISTS public.t_config (
   "RECOVERY_LINK_EXPIRY_HOURS" INTEGER DEFAULT 48 NOT NULL,
   PRIMARY KEY ("CONFIG_ID")
 );
-
 -- Tabla: t_coordinadores
 CREATE TABLE IF NOT EXISTS public.t_coordinadores (
   "COORDINADOR_ID" INTEGER DEFAULT nextval('"t_coordinadores_COORDINADOR_ID_seq"'::regclass) NOT NULL,
@@ -1065,7 +422,6 @@ CREATE TABLE IF NOT EXISTS public.t_coordinadores (
   "STATUS" SMALLINT DEFAULT 1,
   PRIMARY KEY ("COORDINADOR_ID")
 );
-
 -- Tabla: t_credential_tokens
 CREATE TABLE IF NOT EXISTS public.t_credential_tokens (
   id INTEGER DEFAULT nextval('t_credential_tokens_id_seq'::regclass) NOT NULL,
@@ -1078,7 +434,6 @@ CREATE TABLE IF NOT EXISTS public.t_credential_tokens (
   created_at TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY (id)
 );
-
 -- Tabla: t_culmination_reversals
 CREATE TABLE IF NOT EXISTS public.t_culmination_reversals (
   "REVERSAL_ID" INTEGER DEFAULT nextval('"t_culmination_reversals_REVERSAL_ID_seq"'::regclass) NOT NULL,
@@ -1090,7 +445,6 @@ CREATE TABLE IF NOT EXISTS public.t_culmination_reversals (
   "UPDATED_AT" TIMESTAMP DEFAULT now(),
   PRIMARY KEY ("REVERSAL_ID")
 );
-
 -- Tabla: t_email_templates
 CREATE TABLE IF NOT EXISTS public.t_email_templates (
   id INTEGER DEFAULT nextval('t_email_templates_id_seq'::regclass) NOT NULL,
@@ -1103,7 +457,6 @@ CREATE TABLE IF NOT EXISTS public.t_email_templates (
   updated_at TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY (id)
 );
-
 -- Tabla: t_enrollment_field_changes
 CREATE TABLE IF NOT EXISTS public.t_enrollment_field_changes (
   "CHANGE_ID" INTEGER DEFAULT nextval('"t_enrollment_field_changes_CHANGE_ID_seq"'::regclass) NOT NULL,
@@ -1115,7 +468,6 @@ CREATE TABLE IF NOT EXISTS public.t_enrollment_field_changes (
   "CHANGED_AT" TIMESTAMP DEFAULT now(),
   PRIMARY KEY ("CHANGE_ID")
 );
-
 -- Tabla: t_estado
 CREATE TABLE IF NOT EXISTS public.t_estado (
   estado_id INTEGER NOT NULL,
@@ -1124,7 +476,6 @@ CREATE TABLE IF NOT EXISTS public.t_estado (
   capital VARCHAR(100),
   PRIMARY KEY (estado_id)
 );
-
 -- Tabla: t_evaluation
 CREATE TABLE IF NOT EXISTS public.t_evaluation (
   "EVALUATION_ID" INTEGER DEFAULT nextval('"t_evaluation_EVALUATION_ID_seq"'::regclass) NOT NULL,
@@ -1145,7 +496,6 @@ CREATE TABLE IF NOT EXISTS public.t_evaluation (
   unfreeze_authorized_by INTEGER,
   PRIMARY KEY ("EVALUATION_ID")
 );
-
 -- Tabla: t_evaluation_criteria
 CREATE TABLE IF NOT EXISTS public.t_evaluation_criteria (
   "CRITERIA_ID" INTEGER DEFAULT nextval('"t_evaluation_criteria_CRITERIA_ID_seq"'::regclass) NOT NULL,
@@ -1155,7 +505,6 @@ CREATE TABLE IF NOT EXISTS public.t_evaluation_criteria (
   "STATUS" SMALLINT DEFAULT 1,
   PRIMARY KEY ("CRITERIA_ID")
 );
-
 -- Tabla: t_evaluation_detail
 CREATE TABLE IF NOT EXISTS public.t_evaluation_detail (
   "DETAIL_ID" INTEGER DEFAULT nextval('"t_evaluation_detail_DETAIL_ID_seq"'::regclass) NOT NULL,
@@ -1166,7 +515,6 @@ CREATE TABLE IF NOT EXISTS public.t_evaluation_detail (
   "STATUS" SMALLINT DEFAULT 1,
   PRIMARY KEY ("DETAIL_ID")
 );
-
 -- Tabla: t_institution
 CREATE TABLE IF NOT EXISTS public.t_institution (
   "INSTITUTION_ID" INTEGER DEFAULT nextval('"t_institution_INSTITUTION_ID_seq"'::regclass) NOT NULL,
@@ -1184,7 +532,6 @@ CREATE TABLE IF NOT EXISTS public.t_institution (
   "INSTITUTION_CODE" VARCHAR(25) NOT NULL,
   PRIMARY KEY ("INSTITUTION_ID")
 );
-
 -- Tabla: t_institution_address
 CREATE TABLE IF NOT EXISTS public.t_institution_address (
   institution_address_id BIGINT DEFAULT nextval('t_institution_address_institution_address_id_seq'::regclass) NOT NULL,
@@ -1198,7 +545,6 @@ CREATE TABLE IF NOT EXISTS public.t_institution_address (
   version INTEGER DEFAULT 1,
   PRIMARY KEY (institution_address_id)
 );
-
 -- Tabla: t_institution_career
 CREATE TABLE IF NOT EXISTS public.t_institution_career (
   "INSTITUTION_CAREER_ID" BIGINT DEFAULT nextval('"t_institution_career_INSTITUTION_CAREER_ID_seq"'::regclass) NOT NULL,
@@ -1207,7 +553,6 @@ CREATE TABLE IF NOT EXISTS public.t_institution_career (
   "CAREER_ID" INTEGER NOT NULL,
   PRIMARY KEY ("INSTITUTION_CAREER_ID")
 );
-
 -- Tabla: t_institution_internship_type
 CREATE TABLE IF NOT EXISTS public.t_institution_internship_type (
   "INSTITUTION_INTERNSHIP_TYPE_ID" BIGINT DEFAULT nextval('"t_institution_internship_type_INSTITUTION_INTERNSHIP_TYPE_ID_se"'::regclass) NOT NULL,
@@ -1216,7 +561,6 @@ CREATE TABLE IF NOT EXISTS public.t_institution_internship_type (
   "INTERNSHIP_TYPE_ID" INTEGER NOT NULL,
   PRIMARY KEY ("INSTITUTION_INTERNSHIP_TYPE_ID")
 );
-
 -- Tabla: t_institution_manager
 CREATE TABLE IF NOT EXISTS public.t_institution_manager (
   "MANAGER_ID" INTEGER DEFAULT nextval('"t_institution_manager_MANAGER_ID_seq"'::regclass) NOT NULL,
@@ -1235,7 +579,6 @@ CREATE TABLE IF NOT EXISTS public.t_institution_manager (
   "TITLE" VARCHAR(100) DEFAULT NULL::character varying,
   PRIMARY KEY ("MANAGER_ID")
 );
-
 -- Tabla: t_institution_manager_institution
 CREATE TABLE IF NOT EXISTS public.t_institution_manager_institution (
   "INSTITUTION_MANAGER_INSTITUTION_ID" BIGINT DEFAULT nextval('"t_institution_manager_institution_INSTITUTION_MANAGER_INSTITUTI"'::regclass) NOT NULL,
@@ -1245,7 +588,6 @@ CREATE TABLE IF NOT EXISTS public.t_institution_manager_institution (
   cargo VARCHAR(100),
   PRIMARY KEY ("INSTITUTION_MANAGER_INSTITUTION_ID")
 );
-
 -- Tabla: t_internship_type
 CREATE TABLE IF NOT EXISTS public.t_internship_type (
   "INTERNSHIP_TYPE_ID" INTEGER DEFAULT nextval('"t_internship_type_INTERNSHIP_TYPE_ID_seq"'::regclass) NOT NULL,
@@ -1256,7 +598,6 @@ CREATE TABLE IF NOT EXISTS public.t_internship_type (
   "HOURS_REQUIRED" INTEGER DEFAULT 360,
   PRIMARY KEY ("INTERNSHIP_TYPE_ID")
 );
-
 -- Tabla: t_internships_period
 CREATE TABLE IF NOT EXISTS public.t_internships_period (
   "PERIOD_ID" INTEGER DEFAULT nextval('"t_internships_period_PERIOD_ID_seq"'::regclass) NOT NULL,
@@ -1271,7 +612,6 @@ CREATE TABLE IF NOT EXISTS public.t_internships_period (
   "T_INTERNSHIPS_CODE" VARCHAR(8) NOT NULL,
   PRIMARY KEY ("PERIOD_ID")
 );
-
 -- Tabla: t_key_history
 CREATE TABLE IF NOT EXISTS public.t_key_history (
   "KEY_HISTORY_ID" INTEGER DEFAULT nextval('"t_key_history_KEY_HISTORY_ID_seq"'::regclass) NOT NULL,
@@ -1281,7 +621,6 @@ CREATE TABLE IF NOT EXISTS public.t_key_history (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("KEY_HISTORY_ID", "USER_KEY_ID", "USER_ID")
 );
-
 -- Tabla: t_knowledge_base
 CREATE TABLE IF NOT EXISTS public.t_knowledge_base (
   id UUID DEFAULT gen_random_uuid() NOT NULL,
@@ -1296,7 +635,6 @@ CREATE TABLE IF NOT EXISTS public.t_knowledge_base (
   updated_at TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY (id)
 );
-
 -- Tabla: t_landing_config
 CREATE TABLE IF NOT EXISTS public.t_landing_config (
   config_id INTEGER DEFAULT nextval('t_landing_config_config_id_seq'::regclass) NOT NULL,
@@ -1306,7 +644,6 @@ CREATE TABLE IF NOT EXISTS public.t_landing_config (
   updated_by VARCHAR(50) DEFAULT 'system'::character varying,
   PRIMARY KEY (config_id)
 );
-
 -- Tabla: t_list
 CREATE TABLE IF NOT EXISTS public.t_list (
   "LIST_ID" INTEGER DEFAULT nextval('t_list_list_id_seq'::regclass) NOT NULL,
@@ -1321,7 +658,6 @@ CREATE TABLE IF NOT EXISTS public.t_list (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("LIST_ID")
 );
-
 -- Tabla: t_municipio
 CREATE TABLE IF NOT EXISTS public.t_municipio (
   municipio_id BIGINT DEFAULT nextval('t_municipio_municipio_id_seq'::regclass) NOT NULL,
@@ -1329,7 +665,6 @@ CREATE TABLE IF NOT EXISTS public.t_municipio (
   name VARCHAR(100) NOT NULL,
   PRIMARY KEY (municipio_id)
 );
-
 -- Tabla: t_notifications
 CREATE TABLE IF NOT EXISTS public.t_notifications (
   "NOTIFICATION_ID" INTEGER DEFAULT nextval('"t_notifications_NOTIFICATION_ID_seq"'::regclass) NOT NULL,
@@ -1343,7 +678,6 @@ CREATE TABLE IF NOT EXISTS public.t_notifications (
   "CREATED_AT" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("NOTIFICATION_ID")
 );
-
 -- Tabla: t_nucleus_career
 CREATE TABLE IF NOT EXISTS public.t_nucleus_career (
   nucleus_career_id INTEGER DEFAULT nextval('t_nucleus_career_nucleus_career_id_seq'::regclass) NOT NULL,
@@ -1353,7 +687,6 @@ CREATE TABLE IF NOT EXISTS public.t_nucleus_career (
   created_at TIMESTAMP DEFAULT now() NOT NULL,
   PRIMARY KEY (nucleus_career_id)
 );
-
 -- Tabla: t_operation
 CREATE TABLE IF NOT EXISTS public.t_operation (
   "OPERATION_ID" INTEGER DEFAULT nextval('"t_operation_OPERATION_ID_seq"'::regclass) NOT NULL,
@@ -1362,7 +695,6 @@ CREATE TABLE IF NOT EXISTS public.t_operation (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("OPERATION_ID")
 );
-
 -- Tabla: t_parroquia
 CREATE TABLE IF NOT EXISTS public.t_parroquia (
   parroquia_id BIGINT DEFAULT nextval('t_parroquia_parroquia_id_seq'::regclass) NOT NULL,
@@ -1370,7 +702,6 @@ CREATE TABLE IF NOT EXISTS public.t_parroquia (
   name VARCHAR(200) NOT NULL,
   PRIMARY KEY (parroquia_id)
 );
-
 -- Tabla: t_password_history
 CREATE TABLE IF NOT EXISTS public.t_password_history (
   "HISTORY_ID" INTEGER DEFAULT nextval('"t_password_history_HISTORY_ID_seq"'::regclass) NOT NULL,
@@ -1379,7 +710,6 @@ CREATE TABLE IF NOT EXISTS public.t_password_history (
   "CREATION_DATE" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("HISTORY_ID")
 );
-
 -- Tabla: t_permissions
 CREATE TABLE IF NOT EXISTS public.t_permissions (
   "PERMISSIONS_ID" INTEGER DEFAULT nextval('"t_permissions_PERMISSIONS_ID_seq"'::regclass) NOT NULL,
@@ -1395,7 +725,6 @@ CREATE TABLE IF NOT EXISTS public.t_permissions (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("PERMISSIONS_ID")
 );
-
 -- Tabla: t_person_address
 CREATE TABLE IF NOT EXISTS public.t_person_address (
   person_address_id BIGINT DEFAULT nextval('t_person_address_person_address_id_seq'::regclass) NOT NULL,
@@ -1409,7 +738,6 @@ CREATE TABLE IF NOT EXISTS public.t_person_address (
   version INTEGER DEFAULT 1,
   PRIMARY KEY (person_address_id)
 );
-
 -- Tabla: t_person_merge_log
 CREATE TABLE IF NOT EXISTS public.t_person_merge_log (
   log_id INTEGER DEFAULT nextval('t_person_merge_log_log_id_seq'::regclass) NOT NULL,
@@ -1424,7 +752,6 @@ CREATE TABLE IF NOT EXISTS public.t_person_merge_log (
   created_at TIMESTAMP DEFAULT now(),
   PRIMARY KEY (log_id)
 );
-
 -- Tabla: t_persons
 CREATE TABLE IF NOT EXISTS public.t_persons (
   person_id INTEGER DEFAULT nextval('t_persons_person_id_seq'::regclass) NOT NULL,
@@ -1444,7 +771,6 @@ CREATE TABLE IF NOT EXISTS public.t_persons (
   updated_at TIMESTAMP DEFAULT now(),
   PRIMARY KEY (person_id)
 );
-
 -- Tabla: t_practice_culmination
 CREATE TABLE IF NOT EXISTS public.t_practice_culmination (
   "PRACTICE_ID" INTEGER NOT NULL,
@@ -1457,7 +783,6 @@ CREATE TABLE IF NOT EXISTS public.t_practice_culmination (
   "UPDATED_AT" TIMESTAMP DEFAULT now(),
   PRIMARY KEY ("PRACTICE_ID")
 );
-
 -- Tabla: t_practice_visits
 CREATE TABLE IF NOT EXISTS public.t_practice_visits (
   "VISIT_ID" INTEGER DEFAULT nextval('"t_practice_visits_VISIT_ID_seq"'::regclass) NOT NULL,
@@ -1477,7 +802,6 @@ CREATE TABLE IF NOT EXISTS public.t_practice_visits (
   tutor_person_id INTEGER NOT NULL,
   PRIMARY KEY ("VISIT_ID")
 );
-
 -- Tabla: t_preset_questions
 CREATE TABLE IF NOT EXISTS public.t_preset_questions (
   "PRESET_QUESTION_ID" INTEGER DEFAULT nextval('"t_preset_questions_PRESET_QUESTION_ID_seq"'::regclass) NOT NULL,
@@ -1492,7 +816,6 @@ CREATE TABLE IF NOT EXISTS public.t_preset_questions (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("PRESET_QUESTION_ID")
 );
-
 -- Tabla: t_professional_practices
 CREATE TABLE IF NOT EXISTS public.t_professional_practices (
   "PROFESSIONAL_PRACTICE_ID" INTEGER DEFAULT nextval('"t_professional_practices_PROFESSIONAL_PRACTICE_ID_seq"'::regclass) NOT NULL,
@@ -1528,7 +851,6 @@ CREATE TABLE IF NOT EXISTS public.t_professional_practices (
   withdrawal_type VARCHAR(20),
   PRIMARY KEY ("PROFESSIONAL_PRACTICE_ID")
 );
-
 -- Tabla: t_professional_practices_tutor
 CREATE TABLE IF NOT EXISTS public.t_professional_practices_tutor (
   "PROFESSIONAL_PRACTICES_TUTOR_ID" INTEGER DEFAULT nextval('"t_professional_practices_tuto_PROFESSIONAL_PRACTICES_TUTOR__seq"'::regclass) NOT NULL,
@@ -1541,7 +863,6 @@ CREATE TABLE IF NOT EXISTS public.t_professional_practices_tutor (
   "UPDATED_AT" TIMESTAMP DEFAULT now(),
   PRIMARY KEY ("PROFESSIONAL_PRACTICES_TUTOR_ID")
 );
-
 -- Tabla: t_prospect_list_items
 CREATE TABLE IF NOT EXISTS public.t_prospect_list_items (
   "ITEM_ID" INTEGER DEFAULT nextval('"t_prospect_list_items_ITEM_ID_seq"'::regclass) NOT NULL,
@@ -1553,7 +874,6 @@ CREATE TABLE IF NOT EXISTS public.t_prospect_list_items (
   "ADDED_BY" INTEGER,
   PRIMARY KEY ("ITEM_ID")
 );
-
 -- Tabla: t_prospect_lists
 CREATE TABLE IF NOT EXISTS public.t_prospect_lists (
   "LIST_ID" INTEGER DEFAULT nextval('"t_prospect_lists_LIST_ID_seq"'::regclass) NOT NULL,
@@ -1566,7 +886,6 @@ CREATE TABLE IF NOT EXISTS public.t_prospect_lists (
   "CREATED_BY" INTEGER,
   PRIMARY KEY ("LIST_ID")
 );
-
 -- Tabla: t_recovery_tokens
 CREATE TABLE IF NOT EXISTS public.t_recovery_tokens (
   "TOKEN_ID" INTEGER DEFAULT nextval('"t_recovery_tokens_TOKEN_ID_seq"'::regclass) NOT NULL,
@@ -1577,7 +896,6 @@ CREATE TABLE IF NOT EXISTS public.t_recovery_tokens (
   "CREATION_DATE" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("TOKEN_ID")
 );
-
 -- Tabla: t_report_text_templates
 CREATE TABLE IF NOT EXISTS public.t_report_text_templates (
   "TEMPLATE_ID" INTEGER DEFAULT nextval('"t_report_text_templates_TEMPLATE_ID_seq"'::regclass) NOT NULL,
@@ -1589,7 +907,6 @@ CREATE TABLE IF NOT EXISTS public.t_report_text_templates (
   "STATUS" SMALLINT DEFAULT 1,
   PRIMARY KEY ("TEMPLATE_ID")
 );
-
 -- Tabla: t_request_types
 CREATE TABLE IF NOT EXISTS public.t_request_types (
   "REQUEST_TYPE_ID" INTEGER DEFAULT nextval('"t_request_types_REQUEST_TYPE_ID_seq"'::regclass) NOT NULL,
@@ -1608,7 +925,6 @@ CREATE TABLE IF NOT EXISTS public.t_request_types (
   "CATEGORY" VARCHAR(50) DEFAULT 'GENERAL'::character varying,
   PRIMARY KEY ("REQUEST_TYPE_ID")
 );
-
 -- Tabla: t_roles
 CREATE TABLE IF NOT EXISTS public.t_roles (
   "ID_ROLS" INTEGER DEFAULT nextval('"t_roles_ID_ROLS_seq"'::regclass) NOT NULL,
@@ -1624,14 +940,12 @@ CREATE TABLE IF NOT EXISTS public.t_roles (
   "IS_SYSTEM" BOOLEAN DEFAULT false NOT NULL,
   PRIMARY KEY ("ID_ROLS")
 );
-
 -- Tabla: t_roles_permissions
 CREATE TABLE IF NOT EXISTS public.t_roles_permissions (
   "ROLES_ID" INTEGER NOT NULL,
   "PERMISSIONS_ID" INTEGER NOT NULL,
   PRIMARY KEY ("ROLES_ID", "PERMISSIONS_ID")
 );
-
 -- Tabla: t_security_questions
 CREATE TABLE IF NOT EXISTS public.t_security_questions (
   "SECURITY_QUESTIONS_ID" INTEGER DEFAULT nextval('"t_security_questions_SECURITY_QUESTIONS_ID_seq"'::regclass) NOT NULL,
@@ -1641,7 +955,6 @@ CREATE TABLE IF NOT EXISTS public.t_security_questions (
   "CUSTOM_QUESTION" TEXT,
   PRIMARY KEY ("SECURITY_QUESTIONS_ID")
 );
-
 -- Tabla: t_session
 CREATE TABLE IF NOT EXISTS public.t_session (
   "SESSION_ID" INTEGER DEFAULT nextval('"t_session_SESSION_ID_seq"'::regclass) NOT NULL,
@@ -1656,7 +969,6 @@ CREATE TABLE IF NOT EXISTS public.t_session (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("SESSION_ID", "USER_ID")
 );
-
 -- Tabla: t_session_attempts
 CREATE TABLE IF NOT EXISTS public.t_session_attempts (
   "ATTEMPT_ID" INTEGER DEFAULT nextval('"t_session_attempts_ATTEMPT_ID_seq"'::regclass) NOT NULL,
@@ -1672,7 +984,6 @@ CREATE TABLE IF NOT EXISTS public.t_session_attempts (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("ATTEMPT_ID", "USER_ID")
 );
-
 -- Tabla: t_session_history
 CREATE TABLE IF NOT EXISTS public.t_session_history (
   "SESSION_HISTORY_ID" INTEGER DEFAULT nextval('"t_session_history_SESSION_HISTORY_ID_seq"'::regclass) NOT NULL,
@@ -1683,7 +994,6 @@ CREATE TABLE IF NOT EXISTS public.t_session_history (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("SESSION_HISTORY_ID", "SESSION_ID", "USER_ID")
 );
-
 -- Tabla: t_student_documents
 CREATE TABLE IF NOT EXISTS public.t_student_documents (
   "DOCUMENT_ID" INTEGER DEFAULT nextval('"t_student_documents_DOCUMENT_ID_seq"'::regclass) NOT NULL,
@@ -1707,7 +1017,6 @@ CREATE TABLE IF NOT EXISTS public.t_student_documents (
   student_person_id INTEGER NOT NULL,
   PRIMARY KEY ("DOCUMENT_ID")
 );
-
 -- Tabla: t_student_requests
 CREATE TABLE IF NOT EXISTS public.t_student_requests (
   "REQUEST_ID" INTEGER DEFAULT nextval('"t_student_requests_REQUEST_ID_seq"'::regclass) NOT NULL,
@@ -1735,7 +1044,6 @@ CREATE TABLE IF NOT EXISTS public.t_student_requests (
   student_person_id INTEGER NOT NULL,
   PRIMARY KEY ("REQUEST_ID")
 );
-
 -- Tabla: t_students
 CREATE TABLE IF NOT EXISTS public.t_students (
   "STUDENTS_ID" INTEGER DEFAULT nextval('"t_students_STUDENTS_ID_seq"'::regclass) NOT NULL,
@@ -1759,7 +1067,6 @@ CREATE TABLE IF NOT EXISTS public.t_students (
   "USER_ID" INTEGER,
   PRIMARY KEY ("STUDENTS_ID")
 );
-
 -- Tabla: t_system_institution
 CREATE TABLE IF NOT EXISTS public.t_system_institution (
   system_institution_id INTEGER DEFAULT nextval('t_system_institution_system_institution_id_seq'::regclass) NOT NULL,
@@ -1781,7 +1088,6 @@ CREATE TABLE IF NOT EXISTS public.t_system_institution (
   extension VARCHAR(255) DEFAULT ''::character varying NOT NULL,
   PRIMARY KEY (system_institution_id)
 );
-
 -- Tabla: t_system_nucleus
 CREATE TABLE IF NOT EXISTS public.t_system_nucleus (
   nucleus_id INTEGER DEFAULT nextval('t_system_nucleus_nucleus_id_seq'::regclass) NOT NULL,
@@ -1797,7 +1103,6 @@ CREATE TABLE IF NOT EXISTS public.t_system_nucleus (
   updated_at TIMESTAMP DEFAULT now() NOT NULL,
   PRIMARY KEY (nucleus_id)
 );
-
 -- Tabla: t_tables
 CREATE TABLE IF NOT EXISTS public.t_tables (
   "TABLE_ID" INTEGER DEFAULT nextval('"t_tables_TABLE_ID_seq"'::regclass) NOT NULL,
@@ -1808,7 +1113,6 @@ CREATE TABLE IF NOT EXISTS public.t_tables (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("TABLE_ID")
 );
-
 -- Tabla: t_tutor_career
 CREATE TABLE IF NOT EXISTS public.t_tutor_career (
   "TUTOR_CAREER_ID" BIGINT DEFAULT nextval('"t_tutor_career_TUTOR_CAREER_ID_seq"'::regclass) NOT NULL,
@@ -1817,7 +1121,6 @@ CREATE TABLE IF NOT EXISTS public.t_tutor_career (
   "CAREER_ID" INTEGER NOT NULL,
   PRIMARY KEY ("TUTOR_CAREER_ID")
 );
-
 -- Tabla: t_tutors
 CREATE TABLE IF NOT EXISTS public.t_tutors (
   "TUTOR_ID" INTEGER DEFAULT nextval('"t_tutors_TUTOR_ID_seq"'::regclass) NOT NULL,
@@ -1841,7 +1144,6 @@ CREATE TABLE IF NOT EXISTS public.t_tutors (
   "ATTENTION_SCHEDULE" VARCHAR(255) DEFAULT NULL::character varying,
   PRIMARY KEY ("TUTOR_ID")
 );
-
 -- Tabla: t_user
 CREATE TABLE IF NOT EXISTS public.t_user (
   "USER_ID" INTEGER DEFAULT nextval('"t_user_USER_ID_seq"'::regclass) NOT NULL,
@@ -1865,7 +1167,6 @@ CREATE TABLE IF NOT EXISTS public.t_user (
   "LAST_LOGIN" TIMESTAMP,
   PRIMARY KEY ("USER_ID")
 );
-
 -- Tabla: t_user_key
 CREATE TABLE IF NOT EXISTS public.t_user_key (
   "USER_KEY_ID" INTEGER DEFAULT nextval('"t_user_key_USER_KEY_ID_seq"'::regclass) NOT NULL,
@@ -1883,7 +1184,6 @@ CREATE TABLE IF NOT EXISTS public.t_user_key (
   "IS_TEMPORARY" BOOLEAN DEFAULT false,
   PRIMARY KEY ("USER_KEY_ID", "USER_ID")
 );
-
 -- Tabla: t_user_notification_prefs
 CREATE TABLE IF NOT EXISTS public.t_user_notification_prefs (
   "ID" INTEGER DEFAULT nextval('"t_user_notification_prefs_ID_seq"'::regclass) NOT NULL,
@@ -1895,7 +1195,6 @@ CREATE TABLE IF NOT EXISTS public.t_user_notification_prefs (
   "UPDATED_AT" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("ID")
 );
-
 -- Tabla: t_user_questions
 CREATE TABLE IF NOT EXISTS public.t_user_questions (
   "USER_QUESTION_ID" INTEGER DEFAULT nextval('"t_user_questions_USER_QUESTION_ID_seq"'::regclass) NOT NULL,
@@ -1910,14 +1209,12 @@ CREATE TABLE IF NOT EXISTS public.t_user_questions (
   "STATUS" SMALLINT DEFAULT 1 NOT NULL,
   PRIMARY KEY ("USER_QUESTION_ID")
 );
-
 -- Tabla: t_user_roles
 CREATE TABLE IF NOT EXISTS public.t_user_roles (
   "ID_USER" INTEGER NOT NULL,
   "ID_ROLES" INTEGER NOT NULL,
   PRIMARY KEY ("ID_USER", "ID_ROLES")
 );
-
 -- Tabla: t_user_theme
 CREATE TABLE IF NOT EXISTS public.t_user_theme (
   "USER_THEME_ID" INTEGER DEFAULT nextval('"t_user_theme_USER_THEME_ID_seq"'::regclass) NOT NULL,
@@ -1933,7 +1230,6 @@ CREATE TABLE IF NOT EXISTS public.t_user_theme (
   "STATUS" SMALLINT DEFAULT 1 NOT NULL,
   PRIMARY KEY ("USER_THEME_ID")
 );
-
 -- Tabla: t_value_list
 CREATE TABLE IF NOT EXISTS public.t_value_list (
   "VALUE_LIST_ID" INTEGER DEFAULT nextval('"t_value_list_VALUE_LIST_ID_seq"'::regclass) NOT NULL,
@@ -1950,7 +1246,6 @@ CREATE TABLE IF NOT EXISTS public.t_value_list (
   "STATUS" SMALLINT NOT NULL,
   PRIMARY KEY ("VALUE_LIST_ID")
 );
-
 -- Tabla: t_visit
 CREATE TABLE IF NOT EXISTS public.t_visit (
   "VISIT_ID" INTEGER DEFAULT nextval('"t_visit_VISIT_ID_seq"'::regclass) NOT NULL,
@@ -1963,7 +1258,6 @@ CREATE TABLE IF NOT EXISTS public.t_visit (
   "PROFESSIONAL_PRACTICE_ID" INTEGER NOT NULL,
   PRIMARY KEY ("VISIT_ID")
 );
-
 -- Tablas excluidas del backup (solo estructura)
 CREATE TABLE IF NOT EXISTS "t_backups" (
   "id" UUID NOT NULL DEFAULT gen_random_uuid(),
@@ -1977,7 +1271,6 @@ CREATE TABLE IF NOT EXISTS "t_backups" (
   "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 -- ============================================================
 -- SECCIÓN 4: DATOS (INSERT)
 -- ============================================================
@@ -1986,7 +1279,6 @@ CREATE TABLE IF NOT EXISTS "t_backups" (
 -- Tabla: t_academic_config (1 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_academic_config" ("CONFIG_ID", "DEFAULT_ENROLLMENT_GRACE_DAYS", "DEFAULT_EVALUATION_GRACE_DAYS", "UPDATED_AT", "UPDATED_BY", "allow_multiple_visits_per_day", "max_visits_per_day", "ALLOW_MULTIPLE_VISITS_PER_DAY", "MAX_VISITS_PER_DAY", "LOCK_API_LOADED_FIELDS") VALUES (1, 64, 31, '2026-06-26T13:05:21.928', 1, TRUE, 3, TRUE, 3, TRUE);
-
 -- --------------------------------------------------------
 -- Tabla: t_address (24 registros)
 -- --------------------------------------------------------
@@ -2014,7 +1306,6 @@ INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "refere
 INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (30, 128, 'cambio de ruta', '', '2026-06-24T01:31:39.962582+00:00', '224f6538-0561-44af-b600-b8b804ec8567', NULL, '2026-06-24T01:31:39.962582+00:00', 1, NULL);
 INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (31, 29, 'otra direccion', NULL, '2026-06-24T01:44:05.555327+00:00', '447eebdc-2f17-4fb4-bb3a-b7b4c42f3eb1', NULL, '2026-06-24T01:44:05.555327+00:00', 1, NULL);
 INSERT INTO "t_address" ("address_id", "parroquia_id", "street_address", "reference", "created_at", "uuid", "full_address", "updated_at", "version", "deleted_at") VALUES (32, 725, 'av escopeta calle pum pum', 'al lado del cartucho', '2026-07-02T15:11:59.578671+00:00', '5f5cdbc5-bac6-433a-92f4-42adce4fe42d', NULL, '2026-07-02T15:11:59.578671+00:00', 1, NULL);
-
 -- --------------------------------------------------------
 -- Tabla: t_address_type (4 registros)
 -- --------------------------------------------------------
@@ -2022,7 +1313,6 @@ INSERT INTO "t_address_type" ("address_type_id", "code", "name", "description", 
 INSERT INTO "t_address_type" ("address_type_id", "code", "name", "description", "status") VALUES (2, 'WORK', 'Laboral', 'Dirección del lugar de trabajo', 1);
 INSERT INTO "t_address_type" ("address_type_id", "code", "name", "description", "status") VALUES (3, 'FISCAL', 'Fiscal', 'Dirección fiscal registrada', 1);
 INSERT INTO "t_address_type" ("address_type_id", "code", "name", "description", "status") VALUES (4, 'TEMPORAL', 'Temporal', 'Dirección temporal o de contacto', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_auth_log (613 registros)
 -- --------------------------------------------------------
@@ -2639,7 +1929,6 @@ INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "U
 INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (611, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-05T21:24:30.744521+00:00');
 INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (612, 1, 'V12345678', 'LOGOUT', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Cierre de sesión manual', '2026-07-05T21:40:56.90908+00:00');
 INSERT INTO "t_auth_log" ("ID", "USER_ID", "USER_CI", "ACTION", "IP_ADDRESS", "USER_AGENT", "DETAILS", "CREATED_AT") VALUES (613, 1, 'V12345678', 'LOGIN_SUCCESS', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Inicio de sesión exitoso', '2026-07-05T21:56:54.348169+00:00');
-
 -- --------------------------------------------------------
 -- Tabla: t_career (7 registros)
 -- --------------------------------------------------------
@@ -2650,7 +1939,6 @@ INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRAD
 INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRADE", "CAREER_ABBREVIATION", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "CAREER_TYPE", "SEMESTER") VALUES (1, 'CARRERA TESTS', '1234', 16, 'CAREERTEST', '2026-06-16T03:54:07.398', 1, '2026-06-16T03:54:07.398', 9, '2026-07-02T13:30:35.42', 9, '2026-07-02T13:36:49.338', 1, 'CORTA', '5');
 INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRADE", "CAREER_ABBREVIATION", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "CAREER_TYPE", "SEMESTER") VALUES (7, 'REPUESTOS AUTOMOTRIZ', '1013', 15, 'IRA', '2026-07-02T15:05:45.738', 9, '2026-07-02T15:05:45.738', 9, '2026-07-02T15:05:45.738', 9, '2026-07-02T15:05:45.738', 1, 'LARGA', '8');
 INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRADE", "CAREER_ABBREVIATION", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "CAREER_TYPE", "SEMESTER") VALUES (5, 'CARRERA DE PRUEBA', '12348', 16, 'CAREER-P', '2026-06-22T01:42:06.519', 1, '2026-07-03T02:12:11.594', 1, '2026-06-22T01:42:06.519', 1, '2026-06-22T01:42:06.519', 1, 'LARGA', '8');
-
 -- --------------------------------------------------------
 -- Tabla: t_career_internship_type (17 registros)
 -- --------------------------------------------------------
@@ -2671,7 +1959,6 @@ INSERT INTO "t_career_internship_type" ("ID_CAREER_INTERNSHIP_TYPE_ID", "CAREER_
 INSERT INTO "t_career_internship_type" ("ID_CAREER_INTERNSHIP_TYPE_ID", "CAREER_ID", "INTERNSHIP_TYPE_ID") VALUES (20, 6, 3);
 INSERT INTO "t_career_internship_type" ("ID_CAREER_INTERNSHIP_TYPE_ID", "CAREER_ID", "INTERNSHIP_TYPE_ID") VALUES (21, 7, 1);
 INSERT INTO "t_career_internship_type" ("ID_CAREER_INTERNSHIP_TYPE_ID", "CAREER_ID", "INTERNSHIP_TYPE_ID") VALUES (22, 5, 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_change_log (584 registros)
 -- --------------------------------------------------------
@@ -3259,7 +2546,6 @@ INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID
 INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (846, '2026-07-03T19:16:30.977', 23, 130, 2, 1, '', '2', '127.0.0.1', 0, '', 1);
 INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (847, '2026-07-03T19:16:31.218', 23, 128, 2, 1, '', '1', '127.0.0.1', 0, '', 1);
 INSERT INTO "t_change_log" ("CHANGE_LOG_ID", "DATE_TIME", "TABLE_ID", "COLUMN_ID", "OPERATION_ID", "USER_ID", "NEW_VALUE", "OLD_VALUE", "IP_ADDRESS", "FORM_ID", "PRINT_EMAIL", "STATUS") VALUES (848, '2026-07-03T19:16:31.514', 23, 124, 2, 1, '0', '1', '127.0.0.1', 0, '', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_columns (108 registros)
 -- --------------------------------------------------------
@@ -3371,18 +2657,15 @@ INSERT INTO "t_columns" ("COLUMN_ID", "TABLE_ID", "COLUMN_NAME", "STATUS") VALUE
 INSERT INTO "t_columns" ("COLUMN_ID", "TABLE_ID", "COLUMN_NAME", "STATUS") VALUES (88, 19, 'PHONE', 1);
 INSERT INTO "t_columns" ("COLUMN_ID", "TABLE_ID", "COLUMN_NAME", "STATUS") VALUES (130, 23, 'PRACTICES_STATUS', 1);
 INSERT INTO "t_columns" ("COLUMN_ID", "TABLE_ID", "COLUMN_NAME", "STATUS") VALUES (144, 25, 'HOURS_WORKED', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_config (1 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_config" ("CONFIG_ID", "RECOVERY_EMAIL", "BLOCKING_DAYS", "WRONG_KEY_LOCK", "ATTEMPTS_KEY_BLOCK", "KEY_EXPIRATION", "EXPIRATION_DAYS", "USER_UPPERCASE", "USER_LOWERCASE", "USER_NUMBERS", "USER_SPECIAL_CHARACTERS", "USER_NUM_UPPERCASE", "USER_NUM_LOWERCASE", "USER_NUM_NUMBERS", "USER_NUM_SPECIAL_CHARACTERS", "KEY_UPPERCASE", "KEY_LOWERCASE", "KEY_NUMBERS", "KEY_SPECIAL_CHARACTERS", "KEY_NUM_UPPERCASE", "KEY_NUM_LOWERCASE", "KEY_NUM_NUMBERS", "KEY_NUM_SPECIAL_CHARACTERS", "USER_LENGTH", "KEY_LEGTH", "SECURITY_QUESTIONS", "TOTAL_QUESTIONS", "TOTAL_PRESET_QUESTIONS", "TOTAL_USER_QUESTIONS", "TOTAL_ANSWERS", "PERIOD_VALIDATION_RULES", "EVALUATION_CONFIG", "SESSION_MAX_HOURS", "RECOVERY_LINK_EXPIRY_HOURS") VALUES (1, 1, 0, 1, 4, 2, 90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 20, 1, 3, 3, 0, 3, '{"visit":{"create":{"skipPeriodStatusCheck":false},"update":{"skipPeriodStatusCheck":false}},"enrollment":{"create":{"usePeriodGraceDays":true,"skipPeriodStatusCheck":false},"update":{"usePeriodGraceDays":true,"skipPeriodStatusCheck":false}},"evaluation":{"create":{"extendEndDateDays":10,"usePeriodGraceDays":true,"skipPeriodStatusCheck":false,"requirePracticesStatusInscribed":true},"update":{"extendEndDateDays":10,"usePeriodGraceDays":true,"skipPeriodStatusCheck":false,"requirePracticesStatusInscribed":true}},"pre-enrollment":{"create":{"skipPeriodStatusCheck":false},"update":{"skipPeriodStatusCheck":true}}}', '{"score":{"max":20,"min":1,"displayScale":20},"weights":{"COMITE":0.3,"ACADEMICO":0.3,"INSTITUCIONAL":0.4},"evaluationWindowDays":10}', 24, 78);
-
 -- --------------------------------------------------------
 -- Tabla: t_coordinadores (2 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_coordinadores" ("COORDINADOR_ID", "TIPO", "CAREER_ID", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CI", "CARGO", "CREATION_DATE", "STATUS") VALUES (1, 'COORDINADOR', NULL, 'ANGELA MARGARITA', NULL, 'CASTILLO SABINA', NULL, '9663439', 'COORDINADORA DE PASANTÍAS', '2026-06-21T19:30:35.223475', 1);
 INSERT INTO "t_coordinadores" ("COORDINADOR_ID", "TIPO", "CAREER_ID", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CI", "CARGO", "CREATION_DATE", "STATUS") VALUES (2, 'COORDINADOR', NULL, 'PEDRO', NULL, 'SANCHEZ', NULL, 'V-10456789', 'COORDINADOR ACADÉMICO', '2026-06-21T19:30:35.223475', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_email_templates (4 registros)
 -- --------------------------------------------------------
@@ -3390,7 +2673,6 @@ INSERT INTO "t_email_templates" ("id", "name", "description", "category", "subje
 INSERT INTO "t_email_templates" ("id", "name", "description", "category", "subject", "body_html", "created_at", "updated_at") VALUES (6, 'Fin de Lapso Académico', 'Notificar a estudiantes sobre el cierre del período académico', 'periodo', '⏰ Cierre de lapso {{periodo}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>Cierre del {{periodo}}</h2><p>Hola {{nombre}},</p><p>Te informamos que el lapso académico <strong>{{periodo}}</strong> finaliza el <strong>{{fecha_fin}}</strong>.</p><p>Asegurate de tener toda tu documentación al día antes del cierre.</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', '2026-06-16T03:24:37.541816+00:00', '2026-06-16T03:24:37.541816+00:00');
 INSERT INTO "t_email_templates" ("id", "name", "description", "category", "subject", "body_html", "created_at", "updated_at") VALUES (7, 'Reporte de Evaluación', 'Notificar a tutores sobre reportes de evaluación disponibles', 'evaluacion', '📋 Reporte de evaluación disponible', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>Reporte de Evaluación</h2><p>Hola {{nombre}},</p><p>Tenés disponible el reporte de evaluación del período <strong>{{periodo}}</strong>.</p><p>Ingresá al sistema para revisar los resultados y completar las evaluaciones pendientes de tus estudiantes asignados.</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', '2026-06-16T03:24:37.541816+00:00', '2026-06-16T03:24:37.541816+00:00');
 INSERT INTO "t_email_templates" ("id", "name", "description", "category", "subject", "body_html", "created_at", "updated_at") VALUES (8, 'Aviso General', 'Plantilla genérica para comunicados institucionales', 'general', '{{asunto}}', '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;"><div style="background: #1e40af; padding: 20px; text-align: center; color: white;"><h1 style="margin: 0;">SIGP UNEFA</h1></div><div style="padding: 24px; color: #1e293b;"><h2>{{asunto}}</h2><p>Hola {{nombre}},</p><p>{{mensaje}}</p><hr style="border-top: 1px solid #e2e8f0;"><p style="font-size: 12px; color: #94a3b8; text-align: center;">SIGP UNEFA — Sistema de Gestión de Personal</p></div></div>', '2026-06-16T03:24:37.541816+00:00', '2026-06-16T03:24:37.541816+00:00');
-
 -- --------------------------------------------------------
 -- Tabla: t_enrollment_field_changes (13 registros)
 -- --------------------------------------------------------
@@ -3407,7 +2689,6 @@ INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID
 INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (11, 19, 'INSTITUTION', 'HOSPITAL DR. MARÍA AUXILIADORA', 'EMPRESA DE PRUEBA GVG', 1, '2026-06-27T22:00:02.318338');
 INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (12, 19, 'INSTITUTION_RESPONSIBLE', 'null', 'CARLOS MENDOZA', 1, '2026-06-27T22:00:02.318338');
 INSERT INTO "t_enrollment_field_changes" ("CHANGE_ID", "PROFESSIONAL_PRACTICE_ID", "FIELD_NAME", "OLD_VALUE", "NEW_VALUE", "CHANGED_BY", "CHANGED_AT") VALUES (13, 10, 'TUTOR_ACADEMICO', 'ANA MONTERO', 'MARIA GONZALEZ', 1, '2026-06-30T00:36:06.93253');
-
 -- --------------------------------------------------------
 -- Tabla: t_estado (24 registros)
 -- --------------------------------------------------------
@@ -3435,7 +2716,6 @@ INSERT INTO "t_estado" ("estado_id", "iso_31662", "name", "capital") VALUES (21,
 INSERT INTO "t_estado" ("estado_id", "iso_31662", "name", "capital") VALUES (22, 'VE-U', 'Yaracuy', 'San Felipe');
 INSERT INTO "t_estado" ("estado_id", "iso_31662", "name", "capital") VALUES (23, 'VE-V', 'Zulia', 'Maracaibo');
 INSERT INTO "t_estado" ("estado_id", "iso_31662", "name", "capital") VALUES (24, 'VE-A', 'Distrito Capital', 'Caracas');
-
 -- --------------------------------------------------------
 -- Tabla: t_evaluation (34 registros)
 -- --------------------------------------------------------
@@ -3473,7 +2753,6 @@ INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUA
 INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (39, 20, 'ACADEMICO', NULL, 'ANTONY FIGUEROA', 'V-6885265', 5, NULL, '2026-06-28T22:39:11.100872', NULL, 1, 1, NULL, NULL, NULL, NULL);
 INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (45, 20, 'COMITE', NULL, 'EVAL 2', NULL, 20, NULL, '2026-06-30T18:11:08.528349', 2, 1, 1, NULL, NULL, NULL, NULL);
 INSERT INTO "t_evaluation" ("EVALUATION_ID", "PROFESSIONAL_PRACTICE_ID", "EVALUATOR_TYPE", "EVALUATOR_ID", "EVALUATOR_NAME", "EVALUATOR_CI", "TOTAL_SCORE", "OBSERVATIONS", "EVALUATION_DATE", "COMITE_MEMBER_INDEX", "REGISTERED_BY", "STATUS", "frozen_at", "unfrozen_at", "unfreeze_reason", "unfreeze_authorized_by") VALUES (46, 20, 'COMITE', NULL, 'EVAL 3', NULL, 20, NULL, '2026-06-30T18:16:45.366552', 3, 1, 1, NULL, NULL, NULL, NULL);
-
 -- --------------------------------------------------------
 -- Tabla: t_evaluation_criteria (55 registros)
 -- --------------------------------------------------------
@@ -3532,7 +2811,6 @@ INSERT INTO "t_evaluation_criteria" ("CRITERIA_ID", "ITEM_NUMBER", "DESCRIPTION"
 INSERT INTO "t_evaluation_criteria" ("CRITERIA_ID", "ITEM_NUMBER", "DESCRIPTION", "EVALUATOR_TYPE", "STATUS") VALUES (18, 18, 'Capacidad para obtener información respecto a su entorno y compartirla con el resto del personal', 'INSTITUCIONAL', 1);
 INSERT INTO "t_evaluation_criteria" ("CRITERIA_ID", "ITEM_NUMBER", "DESCRIPTION", "EVALUATOR_TYPE", "STATUS") VALUES (19, 19, 'Capacidad de trabajo bajo condiciones adversas de tiempo', 'INSTITUCIONAL', 1);
 INSERT INTO "t_evaluation_criteria" ("CRITERIA_ID", "ITEM_NUMBER", "DESCRIPTION", "EVALUATOR_TYPE", "STATUS") VALUES (20, 20, 'Habilidades para el trabajo en equipo por encima de las diferencias personales', 'INSTITUCIONAL', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_evaluation_detail (345 registros)
 -- --------------------------------------------------------
@@ -3881,7 +3159,6 @@ INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", 
 INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (615, 46, 53, 13, 20, 1);
 INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (616, 46, 54, 14, 20, 1);
 INSERT INTO "t_evaluation_detail" ("DETAIL_ID", "EVALUATION_ID", "CRITERIA_ID", "ITEM_NUMBER", "SCORE", "STATUS") VALUES (617, 46, 55, 15, 20, 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_institution (9 registros)
 -- --------------------------------------------------------
@@ -3894,7 +3171,6 @@ INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_
 INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (19, 'EMPRESA DE PRUEBA GVG', 'DFGHJK', '0412-4567890', '2', 'LOS LLANOS', 'PORTUGUESA', 'ACARIGUA', '2026-06-24T14:44:54.301', 'MIXTA', 1, 'G-851881818', 'G-851881818');
 INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (20, 'JAPON', 'ROMULO GALLEGO - POR LA CANAL', '0412-5571645', '1', '', '', '', '2026-07-02T15:15:22.187', 'PRIVADA', 1, 'J-506703998', 'J-506703998');
 INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "INSTITUTION_CODE") VALUES (4, 'AMBULATORIO URBANO DR. JOSÉ GREGORIO HERNÁNDEZ', 'Av. Libertador, Araure', '02554433221', 'HOSPITALARIA', 'PORTUGUESA', 'PORTUGUESA', 'ACARIGUA', '2026-06-21T03:41:24.145114', 'PÚBLICA', 0, 'J-45678901', 'AUJ-001');
-
 -- --------------------------------------------------------
 -- Tabla: t_institution_career (17 registros)
 -- --------------------------------------------------------
@@ -3915,7 +3191,6 @@ INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INST
 INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (15, '2026-06-24T14:45:00.194229+00:00', 19, 6);
 INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (16, '2026-06-24T14:45:00.194229+00:00', 19, 4);
 INSERT INTO "t_institution_career" ("INSTITUTION_CAREER_ID", "created_at", "INSTITUTION_ID", "CAREER_ID") VALUES (17, '2026-07-02T15:15:23.998112+00:00', 20, 7);
-
 -- --------------------------------------------------------
 -- Tabla: t_institution_internship_type (5 registros)
 -- --------------------------------------------------------
@@ -3924,14 +3199,12 @@ INSERT INTO "t_institution_internship_type" ("INSTITUTION_INTERNSHIP_TYPE_ID", "
 INSERT INTO "t_institution_internship_type" ("INSTITUTION_INTERNSHIP_TYPE_ID", "created_at", "INSTITUTION_ID", "INTERNSHIP_TYPE_ID") VALUES (3, '2026-06-24T00:27:26.025787+00:00', 18, 1);
 INSERT INTO "t_institution_internship_type" ("INSTITUTION_INTERNSHIP_TYPE_ID", "created_at", "INSTITUTION_ID", "INTERNSHIP_TYPE_ID") VALUES (4, '2026-06-24T14:44:55.949407+00:00', 19, 2);
 INSERT INTO "t_institution_internship_type" ("INSTITUTION_INTERNSHIP_TYPE_ID", "created_at", "INSTITUTION_ID", "INTERNSHIP_TYPE_ID") VALUES (5, '2026-07-02T15:15:22.397055+00:00', 20, 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_institution_manager (3 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_institution_manager" ("MANAGER_ID", "person_id", "MANAGER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "EMAIL", "CREATION_DATE", "STATUS", "INSTITUTION_ID", "cargo", "TITLE") VALUES (4, 45, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-23T15:21:57.964', 1, NULL, NULL, 'MEDICO VETERINARIO');
 INSERT INTO "t_institution_manager" ("MANAGER_ID", "person_id", "MANAGER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "EMAIL", "CREATION_DATE", "STATUS", "INSTITUTION_ID", "cargo", "TITLE") VALUES (6, 88, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-02T15:17:22.004', 1, NULL, NULL, 'TÉCNICO SUPERIOR');
 INSERT INTO "t_institution_manager" ("MANAGER_ID", "person_id", "MANAGER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "EMAIL", "CREATION_DATE", "STATUS", "INSTITUTION_ID", "cargo", "TITLE") VALUES (5, 49, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-24T14:45:39.447', 1, NULL, NULL, 'FARMACÉUTICO');
-
 -- --------------------------------------------------------
 -- Tabla: t_institution_manager_institution (4 registros)
 -- --------------------------------------------------------
@@ -3939,14 +3212,12 @@ INSERT INTO "t_institution_manager_institution" ("INSTITUTION_MANAGER_INSTITUTIO
 INSERT INTO "t_institution_manager_institution" ("INSTITUTION_MANAGER_INSTITUTION_ID", "created_at", "MANAGER_ID", "INSTITUTION_ID", "cargo") VALUES (3, '2026-06-23T15:25:05.311423+00:00', 4, 17, 'UGUUJN');
 INSERT INTO "t_institution_manager_institution" ("INSTITUTION_MANAGER_INSTITUTION_ID", "created_at", "MANAGER_ID", "INSTITUTION_ID", "cargo") VALUES (4, '2026-06-24T14:45:39.511684+00:00', 5, 19, 'SFDFD');
 INSERT INTO "t_institution_manager_institution" ("INSTITUTION_MANAGER_INSTITUTION_ID", "created_at", "MANAGER_ID", "INSTITUTION_ID", "cargo") VALUES (5, '2026-07-02T15:17:22.174472+00:00', 6, 20, 'JEFE');
-
 -- --------------------------------------------------------
 -- Tabla: t_internship_type (3 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_internship_type" ("INTERNSHIP_TYPE_ID", "NAME", "PRIORITY", "CREATION_DATE", "STATUS", "HOURS_REQUIRED") VALUES (1, 'ÚNICA', 0, '2026-06-16T03:12:17.850399', 1, 360);
 INSERT INTO "t_internship_type" ("INTERNSHIP_TYPE_ID", "NAME", "PRIORITY", "CREATION_DATE", "STATUS", "HOURS_REQUIRED") VALUES (2, 'HOSPITALARIA', 2, '2026-06-16T03:12:17.850399', 1, 480);
 INSERT INTO "t_internship_type" ("INTERNSHIP_TYPE_ID", "NAME", "PRIORITY", "CREATION_DATE", "STATUS", "HOURS_REQUIRED") VALUES (3, 'COMUNITARIA', 1, '2026-06-16T03:12:17.850399', 1, 360);
-
 -- --------------------------------------------------------
 -- Tabla: t_internships_period (9 registros)
 -- --------------------------------------------------------
@@ -3959,7 +3230,6 @@ INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENRO
 INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (8, '2028-01-01', '2028-04-22', 21, 10, '2026-06-22T01:46:36.413', '1-2028', '1', 1, '1-2028');
 INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (9, '2028-04-23', '2028-08-13', 21, 10, '2026-06-22T01:55:30.823', '2-2028', '1', 1, '2-2028');
 INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "ENROLLMENT_GRACE_DAYS", "EVALUATION_GRACE_DAYS", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES (6, '2027-01-01', '2027-04-23', 21, 10, '2026-06-20T22:20:50.448', '1-2027', '1', 1, '1-2027');
-
 -- --------------------------------------------------------
 -- Tabla: t_knowledge_base (8 registros)
 -- --------------------------------------------------------
@@ -4124,7 +3394,6 @@ INSERT INTO "t_knowledge_base" ("id", "title", "category", "content", "embedding
 - La nota final se registra en el sistema de evaluaciones
 
 *Fuente: Reglamento General de la UNEFA. Para el texto completo, contacta a la Dirección de Asuntos Académicos.*', NULL, '{"tags":["reglamento","pasantias","practicas","normativa"],"source":"Reglamento General UNEFA"}', '["0","1","2"]', TRUE, '2026-06-16T03:26:41.326294+00:00', '2026-06-16T03:26:41.326294+00:00');
-
 -- --------------------------------------------------------
 -- Tabla: t_landing_config (13 registros)
 -- --------------------------------------------------------
@@ -4141,7 +3410,6 @@ INSERT INTO "t_landing_config" ("config_id", "config_key", "config_value", "upda
 INSERT INTO "t_landing_config" ("config_id", "config_key", "config_value", "updated_at", "updated_by") VALUES (15, 'dashboard_layout_3', '{"widgets":[{"key":"tutor-quick-stats","order":0,"visible":true},{"key":"tutor-students-chart","size":"md","order":1,"visible":true},{"key":"tutor-status-distribution","order":2,"visible":true},{"key":"tutor-pending-approvals","order":3,"visible":true},{"key":"tutor-upcoming-deadlines","order":4,"visible":true},{"key":"tutor-student-alerts","order":5,"visible":true},{"key":"tutor-grade-averages","size":"xl","order":6,"visible":false}]}', '2026-06-22T14:57:21.413285', '1');
 INSERT INTO "t_landing_config" ("config_id", "config_key", "config_value", "updated_at", "updated_by") VALUES (14, 'dashboard_layout_2', '{"widgets":[{"key":"quick-stats","order":0,"visible":true},{"key":"growth-metrics","order":1,"visible":true},{"key":"evaluations","order":2,"visible":true},{"key":"geo-coincidence","order":3,"visible":true},{"key":"pending-requests","order":4,"visible":true},{"key":"registration-stats","order":5,"visible":true},{"key":"career-distribution","order":6,"visible":true},{"key":"tutor-distribution","order":7,"visible":true},{"key":"institution-distribution","order":8,"visible":true},{"key":"monthly-enrollments","order":9,"visible":true}]}', '2026-06-22T12:59:52.46', '1');
 INSERT INTO "t_landing_config" ("config_id", "config_key", "config_value", "updated_at", "updated_by") VALUES (22, 'hero', '{"title":"Impulsa tu carrera con","subtitle":"Conectamos estudiantes talentosos de la UNEFA con las mejores oportunidades en el sector público y privado para transformar su potencial en experiencia real.","mainImage":"/unefa-img/9360.jpg","statsText":"estudiantes han impulsado su carrera con nosotros.","statsCount":3200,"highlightTexts":["Creatividad","Excelencia","Valor","Éxito","Logro"],"successCardTitle":"Éxito laboral","successCardValue":"+85%","primaryButtonLink":"/signin","primaryButtonText":"Comenzar ahora","companiesCardTitle":"Empresas aliadas","companiesCardValue":"+100","secondaryButtonText":"Saber más","successCardSubtitle":"Éxito laboral","companiesCardSubtitle":"Empresas aliadas"}', '2026-06-22T18:26:56.677', '1');
-
 -- --------------------------------------------------------
 -- Tabla: t_list (31 registros)
 -- --------------------------------------------------------
@@ -4176,7 +3444,6 @@ INSERT INTO "t_list" ("LIST_ID", "NAME", "CREATION_DATE", "MODIF_USER_ID", "MODI
 INSERT INTO "t_list" ("LIST_ID", "NAME", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (14, 'ESTATUS PASANTIA', '2026-06-16T03:12:17.850399', 0, '2026-06-16T03:12:17.850399', 0, '2026-06-16T03:12:17.850399', 0, '2026-06-16T03:12:17.850399', 1);
 INSERT INTO "t_list" ("LIST_ID", "NAME", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (15, 'ESTATUS PERIODO', '2026-06-16T03:23:20.453883', 1, '2026-06-16T03:23:20.453883', 1, '2026-06-16T03:23:20.453883', 1, '2026-06-16T03:23:20.453883', 1);
 INSERT INTO "t_list" ("LIST_ID", "NAME", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (503, 'TUTOR_TYPE', '2026-06-17T02:03:37.58322', 1, '2026-06-17T02:03:37.58322', 1, '2026-06-17T02:03:37.58322', 1, '2026-06-17T02:03:37.58322', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_municipio (335 registros)
 -- --------------------------------------------------------
@@ -4515,7 +3782,6 @@ INSERT INTO "t_municipio" ("municipio_id", "estado_id", "name") VALUES (332, 23,
 INSERT INTO "t_municipio" ("municipio_id", "estado_id", "name") VALUES (333, 23, 'Sucre');
 INSERT INTO "t_municipio" ("municipio_id", "estado_id", "name") VALUES (334, 23, 'Valmore Rodríguez');
 INSERT INTO "t_municipio" ("municipio_id", "estado_id", "name") VALUES (335, 24, 'Libertador');
-
 -- --------------------------------------------------------
 -- Tabla: t_notifications (203 registros)
 -- --------------------------------------------------------
@@ -4722,14 +3988,12 @@ INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "M
 INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (217, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T20:46:06.159937');
 INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (218, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T21:56:59.639852');
 INSERT INTO "t_notifications" ("NOTIFICATION_ID", "USER_ID", "TYPE", "TITLE", "MESSAGE", "READ", "READ_AT", "DATA", "CREATED_AT") VALUES (219, 17, 'reminder', 'Bitácora pendiente', 'No has registrado ninguna actividad de pasantía aún. Recordá subir tu bitácora semanal.', FALSE, NULL, '{"reminderType":"overdue_report"}', '2026-07-05T21:56:59.856839');
-
 -- --------------------------------------------------------
 -- Tabla: t_operation (3 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_operation" ("OPERATION_ID", "ACTION", "DESCRIPTION", "STATUS") VALUES (1, 'INSERT', 'Inserción de nuevo registro', 1);
 INSERT INTO "t_operation" ("OPERATION_ID", "ACTION", "DESCRIPTION", "STATUS") VALUES (2, 'UPDATE', 'Actualización de registro', 1);
 INSERT INTO "t_operation" ("OPERATION_ID", "ACTION", "DESCRIPTION", "STATUS") VALUES (3, 'DELETE', 'Eliminación de registro', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_parroquia (1000 registros)
 -- --------------------------------------------------------
@@ -5733,14 +4997,12 @@ INSERT INTO "t_parroquia" ("parroquia_id", "municipio_id", "name") VALUES (997, 
 INSERT INTO "t_parroquia" ("parroquia_id", "municipio_id", "name") VALUES (998, 306, 'La Trinidad');
 INSERT INTO "t_parroquia" ("parroquia_id", "municipio_id", "name") VALUES (999, 307, 'Manuel Monge');
 INSERT INTO "t_parroquia" ("parroquia_id", "municipio_id", "name") VALUES (1000, 308, 'Salóm');
-
 -- --------------------------------------------------------
 -- Tabla: t_password_history (3 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_password_history" ("HISTORY_ID", "USER_ID", "KEY", "CREATION_DATE") VALUES (1, 5, '$2b$10$LcVHaWLAwmmGhr.smwBHfuYRk1pC5wBqsWxgFG.vjF.QCAHMGERG.', '2026-06-22T08:42:03');
 INSERT INTO "t_password_history" ("HISTORY_ID", "USER_ID", "KEY", "CREATION_DATE") VALUES (2, 9, '$2b$10$2sS4l1LJghI/DLR.plAiPuJ9M0Z5IbUsgUefLw6OVax6.91QMx5zG', '2026-06-22T14:09:50');
 INSERT INTO "t_password_history" ("HISTORY_ID", "USER_ID", "KEY", "CREATION_DATE") VALUES (3, 10, '$2b$10$Bu.LMNHxF6yoRwNhU7en3uwDdOafLjxwEFPSqc0NFnm8fEYsHLH6a', '2026-06-24T17:05:02');
-
 -- --------------------------------------------------------
 -- Tabla: t_permissions (70 registros)
 -- --------------------------------------------------------
@@ -5814,7 +5076,6 @@ INSERT INTO "t_permissions" ("PERMISSIONS_ID", "NAME", "MODULE", "DESCRIPTION", 
 INSERT INTO "t_permissions" ("PERMISSIONS_ID", "NAME", "MODULE", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (124, 'enrollments:create', 'Inscripciones', 'Crear inscripciones', 0, '2026-07-05T21:56:52.697', 0, '2026-07-05T21:56:52.697', 0, '2026-07-05T21:56:52.697', 1);
 INSERT INTO "t_permissions" ("PERMISSIONS_ID", "NAME", "MODULE", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (125, 'enrollments:edit', 'Inscripciones', 'Editar inscripciones', 0, '2026-07-05T21:56:52.821', 0, '2026-07-05T21:56:52.821', 0, '2026-07-05T21:56:52.821', 1);
 INSERT INTO "t_permissions" ("PERMISSIONS_ID", "NAME", "MODULE", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (130, 'tracking:delete', 'Seguimiento', 'Eliminar seguimiento', 0, '2026-07-05T21:56:53.948', 0, '2026-07-05T21:56:53.948', 0, '2026-07-05T21:56:53.948', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_person_address (24 registros)
 -- --------------------------------------------------------
@@ -5842,7 +5103,6 @@ INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", 
 INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (30, 10, 31, 3, FALSE, '2026-06-24T01:44:06.071342+00:00', 'c2a33c68-6c53-43e1-8985-32b26e0e405c', '2026-06-24T01:44:06.071342+00:00', 1);
 INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (29, 10, 30, 3, TRUE, '2026-06-24T01:31:40.474279+00:00', '84e24da7-8415-489c-b05d-d95fa2f5a08c', '2026-06-24T01:31:40.474279+00:00', 1);
 INSERT INTO "t_person_address" ("person_address_id", "person_id", "address_id", "address_type_id", "is_primary", "created_at", "uuid", "updated_at", "version") VALUES (31, 87, 32, 3, TRUE, '2026-07-02T15:11:59.846124+00:00', 'd8482c03-97c5-43ad-8d01-88c1f03e021c', '2026-07-02T15:11:59.846124+00:00', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_persons (83 registros)
 -- --------------------------------------------------------
@@ -5929,12 +5189,10 @@ INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_n
 INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (93, 'V-10690049', 'TEST', NULL, 'EST_10690049', NULL, 'test.est10690049@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-07-02T19:31:56.693843', '2026-07-02T19:31:56.693843');
 INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (94, 'V-10690050', 'TEST', NULL, 'EST_10690050', NULL, 'test.est10690050@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-07-02T19:32:07.143461', '2026-07-02T19:32:07.143461');
 INSERT INTO "t_persons" ("person_id", "ci", "first_name", "middle_name", "last_name", "second_last_name", "email", "phone", "gender", "birthdate", "address", "marital_status", "status", "created_at", "updated_at") VALUES (95, 'V-10690051', 'TEST', NULL, 'EST_10690051', NULL, 'test.est10690051@unefa.edu.ve', '04121234567', 'M', '2000-01-15', 'DIRECCIÓN DE PRUEBA', 'S', 1, '2026-07-02T19:32:14.06885', '2026-07-02T19:32:14.06885');
-
 -- --------------------------------------------------------
 -- Tabla: t_practice_culmination (1 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_practice_culmination" ("PRACTICE_ID", "STATUS", "CERTIFICATE_NUMBER", "CERTIFIED_AT", "APPROVED_AT", "APPROVED_BY", "CREATED_AT", "UPDATED_AT") VALUES (22, 1, 'CERT-2026-0001', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 1, '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647');
-
 -- --------------------------------------------------------
 -- Tabla: t_practice_visits (11 registros)
 -- --------------------------------------------------------
@@ -5949,7 +5207,6 @@ INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_
 INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (11, 10, 28, '2026-06-26T00:04:00', '137', 12, 'aaaaaaaaaa aaaaaaaaa', '', '', 1, '2026-06-30T00:04:41.768796', '2026-06-30T00:04:41.768796', 1, '139', 36);
 INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (12, 10, 26, '2026-06-24T20:04:00', '136', 1, 'aaaaaaa qwss', '', '', 1, '2026-06-30T00:05:21.907332', '2026-06-30T00:39:04.082', 1, '146', 34);
 INSERT INTO "t_practice_visits" ("VISIT_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_ID", "VISIT_DATE", "VISIT_TYPE", "HOURS_WORKED", "ACTIVITIES_PERFORMED", "OBSERVATIONS", "RECOMMENDATIONS", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY", "VISIT_CASE", "tutor_person_id") VALUES (13, 22, 1, '2026-07-03T10:00:00', 'PRESENCIAL', 4, 'REVISIÓN DE AVANCES', '', '', 1, '2026-07-05T01:30:36.440076', '2026-07-05T01:30:36.440076', 5, 'SEGUIMIENTO_REGULAR', 29);
-
 -- --------------------------------------------------------
 -- Tabla: t_preset_questions (6 registros)
 -- --------------------------------------------------------
@@ -5959,7 +5216,6 @@ INSERT INTO "t_preset_questions" ("PRESET_QUESTION_ID", "DESCRIPTION", "ANSWER",
 INSERT INTO "t_preset_questions" ("PRESET_QUESTION_ID", "DESCRIPTION", "ANSWER", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (4, '¿Cuántas mascotas tenías a los 10 años?', 'ASD', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 1);
 INSERT INTO "t_preset_questions" ("PRESET_QUESTION_ID", "DESCRIPTION", "ANSWER", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (5, '¿Cuál fue tu primera mascota?', 'ASD', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 1);
 INSERT INTO "t_preset_questions" ("PRESET_QUESTION_ID", "DESCRIPTION", "ANSWER", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (6, '¿En qué ciudad nació tu madre?', 'ASD', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 0, '2026-06-16T03:23:20.453883', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_professional_practices (17 registros)
 -- --------------------------------------------------------
@@ -5980,7 +5236,6 @@ INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE"
 INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (23, '2026-05-01', '2026-08-30', 'PP Hospitalaria - Laura Rodríguez', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 5, 0, 'M', 3, 1, 72, 1, NULL, 'Reprobada', 'REGULAR', 1, 2, 4, 'pending', '2026-2', 'U', 'DIURNO', 6, 85, NULL, FALSE, NULL, NULL, NULL, NULL);
 INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (22, '2026-02-01', '2026-05-30', 'PP Hospitalaria - Pedro Sánchez', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 16, 0, 'M', 3, 1, 71, 1, NULL, 'Culminada', 'REGULAR', 1, 2, 3, 'completed', '2026-1', 'U', 'DIURNO', 6, 84, NULL, FALSE, NULL, NULL, NULL, NULL);
 INSERT INTO "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID", "START_DATE", "END_DATE", "REPORT_TITLE", "REGISTRATION_DATE", "CREATION_DATE", "GRADE", "TRANSFER", "TOUR", "PERIOD_ID", "INSTITUTION_ID", "STUDENTS_ID", "STATUS", "MANAGER_ID", "OBSERVATION", "ENROLLMENT", "INTERNSHIP_STATUS", "INTERNSHIP_TYPE_ID", "PRACTICES_STATUS", "EVALUATION_STATUS", "SEMESTER", "SECTION", "REGIME", "CAREER_ID", "student_person_id", "DEPARTMENT", "EXTENSION_GRANTED", "EXTENSION_REASON", "EXTENSION_GRANTED_BY", "EXTENSION_GRANTED_AT", "withdrawal_type") VALUES (20, '2026-06-01', '2026-09-30', 'PP Hospitalaria - Carlos López', '2026-06-26T20:12:47.928647', '2026-06-26T20:12:47.928647', 14.5, 0, 'M', 3, 19, 69, 1, 5, 'Solo institucional', 'REGULAR', 1, 2, 4, 'completed', '2026-2', 'U', 'DIURNO', 6, 82, NULL, FALSE, NULL, NULL, NULL, NULL);
-
 -- --------------------------------------------------------
 -- Tabla: t_professional_practices_tutor (36 registros)
 -- --------------------------------------------------------
@@ -6020,12 +5275,10 @@ INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID",
 INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (35, 1, 6, 'ACADEMICO', 29, TRUE, '2026-07-04T23:10:53.005605', '2026-07-04T23:10:53.005605');
 INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (36, 1, 7, 'ACADEMICO', 29, TRUE, '2026-07-04T23:10:53.005605', '2026-07-04T23:10:53.005605');
 INSERT INTO "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICES_TUTOR_ID", "TUTOR_ID", "PROFESSIONAL_PRACTICE_ID", "TUTOR_TYPE", "tutor_person_id", "ACTIVE", "CREATED_AT", "UPDATED_AT") VALUES (37, 1, 22, 'ACADEMICO', 29, TRUE, '2026-07-04T23:10:53.005605', '2026-07-04T23:10:53.005605');
-
 -- --------------------------------------------------------
 -- Tabla: t_prospect_lists (1 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_prospect_lists" ("LIST_ID", "NAME", "DESCRIPTION", "PERIOD_ID", "STATUS", "CREATED_AT", "UPDATED_AT", "CREATED_BY") VALUES (1, 'PROSPECTO 2-2026', NULL, 3, 1, '2026-06-20T00:08:18.747644', '2026-06-20T00:08:18.747644', NULL);
-
 -- --------------------------------------------------------
 -- Tabla: t_request_types (11 registros)
 -- --------------------------------------------------------
@@ -6040,7 +5293,6 @@ INSERT INTO "t_request_types" ("REQUEST_TYPE_ID", "NAME", "DESCRIPTION", "IS_ACT
 INSERT INTO "t_request_types" ("REQUEST_TYPE_ID", "NAME", "DESCRIPTION", "IS_ACTIVE", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_REASSIGNMENT", "CATEGORY") VALUES (9, 'Cambio de Tutor', 'Solicitar cambio de tutor académico', 1, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 1, 1, 'REASSIGNMENT');
 INSERT INTO "t_request_types" ("REQUEST_TYPE_ID", "NAME", "DESCRIPTION", "IS_ACTIVE", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_REASSIGNMENT", "CATEGORY") VALUES (10, 'Cambio de Empresa', 'Solicitar cambio de empresa/institución donde realiza la pasantía', 1, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 1, 1, 'REASSIGNMENT');
 INSERT INTO "t_request_types" ("REQUEST_TYPE_ID", "NAME", "DESCRIPTION", "IS_ACTIVE", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_REASSIGNMENT", "CATEGORY") VALUES (11, 'Cambio de Carrera', 'Solicitar cambio de carrera', 1, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 0, '2026-06-16T03:16:28.263254', 1, 1, 'REASSIGNMENT');
-
 -- --------------------------------------------------------
 -- Tabla: t_roles (9 registros)
 -- --------------------------------------------------------
@@ -6053,7 +5305,6 @@ INSERT INTO "t_roles" ("ID_ROLS", "NAME", "DESCRIPTION", "MODIF_USER_ID", "MODIF
 INSERT INTO "t_roles" ("ID_ROLS", "NAME", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_SYSTEM") VALUES (2, 'ASISTENTE', 'Asistente con permisos limitados', 0, '2026-07-05T21:56:45.543', 0, '2026-07-05T21:56:45.543', 0, '2026-07-05T21:56:45.543', 1, TRUE);
 INSERT INTO "t_roles" ("ID_ROLS", "NAME", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_SYSTEM") VALUES (3, 'TUTOR', 'Tutor académico - gestión de seguimiento y notas', 0, '2026-07-05T21:56:46.039', 0, '2026-07-05T21:56:46.039', 0, '2026-07-05T21:56:46.039', 1, TRUE);
 INSERT INTO "t_roles" ("ID_ROLS", "NAME", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_SYSTEM") VALUES (4, 'ESTUDIANTE', 'Estudiante - visualización y solicitudes', 0, '2026-07-05T21:56:46.456', 0, '2026-07-05T21:56:46.456', 0, '2026-07-05T21:56:46.456', 1, TRUE);
-
 -- --------------------------------------------------------
 -- Tabla: t_roles_permissions (241 registros)
 -- --------------------------------------------------------
@@ -6298,7 +5549,6 @@ INSERT INTO "t_roles_permissions" ("ROLES_ID", "PERMISSIONS_ID") VALUES (3, 131)
 INSERT INTO "t_roles_permissions" ("ROLES_ID", "PERMISSIONS_ID") VALUES (3, 132);
 INSERT INTO "t_roles_permissions" ("ROLES_ID", "PERMISSIONS_ID") VALUES (3, 133);
 INSERT INTO "t_roles_permissions" ("ROLES_ID", "PERMISSIONS_ID") VALUES (3, 145);
-
 -- --------------------------------------------------------
 -- Tabla: t_student_requests (6 registros)
 -- --------------------------------------------------------
@@ -6308,7 +5558,6 @@ INSERT INTO "t_student_requests" ("REQUEST_ID", "STUDENT_ID", "REQUEST_TYPE_ID",
 INSERT INTO "t_student_requests" ("REQUEST_ID", "STUDENT_ID", "REQUEST_TYPE_ID", "SUBJECT", "DESCRIPTION", "STATUS", "RESPONSE", "PROCESSED_BY", "PROCESSED_AT", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS_TABLE", "REASSIGNMENT_DATA", "IS_REASSIGNMENT", "PREVIOUS_TUTOR_ID", "PREVIOUS_INSTITUTION_ID", "PREVIOUS_CAREER_ID", "student_person_id") VALUES (6, 39, 2, 'Cambio de Tutor Académico', 'Solicito el cambio de tutor académico debido a que mi tutor actual no ha tenido disponibilidad para reuniones en las últimas 3 semanas.', 'approved', NULL, 1, '2026-07-03T01:58:35.771', '2026-07-01T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 1, NULL, 0, NULL, NULL, NULL, 56);
 INSERT INTO "t_student_requests" ("REQUEST_ID", "STUDENT_ID", "REQUEST_TYPE_ID", "SUBJECT", "DESCRIPTION", "STATUS", "RESPONSE", "PROCESSED_BY", "PROCESSED_AT", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS_TABLE", "REASSIGNMENT_DATA", "IS_REASSIGNMENT", "PREVIOUS_TUTOR_ID", "PREVIOUS_INSTITUTION_ID", "PREVIOUS_CAREER_ID", "student_person_id") VALUES (4, 39, 5, 'Solicitud de Carta de Pasantía', 'Solicito la carta de culminación de pasantía para presentar en mi trabajo. Mi período finalizó la semana pasada y necesito el documento con urgencia.', 'approved', 'Su carta de pasantía ha sido aprobada. Puede pasar a retirarla por la oficina de coordinación en horario de atención (lunes a viernes 8am-4pm).', 1, '2026-07-04T23:22:01.453', '2026-06-28T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 0, '2026-07-03T00:46:31.997231', 1, NULL, 0, NULL, NULL, NULL, 56);
 INSERT INTO "t_student_requests" ("REQUEST_ID", "STUDENT_ID", "REQUEST_TYPE_ID", "SUBJECT", "DESCRIPTION", "STATUS", "RESPONSE", "PROCESSED_BY", "PROCESSED_AT", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS_TABLE", "REASSIGNMENT_DATA", "IS_REASSIGNMENT", "PREVIOUS_TUTOR_ID", "PREVIOUS_INSTITUTION_ID", "PREVIOUS_CAREER_ID", "student_person_id") VALUES (9, 39, 6, 'Constancia de Estudios - Test', 'Solicito constancia de estudios para verificar el flujo de notificaciones.', 'approved', 'Aprobado. Retirar constancia en coordinación.', 1, '2026-07-05T01:34:35.977', '2026-07-05T01:31:55.549506', 0, '2026-07-05T01:31:55.549506', 0, '2026-07-05T01:31:55.549506', 0, '2026-07-05T01:31:55.549506', 1, NULL, 0, NULL, NULL, NULL, 56);
-
 -- --------------------------------------------------------
 -- Tabla: t_students (40 registros)
 -- --------------------------------------------------------
@@ -6352,17 +5601,14 @@ INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SE
 INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (39, 56, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CIV', NULL, 'NO', 1, '2026-06-26T19:42:35', 16);
 INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (68, 81, 'V-30100001', 'María', NULL, 'García', NULL, 'F', '2000-03-15', '04140000001', 'maria.garcia@test.com', 'Urb. Las Flores', 'S', 'CIVIL', NULL, 'NO', 1, '2026-06-26T20:12:47.928647', 17);
 INSERT INTO "t_students" ("STUDENTS_ID", "person_id", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "USER_ID") VALUES (8, 10, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'MIL', 'SUBTENIENTE', 'NO', 0, '2026-06-16T14:53:37', NULL);
-
 -- --------------------------------------------------------
 -- Tabla: t_system_institution (1 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_system_institution" ("system_institution_id", "legal_name", "commercial_name", "acronym", "rif", "phone", "email", "website", "logo_url", "resolution_number", "foundation_date", "status", "created_at", "updated_at", "region", "nucleus", "extension") VALUES (1, 'UNEFA Universidad Nacional Experimental Politécnica de las Fuerzas Armadas', 'UNEFA', 'UNEFA', 'G-20000660-9', '', 'ingresopregrado@unefa.edu.ve', 'https://www.unefa.edu.ve/portal/', NULL, 'Resolución N° 28.', NULL, 1, '2026-06-16T03:23:57.825967', '2026-06-24T14:35:06.418', 'LOS LLANOS', 'PORTUGUESA', 'ACARIGUA');
-
 -- --------------------------------------------------------
 -- Tabla: t_system_nucleus (1 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_system_nucleus" ("nucleus_id", "code", "name", "region", "nucleus_type", "phone", "email", "is_main", "status", "created_at", "updated_at") VALUES (1, 'nucleo acarigua', 'acarigua portuguesa', 'LOS LLANOS', 'EXTENSIÓN', NULL, NULL, FALSE, 1, '2026-06-24T14:50:16.129', '2026-06-24T15:02:32.804');
-
 -- --------------------------------------------------------
 -- Tabla: t_tables (13 registros)
 -- --------------------------------------------------------
@@ -6379,7 +5625,6 @@ INSERT INTO "t_tables" ("TABLE_ID", "NAME", "DESCRIPTION", "PHYSICAL_NAME", "LOG
 INSERT INTO "t_tables" ("TABLE_ID", "NAME", "DESCRIPTION", "PHYSICAL_NAME", "LOG", "STATUS") VALUES (24, 'Evaluaciones', 'Evaluaciones de prácticas', 't_evaluation', 1, 1);
 INSERT INTO "t_tables" ("TABLE_ID", "NAME", "DESCRIPTION", "PHYSICAL_NAME", "LOG", "STATUS") VALUES (25, 'Visitas', 'Visitas a instituciones', 't_practice_visits', 1, 1);
 INSERT INTO "t_tables" ("TABLE_ID", "NAME", "DESCRIPTION", "PHYSICAL_NAME", "LOG", "STATUS") VALUES (26, 'Respaldos', 'Respaldos de BD', 't_backups', 0, 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_tutor_career (27 registros)
 -- --------------------------------------------------------
@@ -6410,7 +5655,6 @@ INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CARE
 INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (47, '2026-07-02T15:13:46.703521+00:00', 30, 6);
 INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (48, '2026-07-02T15:13:46.703521+00:00', 30, 4);
 INSERT INTO "t_tutor_career" ("TUTOR_CAREER_ID", "created_at", "TUTOR_ID", "CAREER_ID") VALUES (49, '2026-07-02T15:13:46.703521+00:00', 30, 7);
-
 -- --------------------------------------------------------
 -- Tabla: t_tutors (9 registros)
 -- --------------------------------------------------------
@@ -6423,7 +5667,6 @@ INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAM
 INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (25, 33, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'INGENIERO AGRONOMO', 'ORDINARIO', 'TIEMPO COMPLETO', 'TITULAR', '2026-06-21T19:27:16.105107', 1, NULL, 'MAESTRÍA', NULL);
 INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (28, 36, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'INGENIERO AGROINDUSTRIAL', 'ORDINARIO', 'TIEMPO COMPLETO', 'TITULAR', '2026-06-21T19:27:16.105107', 1, NULL, 'DOCTORADO', NULL);
 INSERT INTO "t_tutors" ("TUTOR_ID", "person_id", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS", "USER_ID", "TITULO", "ATTENTION_SCHEDULE") VALUES (78, 43, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'DSDS', 'ORDINARIO', 'DEDICACIÓN EXCLUSIVA', 'INSTRUCTOR', '2026-06-23T13:23:02.687', 1, NULL, 'FARMACÉUTICO', NULL);
-
 -- --------------------------------------------------------
 -- Tabla: t_user (10 registros)
 -- --------------------------------------------------------
@@ -6437,7 +5680,6 @@ INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURN
 INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (10, '30713670', '30713670', 'LEOVIC', NULL, 'ALVARADO', 'ALVARADO', 'LEOVICALVARADO@GMAIL.COM', '04129321978', '2026-06-24T19:49:27.844', 1, 'ACEPTADO', 2, 1, 0, NULL, FALSE, 50, NULL);
 INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (17, 'V-30100001', 'V-30100001', 'María', NULL, 'García', NULL, 'maria.garcia@test.com', NULL, '2026-07-03T00:40:36.189492', 1, 'aceptado', 0, 1, 0, NULL, FALSE, 81, NULL);
 INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "LOCK_DATE", "FORCE_PASSWORD_CHANGE", "person_id", "LAST_LOGIN") VALUES (3, '29968304', '29968304', NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-19T00:39:34.619', 0, '0', 2, 1, 0, NULL, TRUE, 26, NULL);
-
 -- --------------------------------------------------------
 -- Tabla: t_user_key (19 registros)
 -- --------------------------------------------------------
@@ -6460,14 +5702,12 @@ INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DA
 INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (28, 16, '$2b$10$qYbr8aYkY77UUhZx1VvPw.DWyK9YWH5MOS4Hiyj3oLtaxObkDV5Z6', '2026-07-03T00:40:50.729164', '2099-12-31T00:00:00', 16, '2026-07-03T00:40:50.729164', 0, '2026-07-03T00:40:50.729164', 0, '2026-07-03T00:40:50.729164', 1, FALSE);
 INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (29, 17, '$2b$10$D20a3w3pLfduWNLvppUNcO5kmiuwia4hi07xiQAILWYekfHExAhbi', '2026-07-03T00:40:50.729164', '2099-12-31T00:00:00', 17, '2026-07-03T00:40:50.729164', 0, '2026-07-03T00:40:50.729164', 0, '2026-07-03T00:40:50.729164', 1, FALSE);
 INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY") VALUES (11, 5, '$2b$10$TmJFPsNzR5YpLr8Wf1nA9.hwPturcXov1fm/x9PDHjt9GQH/CnMdS', '2026-06-22T08:42:03', '2026-10-20T12:42:03.77', 5, '2026-06-22T08:42:03', 0, '2025-01-01T00:00:00', 0, '2025-01-01T00:00:00', 1, FALSE);
-
 -- --------------------------------------------------------
 -- Tabla: t_user_questions (3 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_user_questions" ("USER_QUESTION_ID", "USER_ID", "QUESTION_TYPE", "PRESET_QUESTION_ID", "CUSTOM_QUESTION", "ANSWER", "ORDER_NUM", "CREATED_AT", "UPDATED_AT", "STATUS") VALUES (1, 1, 'CUSTOM', NULL, '1', '111', 1, '2026-06-25T12:34:05.43', '2026-06-25T12:34:05.43', 1);
 INSERT INTO "t_user_questions" ("USER_QUESTION_ID", "USER_ID", "QUESTION_TYPE", "PRESET_QUESTION_ID", "CUSTOM_QUESTION", "ANSWER", "ORDER_NUM", "CREATED_AT", "UPDATED_AT", "STATUS") VALUES (2, 1, 'CUSTOM', NULL, '2', '222', 2, '2026-06-25T12:34:05.43', '2026-06-25T12:34:05.43', 1);
 INSERT INTO "t_user_questions" ("USER_QUESTION_ID", "USER_ID", "QUESTION_TYPE", "PRESET_QUESTION_ID", "CUSTOM_QUESTION", "ANSWER", "ORDER_NUM", "CREATED_AT", "UPDATED_AT", "STATUS") VALUES (3, 1, 'CUSTOM', NULL, '3', '333', 3, '2026-06-25T12:34:05.43', '2026-06-25T12:34:05.43', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_user_roles (9 registros)
 -- --------------------------------------------------------
@@ -6480,12 +5720,10 @@ INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (10, 1);
 INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (3, 3);
 INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (16, 4);
 INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (17, 4);
-
 -- --------------------------------------------------------
 -- Tabla: t_user_theme (1 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_user_theme" ("USER_THEME_ID", "USER_ID", "BRAND_COLOR", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (1, 1, 'blue', '2026-06-25T12:34:12.92', 1, '2026-06-26T12:34:45.894', 0, '2026-06-25T12:34:12.92', 0, '2026-06-25T12:34:12.92', 1);
-
 -- --------------------------------------------------------
 -- Tabla: t_value_list (121 registros)
 -- --------------------------------------------------------
@@ -6610,7 +5848,6 @@ INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", 
 INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (43, 'CORONEL', 'CNEL', 13, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1);
 INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (59, 'NO APLICA', NULL, 13, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1, '2026-06-16T03:59:57.156699', 1);
 INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES (70, 'PASAPORTE', 'P', 3, '2026-06-24T01:42:04.291', 0, '2026-06-24T01:42:04.291', 0, '2026-06-24T01:42:04.291', 0, '2026-06-24T01:42:04.291', 1);
-
 -- ============================================================
 -- SECCIÓN 5: CONSTRAINTS
 -- ============================================================
@@ -6718,7 +5955,6 @@ ALTER TABLE "t_user_theme" ADD CONSTRAINT "fk_user_theme_user" FOREIGN KEY ("USE
 ALTER TABLE "t_value_list" ADD CONSTRAINT "fk_value_list_list" FOREIGN KEY ("LIST_ID") REFERENCES t_list("LIST_ID");
 ALTER TABLE "t_visit" ADD CONSTRAINT "fk_visit_practice" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES t_professional_practices("PROFESSIONAL_PRACTICE_ID");
 ALTER TABLE "t_visit" ADD CONSTRAINT "fk_visit_tutor" FOREIGN KEY ("TUTOR_ID") REFERENCES t_tutors("TUTOR_ID");
-
 -- Unique / Check
 ALTER TABLE "t_address" ADD CONSTRAINT "t_address_uuid_key" UNIQUE (uuid);
 ALTER TABLE "t_address_type" ADD CONSTRAINT "t_address_type_code_key" UNIQUE (code);
@@ -6755,7 +5991,6 @@ ALTER TABLE "t_system_institution" ADD CONSTRAINT "t_system_institution_status_c
 ALTER TABLE "t_system_nucleus" ADD CONSTRAINT "t_system_nucleus_nucleus_type_check" CHECK (((nucleus_type)::text = ANY ((ARRAY['NÚCLEO'::character varying, 'EXTENSIÓN'::character varying])::text[])));
 ALTER TABLE "t_system_nucleus" ADD CONSTRAINT "t_system_nucleus_status_check" CHECK ((status = ANY (ARRAY[0, 1])));
 ALTER TABLE "t_user_questions" ADD CONSTRAINT "chk_question_type" CHECK ((((("QUESTION_TYPE")::text = 'PRESET'::text) AND ("PRESET_QUESTION_ID" IS NOT NULL)) OR ((("QUESTION_TYPE")::text = 'CUSTOM'::text) AND ("CUSTOM_QUESTION" IS NOT NULL))));
-
 -- ============================================================
 -- SECCIÓN 6: ÍNDICES
 -- ============================================================
@@ -6867,7 +6102,6 @@ CREATE INDEX idx_user_questions_preset ON public.t_user_questions USING btree ("
 CREATE INDEX idx_user_questions_user ON public.t_user_questions USING btree ("USER_ID");
 CREATE UNIQUE INDEX "t_user_theme_USER_ID_key" ON public.t_user_theme USING btree ("USER_ID");
 CREATE INDEX idx_value_list_list_status ON public.t_value_list USING btree ("LIST_ID", "STATUS");
-
 -- ============================================================
 -- SECCIÓN 9: TABLAS SIN DATOS (vacías)
 -- ============================================================
@@ -6908,4 +6142,4 @@ CREATE INDEX idx_value_list_list_status ON public.t_value_list USING btree ("LIS
 
 -- ================================================================================
 -- FIN DEL RESPALDO — Réplica exacta lista para otro proyecto Supabase
--- ================================================================================
+-- ================================================================================;

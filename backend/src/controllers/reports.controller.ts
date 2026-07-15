@@ -1106,32 +1106,20 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           return rif;
         };
 
-        // Helper: formatea cédula como V-12.345.678 o E-12.345.678
+        // Helper: formatea cédula solo con números y puntos: 12.345.678
         const formatCI = (ci: string | null | undefined): string => {
           if (!ci) return '';
           const raw = ci.trim();
-          // Si ya tiene prefijo (V-, E-, J-, etc.) conservarlo
-          const match = raw.match(/^([VEJPGRCvi\-]{1,3})[-.\s]?(\d[\d.]*)$/);
-          if (match) {
-            const prefix = match[1].replace(/-/g, '').toUpperCase();
-            const digits = match[2].replace(/\D/g, '');
-            // Formatear con separadores de puntos cada 3 dígitos desde la derecha
-            const parts: string[] = [];
-            for (let i = digits.length - 1, j = 0; i >= 0; i--, j++) {
-              if (j > 0 && j % 3 === 0) parts.unshift('.');
-              parts.unshift(digits[i]);
-            }
-            return `${prefix}-${parts.join('')}`;
-          }
-          // Sin prefijo detectado: asumir V-
+          // Extraer solo dígitos (ignorar prefijo V-, E-, etc.)
           const digits = raw.replace(/\D/g, '');
           if (!digits) return raw;
+          // Formatear con separadores de puntos cada 3 dígitos desde la derecha
           const parts: string[] = [];
           for (let i = digits.length - 1, j = 0; i >= 0; i--, j++) {
             if (j > 0 && j % 3 === 0) parts.unshift('.');
             parts.unshift(digits[i]);
           }
-          return `V-${parts.join('')}`;
+          return parts.join('');
         };
 
         // Helper: normaliza STUDENT_TYPE a texto completo

@@ -47,7 +47,11 @@ export interface IndividualTutorRow {
   rango: string;
   telefono: string;
   institucion: string;
+  /** RIF de la institución */
+  rifInstitucion?: string;
   tipoInstitucion: string;
+  /** Marcar con X si es empresa de convenio */
+  convenioX?: boolean;
   /** Tutor institucional concatenado: "APELLIDO, NOMBRE, C.I: V-.../TLFNO: .../CORREO: ..." */
   tutorInst: string;
   direccion: string;
@@ -426,6 +430,47 @@ const INDIVIDUAL_DATA_STYLE = {
     right: { style: 'thin' as const },
   },
 };
+
+// ============================================================
+// Estilos compartidos ANEXO 4 — Tutores Académicos
+// ============================================================
+
+const ANEXO4_FONT = { name: 'Arial', size: 11 };
+
+const ANEXO4_HEADER_FILL = {
+  type: 'pattern' as const,
+  pattern: 'solid' as const,
+  fgColor: { argb: 'FF92D050' },
+};
+
+const ANEXO4_HEADER_BORDER = {
+  top: { style: 'medium' as const },
+  bottom: { style: 'medium' as const },
+  left: { style: 'medium' as const },
+  right: { style: 'medium' as const },
+};
+
+const ANEXO4_DATA_BORDER = {
+  top: { style: 'thin' as const },
+  bottom: { style: 'thin' as const },
+  left: { style: 'thin' as const },
+  right: { style: 'thin' as const },
+};
+
+const ANEXO4_YELLOW_FILL = {
+  type: 'pattern' as const,
+  pattern: 'solid' as const,
+  fgColor: { argb: 'FFFFFF00' },
+};
+
+/** Encabezado institucional ANEXO 4 (sin línea de MINISTERIO) */
+const ANEXO4_HEADER_TEXT = [
+  'REPÚBLICA BOLIVARIANA DE VENEZUELA',
+  'UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA',
+  'DE LA FUERZA ARMADA NACIONAL BOLIVARIANA',
+  'VICERRECTORADO ACADÉMICO',
+  'COORDINACIÓN DE PLANIFICACIÓN ACADÉMICA',
+].join('\n');
 
 const ROW_TUTOR_NAME = 7;
 const ROW_INDIVIDUAL_HEADER_1 = 8;
@@ -996,179 +1041,174 @@ function addResumenLogos(workbook: Workbook, ws: Worksheet): void {
 // ============================================================
 
 function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: IndividualTutorSheetConfig): void {
-  const totalCols = INDIVIDUAL_TOTAL_COLS;
+  const totalCols = INDIVIDUAL_TOTAL_COLS; // 19
+  const COL_FIRST = 2; // B
+  const COL_LAST = 19; // S
   const rows = config.rows;
 
-  // ── Fila 1: Membrete ──
-  ws.mergeCells(ROW_MEMBRETE, 1, ROW_MEMBRETE, totalCols);
-  const membreteCell = ws.getCell(ROW_MEMBRETE, 1);
-  membreteCell.value = MEMBRETE_TEXT;
-  membreteCell.font = STYLES.membrete.font;
-  membreteCell.alignment = STYLES.membrete.alignment;
-  ws.getRow(ROW_MEMBRETE).height = 80;
+  // ── Anchos de columna ──
+  const COL_WIDTHS: Record<number, number> = {
+    1: 3.71, 2: 3.86, 3: 17.71, 4: 14, 5: 14,
+    6: 16.71, 7: 32.71, 8: 15.86, 9: 15.43,
+    10: 10.71, 11: 16.57, 12: 19.86, 13: 22.29,
+    14: 14, 15: 29.29, 16: 22.29, 17: 14,
+    18: 41.86, 19: 40.57,
+  };
+  Object.entries(COL_WIDTHS).forEach(([col, w]) => { ws.getColumn(Number(col)).width = w; });
 
-  addLogos(workbook, ws, totalCols);
+  // ── Fila 1 (height 8.25): vacía ──
+  ws.getRow(1).height = 8.25;
 
-  // ── Fila 3: espacio ──
-  ws.getRow(ROW_BLANK_1).height = 6;
+  // ── Fila 2 (height 75): Membrete institucional (bold) — C2:S2 merged ──
+  ws.getRow(2).height = 75;
+  ws.mergeCells(2, 3, 2, COL_LAST); // C2:S2
+  const headerCell = ws.getCell(2, 3);
+  headerCell.value = ANEXO4_HEADER_TEXT;
+  headerCell.font = { ...ANEXO4_FONT, bold: true };
+  headerCell.alignment = { horizontal: 'center', vertical: 'top', wrapText: true };
 
-  // ── Fila 4: Título ──
-  ws.mergeCells(ROW_TITLE, 1, ROW_TITLE, totalCols);
-  const titleCell = ws.getCell(ROW_TITLE, 1);
+  // ── Fila 3 (height 10.5): código SOA-PP-001-5 ──
+  ws.getRow(3).height = 10.5;
+  const codeCell = ws.getCell(3, 3); // C3
+  codeCell.value = 'SOA-PP-001-5';
+  codeCell.font = { ...ANEXO4_FONT, bold: true };
+  codeCell.alignment = { horizontal: 'left', vertical: 'middle' };
+
+  // ── Fila 4 (height 48): Título ──
+  ws.getRow(4).height = 48;
+  ws.mergeCells(4, COL_FIRST, 4, COL_LAST); // B4:S4
+  const titleCell = ws.getCell(4, COL_FIRST);
   titleCell.value = {
     richText: [
-      { text: 'FORMATO DE RELACIÓN INDIVIDUAL\nDE DOCENTES CONTRATADOS U ORDINARIOS CON DEDICACIÓN MEDIO TIEMPO (MT), TIEMPO COMPLETO (TC) Y DEDICACIÓN EXCLUSIVA (DE) QUE SE ENCUENTRAN TUTORANDO ESTUDIANTES DE PRACTICAS PROFESIONALES ( PASANTIAS )', font: { name: FONT_NAME, size: 10, bold: true } },
+      {
+        text: `FORMATO DE RELACIÓN INDIVIDUAL\nDE DOCENTES CONTRATADOS U ORDINARIOS CON DEDICACIÓN MEDIO TIEMPO (MT), TIEMPO COMPLETO (TC) Y DEDICACIÓN EXCLUSIVA (DE) QUE SE ENCUENTRAN TUTORANDO  ESTUDIANTES DE PRACTICAS PROFESIONALES ( PASANTIAS )\nPERIODO ACADÉMICO ${config.periodLabel}`,
+        font: { ...ANEXO4_FONT, bold: true },
+      },
     ],
   };
-  titleCell.font = STYLES.title.font;
-  titleCell.alignment = STYLES.title.alignment;
-  ws.getRow(ROW_TITLE).height = 48;
+  titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
 
-  // ── Fila 5: Período ──
-  ws.mergeCells(ROW_CODE, 1, ROW_CODE, totalCols);
-  const codeCell = ws.getCell(ROW_CODE, 1);
-  codeCell.value = `PERIODO ACADÉMICO ${config.periodLabel}`;
-  codeCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: 'FFFF0000' } };
-  codeCell.alignment = { horizontal: 'left', vertical: 'middle' };
-  ws.getRow(ROW_CODE).height = 18;
-
-  // ── Fila 6: espacio ──
-  ws.getRow(ROW_BLANK_2).height = 4;
-
-  // ── Fila 7: Nombre del tutor (celda combinada con fondo amarillo) ──
-  ws.mergeCells(ROW_TUTOR_NAME, 1, ROW_TUTOR_NAME, totalCols);
-  const tutorNameCell = ws.getCell(ROW_TUTOR_NAME, 1);
+  // ── Fila 5: Nombre del tutor (fondo amarillo, B5:H5 merged) ──
+  ws.getRow(5).height = 22;
+  ws.mergeCells(5, COL_FIRST, 5, 8); // B5:H5
+  const tutorNameCell = ws.getCell(5, COL_FIRST);
   const tutorFullName = `${config.tutorName} ${config.tutorApellido}`.trim();
   tutorNameCell.value = `NOMBRE DEL TUTOR (A) ACADÉMICO: ${tutorFullName.toUpperCase()}`;
-  tutorNameCell.font = { name: FONT_NAME, size: 10, bold: true };
-  tutorNameCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
-  tutorNameCell.alignment = { horizontal: 'left', vertical: 'middle' };
-  tutorNameCell.border = {
-    top: { style: 'medium' },
-    bottom: { style: 'medium' },
-    left: { style: 'medium' },
-    right: { style: 'medium' },
+  tutorNameCell.font = { ...ANEXO4_FONT, bold: true };
+  tutorNameCell.fill = ANEXO4_YELLOW_FILL;
+  tutorNameCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+  tutorNameCell.border = ANEXO4_DATA_BORDER;
+
+  // O5:Q5 merged = empty, red font
+  ws.mergeCells(5, 15, 5, 17); // O5:Q5
+  const redFontCell = ws.getCell(5, 15);
+  redFontCell.value = '';
+  redFontCell.font = { ...ANEXO4_FONT, color: { argb: 'FF0000' } };
+
+  // ── Fila 6: vacía ──
+  ws.getRow(6).height = 6;
+
+  // ============================================================
+  // Filas 7-8: Encabezados de tabla (dos filas, merges verticales y horizontales)
+  // ============================================================
+  const h1 = ws.getRow(7);
+  h1.height = 40;
+  const h2 = ws.getRow(8);
+  h2.height = 40;
+
+  const g = {
+    font: { ...ANEXO4_FONT, bold: true },
+    fill: ANEXO4_HEADER_FILL,
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
+    border: ANEXO4_HEADER_BORDER,
   };
-  ws.getRow(ROW_TUTOR_NAME).height = 22;
 
-  // ── Fila 8: Encabezados principales (fila 1) ──
-  const h1 = ws.getRow(ROW_INDIVIDUAL_HEADER_1);
-  h1.height = 36;
+  // Helper para aplicar estilo de encabezado
+  const setH = (cell: any, val: string) => {
+    cell.value = val;
+    cell.font = g.font;
+    cell.fill = g.fill;
+    cell.alignment = g.alignment;
+    cell.border = g.border;
+  };
 
-  const g = headerCell(HDR_GREEN);
+  // Columnas con rowspan 2 (merge vertical 7→8)
+  const verticalCols = [2, 3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15, 16, 17, 18, 19];
+  verticalCols.forEach(c => {
+    ws.mergeCells(7, c, 8, c);
+  });
 
-  // Col 1: N° (rowspan 2 → merge)
-  setCell(h1.getCell(1), 'N°', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 1, ROW_INDIVIDUAL_HEADER_2, 1);
+  // Fila 7 — encabezados principales
+  setH(h1.getCell(2), 'N°');
+  setH(h1.getCell(3), 'REGIÓN');
+  setH(h1.getCell(4), 'NÚCLEO');
+  setH(h1.getCell(5), 'EXTENSIÓN');
+  setH(h1.getCell(6), 'CARRERA');
+  setH(h1.getCell(7), 'NOMBRE Y APELLIDO DEL (DE LA) ESTUDIANTE');
+  setH(h1.getCell(8), 'CÉDULA');
+  setH(h1.getCell(9), 'SEXO FEMENINO MASCULINO');
+  setH(h1.getCell(12), 'TELÉFONO');
+  setH(h1.getCell(13), 'INSTITUCIÓN');
+  setH(h1.getCell(14), 'RIF. INSTITUCIÓN');
+  setH(h1.getCell(15), 'TIPO DE INSTITUCIÓN');
+  setH(h1.getCell(16), 'MARCAR CON UNA X SI ES EMPRESA DE CONVENIO');
+  setH(h1.getCell(17), 'TUTOR INSTITUCIONAL');
+  setH(h1.getCell(18), 'DIRECCIÓN DE UBICACIÓN DEL CENTRO DE PRACTICA PROFESIONAL');
+  setH(h1.getCell(19), 'OBSERVACIONES');
 
-  setCell(h1.getCell(2), 'REGIÓN', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 2, ROW_INDIVIDUAL_HEADER_2, 2);
+  // J7:K7 merged = "TIPO DE ESTUDIANTE"
+  ws.mergeCells(7, 10, 7, 11); // J7:K7
+  setH(h1.getCell(10), 'TIPO DE ESTUDIANTE');
 
-  setCell(h1.getCell(3), 'NÚCLEO', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 3, ROW_INDIVIDUAL_HEADER_2, 3);
+  // Fila 8 — sub-encabezados
+  setH(h2.getCell(10), 'CIVIL');
+  setH(h2.getCell(11), 'RANGO\n(EN CASO DE SER MILITAR)');
+  setH(h2.getCell(15), 'PÚBLICA / PRIVADA');
 
-  setCell(h1.getCell(4), 'EXTENSIÓN', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 4, ROW_INDIVIDUAL_HEADER_2, 4);
-
-  setCell(h1.getCell(5), 'CARRERA', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 5, ROW_INDIVIDUAL_HEADER_2, 5);
-
-  setCell(h1.getCell(6), 'NOMBRE DEL (DE LA) ESTUDIANTE', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 6, ROW_INDIVIDUAL_HEADER_2, 6);
-
-  setCell(h1.getCell(7), 'APELLIDO DEL (DE LA) ESTUDIANTE', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 7, ROW_INDIVIDUAL_HEADER_2, 7);
-
-  setCell(h1.getCell(8), 'CÉDULA', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 8, ROW_INDIVIDUAL_HEADER_2, 8);
-
-  // Col 9-10: SEXO (colspan=2, no rowspan)
-  setCell(h1.getCell(9), 'SEXO', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 9, ROW_INDIVIDUAL_HEADER_1, 10);
-
-  // Col 11-13: TIPO DE ESTUDIANTE (colspan=3)
-  setCell(h1.getCell(11), 'TIPO DE ESTUDIANTE', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 11, ROW_INDIVIDUAL_HEADER_1, 13);
-
-  setCell(h1.getCell(14), 'TELÉFONO', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 14, ROW_INDIVIDUAL_HEADER_2, 14);
-
-  setCell(h1.getCell(15), 'INSTITUCIÓN', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 15, ROW_INDIVIDUAL_HEADER_2, 15);
-
-  // Col 16: TIPO DE INSTITUCIÓN (solo fila 1, la fila 2 tendrá sub-header)
-  setCell(h1.getCell(16), 'TIPO DE INSTITUCIÓN', g);
-
-  setCell(h1.getCell(17), 'TUTOR INSTITUCIONAL', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 17, ROW_INDIVIDUAL_HEADER_2, 17);
-
-  setCell(h1.getCell(18), 'DIRECCIÓN DE UBICACIÓN DEL CENTRO DE PRÁCTICA PROFESIONAL', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 18, ROW_INDIVIDUAL_HEADER_2, 18);
-
-  setCell(h1.getCell(19), 'OBSERVACIONES', g);
-  ws.mergeCells(ROW_INDIVIDUAL_HEADER_1, 19, ROW_INDIVIDUAL_HEADER_2, 19);
-
-  // ── Fila 9: Sub-encabezados ──
-  const h2 = ws.getRow(ROW_INDIVIDUAL_HEADER_2);
-  h2.height = 50;
-
-  // Col 9-10: sub de SEXO
-  setCell(h2.getCell(9), 'FEMENINO', g);
-  setCell(h2.getCell(10), 'MASCULINO', g);
-
-  // Col 11-13: sub de TIPO
-  setCell(h2.getCell(11), 'CIVIL', g);
-  setCell(h2.getCell(12), 'MILITAR', g);
-  setCell(h2.getCell(13), 'RANGO\n(EN CASO DE SER MILITAR)', g);
-
-  // Col 16: sub de TIPO DE INSTITUCIÓN
-  setCell(h2.getCell(16), 'PÚBLICA / PRIVADA / MIXTA', g);
-
-  // ── Ancho de columnas ──
-  const colWidths = [5, 12, 14, 14, 22, 18, 18, 14, 10, 10, 8, 8, 14, 14, 22, 16, 24, 26, 18];
-  colWidths.forEach((w, idx) => { ws.getColumn(idx + 1).width = w; });
-
-  // ── Filas de datos ──
+  // ── Filas de datos (height 73.5-83.25, Arial 11pt, center, wrap, thin borders) ──
   rows.forEach((row, rowIdx) => {
-    const excelRow = ws.getRow(ROW_INDIVIDUAL_DATA_START + rowIdx);
-    excelRow.height = 47;
+    const excelRow = ws.getRow(9 + rowIdx);
+    excelRow.height = 73.5;
     const data = [
       row.nro,
       row.region,
       row.nucleo,
       row.extension,
       row.carrera,
-      row.estudianteNombre,
-      row.estudianteApellido,
+      `${row.estudianteNombre} ${row.estudianteApellido}`.trim(),
       row.estudianteCi,
-      row.sexo === 'F' ? 'X' : '',
-      row.sexo === 'M' ? 'X' : '',
-      row.tipo === 'CIV' || row.tipo === 'CIVIL' ? 'X' : '',
-      row.tipo === 'MILITAR' ? 'X' : '',
+      row.sexo === 'F' ? 'FEMENINO' : row.sexo === 'M' ? 'MASCULINO' : '',
+      row.tipo === 'CIVIL' ? 'CIVIL' : row.tipo === 'MILITAR' ? 'MILITAR' : '',
       row.rango || '',
       row.telefono,
       row.institucion,
+      row.rifInstitucion || '',
       row.tipoInstitucion,
+      row.convenioX ? 'X' : '',
       row.tutorInst,
       row.direccion,
       row.observaciones,
     ];
 
+    // Merges para SEXO (I→I, already single)
+    // No additional merges needed for data rows
+
     data.forEach((val, colIdx) => {
-      const cell = excelRow.getCell(colIdx + 1);
+      const cell = excelRow.getCell(colIdx + 2); // colIdx 0 → col B (2)
       cell.value = val !== null && val !== undefined
         ? (typeof val === 'string' ? val.toUpperCase() : val)
         : '';
-      cell.font = INDIVIDUAL_DATA_STYLE.font;
-      cell.alignment = {
-        ...INDIVIDUAL_DATA_STYLE.alignment,
-        horizontal: 'center',
-      };
-      cell.border = INDIVIDUAL_DATA_STYLE.border;
+      cell.font = ANEXO4_FONT;
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      cell.border = ANEXO4_DATA_BORDER;
     });
   });
 
-  // ponytail: sin altura fija en filas → Excel auto-ajusta para cadenas largas
+  // ── Configuración de página ──
+  ws.pageSetup = {
+    orientation: 'landscape',
+    margins: { left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0, footer: 0 },
+  };
 }
 
 // ============================================================
@@ -1177,106 +1217,58 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
 
 /** Hoja general de tutores académicos — 18 columnas (A=margen, B‑R=datos) */
 function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetSection): void {
-  const DATA_KEYS = section.columns.map(c => c.key);
-  // columnas físicas: 1=A(margen), 2‑18=B‑R
   const COL_FIRST = 2; // B
   const COL_LAST = 18; // R
   const TOTAL = COL_LAST;
 
-  // ── Estilos ──
-  const FONT = 'Arial';
-  const STYLE_HEADER = {
-    font: { name: FONT, size: 8, bold: true },
-    fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF99CC00' } },
-    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
-    border: {
-      top: { style: 'thin' as const },
-      bottom: { style: 'thin' as const },
-      left: { style: 'thin' as const },
-      right: { style: 'thin' as const },
-    },
-  };
-  const STYLE_HEADER_LAST = {
-    ...STYLE_HEADER,
-    border: { ...STYLE_HEADER.border, right: { style: 'medium' as const } },
-  };
-  const STYLE_CELL = {
-    font: { name: FONT, size: 8 },
-    alignment: { vertical: 'middle' as const, wrapText: true },
-    border: {
-      top: { style: 'thin' as const },
-      bottom: { style: 'thin' as const },
-      left: { style: 'thin' as const },
-      right: { style: 'thin' as const },
-    },
-  };
-  const STYLE_CELL_LEFT = { ...STYLE_CELL, border: { ...STYLE_CELL.border, left: { style: 'medium' as const } } };
-  const STYLE_CELL_RIGHT = { ...STYLE_CELL, border: { ...STYLE_CELL.border, right: { style: 'medium' as const } } };
-  const STYLE_CELL_BOTH = { ...STYLE_CELL, border: { ...STYLE_CELL.border, left: { style: 'medium' as const }, right: { style: 'medium' as const } } };
-
   // ── Anchos de columna ──
-  const COL_WIDTHS = [3, 5, 14, 14, 14, 24, 14, 14, 14, 14, 14, 14, 14, 14, 14, 20, 14, 18];
-  COL_WIDTHS.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  const COL_WIDTHS: Record<number, number> = {
+    1: 3.71, 2: 3.86, 3: 13.43, 4: 17.71, 5: 14.71, 6: 16.71,
+    7: 15.86, 8: 14.86, 9: 11.43, 10: 15.71, 11: 15.57,
+    12: 14, 13: 14, 14: 14, 15: 21.29, 16: 3.71, 17: 26.57, 18: 17.43,
+  };
+  Object.entries(COL_WIDTHS).forEach(([col, w]) => { ws.getColumn(Number(col)).width = w; });
 
-  // ============================================================
-  // FILA 1: vacía (espaciado superior)
-  // ============================================================
-  ws.getRow(1).height = 16;
+  // ── Fila 1: vacía (espaciado superior, height 12) ──
+  ws.getRow(1).height = 12;
 
-  // ============================================================
-  // FILA 2 (100px): membrete — SOA code + UNEFA header + logos
-  // ============================================================
-  ws.getRow(2).height = 100;
+  // ── Fila 2 (height 75.75): código SOA + membrete institucional ──
+  ws.getRow(2).height = 75.75;
 
-  // Código "SOA-PP-001-3" en col C (col 3)
+  // Código "SOA-PP-001-3" en C2
   const codeCell = ws.getCell(2, 3);
   codeCell.value = 'SOA-PP-001-3';
-  codeCell.font = { name: FONT, size: 8, bold: true };
-  codeCell.alignment = { horizontal: 'left', vertical: 'middle' };
+  codeCell.font = { ...ANEXO4_FONT, bold: true };
+  codeCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-  // UNEFA header — merge D(4) a R(18)
-  ws.mergeCells(2, 4, 2, TOTAL);
-  const unefaCell = ws.getCell(2, 4);
-  unefaCell.value = MEMBRETE_TEXT;
-  unefaCell.font = { name: FONT, size: 9 };
-  unefaCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  // Membrete institucional — D2:Q2 merged
+  ws.mergeCells(2, 4, 2, 17); // D2:Q2
+  const headerCell = ws.getCell(2, 4);
+  headerCell.value = ANEXO4_HEADER_TEXT;
+  headerCell.font = { ...ANEXO4_FONT, bold: true };
+  headerCell.alignment = { horizontal: 'center', vertical: 'top', wrapText: true };
 
-  // Logos (posicionados sobre esta fila)
   addGeneralTutorLogos(workbook, ws);
 
-  // ============================================================
-  // FILA 3: espacio 6px
-  // ============================================================
-  ws.getRow(3).height = 6;
+  // ── Fila 3: vacía (height 12) ──
+  ws.getRow(3).height = 12;
 
-  // ============================================================
-  // FILA 4 (74px): TÍTULO + período (bottom border medium)
-  // ============================================================
-  ws.getRow(4).height = 74;
-  ws.mergeCells(4, COL_FIRST, 4, COL_LAST);
+  // ── Fila 4 (height 56.25): Título + período ──
+  ws.getRow(4).height = 56.25;
+  ws.mergeCells(4, COL_FIRST, 4, COL_LAST); // B4:R4
   const titleCell = ws.getCell(4, COL_FIRST);
-  const titleText = section.title;
-  const periodText = section.periodLabel;
   titleCell.value = {
     richText: [
-      { text: titleText.toUpperCase(), font: { name: FONT, size: 11, bold: true } },
-      { text: `\n${periodText}`, font: { name: FONT, size: 11, bold: true } },
+      { text: section.title.toUpperCase(), font: { ...ANEXO4_FONT, bold: true } },
+      { text: `\n${section.periodLabel}`, font: { ...ANEXO4_FONT, bold: true } },
     ],
   };
   titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-  titleCell.border = {
-    top: { style: 'thin' },
-    bottom: { style: 'medium' },
-    left: { style: 'thin' },
-    right: { style: 'thin' },
-  };
+  titleCell.border = { bottom: { style: 'medium' } };
 
-  // ============================================================
-  // FILA 5 (50px): ENCABEZADOS VERDES #99CC00
-  // ============================================================
+  // ── Fila 5: Encabezados de columna (verde #92D050, Arial 11pt bold) ──
   ws.getRow(5).height = 50;
 
-  // Cabeceras con merges: NOMBRE(2cols), APELLIDO(2cols), CORREO(2cols)
   const headers: { text: string; col: number; colspan: number }[] = [
     { text: 'N°', col: 2, colspan: 1 },
     { text: 'REGIÓN', col: 3, colspan: 1 },
@@ -1294,35 +1286,32 @@ function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetS
     { text: 'CANTIDAD DE ESTUDIANTES ATENDIDOS', col: 18, colspan: 1 },
   ];
 
-  headers.forEach((h, idx) => {
-    const isLast = (idx === headers.length - 1);
-    const style = isLast ? STYLE_HEADER_LAST : STYLE_HEADER;
-    const col = h.col;
+  const headerStyle = {
+    font: { ...ANEXO4_FONT, bold: true },
+    fill: ANEXO4_HEADER_FILL,
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
+    border: ANEXO4_HEADER_BORDER,
+  };
+
+  headers.forEach((h) => {
     if (h.colspan > 1) {
-      ws.mergeCells(5, col, 5, col + h.colspan - 1);
+      ws.mergeCells(5, h.col, 5, h.col + h.colspan - 1);
     }
-    const cell = ws.getCell(5, col);
+    const cell = ws.getCell(5, h.col);
     cell.value = h.text;
-    cell.font = style.font;
-    cell.fill = style.fill;
-    cell.alignment = style.alignment;
-    cell.border = isLast
-      ? { ...style.border, right: { style: 'medium' } }
-      : h.col === 5
-        ? { ...style.border, right: { style: 'medium' } }
-        : style.border;
+    cell.font = headerStyle.font;
+    cell.fill = headerStyle.fill;
+    cell.alignment = headerStyle.alignment;
+    cell.border = headerStyle.border;
   });
 
-  // ============================================================
-  // FILAS DE DATOS (47px) con bordes
-  // ============================================================
+  // ── Filas de datos (height 54, Arial 11pt, center, wrap, thin borders) ──
+  const DATA_KEYS = section.columns.map(c => c.key);
+
   section.rows.forEach((row, rowIdx) => {
     const excelRow = ws.getRow(6 + rowIdx);
-    excelRow.height = 47;
+    excelRow.height = 54;
 
-    const isLastRow = rowIdx === section.rows.length - 1;
-
-    // Mapa: key → valor
     const val = (key: string) => {
       const v = row[key];
       return v !== null && v !== undefined
@@ -1336,112 +1325,82 @@ function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetS
       { key: 'nucleo', physCol: 4 },
       { key: 'extension', physCol: 5 },
       { key: 'carrera', physCol: 6 },
-      { key: 'nombreTutor', physCol: 7 },  // NOMBRE (col 7-8 merged)
-      { key: 'apellidoTutor', physCol: 9 }, // APELLIDO (col 9-10 merged)
+      { key: 'nombreTutor', physCol: 7 },
+      { key: 'apellidoTutor', physCol: 9 },
       { key: 'cedula', physCol: 11 },
       { key: 'condicion', physCol: 12 },
       { key: 'dedicacion', physCol: 13 },
       { key: 'categoria', physCol: 14 },
       { key: 'telefono', physCol: 15 },
-      { key: 'correo', physCol: 16 },       // CORREO (col 16-17 merged)
+      { key: 'correo', physCol: 16 },
       { key: 'cantidadEstudiantes', physCol: 18 },
     ];
 
     // Merges de datos: nombreTutor → cols 7-8, apellidoTutor → cols 9-10, correo → cols 16-17
-    // Los merges se aplican a TODAS las filas de datos, no solo a la primera
     const dataRow = 6 + rowIdx;
-    ws.mergeCells(dataRow, 7, dataRow, 8);   // nombreTutor
-    ws.mergeCells(dataRow, 9, dataRow, 10);  // apellidoTutor
-    ws.mergeCells(dataRow, 16, dataRow, 17); // correo
+    ws.mergeCells(dataRow, 7, dataRow, 8);
+    ws.mergeCells(dataRow, 9, dataRow, 10);
+    ws.mergeCells(dataRow, 16, dataRow, 17);
 
     dataCols.forEach(({ key, physCol }) => {
       const cell = excelRow.getCell(physCol);
       cell.value = val(key);
-      cell.font = STYLE_CELL.font;
-      cell.alignment = {
-        vertical: 'middle',
-        wrapText: true,
-        horizontal: 'center',
-      };
-      // Bordes: medium en laterales
-      const isFirstDataCol = (physCol === COL_FIRST);
-      const isLastDataCol = (physCol === COL_LAST);
-      cell.border = {
-        top: { style: 'thin' },
-        bottom: { style: isLastRow ? 'medium' : 'thin' },
-        left: { style: isFirstDataCol ? 'medium' : 'thin' },
-        right: { style: isLastDataCol ? 'medium' : 'thin' },
-      };
+      cell.font = ANEXO4_FONT;
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      cell.border = ANEXO4_DATA_BORDER;
     });
   });
 
   // ============================================================
-  // FILA post‑datos: código "MA/JR.ENE.2014"
+  // Sección de firmas
   // ============================================================
-  const codeRow = 6 + section.rows.length;
-  ws.getRow(codeRow).height = 18;
-  const footerCodeCell = ws.getCell(codeRow, 15);
-  footerCodeCell.value = 'MA/JR.ENE.2014';
-  footerCodeCell.font = { name: FONT, size: 8 };
-  footerCodeCell.alignment = { horizontal: 'right', vertical: 'middle' };
 
-  // ============================================================
-  // NOTAS al pie (fondo amarillo #FFCC00)
-  // ============================================================
-  const notes = section.footerNotes ?? DEFAULT_FOOTER_NOTES;
-  const noteStartRow = codeRow + 1;
-  notes.forEach((note, idx) => {
-    const r = noteStartRow + idx;
-    ws.getRow(r).height = 20;
-    ws.mergeCells(r, COL_FIRST, r, COL_LAST);
-    const cell = ws.getCell(r, COL_FIRST);
+  // Fila 10: separador vacío
+  ws.getRow(10).height = 10;
 
-    // La nota 3 (Debe realizar un archivo por cada carrera) en rojo
-    const isRed = note.includes('archivo por cada carrera');
-    cell.value = `Nota: ${isRed ? note.replace('Nota:', '') : note}`;
-    cell.font = { name: FONT, size: 8, italic: !isRed, color: isRed ? { argb: 'FFFF0000' } : undefined };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCC00' } };
-    cell.alignment = { vertical: 'top', wrapText: true };
-  });
-
-  // ── Fila en blanco para separar notas de las firmas ──
-  const blankBeforeSig = noteStartRow + notes.length + 1;
-  ws.getRow(blankBeforeSig).height = 28;
-
-  // ============================================================
-  // FIRMAS — una fila, 3 firmantes con separación
-  // ============================================================
-  const sigLabels = section.signatures ?? DEFAULT_SIGNATURES;
-  const sigRow = blankBeforeSig + 1;
-  const sigRowObj = ws.getRow(sigRow);
-  sigRowObj.height = 54;
-
-  // cada firmante tiene su rango con espacio separador entre sí
-  const sigSections = [
-    { text: sigLabels[0] || '', start: 2, end: 5, sepAfter: 6 },
-    { text: sigLabels[1] || '', start: 7, end: 10, sepAfter: 11 },
-    { text: sigLabels[2] || '', start: 12, end: 17, sepAfter: null },
+  // Fila 11 (height 43.5): líneas de firma vacías (borde inferior thin)
+  ws.getRow(11).height = 43.5;
+  const sigLineRanges = [
+    { start: 2, end: 4 },    // B11:D11 (izquierda)
+    { start: 6, end: 8 },    // F11:H11 (centro-izquierda)
+    { start: 10, end: 15 },  // J11:O11 (centro-derecha)
   ];
-
-  sigSections.forEach(({ text, start, end, sepAfter }) => {
-    // Línea de firma (borde superior) en el rango del firmante
-    for (let c = start; c <= end; c++) {
-      const cell = ws.getCell(sigRow, c);
-      cell.border = { top: { style: 'thin' } };
-    }
-    // Borrar borde en la columna separadora (sin línea)
-    if (sepAfter) {
-      ws.getCell(sigRow, sepAfter).border = {};
-    }
-    // Etiqueta centrada
-    if (end > start) {
-      ws.mergeCells(sigRow, start, sigRow, end);
-    }
-    const cell = ws.getCell(sigRow, start);
-    cell.value = text;
-    cell.font = { name: FONT, size: 9 };
-    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  sigLineRanges.forEach(({ start, end }) => {
+    ws.mergeCells(11, start, 11, end);
+    const cell = ws.getCell(11, start);
+    cell.value = '';
+    cell.font = ANEXO4_FONT;
+    cell.alignment = { horizontal: 'center' };
+    cell.border = { bottom: { style: 'thin' } };
   });
+
+  // Fila 12 (height 48): etiquetas de firma (Arial 11pt bold, borde superior thin)
+  ws.getRow(12).height = 48;
+  const sigLabels = section.signatures ?? [
+    'NOMBRE APELLIDO\nFIRMA Y SELLO DEL COORDINADOR DE PRÁCTICAS PROFESIONALES',
+    'NOMBRE APELLIDO\nFIRMA Y SELLO DEL JEFE ÁREA ACADÉMICA',
+    'NOMBRE APELLIDO\nFIRMA Y SELLO DEL DECANO (A)',
+  ];
+  const sigLabelRanges = [
+    { start: 2, end: 4, text: sigLabels[0] || '' },
+    { start: 6, end: 8, text: sigLabels[1] || '' },
+    { start: 10, end: 15, text: sigLabels[2] || '' },
+  ];
+  sigLabelRanges.forEach(({ start, end, text }) => {
+    ws.mergeCells(12, start, 12, end);
+    const cell = ws.getCell(12, start);
+    cell.value = text;
+    cell.font = { ...ANEXO4_FONT, bold: true };
+    cell.alignment = { horizontal: 'center', vertical: 'top', wrapText: true };
+    cell.border = { top: { style: 'thin' } };
+  });
+
+  // ── Configuración de página ──
+  ws.pageSetup = {
+    orientation: 'landscape',
+    margins: { left: 0.709, right: 0.709, top: 0.748, bottom: 0.748, header: 0, footer: 0 },
+    printArea: `A1:O12`,
+  };
 }
 
 // ============================================================

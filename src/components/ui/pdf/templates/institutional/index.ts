@@ -8,3 +8,4 @@ export { EvaluacionComitePDF } from './EvaluacionComitePDF';
 export { ConstanciaTutorAcademicoPDF } from './ConstanciaTutorAcademicoPDF';
 export { ConstanciaTutorInstitucionalPDF } from './ConstanciaTutorInstitucionalPDF';
 export { EvaluacionConsolidadaPDF } from './EvaluacionConsolidadaPDF';
+export { ActaValidacionPDF } from './ActaValidacionPDF';

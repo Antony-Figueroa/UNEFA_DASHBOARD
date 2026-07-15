@@ -119,7 +119,7 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos, verificationHash
 
       {/* Cuerpo del texto — primer párrafo */}
       <Text style={styles.paragraph}>
-        Tengo el agrado de dirigirme a usted, en la oportunidad de extender nuestro sincero agradecimiento por su apoyo y participación incondicional, al desempeñarse como Tutor Institucional de la asignatura Práctica Profesional (Pasantía) de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Bolivariana (UNEFA), al asesorar, supervisar y evaluar estudiantes, colaborando de esta forma en el proceso formativo y de capacitación integral de estos futuros profesionales, realizando un acompañamiento con un total de {hoursRequired} horas, en el periodo académico {periodoDesc}, comprendido entre las fechas {lapsoInicio} y {lapsoFin}.
+        Tengo el agrado de dirigirme a usted, en la oportunidad de extender nuestro sincero agradecimiento por su apoyo y participación incondicional, al desempeñarse como Tutor Institucional de la asignatura Práctica Profesional (Pasantía) de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA), al asesorar, supervisar y evaluar estudiantes, colaborando de esta forma en el proceso formativo y de capacitación integral de estos futuros profesionales, realizando un acompañamiento con un total de {hoursRequired} horas, en el periodo académico {periodoDesc}, comprendido entre las fechas {lapsoInicio} y {lapsoFin}.
       </Text>
 
       {/* Cuerpo del texto — segundo párrafo */}

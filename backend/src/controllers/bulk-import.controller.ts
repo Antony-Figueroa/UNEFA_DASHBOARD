@@ -79,7 +79,7 @@ export const getTemplate = async (req: AuthRequest, res: Response) => {
     // Header institucional UNEFA
     headerRows.push(['REPÚBLICA BOLIVARIANA DE VENEZUELA']);
     headerRows.push(['MINISTERIO DEL PODER POPULAR PARA LA DEFENSA']);
-    headerRows.push(['UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA DE LA FUERZA ARMADA BOLIVARIANA']);
+    headerRows.push(['UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA DE LA FUERZA ARMADA NACIONAL BOLIVARIANA']);
     headerRows.push(['UNEFA - DIRECCIÓN DE ASUNTOS ACADÉMICOS']);
     headerRows.push([]); // blank row
     headerRows.push(type === 'students'

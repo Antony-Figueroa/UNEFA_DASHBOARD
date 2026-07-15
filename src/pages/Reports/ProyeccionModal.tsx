@@ -284,9 +284,10 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
                               <p className="text-[10px] font-bold leading-tight">REPÚBLICA BOLIVARIANA DE VENEZUELA</p>
                               <p className="text-[10px] font-bold leading-tight">MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</p>
                               <p className="text-[10px] font-bold leading-tight">UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</p>
-                              <p className="text-[10px] font-bold leading-tight">DE LA FUERZA ARMADA BOLIVARIANA</p>
-                              <p className="text-[10px] font-bold leading-tight">VICERRECTORADO ACADÉMICO</p>
-                              <p className="text-[10px] font-bold leading-tight">COORDINACIÓN DE PLANIFICACIÓN ACADÉMICA</p>
+                              <p className="text-[10px] font-bold leading-tight">DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</p>
+                              <p className="text-[10px] font-bold leading-tight">VICERRECTORADO DE LA REGIÓN LOS LLANOS</p>
+                              <p className="text-[10px] font-bold leading-tight">NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</p>
+                              <p className="text-[10px] font-bold leading-tight">EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES</p>
                             </div>
                             <img src="/logo-nuevo.png" alt="Logo" className="w-14 h-14 object-contain shrink-0" />
                           </div>

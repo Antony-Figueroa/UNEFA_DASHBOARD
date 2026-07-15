@@ -1,6 +1,6 @@
 export const FALLBACK_TEXTOS: Record<string, Record<string, string>> = {
   aceptacion_tutor: {
-    encabezado: `Yo, {{tutorTitulo}} {{tutorNombreCompleto}}, titular de la cedula de identidad {{tutorCi}}, hago constar por medio de la presente que acepto la tutoría académica de la práctica profesional por parte de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional (UNEFA) del (la) bachiller {{estudianteNombreCompleto}}, titular de la cedula de identidad {{estudianteCi}} para optar al grado de {{carrera}}.
+    encabezado: `Yo, {{tutorTitulo}} {{tutorNombreCompleto}}, titular de la cedula de identidad {{tutorCi}}, hago constar por medio de la presente que acepto la tutoría académica de la práctica profesional por parte de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA) del (la) bachiller {{estudianteNombreCompleto}}, titular de la cedula de identidad {{estudianteCi}} para optar al grado de {{carrera}}.
 
 Acepto asesorar al participante en calidad de tutor institucional, durante la etapa de desarrollo del informe de pasantía.
 

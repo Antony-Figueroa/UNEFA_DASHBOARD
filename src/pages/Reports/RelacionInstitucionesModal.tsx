@@ -6,7 +6,7 @@ import { MODAL_CONFIG } from "../../components/ui/dialog/DialogConfig";
 import { FileIcon, ListIcon, DownloadIcon } from "../../icons";
 import CustomSelect from "../../components/form/CustomSelect";
 import MultiSelect from "../../components/form/MultiSelect";
-import { getPeriods } from "../../features/periods/services/periodService";
+import { getPeriodsForReports } from "../../features/periods/services/periodService";
 import { getInstitutions, getInstitutionCareers } from "../../features/institutions/services/institutionsService";
 import { generateRelacionInstitucionesSolicitanExcel } from "../../utils/unefaExcelReports";
 import { XIcon } from "lucide-react";
@@ -60,7 +60,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
       try {
         setLoading(true);
         const [periodList, instList, sysInstRes, respList] = await Promise.all([
-          getPeriods(),
+          getPeriodsForReports(),
           getInstitutions(),
           apiClient.get('/system-institution').catch(() => null),
           apiClient.get('/institutional-responsibles').catch(() => ({ data: [] }))

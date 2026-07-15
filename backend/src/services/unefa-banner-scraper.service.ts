@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const UNEFA_PORTAL_URL = 'http://www.unefa.edu.ve/portal/';
+const UNEFA_PORTAL_URL = 'https://www.unefa.edu.ve/portal/';
 const SCRAPER_INTERVAL_HOURS = 6;
 const SCRAPER_INTERVAL_MS = SCRAPER_INTERVAL_HOURS * 60 * 60 * 1000;
 
@@ -125,6 +125,10 @@ function extractBannerUrl(html: string): string | null {
  */
 function normalizeUrl(src: string): string {
   if (src.startsWith('http://') || src.startsWith('https://')) {
+    // Forzar HTTPS para evitar Mixed Content en el frontend
+    if (src.startsWith('http://') && src.includes('unefa.edu.ve')) {
+      return src.replace('http://', 'https://');
+    }
     return src;
   }
   // Si empieza con /, es ruta absoluta al dominio raíz
@@ -238,11 +242,17 @@ export async function scrapeAndDownloadBanner(): Promise<BannerMeta> {
     // 2. Extraer la URL del banner y las imágenes del carrusel
     const bannerUrl = extractBannerUrl(html) || findBannerInHTML(html);
     
-    // Extraer carrusel de imágenes popup
-    const carouselImages = extractCarouselImages(html);
-    if (carouselImages.length > 0) {
-      console.log(`[UNEFABanner] Carrusel encontrado: ${carouselImages.length} imágenes`);
-      meta.carouselImages = carouselImages;
+    // Extraer carrusel de imágenes popup y descargarlas localmente
+    const carouselRaw = extractCarouselImages(html);
+    if (carouselRaw.length > 0) {
+      console.log(`[UNEFABanner] Carrusel encontrado: ${carouselRaw.length} imágenes`);
+      const proxiedImages = await downloadCarouselImages(carouselRaw);
+      meta.carouselImages = proxiedImages;
+      // Limpiar imágenes antiguas del carrusel
+      const currentFilenames = proxiedImages
+        .map(img => path.basename(img.src))
+        .filter(name => name.startsWith('carousel_'));
+      cleanOldCarouselImages(currentFilenames);
     }
     
     if (!bannerUrl) {
@@ -342,6 +352,78 @@ export async function scrapeCarouselImages(): Promise<CarouselImage[]> {
 export function getCarouselImages(): CarouselImage[] {
   const meta = readMeta();
   return meta.carouselImages || [];
+}
+
+/**
+ * Descarga las imágenes del carrusel y las guarda localmente para evitar
+ * problemas de Mixed Content y timeouts al servirlas desde HTTPS.
+ * Retorna las imágenes del carrusel con URLs locales.
+ */
+export async function downloadCarouselImages(images: CarouselImage[]): Promise<CarouselImage[]> {
+  const downloaded: CarouselImage[] = [];
+  ensureDir(BANNER_DIR);
+
+  for (let i = 0; i < images.length; i++) {
+    const img = images[i];
+    try {
+      // Generar un nombre de archivo único basado en hash simple y extensión
+      const ext = path.extname(img.src).split('?')[0] || '.png';
+      const hash = Buffer.from(img.src).toString('base64').replace(/[/+=]/g, '_').slice(0, 32);
+      const localFilename = `carousel_${hash}${ext}`;
+      const localPath = path.join(BANNER_DIR, localFilename);
+
+      // Solo descargar si no existe (caché local)
+      if (!fs.existsSync(localPath)) {
+        console.log(`[UNEFABanner] Descargando imagen carrusel ${i + 1}/${images.length}: ${img.src}`);
+        const response = await axios.get<Buffer>(img.src, {
+          timeout: 15000,
+          responseType: 'arraybuffer',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': UNEFA_PORTAL_URL,
+          },
+        });
+        fs.writeFileSync(localPath, Buffer.from(response.data));
+        console.log(`[UNEFABanner] Imagen carrusel guardada: ${localPath}`);
+      }
+
+      if (fs.existsSync(localPath)) {
+        downloaded.push({
+          src: `/uploads/unefa-banner/${localFilename}`,
+          link: img.link,
+          title: img.title,
+        });
+      }
+    } catch (error: any) {
+      console.warn(`[UNEFABanner] Error descargando imagen carrusel ${i + 1}: ${error.message}`);
+      // Si falla la descarga, solo mantener si es HTTPS (para evitar Mixed Content)
+      if (img.src.startsWith('https://')) {
+        downloaded.push(img);
+      }
+    }
+  }
+
+  return downloaded;
+}
+
+/**
+ * Limpia imágenes de carrusel antiguas del disco
+ */
+export function cleanOldCarouselImages(currentFilenames: string[]): void {
+  try {
+    ensureDir(BANNER_DIR);
+    const files = fs.readdirSync(BANNER_DIR);
+    const keepSet = new Set(currentFilenames);
+    for (const file of files) {
+      if (file.startsWith('carousel_') && !keepSet.has(file)) {
+        const filePath = path.join(BANNER_DIR, file);
+        fs.unlinkSync(filePath);
+        console.log(`[UNEFABanner] Imagen carrusel antigua eliminada: ${file}`);
+      }
+    }
+  } catch (error: any) {
+    console.warn('[UNEFABanner] Error limpiando imágenes antiguas:', error.message);
+  }
 }
 
 // ─── Scheduler ────────────────────────────────────────────────────────────────

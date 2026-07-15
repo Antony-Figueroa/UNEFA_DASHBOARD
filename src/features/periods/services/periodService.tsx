@@ -192,6 +192,24 @@ export const getPeriods = async (): Promise<Periodo[]> => {
   return _periodsPromise;
 };
 
+/**
+ * Obtiene periodos filtrando solo los relevantes para reportes:
+ * - CULMINADO (3)
+ * - EN_CURSO (2)
+ * - El PENDIENTE (1) más cercano (próximo a iniciar)
+ * 
+ * @returns Promesa con la lista de periodos filtrados.
+ */
+export const getPeriodsForReports = async (): Promise<Periodo[]> => {
+  try {
+    const response = await apiClient.get<PeriodoApiDTO[]>(`${API_URL}?forReports=true`);
+    return response.data.map(fromApi);
+  } catch (error) {
+    console.error(`[periodService] Error al obtener periodos para reportes:`, error);
+    throw error;
+  }
+};
+
 // ponytail: invalidar cache tras mutaciones para que refresh() traiga datos frescos
 const invalidateCache = () => { _periodsCache = null; _periodsPromise = null; };
 

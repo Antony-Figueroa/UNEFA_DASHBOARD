@@ -6,7 +6,7 @@ import { MODAL_CONFIG } from "../../components/ui/dialog/DialogConfig";
 import { FileIcon, ListIcon, DownloadIcon } from "../../icons";
 import CustomSelect from "../../components/form/CustomSelect";
 import MultiSelect from "../../components/form/MultiSelect";
-import { getPeriods } from "../../features/periods/services/periodService";
+import { getPeriodsForReports } from "../../features/periods/services/periodService";
 import { getCareers } from "../../features/careers/services/careersService";
 import { generateProyeccionExcel } from "../../utils/unefaExcelReports";
 import { XIcon } from "lucide-react";
@@ -43,7 +43,7 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
       try {
         setLoading(true);
         const [periodList, careerList, sysInstRes] = await Promise.all([
-          getPeriods(),
+          getPeriodsForReports(),
           getCareers(),
           apiClient.get('/system-institution').catch(() => null)
         ]);

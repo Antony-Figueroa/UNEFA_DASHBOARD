@@ -739,6 +739,7 @@ export const getInstitutionCareers = async (req: Request, res: Response) => {
     const { id } = req.params;
     
     const data = await dbManager.withRetry(async (supabase) => {
+      // 1. Get career IDs from institution-career pivot table
       const { data: institutionCareers, error } = await supabase
         .from(INSTITUTION_CAREER_TABLE)
         .select('CAREER_ID')
@@ -746,12 +747,29 @@ export const getInstitutionCareers = async (req: Request, res: Response) => {
 
       if (error) throw error;
 
-      if (!institutionCareers || institutionCareers.length === 0) {
+      // 2. Also get career IDs from actual internships (pasantías) for this institution
+      const { data: practiceCareers, error: practiceError } = await supabase
+        .from('t_professional_practices')
+        .select('CAREER_ID')
+        .eq('INSTITUTION_ID', parseInt(id))
+        .eq('STATUS', 1);
+
+      if (practiceError) throw practiceError;
+
+      // 3. Merge unique career IDs from both sources
+      const careerIdsSet = new Set<number>();
+      (institutionCareers || []).forEach(ic => careerIdsSet.add(ic.CAREER_ID));
+      (practiceCareers || []).forEach(pc => {
+        if (pc.CAREER_ID) careerIdsSet.add(pc.CAREER_ID);
+      });
+
+      const careerIds = Array.from(careerIdsSet);
+
+      if (careerIds.length === 0) {
         return [];
       }
 
-      const careerIds = institutionCareers.map(ic => ic.CAREER_ID);
-      
+      // 4. Fetch career names from t_career
       const { data: careers, error: careersError } = await supabase
         .from('t_career')
         .select('CAREER_ID, CAREER_NAME')

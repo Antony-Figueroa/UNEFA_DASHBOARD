@@ -67,14 +67,79 @@ interface Period {
   EVALUATION_GRACE_DAYS: number;
 }
 
-export const getPeriods = async (_req: Request, res: Response) => {
+export const getPeriods = async (req: Request, res: Response) => {
   try {
+    const forReports = req.query.forReports === 'true';
+
     const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Obtener todos los periodos
-      const { data: periods, error: periodsError } = await supabase
+      // 1. Obtener todos los periodos (activos)
+      let query = supabase
         .from(TABLE_NAME)
         .select('*')
         .order('START_DATE', { ascending: false });
+
+      // Si forReports=true: solo CULMINADO (3) + EN_CURSO (2) + el PENDIENTE (1) más cercano
+      if (forReports) {
+        // Obtener períodos CULMINADO y EN_CURSO
+        const { data: activePeriods, error: activeError } = await supabase
+          .from(TABLE_NAME)
+          .select('*')
+          .in('PERIOD_STATUS', [PERIOD_STATUS.CULMINADO, PERIOD_STATUS.EN_CURSO])
+          .order('START_DATE', { ascending: false });
+
+        if (activeError) throw activeError;
+
+        // Obtener el período PENDIENTE más cercano (próximo a iniciar)
+        const { data: pendingPeriods, error: pendingError } = await supabase
+          .from(TABLE_NAME)
+          .select('*')
+          .eq('PERIOD_STATUS', PERIOD_STATUS.PENDIENTE)
+          .gte('START_DATE', new Date().toISOString().split('T')[0])
+          .order('START_DATE', { ascending: true })
+          .limit(1);
+
+        if (pendingError) throw pendingError;
+
+        // Combinar resultados
+        const combined = [...(activePeriods || []), ...(pendingPeriods || [])];
+        // Ordenar por START_DATE descendente como getPeriods normal
+        combined.sort((a, b) => new Date(b.START_DATE).getTime() - new Date(a.START_DATE).getTime());
+
+        const periods = combined;
+
+        // 2. Obtener IDs de periodos en uso en t_professional_practices
+        const { data: usedPeriods, error: usedError } = await supabase
+          .from('t_professional_practices')
+          .select('PERIOD_ID');
+
+        if (usedError) throw usedError;
+
+        const usedPeriodIds = new Set(usedPeriods.map(p => p.PERIOD_ID));
+
+        // 3. Enriquecer
+        return (periods as Period[]).map(p => {
+          const startDate = new Date(p.START_DATE);
+          const endDate = new Date(p.END_DATE);
+          const enrollmentDays = p.ENROLLMENT_GRACE_DAYS ?? 21;
+          const evaluationDays = p.EVALUATION_GRACE_DAYS ?? 10;
+
+          const graceEndDate = new Date(startDate);
+          graceEndDate.setDate(graceEndDate.getDate() + enrollmentDays);
+
+          const evaluationGraceEndDate = new Date(endDate);
+          evaluationGraceEndDate.setDate(evaluationGraceEndDate.getDate() + evaluationDays);
+
+          return {
+            ...p,
+            graceEndDate: graceEndDate.toISOString(),
+            evaluationGraceEndDate: evaluationGraceEndDate.toISOString(),
+            isInUse: usedPeriodIds.has(p.PERIOD_ID),
+          };
+        });
+      }
+
+      // Normal flow (no forReports)
+      const { data: periods, error: periodsError } = await query;
 
       if (periodsError) throw periodsError;
 

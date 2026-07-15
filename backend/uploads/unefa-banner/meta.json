@@ -1,10 +1,10 @@
 {
   "sourceUrl": "http://www.unefa.edu.ve/portal/img/banner-1-2026-2.png",
-  "lastUpdated": "2026-07-15T01:49:23.041Z",
-  "lastFetchAttempt": "2026-07-15T01:49:21.150Z",
-  "lastError": null,
+  "lastUpdated": "2026-07-15T02:29:12.928Z",
+  "lastFetchAttempt": "2026-07-15T02:36:13.862Z",
+  "lastError": "timeout of 15000ms exceeded",
   "imageUrl": "/uploads/unefa-banner/current-banner.png",
-  "status": "ok",
+  "status": "error",
   "carouselImages": [
     {
       "src": "http://www.unefa.edu.ve/portal/../CMS/upload/images/popup/imagen-588886205.png",

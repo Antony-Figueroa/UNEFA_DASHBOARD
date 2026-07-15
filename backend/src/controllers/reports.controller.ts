@@ -349,7 +349,7 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
     const supabase = dbManager.getConnection();
     const sysLoc = await getSystemLocation(supabase);
 
-    const { data: tutorPractices, error } = await supabase
+    let tutorQuery = supabase
       .from('t_professional_practices_tutor')
       .select(`
         TUTOR_ID,
@@ -395,6 +395,10 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
       `)
       .eq('TUTOR_TYPE', 'ACADEMICO');
 
+    if (periodId) tutorQuery = tutorQuery.eq('t_professional_practices.PERIOD_ID', Number(periodId));
+
+    const { data: tutorPractices, error } = await tutorQuery;
+
     if (error) {
       console.error('Error in query:', error);
       throw error;
@@ -418,7 +422,6 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
 
       if (!tutor || !practice) return;
 
-      if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
       if (careerId && career?.CAREER_ID !== parseInt(careerId as string)) return;
       if (careerIds.length > 0 && (!career || !careerIds.includes(career.CAREER_ID))) return;
 
@@ -1119,7 +1122,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         };
 
         // ── 1. Query principal: tutores académicos con sus prácticas ──
-        const { data: tutorPractices } = await supabase
+        let tutorExcelQuery = supabase
           .from('t_professional_practices_tutor')
           .select(`
             TUTOR_ID,
@@ -1151,6 +1154,10 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             )
           `)
           .eq('TUTOR_TYPE', 'ACADEMICO');
+
+        if (periodId) tutorExcelQuery = tutorExcelQuery.eq('t_professional_practices.PERIOD_ID', Number(periodId));
+
+        const { data: tutorPractices } = await tutorExcelQuery;
 
         if (!tutorPractices) break;
 
@@ -1194,7 +1201,6 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           const tutor = unwrap(tp.t_tutors);
           const practice = unwrap(tp.t_professional_practices);
           if (!tutor || !practice) return;
-          if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
           if (careerIds.length > 0 && (!practice.t_career || !careerIds.includes(practice.t_career.CAREER_ID))) return;
 
           const careerName = practice.t_career?.CAREER_NAME || 'Sin Carrera';

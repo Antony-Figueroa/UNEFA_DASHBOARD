@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from "react";
+import React, { Suspense, lazy } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PublicNavbar from "../../features/internship-home/components/PublicNavbar";
 import PublicFooter from "../../features/internship-home/components/PublicFooter";
@@ -15,11 +15,6 @@ const UnefaInfoSection = lazy(() => import("../../features/internship-home/secti
 const UnefaMapSection = lazy(() => import("../../features/internship-home/sections/UnefaMapSection"));
 const UnefaCarousel = lazy(() => import("../../features/internship-home/sections/UnefaCarousel"));
 const FAQSection = lazy(() => import("../../features/internship-home/sections/FAQSection"));
-
-const preloadImages = [
-  '/unefa-img/9360.jpg',
-  '/logo-nuevo.png',
-];
 
 const SectionSkeleton: React.FC<{ height?: string }> = ({ height = "h-64" }) => (
   <div className={`${height} bg-gray-50 dark:bg-gray-900 animate-pulse`} />
@@ -40,22 +35,6 @@ const sections = [
 ];
 
 const InternshipHome: React.FC = () => {
-  useEffect(() => {
-    preloadImages.forEach((src) => {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'image';
-      link.href = src;
-      document.head.appendChild(link);
-    });
-
-    return () => {
-      preloadImages.forEach((src) => {
-        const link = document.querySelector(`link[rel="preload"][href="${src}"]`);
-        if (link) document.head.removeChild(link);
-      });
-    };
-  }, []);
 
   return (
     <>

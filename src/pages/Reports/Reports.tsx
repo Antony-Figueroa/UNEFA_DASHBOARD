@@ -6,7 +6,7 @@ import Button from "../../components/ui/button/Button";
 import CustomSelect from "../../components/form/CustomSelect";
 import MultiSelect from "../../components/form/MultiSelect";
 import type { MultiSelectOption } from "../../components/form/MultiSelect";
-import { getPeriods } from "../../features/periods/services/periodService";
+import { getPeriodsForReports } from "../../features/periods/services/periodService";
 import { getCareers } from "../../features/careers/services/careersService";
 import { reportsService, CareerData, PeriodData, TutorAcademicReportRow } from "../../features/reports/services/reportsService";
 import { TablePreviewModal } from "../../components/ui/table/TablePreviewModal";
@@ -87,7 +87,7 @@ export default function ReportsPage() {
         reportsService.getStats(periodFilter),
         reportsService.getStudentsByCareer(),
         reportsService.getEnrollmentsByPeriod(),
-        getPeriods(),
+        getPeriodsForReports(),
         getCareers()
       ]);
       setAvailablePeriods(

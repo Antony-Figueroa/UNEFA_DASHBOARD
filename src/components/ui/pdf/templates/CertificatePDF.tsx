@@ -59,7 +59,6 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 10,
-    fontWeight: 'bold',
     textAlign: 'center',
     lineHeight: 1.2,
   },
@@ -67,7 +66,6 @@ const styles = StyleSheet.create({
   // Title
   title: {
     fontSize: 10,
-    fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 15,
   },
@@ -89,7 +87,6 @@ const styles = StyleSheet.create({
   },
   cellHeader: {
     fontSize: 9,
-    fontWeight: 'bold',
     marginBottom: 5,
   },
   cellData: {
@@ -118,7 +115,7 @@ const styles = StyleSheet.create({
   firmaRowSplit: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 40 },
   firmaBoxFinal: { alignItems: 'center', width: '45%' },
   firmaLineFinal: { width: 220, borderBottomWidth: 1, borderColor: '#000', marginBottom: 4 },
-  firmaNameFinal: { fontSize: 9, fontWeight: 'bold', textAlign: 'center' },
+  firmaNameFinal: { fontSize: 9, textAlign: 'center' },
   firmaRoleFinal: { fontSize: 9, textAlign: 'center' },
 
   // Certificate number
@@ -214,10 +211,10 @@ export function CertificatePDF({ data, textos }: CertificatePDFProps) {
         {/* Evaluation weights table */}
         <View style={styles.tableFinal}>
           <View style={[styles.tRowFinal, { backgroundColor: '#D9D9D9' }]}>
-            <Text style={[styles.colA, { textAlign: 'center', fontWeight: 'bold' }]}>Evaluación del ( de la ) Estudiante</Text>
-            <Text style={[styles.colB, { fontWeight: 'bold' }]}>Valor Porcentual</Text>
-            <Text style={[styles.colC, { fontWeight: 'bold' }]}>Calificación Parcial Escala del 1 al 20</Text>
-            <Text style={[styles.colD, { fontWeight: 'bold' }]}>Calificación Parcial Proporcional al Porcentaje</Text>
+            <Text style={[styles.colA, { textAlign: 'center' }]}>Evaluación del ( de la ) Estudiante</Text>
+            <Text style={styles.colB}>Valor Porcentual</Text>
+            <Text style={styles.colC}>Calificación Parcial Escala del 1 al 20</Text>
+            <Text style={styles.colD}>Calificación Parcial Proporcional al Porcentaje</Text>
           </View>
 
           <View style={styles.tRowFinal}>

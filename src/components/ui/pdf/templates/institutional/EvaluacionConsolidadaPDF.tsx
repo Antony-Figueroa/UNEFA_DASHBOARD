@@ -36,17 +36,14 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textAlign: 'center',
     lineHeight: 1.3,
-    fontWeight: 'bold',
   },
   title: {
     fontSize: 10,
-    fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 10,
-    fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -66,7 +63,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   infoCellHeader: {
-    fontWeight: 'bold',
     padding: 3,
     borderRightWidth: 1,
     borderRightColor: '#000',
@@ -109,10 +105,10 @@ const styles = StyleSheet.create({
   colAspect: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, fontSize: 7.5 },
   colRange: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontSize: 7.5 },
   colScore: { width: '16%', padding: 3, textAlign: 'center', fontSize: 7.5 },
-  colNumH: { width: '6%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontWeight: 'bold', fontSize: 8 },
-  colAspectH: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontWeight: 'bold', fontSize: 8 },
-  colRangeH: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontWeight: 'bold', fontSize: 8 },
-  colScoreH: { width: '16%', padding: 3, textAlign: 'center', fontWeight: 'bold', fontSize: 8 },
+  colNumH: { width: '6%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontSize: 8 },
+  colAspectH: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontSize: 8 },
+  colRangeH: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontSize: 8 },
+  colScoreH: { width: '16%', padding: 3, textAlign: 'center', fontSize: 8 },
 
   // Totals
   totalRow: {
@@ -124,7 +120,6 @@ const styles = StyleSheet.create({
     width: '84%',
     textAlign: 'right',
     padding: 3,
-    fontWeight: 'bold',
     borderRightWidth: 1,
     borderColor: '#000',
     fontSize: 8,
@@ -133,12 +128,10 @@ const styles = StyleSheet.create({
     width: '16%',
     textAlign: 'center',
     padding: 3,
-    fontWeight: 'bold',
     fontSize: 8,
   },
   finalCalcText: {
     fontSize: 9,
-    fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 6,
   },
@@ -149,14 +142,14 @@ const styles = StyleSheet.create({
   firmaBox: { alignItems: 'center', width: '30%' },
   firmaBoxWide: { alignItems: 'center', width: '40%' },
   firmaLine: { width: '100%', borderBottomWidth: 1, borderColor: '#000', marginBottom: 3 },
-  firmaName: { fontSize: 8, fontWeight: 'bold', textAlign: 'center', marginBottom: 1 },
+  firmaName: { fontSize: 8, textAlign: 'center', marginBottom: 1 },
   firmaRole: { fontSize: 7.5, textAlign: 'center' },
 
   // Final signature grid
   firmaFinalContainer: { marginTop: 14 },
   firmaFinalCol: { alignItems: 'center', width: '48%' },
   firmaFinalSingle: { alignItems: 'center', width: '48%', alignSelf: 'center', marginTop: 12 },
-  firmaFinalName: { fontSize: 8, fontWeight: 'bold', textAlign: 'center' },
+  firmaFinalName: { fontSize: 8, textAlign: 'center' },
   firmaFinalRole: { fontSize: 7, textAlign: 'center' },
   firmaFinalLine: { width: '100%', borderBottomWidth: 1, borderColor: '#000', marginBottom: 3 },
 
@@ -177,7 +170,6 @@ const styles = StyleSheet.create({
   },
   cellHeader: {
     fontSize: 9,
-    fontWeight: 'bold',
     marginBottom: 5,
   },
   cellData: {
@@ -207,7 +199,7 @@ const styles = StyleSheet.create({
   firmaRowSplit: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 40 },
   firmaBoxFinal: { alignItems: 'center', width: '45%' },
   firmaLineFinal: { width: 220, borderBottomWidth: 1, borderColor: '#000', marginBottom: 4 },
-  firmaNameFinal: { fontSize: 9, fontWeight: 'bold', textAlign: 'center' },
+  firmaNameFinal: { fontSize: 9, textAlign: 'center' },
   firmaRoleFinal: { fontSize: 9, textAlign: 'center' },
 });
 
@@ -317,13 +309,13 @@ const HeaderFinal = () => (
   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
     <Image src="/pdfs-docs/escudo.png" style={{ width: 60, height: 60, objectFit: 'contain' }} />
     <View style={{ flex: 1, textAlign: 'center', paddingHorizontal: 10 }}>
-      <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
-      <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
-      <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
-      <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
-      <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>VICERRECTORADO DE LA REGIÓN LOS LLANOS</Text>
-      <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
-      <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>VICERRECTORADO DE LA REGIÓN LOS LLANOS</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES</Text>
     </View>
     <Image src="/pdfs-docs/logo.png" style={{ width: 60, height: 60, objectFit: 'contain' }} />
   </View>
@@ -600,7 +592,7 @@ function PageTutorInstitucional({ data, textos }: Props) {
           <Text style={styles.firmaRole}>Tutor(a) Institucional</Text>
         </View>
         <View style={{ alignItems: 'center', width: '30%' }}>
-          <Text style={{ fontSize: 8, fontWeight: 'bold', marginBottom: 4 }}>Sello de la Empresa:</Text>
+          <Text style={{ fontSize: 8, marginBottom: 4 }}>Sello de la Empresa:</Text>
           <View style={{ width: 90, height: 50, borderWidth: 1, borderColor: '#ccc', borderStyle: 'dashed' }} />
         </View>
       </View>
@@ -656,10 +648,10 @@ function PageEvaluacionFinal({ data, textos }: Props) {
       {/* Tabla de Ponderaciones */}
       <View style={styles.tableFinal}>
         <View style={[styles.tRowFinal, { backgroundColor: '#D9D9D9' }]}>
-          <Text style={[styles.colA, { textAlign: 'center', fontWeight: 'bold' }]}>Evaluación del ( de la ) Estudiante</Text>
-          <Text style={[styles.colB, { fontWeight: 'bold' }]}>Valor Porcentual</Text>
-          <Text style={[styles.colC, { fontWeight: 'bold' }]}>Calificación Parcial Escala del 1 al 20</Text>
-          <Text style={[styles.colD, { fontWeight: 'bold' }]}>Calificación Parcial Proporcional al Porcentaje</Text>
+          <Text style={[styles.colA, { textAlign: 'center' }]}>Evaluación del ( de la ) Estudiante</Text>
+          <Text style={styles.colB}>Valor Porcentual</Text>
+          <Text style={styles.colC}>Calificación Parcial Escala del 1 al 20</Text>
+          <Text style={styles.colD}>Calificación Parcial Proporcional al Porcentaje</Text>
         </View>
 
         <View style={styles.tRowFinal}>

@@ -9,7 +9,7 @@ function renderTextoTemplate(texto: string, data: Record<string, string>) {
     if (m) {
       const value = data[m[1]];
       if (value !== undefined) {
-        return <Text key={i} style={{ textDecoration: 'underline' }}>{value.toUpperCase()}</Text>;
+        return <Text key={i}>{value.toUpperCase()}</Text>;
       }
       return `[${m[1]}]`;
     }
@@ -86,15 +86,15 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
 
       <View style={styles.infoRow}>
         <View style={styles.infoFields}>
-          <Text style={styles.fieldRow}>NOMBRES Y APELLIDOS:    <Text style={{ textDecoration: 'underline' }}>{nombreCompleto.toUpperCase()}</Text></Text>
-          <Text style={styles.fieldRow}>CÉDULA DE IDENTIDAD:     <Text style={{ textDecoration: 'underline' }}>{ci.toUpperCase()}</Text></Text>
-          <Text style={styles.fieldRow}>NÚMEROS DE CONTACTO:  <Text style={{ textDecoration: 'underline' }}>{(data.estudiante.telefono || '').toUpperCase()}</Text></Text>
-          <Text style={styles.fieldRow}>CORREO ELECTRÓNICO:   <Text style={{ textDecoration: 'underline' }}>{(data.estudiante.email || '').toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>NOMBRES Y APELLIDOS:    <Text>{nombreCompleto.toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>CÉDULA DE IDENTIDAD:     <Text>{ci.toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>NÚMEROS DE CONTACTO:  <Text>{(data.estudiante.telefono || '').toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>CORREO ELECTRÓNICO:   <Text>{(data.estudiante.email || '').toUpperCase()}</Text></Text>
           <Text style={styles.fieldRow}>
             RÉGIMEN: {esDiurno ? 'DIURNO (X)    NOCTURNO (  )' : 'DIURNO (  )    NOCTURNO (X)'}
           </Text>
-          <Text style={styles.fieldRow}>CARRERA:    <Text style={{ textDecoration: 'underline' }}>{data.carrera.nombre.toUpperCase()}</Text></Text>
-          <Text style={styles.fieldRow}>SEMESTRE:  <Text style={{ textDecoration: 'underline' }}>{(data.practica?.semester || '').toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>CARRERA:    <Text>{data.carrera.nombre.toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>SEMESTRE:  <Text>{(data.practica?.semester || '').toUpperCase()}</Text></Text>
           <Text style={styles.fieldRow}>
             TRABAJO:  {trabaja ? 'SI (X)  NO (  )' : 'SI (  )  NO (X)'}
           </Text>
@@ -105,10 +105,10 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
       </View>
 
       <Text style={styles.fieldRow}>
-        NOMBRE DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: <Text style={{ textDecoration: 'underline' }}>{(data.institucion?.nombre || '________________________').toUpperCase()}</Text>
+        NOMBRE DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: <Text>{(data.institucion?.nombre || '________________________').toUpperCase()}</Text>
       </Text>
       <Text style={styles.fieldRow}>
-        NOMBRE Y APELLIDOS DEL (DE LA) GERENTE DE TALENTO HUMANO DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS: <Text style={{ textDecoration: 'underline' }}>{(textos.gerenteTalentoHumano || (data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '________________________')).toUpperCase()}</Text>
+        NOMBRE Y APELLIDOS DEL (DE LA) GERENTE DE TALENTO HUMANO DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS: <Text>{(textos.gerenteTalentoHumano || (data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '________________________')).toUpperCase()}</Text>
       </Text>
 
       <View style={styles.firmaContainer}>

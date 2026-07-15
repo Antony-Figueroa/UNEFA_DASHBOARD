@@ -33,7 +33,6 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 11,
-    fontFamily: 'Times-Bold',
     color: '#000000',
     textAlign: 'center',
   },

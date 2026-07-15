@@ -181,10 +181,10 @@ export function ProspectListModal({ isOpen, onClose }: ProspectListModalProps) {
             )}
             <View style={{ width: "100%" }}>
               <View style={[pdfStyles.row, pdfStyles.headerRow]}>
-                <Text style={{ ...pdfStyles.cellCi, fontFamily: "Times-Roman", fontWeight: "bold" as any }}>CI</Text>
-                <Text style={{ ...pdfStyles.cellName, fontFamily: "Times-Roman", fontWeight: "bold" as any }}>Nombre</Text>
-                <Text style={{ ...pdfStyles.cellPhone, fontFamily: "Times-Roman", fontWeight: "bold" as any }}>Teléfono</Text>
-                <Text style={{ ...pdfStyles.cellEnrolled, fontFamily: "Times-Roman", fontWeight: "bold" as any }}>Inscripto</Text>
+                <Text style={{ ...pdfStyles.cellCi, fontFamily: "Times-Roman" }}>CI</Text>
+                <Text style={{ ...pdfStyles.cellName, fontFamily: "Times-Roman" }}>Nombre</Text>
+                <Text style={{ ...pdfStyles.cellPhone, fontFamily: "Times-Roman" }}>Teléfono</Text>
+                <Text style={{ ...pdfStyles.cellEnrolled, fontFamily: "Times-Roman" }}>Inscripto</Text>
               </View>
               {items.map((item, i) => (
                 <View style={pdfStyles.row} key={item.itemId || i}>

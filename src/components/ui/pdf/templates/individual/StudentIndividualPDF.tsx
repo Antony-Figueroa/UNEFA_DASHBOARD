@@ -24,7 +24,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 10,
     fontFamily: "Nunito",
-    fontWeight: "bold",
     color: "#000000",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -46,7 +45,6 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 8,
     fontFamily: "Nunito",
-    fontWeight: "bold",
     color: "#000000",
     textTransform: "uppercase",
     letterSpacing: 0.3,
@@ -60,7 +58,6 @@ const styles = StyleSheet.create({
   infoValueHighlight: {
     fontSize: 10,
     fontFamily: "Nunito",
-    fontWeight: "bold",
     color: "#000000",
   },
   statusContainer: {
@@ -89,13 +86,12 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 9,
     fontFamily: "Nunito",
-    fontWeight: "bold",
   },
   statusTextActive: {
-    color: "#166534",
+    color: "#000000",
   },
   statusTextInactive: {
-    color: "#991B1B",
+    color: "#000000",
   },
 });
 

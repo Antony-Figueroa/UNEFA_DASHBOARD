@@ -40,7 +40,7 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
             <Text style={[pdfStyles.tableCell, { flex: 1.2, fontSize: 8 }]}>
               {formatCI(responsible.identificationPrefix, responsible.identificationNumber)}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8, fontWeight: "bold" }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8 }]}>
               {formatName(responsible)}
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>

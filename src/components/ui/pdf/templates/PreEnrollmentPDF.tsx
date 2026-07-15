@@ -35,7 +35,7 @@ export const PreEnrollmentPDF: React.FC<PreEnrollmentPDFProps> = ({ data }) => {
               {formatCI(item.identificationPrefix, item.identificationNumber)}
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 2.5, fontSize: 8 }]}>
-              <Text style={{ fontWeight: "bold" }}>{item.studentName}</Text>
+              <Text>{item.studentName}</Text>
               {'\n'}
               <Text style={{ fontSize: 7, color: "#000000" }}>Tel: {item.phone}</Text>
             </Text>

@@ -43,7 +43,6 @@ const styles = StyleSheet.create({
   institutionalText: {
     fontSize: 7.5,
     fontFamily: "Nunito",
-    fontWeight: "bold",
     color: "#000000",
     lineHeight: 1.2,
   },
@@ -55,7 +54,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontFamily: "Nunito",
-    fontWeight: "bold",
     color: "#000000",
     textTransform: "uppercase",
     letterSpacing: 2,
@@ -70,7 +68,6 @@ const styles = StyleSheet.create({
     textIndent: 35,
   },
   bold: {
-    fontWeight: "bold",
     color: "#000000",
   },
   footer: {
@@ -85,7 +82,6 @@ const styles = StyleSheet.create({
   },
   signerTitle: {
     fontSize: 9,
-    fontWeight: "bold",
     textAlign: "center",
     textTransform: "uppercase",
   },

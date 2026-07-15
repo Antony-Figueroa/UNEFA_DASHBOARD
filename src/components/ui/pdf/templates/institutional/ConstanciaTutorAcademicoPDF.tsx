@@ -7,7 +7,7 @@ const styles = StyleSheet.create({
   paragraph: { marginBottom: 20, textAlign: 'justify', fontSize: 12, lineHeight: 2, marginLeft: 30, marginRight: 30, textIndent: 30 },
   firmaContainer: { marginTop: 60, alignItems: 'center' },
   firmaLine: { marginBottom: 5 },
-  firmaNombre: { fontWeight: 'bold', fontSize: 11 },
+  firmaNombre: { fontSize: 11 },
   firmaRol: { fontSize: 10, color: '#000000' },
 });
 
@@ -34,14 +34,6 @@ export function ConstanciaTutorAcademicoPDF({ data, textos, verificationHash, qr
   const fechaHoy = getFechaParts(null);
   const tutorTitulo = getTutorTitle(data.tutor.titulo, data.tutor.tituloAbrev);
 
-  // System data keys que van en negrita
-  const boldKeys = new Set([
-    'tutorTitulo', 'tutorNombreCompleto', 'tutorCi',
-    'tutorCondicion', 'tutorDedicacion',
-    'estudianteNombreCompleto', 'estudianteCi',
-    'totalHours',
-  ]);
-
   const cuerpo = renderDocumentTextFormatted(textos.cuerpo || '', {
     tutorTitulo,
     tutorNombreCompleto: formatNombreCompleto(data.tutor).toUpperCase(),
@@ -57,7 +49,7 @@ export function ConstanciaTutorAcademicoPDF({ data, textos, verificationHash, qr
     dia: fechaHoy.dia,
     mes: fechaHoy.mes,
     anio: fechaHoy.anio,
-  }, boldKeys);
+  });
 
   const firmaNombre = textos.firmaNombre || 'MSc. Marbelys del Valle Rivero';
   const firmaCargo = textos.firmaCargo || 'Decana del Núcleo Portuguesa';
@@ -74,7 +66,7 @@ export function ConstanciaTutorAcademicoPDF({ data, textos, verificationHash, qr
       <View style={styles.firmaContainer}>
         <Text style={styles.firmaLine}>___________________________________</Text>
         <Text style={styles.firmaNombre}>{firmaNombre.toUpperCase()}</Text>
-        <Text style={[styles.firmaRol, { fontWeight: 'bold' }]}>{firmaCargo.toUpperCase()}</Text>
+        <Text style={styles.firmaRol}>{firmaCargo.toUpperCase()}</Text>
         <Text style={styles.firmaRol}>{firmaOrden}</Text>
       </View>
     </PDFLayout>

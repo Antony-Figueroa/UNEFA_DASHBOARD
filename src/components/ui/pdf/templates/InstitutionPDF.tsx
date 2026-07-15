@@ -33,7 +33,7 @@ export const InstitutionPDF: React.FC<InstitutionPDFProps> = ({ data }) => {
           <View key={institution.institutionId || index} style={pdfStyles.tableRow} wrap={false}>
             <Text style={[pdfStyles.tableCell, { flex: 0.8, fontSize: 8 }]}>{institution.rif}</Text>
             <Text style={[pdfStyles.tableCell, { flex: 1.5, fontSize: 8 }]}>
-              <Text style={{ fontWeight: "bold" }}>{institution.name}</Text>
+              <Text>{institution.name}</Text>
               {'\n'}
               <Text style={{ fontSize: 7, color: "#000000" }}>{institution.institutionType}</Text>
             </Text>

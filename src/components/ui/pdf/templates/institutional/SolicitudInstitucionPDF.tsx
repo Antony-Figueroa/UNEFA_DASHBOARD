@@ -8,7 +8,6 @@ const styles = StyleSheet.create({
     marginBottom: 4, 
     fontSize: 11, 
     textAlign: 'right',
-    fontWeight: 'normal',
   },
   leftSection: {
     alignItems: 'flex-start',
@@ -20,14 +19,12 @@ const styles = StyleSheet.create({
   },
   destinatario: { 
     marginBottom: 2, 
-    fontWeight: 'bold', 
     fontSize: 11,
   },
   destinatarioRed: {
     marginBottom: 2, 
-    fontWeight: 'bold', 
     fontSize: 11,
-    color: '#dc2626',
+    color: '#000000',
   },
   paragraph: { 
     marginBottom: 10, 
@@ -37,8 +34,7 @@ const styles = StyleSheet.create({
     textIndent: 30,
   },
   textRed: {
-    color: '#dc2626',
-    fontWeight: 'bold',
+    color: '#000000',
   },
 
   centeredContainer: {
@@ -58,19 +54,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   centeredFirmaNombre: { 
-    fontWeight: 'bold', 
     fontSize: 11,
     marginBottom: 2,
     textAlign: 'center',
   },
   centeredFirmaCargo: { 
-    fontWeight: 'bold', 
     fontSize: 11,
     marginBottom: 2,
     textAlign: 'center',
   },
   centeredFirmaOrden: { 
-    fontWeight: 'bold', 
     fontSize: 10, 
     color: '#000000',
     textAlign: 'center',

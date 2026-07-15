@@ -9,7 +9,6 @@ export const pdfStyles = StyleSheet.create({
     paddingTop: 55,
     paddingBottom: 55,
     paddingHorizontal: 50,
-    fontFamily: "Times-Bold",
     fontSize: 12,
     color: "#000000",
   },
@@ -35,6 +34,7 @@ export const pdfStyles = StyleSheet.create({
     fontSize: 8,
     color: "#000000",
     lineHeight: 1.2,
+    fontFamily: "Times-Roman", // Changed to Times-Roman
   },
   institutionalTextNormal: {
     fontSize: 8,
@@ -50,14 +50,12 @@ export const pdfStyles = StyleSheet.create({
   },
   reportTitle: {
     fontSize: 12,
-    fontFamily: "Times-Bold",
     color: "#000000",
     textTransform: "uppercase",
     textAlign: "center",
   },
   reportSubtitle: {
     fontSize: 12,
-    fontFamily: "Times-Bold",
     color: "#000000",
     marginTop: 2,
     textAlign: "center",
@@ -80,12 +78,11 @@ export const pdfStyles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: "Times-Bold",
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 12,
-    color: "#64748B", // text-secondary
+    color: "#000000", // Changed to black
   },
   infoSection: {
     marginBottom: 20,
@@ -95,7 +92,6 @@ export const pdfStyles = StyleSheet.create({
     marginBottom: 4,
   },
   infoLabel: {
-    fontFamily: "Times-Bold",
     width: 100,
   },
   infoValue: {
@@ -117,13 +113,11 @@ export const pdfStyles = StyleSheet.create({
   },
   tableHeader: {
     backgroundColor: "#F8FAFC",
-    fontFamily: "Times-Bold",
   },
   tableCell: {
     flex: 1,
     padding: 6,
     fontSize: 10,
-    fontFamily: "Times-Bold",
   },
   footer: {
     position: "absolute",
@@ -138,7 +132,6 @@ export const pdfStyles = StyleSheet.create({
     alignItems: "center",
     color: "#000000",
     fontSize: 9,
-    fontFamily: "Times-Bold",
   },
   footerLeft: {
     flexDirection: "row",
@@ -153,7 +146,6 @@ export const pdfStyles = StyleSheet.create({
   },
   pageNumber: {
     textAlign: "right",
-    fontFamily: "Times-Bold",
   },
   // Variantes para Badges
   badge: {
@@ -161,31 +153,29 @@ export const pdfStyles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
     fontSize: 8,
-    fontFamily: "Times-Bold",
     textAlign: "center",
   },
   badgeText: {
     fontSize: 8,
-    fontFamily: "Times-Bold",
   },
   badgeSuccess: {
     backgroundColor: "#DCFCE7",
-    color: "#166534",
+    color: "#000000", // Changed to black
   },
   badgeError: {
     backgroundColor: "#FEE2E2",
-    color: "#991B1B",
+    color: "#000000", // Changed to black
   },
   badgeWarning: {
     backgroundColor: "#FEF3C7",
-    color: "#92400E",
+    color: "#000000", // Changed to black
   },
   badgeInfo: {
     backgroundColor: "#E0F2FE",
-    color: "#075985",
+    color: "#000000", // Changed to black
   },
   badgeSecondary: {
     backgroundColor: "#F1F5F9",
-    color: "#475569",
+    color: "#000000", // Changed to black
   },
 });

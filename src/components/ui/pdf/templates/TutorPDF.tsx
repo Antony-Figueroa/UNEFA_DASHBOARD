@@ -48,7 +48,7 @@ export const TutorPDF: React.FC<TutorPDFProps> = ({ data, careers }) => {
               {formatCI(tutor.identificationPrefix, tutor.identificationNumber)}
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>
-              <Text style={{ fontWeight: "bold" }}>{fullName}</Text>
+              <Text>{fullName}</Text>
               {'\n'}
               <Text style={{ fontSize: 7, color: "#000000" }}>{tutor.sex}</Text>
             </Text>

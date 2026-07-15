@@ -4,19 +4,19 @@ import { formatNombreCompleto, formatCI, formatFecha, safeString } from '@/featu
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
-  title: { textAlign: 'center', fontSize: 16, fontWeight: 'bold', marginBottom: 30, textDecoration: 'underline' },
+  title: { textAlign: 'center', fontSize: 16, marginBottom: 30, textDecoration: 'underline' },
   paragraph: { marginBottom: 20, textAlign: 'justify', fontSize: 12, lineHeight: 1.5 },
   section: { marginBottom: 20 },
-  sectionTitle: { fontWeight: 'bold', marginBottom: 10, fontSize: 13 },
+  sectionTitle: { marginBottom: 10, fontSize: 13 },
   row: { flexDirection: 'row', marginBottom: 5 },
-  label: { fontWeight: 'bold', width: 120 },
+  label: { width: 120 },
   value: { flex: 1 },
   table: { marginTop: 10 },
   tableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#ccc', paddingVertical: 4 },
-  tableHeader: { fontWeight: 'bold', width: 30 },
+  tableHeader: { width: 30 },
   tableDesc: { flex: 1 },
   tableScore: { width: 40, textAlign: 'center' },
-  totalRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10, fontWeight: 'bold' },
+  totalRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 },
 });
 
 interface Criterio {

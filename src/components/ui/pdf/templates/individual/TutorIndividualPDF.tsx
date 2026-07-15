@@ -62,7 +62,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 10,
-    fontFamily: "Times-Bold",
     color: "#000000",
     textTransform: "uppercase",
   },
@@ -84,18 +83,15 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 8,
-    fontFamily: "Times-Bold",
     color: "#000000",
     textTransform: "uppercase",
     marginBottom: 1,
   },
   infoLabelUnderlined: {
     fontSize: 8,
-    fontFamily: "Times-Bold",
     color: "#000000",
     textTransform: "uppercase",
     marginBottom: 1,
-    textDecoration: "underline",
   },
   infoValue: {
     fontSize: 10,
@@ -104,7 +100,6 @@ const styles = StyleSheet.create({
   },
   infoValueHighlight: {
     fontSize: 10,
-    fontFamily: "Times-Bold",
     color: "#000000",
   },
 
@@ -116,13 +111,11 @@ const styles = StyleSheet.create({
   },
   periodoLabel: {
     fontSize: 10,
-    fontFamily: "Times-Bold",
     color: "#000000",
   },
   periodoValue: {
     fontSize: 10,
-    fontFamily: "Times-Bold",
-    color: "#DC2626",
+    color: "#000000",
   },
 
   // ── Observaciones (caja amarilla) ──
@@ -137,7 +130,6 @@ const styles = StyleSheet.create({
   },
   observacionesTitle: {
     fontSize: 8,
-    fontFamily: "Times-Bold",
     color: "#000000",
     textTransform: "uppercase",
     marginBottom: 4,
@@ -151,7 +143,6 @@ const styles = StyleSheet.create({
   // ── RIF ──
   rifValue: {
     fontSize: 10,
-    fontFamily: "Times-Bold",
     color: "#000000",
   },
 
@@ -166,7 +157,6 @@ const styles = StyleSheet.create({
   },
   tutorInstTitle: {
     fontSize: 9,
-    fontFamily: "Times-Bold",
     color: "#000000",
     textTransform: "uppercase",
     marginBottom: 4,
@@ -196,7 +186,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 8,
-    fontFamily: "Times-Bold",
   },
 });
 
@@ -369,7 +358,7 @@ export const TutorIndividualPDF: React.FC<TutorIndividualPDFProps> = ({
               <Text
                 style={[
                   styles.statusText,
-                  { color: tutor.status ? "#166534" : "#991B1B" },
+                  { color: "#000000" },
                 ]}
               >
                 {tutor.status ? "ACTIVO" : "INACTIVO"}

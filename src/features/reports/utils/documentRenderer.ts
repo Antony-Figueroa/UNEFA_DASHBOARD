@@ -10,13 +10,11 @@ export function renderDocumentText(
 
 /**
  * Renderiza un template con variables {{variable}}.
- * Permite especificar qué variables deben ir en negrita (boldKeys).
  * Retorna un array de Text elements de @react-pdf/renderer.
  */
 export function renderDocumentTextFormatted(
   template: string,
-  data: Record<string, string>,
-  boldKeys: Set<string> = new Set()
+  data: Record<string, string>
 ): React.ReactNode[] {
   const parts = template.split(/(\{\{[^}]+\}\})/g);
   return parts.map((part, i) => {
@@ -25,10 +23,6 @@ export function renderDocumentTextFormatted(
       const key = m[1];
       const value = data[key];
       if (value !== undefined) {
-        const isBold = boldKeys.has(key);
-        if (isBold) {
-          return React.createElement(Text, { key: i, style: { fontWeight: 'bold' } }, value.toUpperCase());
-        }
         return React.createElement(Text, { key: i }, value);
       }
       return `[${key}]`;

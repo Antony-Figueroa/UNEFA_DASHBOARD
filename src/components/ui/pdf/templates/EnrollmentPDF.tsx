@@ -39,7 +39,6 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
     headerCell: {
       backgroundColor: '#F8FAFC',
       color: '#000000',
-      fontWeight: 'bold' as const,
       borderRightWidth: 1,
       borderRightColor: '#E2E8F0',
       borderBottomWidth: 1,
@@ -80,7 +79,7 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
     return (
       <PDFLayout title="ERROR DE REPORTE" subtitle="DATOS INSUFICIENTES">
         <View style={{ padding: 20 }}>
-          <Text style={{ fontSize: 12, color: 'red' }}>
+          <Text style={{ fontSize: 12, color: '#000000' }}>
             No se encontraron datos suficientes para generar el reporte.
             Asegúrese de que las inscripciones tengan asignados: Región, Núcleo y Carrera.
           </Text>
@@ -109,7 +108,7 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
           {/* Grupo: Tutores Académicos */}
           <View style={{ width: '12%', flexDirection: 'column' }}>
             <View style={[localStyles.headerCell, { borderRightWidth: 0, width: '100%', height: 12 }]}>
-              <Text style={{ fontSize: 5, fontWeight: 'bold' }}>TUTORES ACADEMICOS</Text>
+              <Text style={{ fontSize: 5 }}>TUTORES ACADEMICOS</Text>
             </View>
             <View style={{ flexDirection: 'row', height: 18 }}>
               <Text style={[localStyles.headerCell, { width: '66.66%', fontSize: 4 }]}>NOMBRE Y APELLIDO</Text>
@@ -120,7 +119,7 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
           {/* Grupo: Tutores Metodológicos */}
           <View style={{ width: '12%', flexDirection: 'column' }}>
             <View style={[localStyles.headerCell, { borderRightWidth: 0, width: '100%', height: 12 }]}>
-              <Text style={{ fontSize: 5, fontWeight: 'bold' }}>TUTORES METODOLÓGICOS</Text>
+              <Text style={{ fontSize: 5 }}>TUTORES METODOLÓGICOS</Text>
             </View>
             <View style={{ flexDirection: 'row', height: 18 }}>
               <Text style={[localStyles.headerCell, { width: '66.66%', fontSize: 4 }]}>NOMBRE Y APELLIDO</Text>
@@ -131,7 +130,7 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
           {/* Grupo: Institución */}
           <View style={{ width: '18%', flexDirection: 'column' }}>
             <View style={[localStyles.headerCell, { borderRightWidth: 0, width: '100%', height: 12 }]}>
-              <Text style={{ fontSize: 5, fontWeight: 'bold' }}>INSTITUCIÓN</Text>
+              <Text style={{ fontSize: 5 }}>INSTITUCIÓN</Text>
             </View>
             <View style={{ flexDirection: 'row', height: 18 }}>
               <Text style={[localStyles.headerCell, { width: '33.33%', fontSize: 4 }]}>NOMBRE</Text>
@@ -143,7 +142,7 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
           {/* Grupo: Responsable Institución */}
           <View style={{ width: '12%', flexDirection: 'column', borderRightWidth: 0 }}>
             <View style={[localStyles.headerCell, { borderRightWidth: 0, width: '100%', height: 12 }]}>
-              <Text style={{ fontSize: 5, fontWeight: 'bold' }}>RESPONSABLE DE LA INSTITUCIÓN</Text>
+              <Text style={{ fontSize: 5 }}>RESPONSABLE DE LA INSTITUCIÓN</Text>
             </View>
             <View style={{ flexDirection: 'row', height: 18 }}>
               <Text style={[localStyles.headerCell, { width: '66.66%', fontSize: 4 }]}>NOMBRE Y APELLIDO</Text>

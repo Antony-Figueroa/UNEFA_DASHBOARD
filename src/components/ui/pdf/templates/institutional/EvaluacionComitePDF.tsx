@@ -4,25 +4,25 @@ import { formatNombreCompleto, formatCI } from '@/features/reports/utils/reportF
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
-  title: { textAlign: 'center', fontSize: 14, fontWeight: 'bold', marginBottom: 25, textDecoration: 'underline' },
-  jurorTitle: { textAlign: 'center', fontSize: 12, fontWeight: 'bold', marginBottom: 12, marginTop: 15, backgroundColor: '#f0f0f0', padding: 6 },
+  title: { textAlign: 'center', fontSize: 14, marginBottom: 25 },
+  jurorTitle: { textAlign: 'center', fontSize: 12, marginBottom: 12, marginTop: 15, backgroundColor: '#f0f0f0', padding: 6 },
   paragraph: { marginBottom: 20, textAlign: 'justify' },
   section: { marginBottom: 20 },
-  sectionTitle: { fontWeight: 'bold', marginBottom: 8, fontSize: 12 },
-  evaluatorName: { fontSize: 11, fontWeight: 'bold', marginBottom: 8, color: '#000000' },
+  sectionTitle: { marginBottom: 8, fontSize: 12 },
+  evaluatorName: { fontSize: 11, marginBottom: 8, color: '#000000' },
   row: { flexDirection: 'row', marginBottom: 4 },
-  label: { fontWeight: 'bold', width: 180, fontSize: 10 },
+  label: { width: 180, fontSize: 10 },
   value: { flex: 1, fontSize: 10 },
 
   committeeTable: { marginTop: 5, marginBottom: 15 },
   committeeHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderTopWidth: 1, borderTopColor: '#000', backgroundColor: '#f5f5f5', paddingVertical: 4 },
   committeeRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#ccc', paddingVertical: 3 },
-  commRol: { flex: 1.5, fontWeight: 'bold', fontSize: 9, paddingLeft: 4 },
+  commRol: { flex: 1.5, fontSize: 9, paddingLeft: 4 },
   commName: { flex: 2, fontSize: 9 },
   commCi: { flex: 1, fontSize: 9, textAlign: 'center' },
-  commHeaderRol: { flex: 1.5, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
-  commHeaderName: { flex: 2, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
-  commHeaderCi: { flex: 1, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
+  commHeaderRol: { flex: 1.5, fontSize: 9, textAlign: 'center' },
+  commHeaderName: { flex: 2, fontSize: 9, textAlign: 'center' },
+  commHeaderCi: { flex: 1, fontSize: 9, textAlign: 'center' },
 
   criteriaTable: { marginTop: 8, marginBottom: 12 },
   criteriaHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderTopWidth: 1, borderTopColor: '#000', backgroundColor: '#f5f5f5', paddingVertical: 4 },
@@ -31,16 +31,16 @@ const styles = StyleSheet.create({
   crDesc: { flex: 1, fontSize: 9, paddingLeft: 2 },
   crRange: { width: 55, fontSize: 8, textAlign: 'center', color: '#000000' },
   crScore: { width: 40, fontSize: 9, textAlign: 'center' },
-  hNum: { width: 25, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
-  hDesc: { flex: 1, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
-  hRange: { width: 55, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
-  hScore: { width: 40, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
+  hNum: { width: 25, fontSize: 9, textAlign: 'center' },
+  hDesc: { flex: 1, fontSize: 9, textAlign: 'center' },
+  hRange: { width: 55, fontSize: 9, textAlign: 'center' },
+  hScore: { width: 40, fontSize: 9, textAlign: 'center' },
 
   totalScoreRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 5, paddingRight: 10 },
-  totalScoreText: { fontWeight: 'bold', fontSize: 11 },
+  totalScoreText: { fontSize: 11 },
 
   avgRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20, marginBottom: 15, paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#000', borderBottomWidth: 2, borderBottomColor: '#000' },
-  avgText: { fontWeight: 'bold', fontSize: 13 },
+  avgText: { fontSize: 13 },
 
   separator: { borderBottomWidth: 1, borderBottomColor: '#ccc', marginVertical: 10, borderStyle: 'dashed' },
 

@@ -25,9 +25,6 @@ const styles = StyleSheet.create({
   labelText: {
     fontSize: 11,
   },
-  bold: {
-    fontWeight: 'bold',
-  },
   firmaContainer: { 
     marginTop: 40, 
     alignItems: 'center',
@@ -49,7 +46,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   firmaNombre: {
-    fontWeight: 'bold',
     fontSize: 11,
     marginBottom: 2,
   },
@@ -129,7 +125,7 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos, verificationHash
 
       {/* Sección derecha: Atnn. (editable desde textos) */}
       <View style={styles.rightSection}>
-        <Text style={styles.labelText}><Text style={styles.bold}>Atnn.</Text> {textos.atnn || `${tutorTitulo} ${tutorName}.`}</Text>
+        <Text style={styles.labelText}>Atnn. {textos.atnn || `${tutorTitulo} ${tutorName}.`}</Text>
       </View>
 
       {/* Cuerpo del texto — primer párrafo */}

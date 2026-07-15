@@ -431,12 +431,29 @@ export const updateUser = async (userId: number, userData: UserData) => {
 
     // 3. Actualizar rol si se proporcionó
     if (userData.role) {
-      const { error: roleError } = await supabase
+      // Verificar si ya existe una fila en t_user_roles
+      const { data: existingRole } = await supabase
         .from('t_user_roles')
-        .update({ ID_ROLES: userData.role })
-        .eq('ID_USER', userId);
+        .select('ID_USER')
+        .eq('ID_USER', userId)
+        .maybeSingle();
 
-      if (roleError) throw roleError;
+      if (existingRole) {
+        // Actualizar rol existente
+        const { error: roleError } = await supabase
+          .from('t_user_roles')
+          .update({ ID_ROLES: userData.role })
+          .eq('ID_USER', userId);
+
+        if (roleError) throw roleError;
+      } else {
+        // Insertar nueva fila si no existe (ej: migración manual)
+        const { error: insertError } = await supabase
+          .from('t_user_roles')
+          .insert({ ID_USER: userId, ID_ROLES: userData.role });
+
+        if (insertError) throw insertError;
+      }
     }
 
     // 4. Refrescar datos completos del usuario con joins

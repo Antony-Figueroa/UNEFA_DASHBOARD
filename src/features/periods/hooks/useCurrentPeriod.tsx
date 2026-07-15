@@ -74,6 +74,6 @@ export const useCurrentPeriod = (options?: UseCurrentPeriodOptions): UseCurrentP
     currentPeriod,
     periods: periodos || [],
     loading: status === "loading",
-    error: error || null,
+    error: error ? (error instanceof Error ? error.message : String(error)) : null as string | null,
   };
 };

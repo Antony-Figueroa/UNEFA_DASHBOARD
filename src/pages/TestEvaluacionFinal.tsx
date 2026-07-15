@@ -27,6 +27,8 @@ const mockData = {
     parciales: { institucional: 18, academico: 16, comite: 19 },
     notaFinal: 17.7,
   },
+  practiceTypeName: 'Práctica Profesional',
+  hasMultiplePracticeTypes: false,
   practica: { startDate: '2025-09-01', endDate: '2026-01-31', grade: 18 },
 };
 

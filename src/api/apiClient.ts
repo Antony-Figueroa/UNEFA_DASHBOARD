@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "axios";
 import { normalizeForDisplay } from "../utils/textFormat";
+import { isProtectedAppRoute } from "../utils/routeUtils";
 
 /**
  * @file apiClient.ts
@@ -138,9 +139,9 @@ apiClient.interceptors.response.use(
     const config = error.config as RetryConfig;
     
     // Rutas que no requieren redirección inmediata al login si fallan con 401
-    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password'];
+    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password', '/nosotros', '/carreras', '/pasantias', '/validar'];
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
-    const isPublicPage = publicPaths.includes(currentPath);
+    const isPublicPage = publicPaths.includes(currentPath) || !isProtectedAppRoute(currentPath);
     
     // Rutas de monitoreo que no deben ensuciar el log de errores
     const isMonitoringPath = config?.url?.includes('/health') || config?.url?.includes('/db-status');

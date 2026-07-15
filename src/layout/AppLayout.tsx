@@ -71,7 +71,12 @@ const TabContent = memo(function TabContent({
   const { component: Component, params } = resolved;
   
   // Ensure Component is a valid React component type
-  if (!Component || typeof Component !== 'function' && typeof Component !== 'object') {
+  // Must be a function, or an object with React's $$typeof (lazy/context)
+  if (
+    !Component ||
+    (typeof Component !== 'function' &&
+      (typeof Component !== 'object' || Component === null || !('$$typeof' in Component)))
+  ) {
     console.error('[TabContent] Invalid component for path:', path, Component);
     return null;
   }

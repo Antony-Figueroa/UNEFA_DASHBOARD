@@ -31,14 +31,6 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
   verificationHash,
   qrCodeDataUri
 }) => {
-  const currentDate = new Date().toLocaleDateString("es-VE", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
   return (
     <Document
       title={title}
@@ -73,9 +65,6 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
           <View style={pdfStyles.reportTitleContainer}>
             <Text style={pdfStyles.reportTitle}>{title}</Text>
             {subtitle && <Text style={pdfStyles.reportSubtitle}>{subtitle}</Text>}
-            <Text style={[pdfStyles.reportSubtitle, { fontSize: 7, marginTop: 4 }]}>
-              Generado el: {currentDate}
-            </Text>
           </View>
         )}
 

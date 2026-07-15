@@ -10,6 +10,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import * as authService from "../features/auth/services/authService";
 import { AuthContext, type AuthUser } from "./auth";
 import { UnifiedDialog } from "../components/ui/dialog/UnifiedDialog";
+import { isProtectedAppRoute } from "../utils/routeUtils";
 
 /**
  * Proveedor de autenticación que envuelve la aplicación.
@@ -61,6 +62,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       return;
     }
+
+    // Si la ruta no coincide con ningún prefijo de ruta protegida del dashboard,
+    // es una ruta 404 (NotFound) — no intentar verificar sesión
+    if (!isProtectedAppRoute(currentPath)) {
+      setLoading(false);
+      return;
+    }
+
     checkAuth();
   }, [checkAuth]);
 

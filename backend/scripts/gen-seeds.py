@@ -37,6 +37,10 @@ ESSENTIAL_TABLES = {
     "t_password_history",
     "t_persons",
     "t_backups",
+    "t_roles_permissions",
+    "t_preset_questions",
+    "t_email_templates",
+    "t_knowledge_base",
 }
 
 out_lines = []

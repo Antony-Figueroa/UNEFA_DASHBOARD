@@ -173,15 +173,6 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
   const firmaCargo = textos.firmaCargo || 'Decana del Núcleo Portuguesa';
   const firmaOrden = textos.firmaOrden || textos.orden || 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022';
 
-  const currentDate = new Date();
-  const formattedDate = currentDate.toLocaleDateString('es-VE', {
-    year: 'numeric',
-    month: 'long',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
   return (
     <Document title="SOLICITUD DE INSTITUCIÓN">
       <Page size="A4" style={styles.page}>
@@ -255,7 +246,6 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
             />
           )}
           <View style={{ flex: 1, marginHorizontal: 20 }}>
-            <Text style={styles.validationText}>Generado el {formattedDate}.</Text>
             <Text style={styles.validationText}>Documento validado digitalmente por la Coordinación de Prácticas Profesionales</Text>
           </View>
           <Text style={styles.pageNumber}>Página 1 de 1</Text>

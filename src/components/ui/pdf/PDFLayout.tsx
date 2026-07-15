@@ -14,6 +14,7 @@ interface PDFLayoutProps {
   };
   hideReportTitle?: boolean;
   hideEquipoTrabajo?: boolean;
+  equipoTrabajoText?: string;
   verificationHash?: string;
   qrCodeDataUri?: string;
 }
@@ -30,6 +31,7 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
   metadata,
   hideReportTitle = false,
   hideEquipoTrabajo = false,
+  equipoTrabajoText = "EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES",
   verificationHash,
   qrCodeDataUri
 }) => {
@@ -53,9 +55,9 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
             <Text style={pdfStyles.institutionalText}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
             <Text style={pdfStyles.institutionalText}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
             <Text style={pdfStyles.institutionalText}>VICERRECTORADO DE LA REGIÓN LOS LLANOS</Text>
-            <Text style={pdfStyles.institutionalText}>NÚCLEO PORTUGUESA - EXTENSIÓN ACARIGUA</Text>
+            <Text style={pdfStyles.institutionalText}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
             {!hideEquipoTrabajo && (
-              <Text style={pdfStyles.institutionalText}>EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES</Text>
+              <Text style={pdfStyles.institutionalText}>{equipoTrabajoText}</Text>
             )}
           </View>
           <Image 

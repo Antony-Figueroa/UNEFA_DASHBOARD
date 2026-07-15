@@ -11,7 +11,7 @@ export const pdfStyles = StyleSheet.create({
     paddingHorizontal: 50,
     fontFamily: "Times-Bold",
     fontSize: 12,
-    color: "#1C2434", // text-primary
+    color: "#000000",
   },
   // Encabezado Institucional (Membrete)
   institutionalHeader: {
@@ -43,14 +43,14 @@ export const pdfStyles = StyleSheet.create({
     alignItems: "center",
   },
   reportTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: "Times-Bold",
     color: "#000000",
-    textTransform: "capitalize",
+    textTransform: "uppercase",
     textAlign: "center",
   },
   reportSubtitle: {
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: "Times-Bold",
     color: "#000000",
     marginTop: 2,
@@ -130,7 +130,7 @@ export const pdfStyles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    color: "#64748B",
+    color: "#000000",
     fontSize: 9,
     fontFamily: "Times-Bold",
   },

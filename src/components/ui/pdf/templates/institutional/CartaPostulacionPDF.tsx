@@ -162,8 +162,8 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
           </View>
         </View>
 
-        <Text style={[styles.actaFooter, { marginTop: 8 }]}>Conforme Pasante: {nombreCompleto}</Text>
-        <Text style={styles.actaFooter}>Fecha: {fechaValidacion}</Text>
+        <Text style={[styles.actaFooter, { marginTop: 8 }]}>Conforme Pasante: ______________________</Text>
+        <Text style={styles.actaFooter}>Fecha: ______________________</Text>
       </View>
     </PDFLayout>
   );

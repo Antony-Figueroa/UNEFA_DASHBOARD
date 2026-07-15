@@ -1,6 +1,6 @@
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
-import { formatNombreCompleto, getFechaParts } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, getFechaParts, getTutorTitle } from '@/features/reports/utils/reportFormatters';
 
 const styles = StyleSheet.create({
   paragraph: { 
@@ -83,7 +83,7 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos, verificationHash
   const fechaHoy = getFechaParts(null);
 
   const tutorName = formatNombreCompleto(data.tutor).toUpperCase();
-  const tutorTitulo = (data.tutor.titulo || 'LCDO.').toUpperCase();
+  const tutorTitulo = getTutorTitle(data.tutor.titulo, data.tutor.tituloAbrev);
   const institucionNombre = (data.institucion?.nombre || '________________________').toUpperCase();
   const responsableNombre = data.responsable?.nombreCompleto || institucionNombre;
   const responsableTitulo = data.responsable?.titulo
@@ -119,7 +119,7 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos, verificationHash
 
       {/* Cuerpo del texto — primer párrafo */}
       <Text style={styles.paragraph}>
-        Tengo el agrado de dirigirme a usted, en la oportunidad de extender nuestro sincero agradecimiento por su apoyo y participación incondicional, al desempeñarse como Tutor Institucional de la asignatura Práctica Profesional (Pasantía) de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA), al asesorar, supervisar y evaluar estudiantes, colaborando de esta forma en el proceso formativo y de capacitación integral de estos futuros profesionales, realizando un acompañamiento con un total de {hoursRequired} horas, en el periodo académico {periodoDesc}, comprendido entre las fechas {lapsoInicio} y {lapsoFin}.
+        Tengo el agrado de dirigirme a usted, en la oportunidad de extender nuestro sincero agradecimiento por su apoyo y participación incondicional, al desempeñarse como Tutor Institucional de la asignatura Práctica Profesional (Pasantía) de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Bolivariana (UNEFA), al asesorar, supervisar y evaluar estudiantes, colaborando de esta forma en el proceso formativo y de capacitación integral de estos futuros profesionales, realizando un acompañamiento con un total de {hoursRequired} horas, en el periodo académico {periodoDesc}, comprendido entre las fechas {lapsoInicio} y {lapsoFin}.
       </Text>
 
       {/* Cuerpo del texto — segundo párrafo */}

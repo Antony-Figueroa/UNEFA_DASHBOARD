@@ -1,40 +1,9 @@
-import { Text, View, StyleSheet, Document, Page, Image } from '@react-pdf/renderer';
+import { Text, View, StyleSheet } from '@react-pdf/renderer';
+import PDFLayout from '../../PDFLayout';
 import { formatNombreCompleto, formatFecha, getFechaParts, formatCI } from '@/features/reports/utils/reportFormatters';
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 20,
-    paddingBottom: 40,
-    paddingHorizontal: 50,
-    fontFamily: 'Helvetica',
-    fontSize: 11,
-    color: '#000000',
-  },
-  // Encabezado Institucional con Logos
-  institutionalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 15,
-  },
-  headerImages: {
-    width: 60,
-    height: 60,
-    objectFit: 'contain',
-  },
-  institutionalTextContainer: {
-    flex: 1,
-    textAlign: 'center',
-    paddingHorizontal: 15,
-    paddingTop: 3,
-  },
-  institutionalText: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: '#000000',
-    lineHeight: 1.3,
-    marginBottom: 0.5,
-  },
+
   placeDate: { 
     marginBottom: 15, 
     fontSize: 11, 
@@ -65,32 +34,13 @@ const styles = StyleSheet.create({
     textAlign: 'justify', 
     fontSize: 11, 
     lineHeight: 1.4,
+    textIndent: 30,
   },
   textRed: {
     color: '#000000',
     fontWeight: 'bold',
   },
-  firmaContainer: { 
-    marginTop: 30, 
-    alignItems: 'flex-start',
-  },
-  atentamente: {
-    marginBottom: 20,
-    fontSize: 11,
-  },
-  firmaNombre: { 
-    fontWeight: 'bold', 
-    fontSize: 11,
-    marginBottom: 2,
-  },
-  firmaCargo: { 
-    fontSize: 11,
-    marginBottom: 2,
-  },
-  firmaOrden: { 
-    fontSize: 10, 
-    color: '#000000',
-  },
+
   centeredContainer: {
     marginTop: 30,
     alignItems: 'center',
@@ -123,29 +73,7 @@ const styles = StyleSheet.create({
     color: '#000000',
     textAlign: 'center',
   },
-  footerContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 45,
-    right: 45,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  qrCode: {
-    width: 50,
-    height: 50,
-  },
-  validationText: {
-    fontSize: 9,
-    color: '#4a5568',
-    textAlign: 'center',
-  },
-  pageNumber: {
-    fontSize: 9,
-    color: '#4a5568',
-    textAlign: 'right',
-  },
+
 });
 
 interface Props {
@@ -174,29 +102,8 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
   const firmaOrden = textos.firmaOrden || textos.orden || 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022';
 
   return (
-    <Document title="SOLICITUD DE INSTITUCIÓN">
-      <Page size="A4" style={styles.page}>
-        {/* Encabezado Institucional con Logos */}
-        <View style={styles.institutionalHeader}>
-          <Image 
-            src="/pdfs-docs/escudo.png" 
-            style={styles.headerImages} 
-          />
-          <View style={styles.institutionalTextContainer}>
-            <Text style={styles.institutionalText}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
-            <Text style={styles.institutionalText}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
-            <Text style={styles.institutionalText}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
-            <Text style={styles.institutionalText}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
-            <Text style={styles.institutionalText}>VICERRECTORADO REGIÓN LOS LLANOS</Text>
-            <Text style={styles.institutionalText}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
-          </View>
-          <Image 
-            src="/pdfs-docs/logo.png" 
-            style={styles.headerImages} 
-          />
-        </View>
-        
-        {/* Fecha alineada a la derecha */}
+    <PDFLayout title="SOLICITUD DE INSTITUCIÓN" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
+      {/* Fecha alineada a la derecha */}
         <Text style={styles.placeDate}>Guanare, {fechaHoy.dia} de {fechaHoy.mes} del {fechaHoy.anio}</Text>
         
         {/* Sección izquierda: Señores, Institución, Presente */}
@@ -214,7 +121,7 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
         
         {/* Cuerpo del texto */}
         <Text style={styles.paragraph}>
-          Tengo el agrado de dirigirme a usted, en la oportunidad de presentarle a el Bachiller <Text style={styles.textRed}>{estudianteNombre}</Text>, titular de la cédula de identidad <Text style={styles.textRed}>({estudianteCI})</Text>, estudiante de la carrera <Text style={styles.textRed}>{carreraNombre}</Text>, el mencionado Bachiller está autorizado para realizar trámites en la Organización que usted representa, relacionados con la posibilidad de desarrollar en su práctica profesional un proyecto con un mínimo de 480 horas laborales, comprendidas desde <Text style={styles.textRed}>{lapsoInicio}</Text> hasta <Text style={styles.textRed}>{lapsoFin}</Text>.
+          Tengo el agrado de dirigirme a usted, en la oportunidad de presentarle a el Bachiller <Text style={styles.textRed}>{estudianteNombre}</Text>, titular de la cédula de identidad <Text style={styles.textRed}>{estudianteCI}</Text>, estudiante de la carrera <Text style={styles.textRed}>{carreraNombre}</Text>, el mencionado Bachiller está autorizado para realizar trámites en la Organización que usted representa, relacionados con la posibilidad de desarrollar en su práctica profesional un proyecto con un mínimo de 480 horas laborales, comprendidas desde <Text style={styles.textRed}>{lapsoInicio}</Text> hasta <Text style={styles.textRed}>{lapsoFin}</Text>.
         </Text>
         
         <Text style={styles.paragraph}>
@@ -236,21 +143,6 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
           <Text style={styles.centeredFirmaCargo}>{firmaCargo}</Text>
           <Text style={styles.centeredFirmaOrden}>{firmaOrden}</Text>
         </View>
-        
-        {/* Footer */}
-        <View style={styles.footerContainer}>
-          {qrCodeDataUri && (
-            <Image 
-              src={qrCodeDataUri}
-              style={styles.qrCode} 
-            />
-          )}
-          <View style={{ flex: 1, marginHorizontal: 20 }}>
-            <Text style={styles.validationText}>Documento validado digitalmente por la Coordinación de Prácticas Profesionales</Text>
-          </View>
-          <Text style={styles.pageNumber}>Página 1 de 1</Text>
-        </View>
-      </Page>
-    </Document>
+    </PDFLayout>
   );
 }

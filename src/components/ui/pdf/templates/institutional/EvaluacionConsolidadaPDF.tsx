@@ -284,7 +284,7 @@ const MembreteImagen = ({ isPracticas = false }) => (
       <Text style={styles.headerText}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
       <Text style={styles.headerText}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
       <Text style={styles.headerText}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
-      <Text style={styles.headerText}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
+      <Text style={styles.headerText}>DE LA FUERZA ARMADA BOLIVARIANA</Text>
       <Text style={styles.headerText}>VICERRECTORADO REGIÓN LOS LLANOS</Text>
       <Text style={styles.headerText}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
       <Text style={styles.headerText}>COORDINACIÓN DE PRÁCTICA{isPracticas ? 'S' : ''} PROFESIONAL{isPracticas ? 'ES' : ''}</Text>
@@ -303,7 +303,7 @@ const HeaderFinal = () => (
       <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
       <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
       <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
-      <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
+      <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>DE LA FUERZA ARMADA BOLIVARIANA</Text>
       <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>VICERRECTORADO REGIÓN LOS LLANOS</Text>
       <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
       <Text style={{ fontSize: 10, fontWeight: 'bold', lineHeight: 1.2 }}>COORDINACIÓN DE PRÁCTICAS PROFESIONALES</Text>

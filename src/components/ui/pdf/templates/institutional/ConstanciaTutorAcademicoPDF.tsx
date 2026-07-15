@@ -1,6 +1,6 @@
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
-import { formatNombreCompleto, formatCI, formatFecha, getFechaParts } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatCI, formatFecha, getFechaParts, getTutorTitle } from '@/features/reports/utils/reportFormatters';
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
@@ -32,7 +32,7 @@ interface Props {
 
 export function ConstanciaTutorAcademicoPDF({ data, textos, verificationHash, qrCodeDataUri }: Props) {
   const fechaHoy = getFechaParts(null);
-  const tutorTitulo = (data.tutor.tituloAbrev || data.tutor.titulo || 'LICDO.').toUpperCase();
+  const tutorTitulo = getTutorTitle(data.tutor.titulo, data.tutor.tituloAbrev);
   const cuerpo = renderDocumentText(textos.cuerpo || '', {
     tutorTitulo,
     tutorNombreCompleto: formatNombreCompleto(data.tutor),

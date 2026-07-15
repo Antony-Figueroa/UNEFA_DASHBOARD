@@ -1,6 +1,6 @@
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
-import { formatNombreCompleto, formatCI, getFechaParts } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatCI, getFechaParts, getTutorTitle } from '@/features/reports/utils/reportFormatters';
 
 const styles = StyleSheet.create({
   paragraph: { 
@@ -41,7 +41,7 @@ interface Props {
     estudiante: { ci: string; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string };
     carrera: { nombre: string };
     tutor: {
-      ci: string; titulo: string | null; primerNombre: string; segundoNombre?: string;
+      ci: string; titulo: string | null; tituloAbrev?: string | null; primerNombre: string; segundoNombre?: string;
       primerApellido: string; segundoApellido?: string; telefono: string;
     } | null;
   };
@@ -50,20 +50,10 @@ interface Props {
   qrCodeDataUri?: string;
 }
 
-const getTutorTitle = (titulo: string | null): string => {
-  if (!titulo) return 'MAESTR';
-  const lowerTitulo = titulo.toLowerCase();
-  if (lowerTitulo.includes('ingeniero') || lowerTitulo.includes('ingeniera')) return 'ING';
-  if (lowerTitulo.includes('licenciado') || lowerTitulo.includes('licenciada')) return 'LIC';
-  if (lowerTitulo.includes('maestro') || lowerTitulo.includes('maestra')) return 'MAESTR';
-  if (lowerTitulo.includes('doctor') || lowerTitulo.includes('doctora')) return 'DR';
-  return 'MAESTR';
-};
-
 export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Props) {
   const fechaHoy = getFechaParts(null);
   
-  const tutorTitle = data.tutor ? getTutorTitle(data.tutor.titulo) : 'MAESTR';
+  const tutorTitle = data.tutor ? getTutorTitle(data.tutor.titulo, data.tutor.tituloAbrev) : 'MAESTR';
   const tutorName = data.tutor ? formatNombreCompleto(data.tutor).toUpperCase() : '';
   const tutorCI = data.tutor ? formatCI(data.tutor.ci) : '';
   const estudianteNombre = formatNombreCompleto(data.estudiante).toUpperCase();
@@ -73,7 +63,7 @@ export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Pr
   return (
     <PDFLayout title="ACEPTACIÓN DEL TUTOR ACADÉMICO" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
       <Text style={styles.paragraph}>
-        Yo, {tutorTitle}. {tutorName}, titular de la cedula de identidad {tutorCI}, hago constar por medio de la presente que acepto la tutoría académica de la práctica profesional por parte de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional (UNEFA) del (la) bachiller {estudianteNombre}, titular de la cedula de identidad {estudianteCI} para optar al grado de {carreraNombre}
+        Yo, {tutorTitle}. {tutorName}, titular de la cedula de identidad {tutorCI}, hago constar por medio de la presente que acepto la tutoría académica de la práctica profesional por parte de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Bolivariana (UNEFA) del (la) bachiller {estudianteNombre}, titular de la cedula de identidad {estudianteCI} para optar al grado de {carreraNombre}
       </Text>
       
       <Text style={styles.paragraph}>

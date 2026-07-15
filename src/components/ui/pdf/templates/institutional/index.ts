@@ -1,7 +1,6 @@
 export { AceptacionTutorPDF } from './AceptacionTutorPDF';
 export { SolicitudInstitucionPDF } from './SolicitudInstitucionPDF';
 export { CartaPostulacionPDF } from './CartaPostulacionPDF';
-export { ActaValidacionPDF } from './ActaValidacionPDF';
 export { EvaluacionFinalPDF } from './EvaluacionFinalPDF';
 export { EvaluacionTutorInstitucionalPDF } from './EvaluacionTutorInstitucionalPDF';
 export { EvaluacionTutorAcademicoPDF } from './EvaluacionTutorAcademicoPDF';

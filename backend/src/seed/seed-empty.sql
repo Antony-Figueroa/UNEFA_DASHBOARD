@@ -1918,6 +1918,17 @@ CREATE TABLE IF NOT EXISTS "t_backups" (
 -- ============================================================
 
 -- --------------------------------------------------------
+-- Tabla: t_persons (1 registro base - requerido por FKs)
+-- --------------------------------------------------------
+INSERT INTO "t_persons" ("person_id", "ci", "first_name", "last_name", "email", "status", "created_at", "updated_at") VALUES (1, '00000000', 'Sistema', 'Admin', 'admin@unefa.edu.ve', 1, NOW(), NOW()) ON CONFLICT (ci) DO NOTHING;
+
+-- --------------------------------------------------------
+-- Tabla: t_user (1 registro base - requerido por FKs)
+-- USER_ID serial, USER_CI = ci de persona
+-- --------------------------------------------------------
+INSERT INTO "t_user" ("USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS", "FAILED_ATTEMPTS", "FORCE_PASSWORD_CHANGE", "person_id") VALUES ('admin', '00000000', 'Sistema', '', 'Admin', '', 'admin@unefa.edu.ve', '', NOW(), 1, 'ACEPTADO', 1, 1, 0, FALSE, 1) ON CONFLICT ("USER_CI") DO NOTHING;
+
+-- --------------------------------------------------------
 -- Tabla: t_academic_config (1 registros)
 -- --------------------------------------------------------
 INSERT INTO "t_academic_config" ("CONFIG_ID", "DEFAULT_ENROLLMENT_GRACE_DAYS", "DEFAULT_EVALUATION_GRACE_DAYS", "UPDATED_AT", "UPDATED_BY", "allow_multiple_visits_per_day", "max_visits_per_day", "ALLOW_MULTIPLE_VISITS_PER_DAY", "MAX_VISITS_PER_DAY", "LOCK_API_LOADED_FIELDS") VALUES (1, 64, 31, '2026-06-26T13:05:21.928', 1, TRUE, 3, TRUE, 3, TRUE);

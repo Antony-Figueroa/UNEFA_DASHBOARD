@@ -571,13 +571,12 @@ export async function generateRelacionGeneralTutoresExcel(data: any[], period: s
 export async function generateRelacionEmpresasExcel(data: any[], period: string, fileName: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Relacion Empresas');
-  const totalCols = 11;
+  const totalCols = 9;
 
   worksheet.columns = [
     { key: 'region', width: 18 }, { key: 'nucleo', width: 18 }, { key: 'extension', width: 18 },
     { key: 'empresa', width: 50 }, { key: 'rif', width: 18 }, { key: 'tipo', width: 12 },
     { key: 'publica', width: 10 }, { key: 'privada', width: 10 },
-    { key: 'responsable', width: 30 }, { key: 'telefonoResponsable', width: 20 },
     { key: 'carrera', width: 30 }, { key: 'estudiantes', width: 14 },
   ];
 
@@ -594,7 +593,6 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
   // NOMBRE DE LA EMPRESA merged vertically
   // RIF merged vertically
   // TIPO DE EMPRESA header split into PÚBLICA/PRIVADA in row 10
-  // RESPONSABLE and TELÉFONO merged vertically
   // CARRERA merged vertically
   // CANTIDAD DE ESTUDIANTES merged vertically
 
@@ -604,9 +602,8 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
     { col: 'E', text: 'RIF', merge: true },
     { col: 'F', text: 'TIPO DE\nEMPRESA', merge: false },
     { col: 'G', text: '', merge: false },
-    { col: 'H', text: 'RESPONSABLE', merge: true }, { col: 'I', text: 'TELÉFONO RESPONSABLE', merge: true },
-    { col: 'J', text: 'CARRERA', merge: true },
-    { col: 'K', text: 'CANTIDAD DE\nESTUDIANTES', merge: true },
+    { col: 'H', text: 'CARRERA', merge: true },
+    { col: 'I', text: 'CANTIDAD DE\nESTUDIANTES', merge: true },
   ];
 
   mergedCols.forEach(def => {
@@ -645,10 +642,8 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
     applyDataCell(worksheet, currentRow, 5, (item.rif || '').toUpperCase());
     applyDataCell(worksheet, currentRow, 6, isPublica ? 'X' : '');
     applyDataCell(worksheet, currentRow, 7, isPrivada ? 'X' : '');
-    applyDataCell(worksheet, currentRow, 8, (item.responsable || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 9, (item.telefonoResponsable || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 10, (item.carrera || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 11, item.cantidadEstudiantes || 0);
+    applyDataCell(worksheet, currentRow, 8, (item.carrera || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 9, item.cantidadEstudiantes || 0);
 
     currentRow++;
   });
@@ -680,23 +675,39 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
   applyTitleRow(worksheet, 7, `RELACIÓN DE INSTITUCIONES QUE SOLICITAN ASIGNACIÓN DE PASANTES - ${period}`, totalCols);
 
   const row9 = worksheet.getRow(9);
-  row9.height = 40;
+  const row10 = worksheet.getRow(10);
+  row9.height = 20;
+  row10.height = 35;
 
-  const headers = [
-    'REGIÓN', 'NÚCLEO', 'EXTENSIÓN',
-    'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN',
-    'RESPONSABLE', 'NUMERO DE\nCONTACTO',
-    'TIPO DE\nEMPRESA',
-    'CARRERAS', 'CANTIDAD DE\nESTUDIANTES',
+  // Merge all header columns vertically (9:10)
+  const mergedCols = [
+    { col: 'A', text: 'REGIÓN' },
+    { col: 'B', text: 'NÚCLEO' },
+    { col: 'C', text: 'EXTENSIÓN' },
+    { col: 'D', text: 'NOMBRE DE LA\nEMPRESA O INSTITUCIÓN' },
+    { col: 'E', text: 'RESPONSABLE' },
+    { col: 'F', text: 'NUMERO DE\nCONTACTO' },
+    { col: 'H', text: 'CARRERAS' },
+    { col: 'I', text: 'CANTIDAD DE\nESTUDIANTES' },
   ];
 
-  headers.forEach((text, i) => {
-    const cell = row9.getCell(i + 1);
-    cell.value = text;
+  mergedCols.forEach(def => {
+    worksheet.mergeCells(`${def.col}9:${def.col}10`);
+    const cell = row9.getCell(def.col);
+    cell.value = def.text;
     cell.style = HEADER_STYLE;
+    row10.getCell(def.col).style = HEADER_STYLE;
   });
 
-  let currentRow = 10;
+  // TIPO DE EMPRESA: parent in row 9, sub-header in row 10 (single cell)
+  const tipoCell = row9.getCell('G');
+  tipoCell.value = 'TIPO DE\nEMPRESA';
+  tipoCell.style = HEADER_STYLE;
+  const tipoSubCell = row10.getCell('G');
+  tipoSubCell.value = 'PÚBLICA\nPRIVADA';
+  tipoSubCell.style = HEADER_STYLE;
+
+  let currentRow = 11;
   data.forEach(item => {
     const tipo = (item.tipoEmpresa || '').toUpperCase();
 

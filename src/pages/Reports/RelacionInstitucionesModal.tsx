@@ -176,6 +176,9 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
       const responsable = responsables.find((r: any) => r.responsibleId === responsibleId);
       const responsableName = responsable ? `${responsable.firstName} ${responsable.lastName}` : responsibleId;
       rows.push({
+        region: sysLocation.region,
+        nucleo: sysLocation.nucleus,
+        extension: sysLocation.extension,
         empresa: inst.name,
         responsable: responsableName,
         numeroContacto: inst.phone || 'N/A',
@@ -186,7 +189,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
     });
 
     return { periodDescription: periodLabel, rows };
-  }, [selectedInstitutions, institutionCareers, responsibleMap, studentsMap, periods, selectedPeriodId, getResponsablesForInstitution]);
+  }, [selectedInstitutions, institutionCareers, responsibleMap, studentsMap, periods, selectedPeriodId, getResponsablesForInstitution, sysLocation]);
 
   // Preview table rows
   const previewTableData = useMemo(() => {
@@ -315,6 +318,9 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                   <table className="w-full text-xs sm:text-sm">
                     <thead className="bg-bg-secondary dark:bg-white/5 sticky top-0 z-10">
                       <tr>
+                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Región</th>
+                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Núcleo</th>
+                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Extensión</th>
                         <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Empresa o Institución</th>
                         <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Responsable</th>
                         <th className="px-3 sm:px-4 py-2.5 sm:py-3 text-left font-bold uppercase tracking-wider text-text-tertiary whitespace-nowrap">Contacto</th>
@@ -326,7 +332,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                     <tbody className="divide-y divide-border-light dark:divide-white/5">
                       {selectedInstIds.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="px-4 py-12 text-center text-text-tertiary">
+                          <td colSpan={9} className="px-4 py-12 text-center text-text-tertiary">
                             <div className="flex flex-col items-center gap-2">
                               <svg className="w-12 h-12 text-text-tertiary/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -339,6 +345,9 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                       ) : (
                         previewTableData.map((row, rowIdx) => (
                           <tr key={rowIdx} className="hover:bg-bg-secondary/50 dark:hover:bg-white/5 transition-colors">
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase font-medium">{row.region}</td>
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.nucleo}</td>
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.extension}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase font-medium">{row.empresa}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.responsable}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis">{row.numeroContacto}</td>

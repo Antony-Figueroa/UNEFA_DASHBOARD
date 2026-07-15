@@ -31,18 +31,6 @@ const styles = StyleSheet.create({
   firmaCol: { width: '45%', alignItems: 'center' },
   firmaRaya: { fontSize: 11, marginBottom: 4 },
   firmaLabel: { fontSize: 8, fontWeight: 'bold', textAlign: 'center', textTransform: 'uppercase' },
-  // Acta section
-  actaTitle: { textAlign: 'center', fontSize: 13, fontWeight: 'bold', marginBottom: 10, marginTop: 35 },
-  actaBody: { textAlign: 'justify', fontSize: 10, lineHeight: 1.8 },
-  // Acta signature table (3 cols × 4 rows)
-  actaTable: { marginTop: 18, border: '1pt solid black' },
-  actaRow: { flexDirection: 'row', borderBottom: '1pt solid black' },
-  actaRowLast: { flexDirection: 'row' },
-  actaCell: { flex: 1, padding: 5, borderRight: '1pt solid black' },
-  actaCellLast: { flex: 1, padding: 5 },
-  actaHeaderText: { fontSize: 9, fontWeight: 'bold', textAlign: 'center' },
-  actaCellText: { fontSize: 9, textAlign: 'center' },
-  actaFooter: { fontSize: 10, marginTop: 10 },
 });
 
 interface Props {
@@ -69,13 +57,6 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
   const trabaja = !!data.estudiante.empleo;
 
   const cuerpo = renderDocumentText(textos.cuerpo || '', {
-    estudianteNombreCompleto: nombreCompleto,
-    estudianteCi: ci,
-    carrera: data.carrera.nombre,
-    fechaValidacion,
-  });
-
-  const acta = renderDocumentText(textos.acta || '', {
     estudianteNombreCompleto: nombreCompleto,
     estudianteCi: ci,
     carrera: data.carrera.nombre,
@@ -127,43 +108,6 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
           <Text style={styles.firmaLabel}>FIRMA Y SELLO DE  LA COORDINACIÓN</Text>
           <Text style={styles.firmaLabel}>DE PRÁCTICA PROFESIONAL DEL NÚCLEO</Text>
         </View>
-      </View>
-
-      {/* Acta de Validación — página aparte */}
-      <View break>
-        <Text style={styles.actaTitle}>ACTA DE VALIDACIÓN</Text>
-        <Text style={styles.actaBody}>{acta}</Text>
-
-        {/* Acta signature table — 3 cols × 4 rows */}
-        <View style={styles.actaTable}>
-          {/* Row 1: Header */}
-          <View style={styles.actaRow}>
-            <View style={styles.actaCell}><Text style={styles.actaHeaderText}>DOCENTE</Text></View>
-            <View style={styles.actaCell}><Text style={styles.actaHeaderText}>FIRMA</Text></View>
-            <View style={styles.actaCellLast}><Text style={styles.actaHeaderText}>OBSERVACIONES</Text></View>
-          </View>
-          {/* Row 2 */}
-          <View style={styles.actaRow}>
-            <View style={styles.actaCell}><Text style={styles.actaCellText}>Tutor Académico</Text></View>
-            <View style={styles.actaCell}><Text style={styles.actaCellText}>&nbsp;</Text></View>
-            <View style={styles.actaCellLast}><Text style={styles.actaCellText}>&nbsp;</Text></View>
-          </View>
-          {/* Row 3 */}
-          <View style={styles.actaRow}>
-            <View style={styles.actaCell}><Text style={styles.actaCellText}>Tutor Evaluador Especialista</Text></View>
-            <View style={styles.actaCell}><Text style={styles.actaCellText}>&nbsp;</Text></View>
-            <View style={styles.actaCellLast}><Text style={styles.actaCellText}>&nbsp;</Text></View>
-          </View>
-          {/* Row 4 */}
-          <View style={styles.actaRowLast}>
-            <View style={styles.actaCell}><Text style={styles.actaCellText}>Tutor Metodológico</Text></View>
-            <View style={styles.actaCell}><Text style={styles.actaCellText}>&nbsp;</Text></View>
-            <View style={styles.actaCellLast}><Text style={styles.actaCellText}>&nbsp;</Text></View>
-          </View>
-        </View>
-
-        <Text style={[styles.actaFooter, { marginTop: 8 }]}>Conforme Pasante: ______________________</Text>
-        <Text style={styles.actaFooter}>Fecha: ______________________</Text>
       </View>
     </PDFLayout>
   );

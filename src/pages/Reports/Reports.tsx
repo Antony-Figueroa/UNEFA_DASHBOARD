@@ -121,12 +121,14 @@ export default function ReportsPage() {
     fetchDashboardData();
   }, [periodFilter]);
 
-  // Auto-seleccionar el periodo actual cuando se carga por primera vez
+  // Auto-seleccionar el periodo actual solo la primera vez que se carga
+  const autoSelectedRef = useRef(false);
   useEffect(() => {
-    if (currentPeriod && !periodFilter) {
+    if (!autoSelectedRef.current && currentPeriod) {
+      autoSelectedRef.current = true;
       setPeriodFilter(currentPeriod.description);
     }
-  }, [currentPeriod, periodFilter]);
+  }, [currentPeriod]);
 
   const loadReportPage = useCallback(async (type: string, page: number, limit = 50, careerIds?: number[]) => {
     const config = getReportConfig(type);

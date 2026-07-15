@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import toast from 'react-hot-toast';
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -92,12 +92,14 @@ export default function CulminationPage() {
     fetchData();
   }, [statusFilter, periodFilter]);
 
-  // Auto-seleccionar el periodo actual cuando se carga por primera vez
+  // Auto-seleccionar el periodo actual solo la primera vez que se carga
+  const autoSelectedRef = useRef(false);
   useEffect(() => {
-    if (currentPeriod && !periodFilter) {
+    if (!autoSelectedRef.current && currentPeriod) {
+      autoSelectedRef.current = true;
       setPeriodFilter(currentPeriod.description);
     }
-  }, [currentPeriod, periodFilter]);
+  }, [currentPeriod]);
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;

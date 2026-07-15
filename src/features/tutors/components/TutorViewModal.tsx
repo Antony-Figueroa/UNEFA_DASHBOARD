@@ -71,6 +71,16 @@ export default function TutorViewModal({
     const [startDate, setStartDate] = useState("2022-09-26");
     const [endDate, setEndDate] = useState("2023-02-13");
 
+    // Estados para el reporte individual
+    const [periodoFicha, setPeriodoFicha] = useState("");
+    const [observacionesFicha, setObservacionesFicha] = useState("");
+    const [rifFicha, setRifFicha] = useState("");
+    const [tutorInstNombre, setTutorInstNombre] = useState("");
+    const [tutorInstApellido, setTutorInstApellido] = useState("");
+    const [tutorInstCargo, setTutorInstCargo] = useState("");
+    const [tutorInstTelefono, setTutorInstTelefono] = useState("");
+    const [tutorInstCorreo, setTutorInstCorreo] = useState("");
+
     // Función auxiliar para formatear fecha de YYYY-MM-DD a DD/MM/YYYY para el PDF
     const formatDateForPDF = (dateStr: string) => {
         if (!dateStr) return "";
@@ -272,14 +282,120 @@ export default function TutorViewModal({
                 title="Ficha de Tutor Académico"
                 subtitle={`${toTitleCase(tutor.firstName + ' ' + tutor.lastName)} - ${tutor.identificationPrefix}-${tutor.identificationNumber}`}
                 data={tutor}
-                template={(data, verificationHash) => <TutorIndividualPDF data={data} verificationHash={verificationHash} />}
+                template={(data, verificationHash) => (
+                    <TutorIndividualPDF
+                        data={data}
+                        verificationHash={verificationHash}
+                        periodo={periodoFicha}
+                        observaciones={observacionesFicha}
+                        rif={rifFicha}
+                        tutorInstitucional={{
+                            nombre: tutorInstNombre,
+                            apellido: tutorInstApellido,
+                            ci: '',
+                            cargo: tutorInstCargo,
+                            telefono: tutorInstTelefono,
+                            correo: tutorInstCorreo,
+                        }}
+                    />
+                )}
                 fileName={`tutor_${tutor.identificationNumber}`}
                 verificationConfig={{
                   docType: 'ficha-tutor-academico',
                   metadata: { tutorId: tutor.tutorId },
                 }}
-            />
-            <SingleReportModal
+                extraSidebarContent={
+                    <div className="space-y-4">
+                        <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 mb-4">
+                            <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-1">Datos Adicionales</p>
+                            <p className="text-[11px] text-blue-600/70 leading-relaxed italic">
+                                Complete los campos opcionales antes de generar el reporte.
+                            </p>
+                        </div>
+                        <div className="space-y-3">
+                            <div>
+                                <Label className="text-[10px]! mb-1!">Periodo Académico</Label>
+                                <InputField
+                                    value={periodoFicha}
+                                    onChange={(e) => setPeriodoFicha(e.target.value)}
+                                    placeholder="1-2016"
+                                    className="h-9! text-xs!"
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-[10px]! mb-1!">RIF</Label>
+                                <InputField
+                                    value={rifFicha}
+                                    onChange={(e) => setRifFicha(e.target.value)}
+                                    placeholder="V123456789"
+                                    className="h-9! text-xs!"
+                                />
+                            </div>
+                            <div className="border-t border-border-light pt-3">
+                                <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest mb-3">Tutor(a) Institucional</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <Label className="text-[10px]! mb-1!">Nombre</Label>
+                                        <InputField
+                                            value={tutorInstNombre}
+                                            onChange={(e) => setTutorInstNombre(e.target.value)}
+                                            placeholder="Nombre"
+                                            className="h-9! text-xs!"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label className="text-[10px]! mb-1!">Apellido</Label>
+                                        <InputField
+                                            value={tutorInstApellido}
+                                            onChange={(e) => setTutorInstApellido(e.target.value)}
+                                            placeholder="Apellido"
+                                            className="h-9! text-xs!"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="mt-2">
+                                    <Label className="text-[10px]! mb-1!">Cargo</Label>
+                                    <InputField
+                                        value={tutorInstCargo}
+                                        onChange={(e) => setTutorInstCargo(e.target.value)}
+                                        placeholder="Cargo del tutor"
+                                        className="h-9! text-xs!"
+                                    />
+                                </div>
+                                <div className="mt-2 grid grid-cols-2 gap-2">
+                                    <div>
+                                        <Label className="text-[10px]! mb-1!">Teléfono</Label>
+                                        <InputField
+                                            value={tutorInstTelefono}
+                                            onChange={(e) => setTutorInstTelefono(e.target.value)}
+                                            placeholder="Teléfono"
+                                            className="h-9! text-xs!"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label className="text-[10px]! mb-1!">Correo</Label>
+                                        <InputField
+                                            value={tutorInstCorreo}
+                                            onChange={(e) => setTutorInstCorreo(e.target.value)}
+                                            placeholder="correo@ejemplo.com"
+                                            className="h-9! text-xs!"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <Label className="text-[10px]! mb-1!">Observaciones</Label>
+                                <textarea
+                                    value={observacionesFicha}
+                                    onChange={(e) => setObservacionesFicha(e.target.value)}
+                                    placeholder="Escriba observaciones aquí..."
+                                    className="w-full h-16 px-3 py-2 text-xs rounded-lg border border-border-light bg-white dark:bg-bg-primary focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-colors resize-none"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                }
+            />                    <SingleReportModal
                 isOpen={constancyModalOpen}
                 onClose={() => setConstancyModalOpen(false)}
                 title="Constancia de Tutor Académico"

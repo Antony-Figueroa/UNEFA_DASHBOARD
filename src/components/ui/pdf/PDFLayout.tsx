@@ -15,6 +15,10 @@ interface PDFLayoutProps {
   hideReportTitle?: boolean;
   hideEquipoTrabajo?: boolean;
   equipoTrabajoText?: string;
+  logoLeftSrc?: string;
+  logoRightSrc?: string;
+  /** Líneas del membrete que deben usar font normal (Times-Roman). Indices 0-based. */
+  headerNormalLines?: number[];
   verificationHash?: string;
   qrCodeDataUri?: string;
 }
@@ -32,6 +36,9 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
   hideReportTitle = false,
   hideEquipoTrabajo = false,
   equipoTrabajoText = "EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES",
+  logoLeftSrc = "/pdfs-docs/escudo.png",
+  logoRightSrc = "/pdfs-docs/logo.png",
+  headerNormalLines = [],
   verificationHash,
   qrCodeDataUri
 }) => {
@@ -46,22 +53,28 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({
         {/* Encabezado Institucional (Membrete) */}
         <View style={pdfStyles.institutionalHeader} fixed>
           <Image 
-            src="/pdfs-docs/escudo.png" 
+            src={logoLeftSrc}
             style={pdfStyles.headerImages} 
           />
           <View style={pdfStyles.institutionalTextContainer}>
-            <Text style={pdfStyles.institutionalText}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
-            <Text style={pdfStyles.institutionalText}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
-            <Text style={pdfStyles.institutionalText}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
-            <Text style={pdfStyles.institutionalText}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
-            <Text style={pdfStyles.institutionalText}>VICERRECTORADO DE LA REGIÓN LOS LLANOS</Text>
-            <Text style={pdfStyles.institutionalText}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
+            {[
+              'REPÚBLICA BOLIVARIANA DE VENEZUELA',
+              'MINISTERIO DEL PODER POPULAR PARA LA DEFENSA',
+              'UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA',
+              'DE LA FUERZA ARMADA NACIONAL BOLIVARIANA',
+              'VICERRECTORADO DE LA REGIÓN LOS LLANOS',
+              'NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA',
+            ].map((text, idx) => (
+              <Text key={idx} style={headerNormalLines.includes(idx) ? pdfStyles.institutionalTextNormal : pdfStyles.institutionalText}>
+                {text}
+              </Text>
+            ))}
             {!hideEquipoTrabajo && (
               <Text style={pdfStyles.institutionalText}>{equipoTrabajoText}</Text>
             )}
           </View>
           <Image 
-            src="/pdfs-docs/logo.png" 
+            src={logoRightSrc}
             style={pdfStyles.headerImages} 
           />
         </View>

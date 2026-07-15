@@ -36,6 +36,12 @@ export const pdfStyles = StyleSheet.create({
     color: "#000000",
     lineHeight: 1.2,
   },
+  institutionalTextNormal: {
+    fontSize: 8,
+    color: "#000000",
+    lineHeight: 1.2,
+    fontFamily: "Times-Roman",
+  },
   // Título del Reporte
   reportTitleContainer: {
     marginTop: 10,

@@ -27,6 +27,9 @@ export const TutorPDF: React.FC<TutorPDFProps> = ({ data, careers }) => {
     <PDFLayout
       title="Reporte de Tutores"
       subtitle="Listado de tutores académicos y metodológicos"
+      logoLeftSrc="/pdfs-docs/logo.png"
+      logoRightSrc="/logo-tutores.jpeg"
+      headerNormalLines={[0, 2]}
     >
       <View style={pdfStyles.table}>
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]} wrap={false}>

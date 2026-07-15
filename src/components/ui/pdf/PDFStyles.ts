@@ -11,6 +11,7 @@ export const pdfStyles = StyleSheet.create({
     paddingHorizontal: 50,
     fontSize: 12,
     color: "#000000",
+    fontFamily: "Times-Roman",
   },
   // Encabezado Institucional (Membrete)
   institutionalHeader: {

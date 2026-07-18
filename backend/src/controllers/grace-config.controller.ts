@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditUpdate } from '../utils/audit-helpers.js';
+import bcrypt from 'bcryptjs';
 
 const TABLE_NAME = 't_internships_period';
 const CONFIG_TABLE = 't_academic_config';
@@ -12,7 +13,7 @@ export const getDefaults = async (_req: Request, res: Response) => {
   try {
     const { data, error } = await dbManager.getConnection()
       .from(CONFIG_TABLE)
-      .select('DEFAULT_ENROLLMENT_GRACE_DAYS, DEFAULT_EVALUATION_GRACE_DAYS, LOCK_API_LOADED_FIELDS, allow_multiple_visits_per_day, max_visits_per_day, ALLOW_MULTIPLE_VISITS_PER_DAY, MAX_VISITS_PER_DAY')
+      .select('DEFAULT_ENROLLMENT_GRACE_DAYS, DEFAULT_EVALUATION_GRACE_DAYS, LOCK_API_LOADED_FIELDS, allow_multiple_visits_per_day, max_visits_per_day, ALLOW_MULTIPLE_VISITS_PER_DAY, MAX_VISITS_PER_DAY, ENFORCE_SEQUENTIAL_ORDER')
       .eq('CONFIG_ID', 1)
       .single();
 
@@ -28,6 +29,7 @@ export const getDefaults = async (_req: Request, res: Response) => {
       maxVisitsPerDay: data.max_visits_per_day !== undefined
         ? data.max_visits_per_day
         : (data.MAX_VISITS_PER_DAY ?? null),
+      enforceSequentialOrder: data.ENFORCE_SEQUENTIAL_ORDER ?? true,
     });
   } catch (error) {
     res.json({
@@ -36,6 +38,7 @@ export const getDefaults = async (_req: Request, res: Response) => {
       lockApiLoadedFields: true,
       allowMultipleVisitsPerDay: true,
       maxVisitsPerDay: null,
+      enforceSequentialOrder: true,
     });
   }
 };
@@ -127,6 +130,101 @@ export const updateDefaults = async (req: AuthRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Error al actualizar defaults',
+      code: 'UPDATE_ERROR',
+    });
+  }
+};
+
+// PUT /api/academic-config/enforce-sequential
+export const updateEnforceSequentialOrder = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { enforceSequentialOrder, password } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Usuario no autenticado' });
+    }
+
+    if (enforceSequentialOrder === undefined || typeof enforceSequentialOrder !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'enforceSequentialOrder debe ser un valor booleano',
+        code: 'INVALID_VALUE',
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Contraseña requerida',
+        code: 'MISSING_PASSWORD',
+      });
+    }
+
+    // Password validation — same pattern as backup.controller.ts
+    const supabaseClient = dbManager.getConnection();
+    const { data: userKeys, error: keyError } = await supabaseClient
+      .from('t_user_key')
+      .select('KEY')
+      .eq('USER_ID', userId)
+      .eq('STATUS', 1)
+      .order('USER_KEY_ID', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (keyError || !userKeys) {
+      return res.status(400).json({
+        success: false,
+        message: 'Error al verificar credenciales',
+        code: 'CREDENTIAL_ERROR',
+      });
+    }
+
+    const isValid = await bcrypt.compare(password, userKeys.KEY);
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Contraseña incorrecta',
+        code: 'INVALID_PASSWORD',
+      });
+    }
+
+    // Update the toggle
+    const { error: updateError } = await supabaseClient
+      .from(CONFIG_TABLE)
+      .update({
+        ENFORCE_SEQUENTIAL_ORDER: enforceSequentialOrder,
+        UPDATED_AT: new Date().toISOString(),
+        UPDATED_BY: userId,
+      })
+      .eq('CONFIG_ID', 1);
+
+    if (updateError) throw updateError;
+
+    // Activity log
+    await supabaseClient.from('t_activity_log').insert({
+      ACTION: 'ENFORCE_SEQUENTIAL_TOGGLE',
+      TABLE_NAME: CONFIG_TABLE,
+      RECORD_ID: 1,
+      NEW_VALUE: JSON.stringify({ ENFORCE_SEQUENTIAL_ORDER: enforceSequentialOrder }),
+      USER_ID: userId,
+      CREATION_DATE: new Date().toISOString(),
+      STATUS: 1,
+    });
+
+    res.json({
+      success: true,
+      enforceSequentialOrder,
+      message: enforceSequentialOrder
+        ? 'Orden secuencial habilitado'
+        : 'Orden secuencial deshabilitado',
+    });
+  } catch (error) {
+    console.error('[GraceConfig] Error updating enforceSequentialOrder:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar configuración',
       code: 'UPDATE_ERROR',
     });
   }

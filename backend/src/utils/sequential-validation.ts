@@ -9,6 +9,19 @@
 
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
+/**
+ * Reads ENFORCE_SEQUENTIAL_ORDER from t_academic_config (CONFIG_ID = 1).
+ * Returns TRUE when toggle is ON or missing (safe default = enforced).
+ */
+export async function isSequentialEnforced(supabase: any): Promise<boolean> {
+  const { data } = await supabase
+    .from('t_academic_config')
+    .select('ENFORCE_SEQUENTIAL_ORDER')
+    .eq('CONFIG_ID', 1)
+    .single();
+  return data?.ENFORCE_SEQUENTIAL_ORDER !== false; // default TRUE
+}
+
 interface ValidationResult {
   valid: boolean;
   message?: string;
@@ -34,6 +47,11 @@ type SeqCheckParams =
  * @param params - Practice ID (existente) O { studentsId, careerId, internshipTypeId } (pre-inscripción)
  */
 export async function checkSequentialPrerequisite(supabase: any, params: SeqCheckParams): Promise<ValidationResult> {
+  // ── Toggle short-circuit: skip all validation when enforcement is OFF ──
+  if (!(await isSequentialEnforced(supabase))) {
+    return { valid: true };
+  }
+
   let studentsId: number;
   let careerId: number;
   let internshipTypeId: number;
@@ -258,6 +276,11 @@ export async function checkPreEnrollmentEligibility(
   supabase: any,
   params: { studentsId: number; careerId: number; internshipTypeId: number }
 ): Promise<PreEnrollmentEligibilityResult> {
+  // ── Toggle short-circuit: skip all validation when enforcement is OFF ──
+  if (!(await isSequentialEnforced(supabase))) {
+    return { valid: true };
+  }
+
   const { studentsId, careerId, internshipTypeId } = params;
 
   // 1. Get all practices for this student in this career (any period, any status)

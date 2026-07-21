@@ -4,6 +4,7 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import InstitutionConfig from "./InstitutionConfig";
 import NucleiManager from "./NucleiManager";
 import GraceDefaultsSection from "@/features/academic-config/components/GraceDefaultsSection";
+import PracticeSequenceSection from "@/features/academic-config/components/PracticeSequenceSection";
 import EvaluationConfigTab from "./EvaluationConfigTab";
 
 const TABS = [
@@ -51,6 +52,7 @@ export default function OrganizationPage() {
         {activeTab === "nuclei" && <NucleiManager />}
         {activeTab === "academic" && (
           <div className="space-y-6 animate-fadeIn">
+            <PracticeSequenceSection />
             <GraceDefaultsSection />
           </div>
         )}

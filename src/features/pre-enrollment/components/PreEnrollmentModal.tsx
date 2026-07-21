@@ -36,6 +36,7 @@ import { formatCedulaDisplay, formatPhoneDisplay, CEDULA_MAX_DIGITS, CEDULA_MAX_
 import { UserCircleIcon, ShieldCheckIcon, DocsIcon, InfoIcon, SearchIcon, PlusIcon } from "../../../icons";
 import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 import { useCurrentPeriod } from "../../periods/hooks/useCurrentPeriod";
+import { useAcademicConfig } from "../../academic-config/hooks/useAcademicConfig";
 
 /**
  * Propiedades del componente PreEnrollmentModal.
@@ -125,6 +126,8 @@ export default function PreEnrollmentModal({
   careerOptions = [],
 }: PreEnrollmentModalProps) {
   const { currentPeriod } = useCurrentPeriod();
+  const { config: academicConfig } = useAcademicConfig();
+  const enforceSequentialOrder = academicConfig?.enforceSequentialOrder ?? true;
   const [isSearching, setIsSearching] = useState(false);
   const [periods, setPeriods] = useState<Periodo[]>([]);
   const [suggestions, setSuggestions] = useState<Student[]>([]);
@@ -1232,7 +1235,7 @@ if (student) {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Tipo de Práctica <span className="text-red-500">*</span></label>
-                        <Badge color="info" variant="light" size="sm" className="font-bold text-[9px] px-1.5 backdrop-blur-sm">AUTO</Badge>
+                        {enforceSequentialOrder && <Badge color="info" variant="light" size="sm" className="font-bold text-[9px] px-1.5 backdrop-blur-sm">AUTO</Badge>}
                       </div>
                       <Controller
                         name="practiceType"
@@ -1248,8 +1251,11 @@ if (student) {
                             value={field.value}
                             placeholder="Seleccione el tipo..."
                             error={!!errors.practiceType}
-                            disabled={true}
-                            className="rounded-xl h-[48px] bg-slate-50/50"
+                            disabled={enforceSequentialOrder}
+                            className={cn(
+                              "rounded-xl h-[48px]",
+                              enforceSequentialOrder && "bg-slate-50/50"
+                            )}
                           />
                         )}
                       />

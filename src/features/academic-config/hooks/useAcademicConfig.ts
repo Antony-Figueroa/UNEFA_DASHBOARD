@@ -41,6 +41,7 @@ export const useAcademicConfig = (): UseAcademicConfigResult => {
           lockApiLoadedFields: true,
           allowMultipleVisitsPerDay: false,
           maxVisitsPerDay: null,
+          enforceSequentialOrder: true,
         };
         cachedConfig = fallback;
         setConfig(fallback);

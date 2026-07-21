@@ -80,6 +80,7 @@ export interface GraceDefaults {
     lockApiLoadedFields?: boolean;
     allowMultipleVisitsPerDay: boolean;
     maxVisitsPerDay: number | null;
+    enforceSequentialOrder: boolean;
     updatedAt?: string;
     updatedBy?: string;
 }

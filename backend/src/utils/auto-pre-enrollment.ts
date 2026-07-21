@@ -18,6 +18,7 @@ import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 /** User-friendly messages keyed by reason code. */
 const AUTO_PRE_ENROLL_MESSAGES: Record<string, string> = {
   career_auto_pre_enroll_disabled: 'Auto pre-inscripción deshabilitada para esta carrera',
+  sequential_override_disabled: 'Auto pre-inscripción deshabilitada — orden secuencial desactivado',
   standalone_type: 'Tipo de práctica independiente — sin siguiente tipo',
   last_in_sequence: 'Último tipo de práctica en la secuencia',
   duplicate_pre_enrollment: 'Ya existe una práctica registrada para este tipo en el periodo',
@@ -92,6 +93,21 @@ export async function triggerAutoPreEnrollment(
         created: false,
         reason: 'career_auto_pre_enroll_disabled',
         userMessage: AUTO_PRE_ENROLL_MESSAGES['career_auto_pre_enroll_disabled'],
+      };
+    }
+
+    // ── Guard 1.5: Check ENFORCE_SEQUENTIAL_ORDER toggle ─────────────
+    const { data: seqConfig } = await supabase
+      .from('t_academic_config')
+      .select('ENFORCE_SEQUENTIAL_ORDER')
+      .eq('CONFIG_ID', 1)
+      .single();
+
+    if (seqConfig?.ENFORCE_SEQUENTIAL_ORDER === false) {
+      return {
+        created: false,
+        reason: 'sequential_override_disabled',
+        userMessage: AUTO_PRE_ENROLL_MESSAGES['sequential_override_disabled'],
       };
     }
 

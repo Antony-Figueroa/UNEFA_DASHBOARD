@@ -265,6 +265,9 @@ export async function generateResumenPasantiasExcel(data: any[], period: string,
   const worksheet = workbook.addWorksheet('Resumen Pasantias');
   const totalCols = 11;
 
+  // Limpiar "Período: " del label si viene así
+  const cleanPeriod = period.replace(/^Período:\s*/i, '');
+
   // Header sin "NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA"
   const resumenHeader = INSTITUTIONAL_HEADER.filter(l => l !== 'NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA');
 
@@ -287,7 +290,7 @@ export async function generateResumenPasantiasExcel(data: any[], period: string,
   tRow.getCell(1).value = {
     richText: [
       { text: 'RESUMEN PASANTÍAS ', font: { ...DEFAULT_FONT, size: 11, bold: true } },
-      { text: period, font: { ...DEFAULT_FONT, size: 11, bold: true, color: { argb: 'FFFF0000' } } },
+      { text: cleanPeriod, font: { ...DEFAULT_FONT, size: 11, bold: true, color: { argb: 'FFFF0000' } } },
     ],
   };
   tRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };

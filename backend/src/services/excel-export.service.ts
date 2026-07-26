@@ -852,6 +852,8 @@ export async function generateResumenPasantiasWorkbook(
   rows: ResumenPasantiaRow[],
   periodLabel: string,
 ): Promise<Workbook> {
+  // Limpiar "Período: " si viene del backend
+  const cleanPeriod = periodLabel.replace(/^Período:\s*/i, '');
   const workbook = new ExcelJS.Workbook();
 
   if (rows.length === 0) {
@@ -919,7 +921,7 @@ export async function generateResumenPasantiasWorkbook(
   titleCell.value = {
     richText: [
       { text: 'RESUMEN PASANTÍAS ', font: { name: FONT, size: 12, bold: true } },
-      { text: periodLabel, font: { name: FONT, size: 12, bold: true, color: { argb: 'FFFF0000' } } },
+      { text: cleanPeriod, font: { name: FONT, size: 12, bold: true, color: { argb: 'FFFF0000' } } },
     ],
   };
   titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };

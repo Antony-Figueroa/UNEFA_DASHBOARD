@@ -149,7 +149,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       { header: "Estudiantes", accessor: "cantidadEstudiantes" },
       { header: "Tutores Acad.", accessor: "cantidadTutoresAcad" },
       { header: "Empresa", accessor: "empresa" },
-      { header: "Tipo", accessor: "tipoEmpresa" },
+      { header: "Tipo", accessor: "tipo" },
       { header: "Cant. Tutores Inst.", accessor: "cantidadTutoresInst" },
       { header: "Observación", accessor: "observacion" },
     ],

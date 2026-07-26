@@ -57,8 +57,9 @@ const TOTAL_CARRERAS_VALUE_STYLE = {
   border: THIN_BORDER,
 };
 
-function applyInstitutionalHeader(worksheet: ExcelJS.Worksheet, totalCols: number) {
-  INSTITUTIONAL_HEADER.forEach((line, index) => {
+function applyInstitutionalHeader(worksheet: ExcelJS.Worksheet, totalCols: number, headerLines?: string[]) {
+  const lines = headerLines || INSTITUTIONAL_HEADER;
+  lines.forEach((line, index) => {
     const row = worksheet.getRow(index + 1);
     worksheet.mergeCells(`A${index + 1}:${String.fromCharCode(64 + totalCols)}${index + 1}`);
     const cell = row.getCell(1);
@@ -264,24 +265,31 @@ export async function generateResumenPasantiasExcel(data: any[], period: string,
   const worksheet = workbook.addWorksheet('Resumen Pasantias');
   const totalCols = 11;
 
+  // Header sin "NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA"
+  const resumenHeader = INSTITUTIONAL_HEADER.filter(l => l !== 'NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA');
+
   worksheet.columns = [
     { key: 'region', width: 15 }, { key: 'nucleo', width: 15 },
-    { key: 'extension', width: 15 }, { key: 'carrera', width: 30 },
+    { key: 'extension', width: 15 }, { key: 'carrera', width: 35 },
     { key: 'tutoresAcad', width: 15 }, { key: 'estudiantes', width: 15 },
-    { key: 'empresa', width: 35 }, { key: 'publica', width: 10 },
-    { key: 'privada', width: 10 }, { key: 'tutoresInst', width: 15 },
+    { key: 'empresa', width: 40 }, { key: 'publica', width: 10 },
+    { key: 'privada', width: 10 }, { key: 'tutoresInst', width: 18 },
     { key: 'observacion', width: 20 },
   ];
 
-  applyInstitutionalHeader(worksheet, totalCols);
+  applyInstitutionalHeader(worksheet, totalCols, resumenHeader);
   await addLogos(workbook, worksheet);
 
   const titleRow = 8;
   worksheet.mergeCells(`A${titleRow}:K${titleRow}`);
   const tRow = worksheet.getRow(titleRow);
-  tRow.height = 25;
-  tRow.getCell(1).value = `RESUMEN PASANTIA ${period}`;
-  tRow.getCell(1).font = { ...DEFAULT_FONT, size: 11, bold: true };
+  tRow.height = 30;
+  tRow.getCell(1).value = {
+    richText: [
+      { text: 'RESUMEN PASANTÍAS ', font: { ...DEFAULT_FONT, size: 11, bold: true } },
+      { text: period, font: { ...DEFAULT_FONT, size: 11, bold: true, color: { argb: 'FFFF0000' } } },
+    ],
+  };
   tRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
 
   const row9 = worksheet.getRow(9);
@@ -323,9 +331,11 @@ export async function generateResumenPasantiasExcel(data: any[], period: string,
   let currentRow = 11;
   data.forEach(item => {
     const row = worksheet.getRow(currentRow);
-    row.height = 35;
-    const isPublica = item.tipoEmpresa?.toUpperCase() === 'PÚBLICA' || item.tipoEmpresa?.toUpperCase() === 'PUBLICA';
-    const isPrivada = item.tipoEmpresa?.toUpperCase() === 'PRIVADA';
+    row.height = 45;
+    // Usar item.tipo (lo devuelve el backend desde INSTITUTION_TYPE)
+    const tipo = (item.tipo || '').toUpperCase();
+    const isPublica = tipo === 'PÚBLICA' || tipo === 'PUBLICA';
+    const isPrivada = tipo === 'PRIVADA';
 
     row.getCell('A').value = (item.region || '').toUpperCase();
     row.getCell('B').value = (item.nucleo || '').toUpperCase();

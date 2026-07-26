@@ -883,7 +883,7 @@ export async function generateResumenPasantiasWorkbook(
   // ============================================================
   // Anchos de columna (A-K)
   // ============================================================
-  const COL_WIDTHS = [14, 14, 14, 24, 12, 12, 24, 8, 8, 12, 20];
+  const COL_WIDTHS = [14, 14, 14, 28, 12, 12, 30, 8, 8, 14, 20];
   COL_WIDTHS.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
   // ============================================================
@@ -892,13 +892,14 @@ export async function generateResumenPasantiasWorkbook(
   ws.getRow(1).height = 10;
 
   // ============================================================
-  // FILA 2 (100px): membrete + logos
+  // FILA 2 (100px): membrete + logos (sin "NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA")
   // ============================================================
   ws.getRow(2).height = 100;
 
   ws.mergeCells(2, 1, 2, TOTAL);
   const membreteCell = ws.getCell(2, 1);
-  membreteCell.value = MEMBRETE_TEXT;
+  const resumenMembrete = INSTITUTIONAL_HEADER.filter(l => l !== 'NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA').join('\n');
+  membreteCell.value = resumenMembrete;
   membreteCell.font = { name: FONT, size: 9 };
   membreteCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
 
@@ -915,8 +916,12 @@ export async function generateResumenPasantiasWorkbook(
   ws.getRow(4).height = 60;
   ws.mergeCells(4, 1, 4, TOTAL);
   const titleCell = ws.getCell(4, 1);
-  titleCell.value = `RESUMEN PASANTIA ${periodLabel}`;
-  titleCell.font = { name: FONT, size: 12, bold: true };
+  titleCell.value = {
+    richText: [
+      { text: 'RESUMEN PASANTÍAS ', font: { name: FONT, size: 12, bold: true } },
+      { text: periodLabel, font: { name: FONT, size: 12, bold: true, color: { argb: 'FFFF0000' } } },
+    ],
+  };
   titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   titleCell.border = {
     top: { style: 'thin' },
@@ -978,7 +983,7 @@ export async function generateResumenPasantiasWorkbook(
   // ============================================================
   rows.forEach((row, rowIdx) => {
     const excelRow = ws.getRow(8 + rowIdx);
-    excelRow.height = 28;
+    excelRow.height = 32;
 
     const isLastRow = rowIdx === rows.length - 1;
     const noBoldBorder = isLastRow ? { style: 'medium' as const } : { style: 'thin' as const };

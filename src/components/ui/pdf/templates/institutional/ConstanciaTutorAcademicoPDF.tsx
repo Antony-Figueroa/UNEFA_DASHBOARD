@@ -1,14 +1,37 @@
+import React from 'react';
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
-import { formatNombreCompleto, formatCI, formatFecha, getFechaParts, getTutorTitle } from '@/features/reports/utils/reportFormatters';
-import { renderDocumentTextFormatted } from '@/features/reports/utils/documentRenderer';
+import { formatNombreCompleto, getFechaParts, getTutorTitle } from '@/features/reports/utils/reportFormatters';
+
+/**
+ * Renderiza el cuerpo reemplazando {{variables}} y mostrando los valores en Times-Bold.
+ */
+function renderCuerpo(template: string, data: Record<string, string>): React.ReactNode[] {
+  const parts = template.split(/(\{\{[^}]+\}\})/g);
+  return parts.map((part, i) => {
+    const m = part.match(/\{\{(\w+)\}\}/);
+    if (m) {
+      const value = data[m[1]];
+      if (value !== undefined) {
+        return <Text key={i} style={{ fontFamily: 'Times-Bold' }}>{value}</Text>;
+      }
+      return `[${m[1]}]`;
+    }
+    return part;
+  });
+}
+
+/** Extrae solo dígitos de una cédula, sin prefijo ni separadores */
+function ciRaw(ci: string): string {
+  return ci.replace(/\D/g, '');
+}
 
 const styles = StyleSheet.create({
   paragraph: { marginBottom: 20, textAlign: 'justify', fontSize: 12, lineHeight: 2, marginLeft: 30, marginRight: 30, textIndent: 30, fontFamily: 'Times-Roman' },
   firmaContainer: { marginTop: 60, alignItems: 'center' },
   firmaLine: { marginBottom: 5 },
-  firmaNombre: { fontSize: 11, fontFamily: 'Times-Roman' },
-  firmaRol: { fontSize: 10, color: '#000000', fontFamily: 'Times-Roman' },
+  firmaNombre: { fontSize: 11, fontFamily: 'Times-Bold' },
+  firmaRol: { fontSize: 10, color: '#000000', fontFamily: 'Times-Bold' },
 });
 
 interface Props {
@@ -34,18 +57,16 @@ export function ConstanciaTutorAcademicoPDF({ data, textos, verificationHash, qr
   const fechaHoy = getFechaParts(null);
   const tutorTitulo = getTutorTitle(data.tutor.titulo, data.tutor.tituloAbrev);
 
-  const cuerpo = renderDocumentTextFormatted(textos.cuerpo || '', {
+  const cuerpo = renderCuerpo(textos.cuerpo || '', {
     tutorTitulo,
     tutorNombreCompleto: formatNombreCompleto(data.tutor).toUpperCase(),
-    tutorCi: formatCI(data.tutor.ci).toUpperCase(),
+    tutorCi: ciRaw(data.tutor.ci),
     tutorCondicion: data.tutor.condicion.toUpperCase(),
     tutorDedicacion: data.tutor.dedicacion.toUpperCase(),
     totalHours: String(data.totalHours),
     periodo: data.periodo?.description || '',
-    inicioLapso: data.periodo ? formatFecha(data.periodo.startDate) : '',
-    finLapso: data.periodo ? formatFecha(data.periodo.endDate) : '',
-    estudianteNombreCompleto: data.estudiante ? formatNombreCompleto(data.estudiante).toUpperCase() : '',
-    estudianteCi: data.estudiante ? formatCI(data.estudiante.ci).toUpperCase() : '',
+    inicioLapso: data.periodo ? (() => { const p = getFechaParts(data.periodo.startDate); return `${p.dia} de ${p.mes.toLowerCase()} del ${p.anio}`; })() : '',
+    finLapso: data.periodo ? (() => { const p = getFechaParts(data.periodo.endDate); return `${p.dia} de ${p.mes.toLowerCase()} del ${p.anio}`; })() : '',
     dia: fechaHoy.dia,
     mes: fechaHoy.mes,
     anio: fechaHoy.anio,

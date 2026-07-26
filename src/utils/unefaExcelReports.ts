@@ -91,7 +91,7 @@ function applyInstitutionalHeader(worksheet: ExcelJS.Worksheet, totalCols: numbe
     const cell = row.getCell(1);
     cell.value = line;
     cell.font = { ...DEFAULT_FONT, size: 9, bold: false };
-    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.alignment = { horizontal: 'center' as const, vertical: 'middle' as const };
   });
 }
 
@@ -121,7 +121,7 @@ function applyTitleRow(worksheet: ExcelJS.Worksheet, rowNum: number, text: strin
   row.height = 25;
   const cell = row.getCell(1);
   cell.value = { richText: [{ text, font: { ...DEFAULT_FONT, size: 11, bold: true } }] };
-  cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  cell.alignment = { horizontal: 'center' as const, vertical: 'middle' as const };
 }
 
 function applyHeaderRow(worksheet: ExcelJS.Worksheet, rowNum: number, columns: { col: number; text: string; width?: number }[]) {
@@ -256,9 +256,9 @@ export async function generateAnexo4Excel(data: any[], fileName: string) {
     ];
     row.height = 20;
     row.eachCell((cell, colNumber) => {
-      cell.style = { ...DATA_STYLE, alignment: { horizontal: 'center', vertical: 'middle' } };
+      cell.style = { ...DATA_STYLE, alignment: { horizontal: 'center' as const, vertical: 'middle' as const } };
       if (colNumber === 5 || colNumber === 6 || colNumber === 7) {
-        cell.alignment = { ...cell.alignment, horizontal: 'left' };
+        cell.alignment = { ...cell.alignment, horizontal: 'left' as const };
       }
     });
     // Yellow highlight for observations column (if needed in future)
@@ -689,25 +689,25 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
 
   const SUBTOTAL_LABEL_STYLE_LOCAL = {
     font: { ...DEFAULT_FONT, bold: true, size: 8 },
-    alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
     fill: GREEN_DARK_FILL,
     border: THIN_BORDER,
   };
   const SUBTOTAL_VALUE_STYLE_LOCAL = {
     font: { ...DEFAULT_FONT, bold: true, size: 10 },
-    alignment: { horizontal: 'center', vertical: 'middle' },
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
     fill: GREEN_DARK_FILL,
     border: THIN_BORDER,
   };
   const TOTAL_TITLE_STYLE = {
     font: { ...DEFAULT_FONT, size: 10, bold: false },
-    alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
     fill: GREEN_LIGHT_FILL,
     border: THIN_BORDER,
   };
   const TOTAL_VALUE_STYLE = {
     font: { ...DEFAULT_FONT, size: 11, bold: true },
-    alignment: { horizontal: 'center', vertical: 'middle' },
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
     fill: GREEN_LIGHT_FILL,
     border: THIN_BORDER,
   };

@@ -939,7 +939,7 @@ export async function generateResumenPasantiasWorkbook(
 
   // ============================================================
   // FILA 6 (42px): HEADER ROW 1 (rowspan 2 en A-F)
-  // A=REGIÓN, B=NÚCLEO, C=EXRTENSIÓN, D=NOMBRE DE LA CARRERA,
+  // A=REGIÓN, B=NÚCLEO, C=EXTENSIÓN, D=NOMBRE DE LA CARRERA,
   // E=CANTIDAD DE TUTORES ACADEMICOS, F=CANTIDAD DE ESTUDIANTES,
   // G-K merged = CENTRO DE PRACTICA PROFESIONAL
   // ============================================================
@@ -957,7 +957,7 @@ export async function generateResumenPasantiasWorkbook(
   // A-F: rowspan 2 (merge row 6-7)
   setH(ws.getCell(6, 1), 'REGIÓN');         ws.mergeCells(6, 1, 7, 1);
   setH(ws.getCell(6, 2), 'NÚCLEO');         ws.mergeCells(6, 2, 7, 2);
-  setH(ws.getCell(6, 3), 'EXRTENSIÓN');     ws.mergeCells(6, 3, 7, 3);
+  setH(ws.getCell(6, 3), 'EXTENSIÓN');     ws.mergeCells(6, 3, 7, 3);
   setH(ws.getCell(6, 4), 'NOMBRE DE\nLA CARRERA'); ws.mergeCells(6, 4, 7, 4);
   setH(ws.getCell(6, 5), 'CANTIDAD DE\nTUTORES\nACADEMICOS'); ws.mergeCells(6, 5, 7, 5);
   setH(ws.getCell(6, 6), 'CANTIDAD\nDE\nESTUDIANTES'); ws.mergeCells(6, 6, 7, 6);

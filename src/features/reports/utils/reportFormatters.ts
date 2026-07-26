@@ -25,11 +25,11 @@ export function formatCI(ci: string | null | undefined): string {
   if (!ci) return '';
   const { prefix, number } = parseCI(ci);
   const formattedNumber = formatNumberWithDots(number);
-  return `${prefix}.${formattedNumber}`;
+  return `${prefix}-${formattedNumber}`;
 }
 
 export function getTutorTitle(titulo: string | null, tituloAbrev?: string | null): string {
-  const t = titulo || tituloAbrev;
+  const t = tituloAbrev || titulo;
   if (!t || t.trim() === '') return 'Tutor Académico';
   return t;
 }

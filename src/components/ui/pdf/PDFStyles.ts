@@ -35,7 +35,7 @@ export const pdfStyles = StyleSheet.create({
     fontSize: 8,
     color: "#000000",
     lineHeight: 1.2,
-    fontFamily: "Times-Roman", // Changed to Times-Roman
+    fontFamily: "Times-Bold",
   },
   institutionalTextNormal: {
     fontSize: 8,
@@ -54,6 +54,7 @@ export const pdfStyles = StyleSheet.create({
     color: "#000000",
     textTransform: "uppercase",
     textAlign: "center",
+    fontFamily: "Times-Bold",
   },
   reportSubtitle: {
     fontSize: 12,

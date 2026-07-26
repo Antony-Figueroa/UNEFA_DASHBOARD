@@ -87,13 +87,14 @@ export interface TutorAcademicReportResponse {
 }
 
 export interface PracticeSearchResult {
-  practiceId: number;
+  practiceId: number | null;
   studentCi: string;
   studentName: string;
   careerName: string;
   institutionName?: string;
   status?: number;
   period?: string;
+  hasPractice: boolean;
 }
 
 export interface TutorSearchResult {
@@ -193,8 +194,10 @@ export const reportsService = {
     return response.data;
   },
 
-  searchPractices: async (q: string): Promise<{ success: boolean; data: PracticeSearchResult[] }> => {
-    const response = await apiClient.get(`/institutional-documents/search-practices?q=${encodeURIComponent(q)}`);
+  searchPractices: async (q: string, documentType?: string): Promise<{ success: boolean; data: PracticeSearchResult[] }> => {
+    const params = new URLSearchParams({ q: encodeURIComponent(q) });
+    if (documentType) params.append('documentType', documentType);
+    const response = await apiClient.get(`/institutional-documents/search-practices?${params.toString()}`);
     return response.data;
   },
 

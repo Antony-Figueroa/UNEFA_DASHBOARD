@@ -148,10 +148,8 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, per
           <td className="px-4 py-3 text-text-secondary uppercase hidden md:table-cell">{item.institutionName || '-'}</td>
           <td className="px-4 py-3 text-text-secondary uppercase hidden md:table-cell">{item.period || '-'}</td>
           <td className="px-4 py-3 text-text-secondary hidden md:table-cell">
-            <span className={`text-xs font-medium ${
-              item.status === 1 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
-            }`}>
-              {item.status === 1 ? 'Activo' : 'Inactivo'}
+            <span className={`text-xs font-medium ${item.hasPractice === false ? 'text-amber-600 dark:text-amber-400' : item.status === 1 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+              {item.hasPractice === false ? 'Sin práctica' : item.status === 1 ? 'Activo' : 'Inactivo'}
             </span>
           </td>
         </>

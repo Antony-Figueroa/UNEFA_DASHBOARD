@@ -155,6 +155,13 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
 
   const handleGenerate = async (e: React.MouseEvent) => {
     e.preventDefault();
+    
+    // Verificar si el estudiante seleccionado tiene práctica
+    if (isPracticeDoc && selectedRecord && (selectedRecord as PracticeSearchResult).hasPractice === false) {
+      addToast({ variant: "error", title: "Sin práctica profesional", message: "El estudiante seleccionado no tiene una práctica profesional activa con tutor académico asignado. Cree la práctica primero." });
+      return;
+    }
+    
     const id = parseInt(recordId, 10);
     if (!id || id <= 0) {
       addToast({ variant: "error", title: "Dato inválido", message: "Ingrese un CI válido" });
@@ -255,11 +262,16 @@ const renderTemplate = useCallback(
 
               <SearchableInput
                 placeholder={isPracticeDoc ? 'CI o nombre del estudiante...' : 'CI o nombre del tutor...'}
-                search={(q) => (isPracticeDoc ? reportsService.searchPractices(q).then(r => r.data || []) : reportsService.searchTutors(q).then(r => r.data || [])) as Promise<{ id: string | number }[]>}
+                search={(q) => (isPracticeDoc ? reportsService.searchPractices(q, documentType).then(r => r.data || []) : reportsService.searchTutors(q).then(r => r.data || [])) as Promise<{ id: string | number }[]>}
                 renderItem={(item: any) => (
                   <div>
                     <p className="text-sm font-medium text-text-primary dark:text-text-emphasis">
                       {isPracticeDoc ? item.studentName : item.fullName}
+                      {isPracticeDoc && item.hasPractice === false && (
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                          Sin práctica
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-text-tertiary mt-0.5">
                       CI: {isPracticeDoc ? item.studentCi : item.ci}

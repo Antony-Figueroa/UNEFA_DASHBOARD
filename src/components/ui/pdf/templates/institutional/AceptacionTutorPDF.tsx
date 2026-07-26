@@ -36,7 +36,10 @@ const styles = StyleSheet.create({
   firmaData: {
     fontSize: 11,
     marginBottom: 3,
-    fontFamily: 'Times-Roman',
+    fontFamily: 'Times-Bold',
+  },
+  boldText: {
+    fontFamily: 'Times-Bold',
   },
 });
 
@@ -65,9 +68,9 @@ export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Pr
   const carreraNombre = data.carrera.nombre.toUpperCase();
 
   return (
-    <PDFLayout title="ACEPTACIÓN DEL TUTOR ACADÉMICO" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri}>
+    <PDFLayout title="ACEPTACIÓN DEL TUTOR ACADÉMICO" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
       <Text style={styles.paragraph}>
-        Yo, {tutorTitle}. {tutorName}, titular de la cedula de identidad {tutorCI}, hago constar por medio de la presente que acepto la tutoría académica de la práctica profesional por parte de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA) del (la) bachiller {estudianteNombre}, titular de la cedula de identidad {estudianteCI} para optar al grado de {carreraNombre}
+        Yo, <Text style={styles.boldText}>{tutorTitle}. {tutorName}</Text>, titular de la cedula de identidad <Text style={styles.boldText}>{tutorCI}</Text>, hago constar por medio de la presente que acepto la tutoría académica de la práctica profesional por parte de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA) del (la) bachiller <Text style={styles.boldText}>{estudianteNombre}</Text>, titular de la cedula de identidad <Text style={styles.boldText}>{estudianteCI}</Text> para optar al grado de <Text style={styles.boldText}>{carreraNombre}</Text>
       </Text>
       
       <Text style={styles.paragraph}>

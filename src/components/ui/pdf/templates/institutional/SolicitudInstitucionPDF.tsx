@@ -39,6 +39,10 @@ const styles = StyleSheet.create({
   },
   textRed: {
     color: '#000000',
+    fontFamily: 'Times-Bold',
+  },
+  textNormal: {
+    color: '#000000',
     fontFamily: 'Times-Roman',
   },
 
@@ -139,7 +143,7 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
         
         {/* Cuerpo del texto con datos en mayúsculas */}
         <Text style={styles.paragraph}>
-          Tengo el agrado de dirigirme a usted, en la oportunidad de presentarle a el/la Bachiller <Text style={styles.textRed}>{estudianteNombre}</Text>, titular de la cédula de identidad <Text style={styles.textRed}>{estudianteCI}</Text>, estudiante de la carrera <Text style={styles.textRed}>{carreraNombre}</Text>, el mencionado Bachiller está autorizado para realizar trámites en la Organización que usted representa, relacionados con la posibilidad de desarrollar en su práctica profesional un proyecto con un mínimo de 480 horas laborales, comprendidas desde <Text style={styles.textRed}>{lapsoInicio}</Text> hasta <Text style={styles.textRed}>{lapsoFin}</Text>.
+          Tengo el agrado de dirigirme a usted, en la oportunidad de presentarle a el/la Bachiller <Text style={styles.textRed}>{estudianteNombre}</Text>, titular de la cédula de identidad <Text style={styles.textRed}>{estudianteCI}</Text>, estudiante de la carrera <Text style={styles.textRed}>{carreraNombre}</Text>, el mencionado Bachiller está autorizado para realizar trámites en la Organización que usted representa, relacionados con la posibilidad de desarrollar en su práctica profesional un proyecto con un mínimo de 480 horas laborales, comprendidas desde <Text style={styles.textNormal}>{lapsoInicio}</Text> hasta <Text style={styles.textNormal}>{lapsoFin}</Text>.
         </Text>
         
         <Text style={styles.paragraph}>

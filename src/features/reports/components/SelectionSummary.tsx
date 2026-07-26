@@ -10,6 +10,7 @@ interface SelectionSummaryProps {
 export function SelectionSummary({ type, data, onChange }: SelectionSummaryProps) {
   const isPractice = type === 'practice';
   const d = data as any;
+  const hasPractice = d.hasPractice !== false;
 
   return (
     <div className="bg-brand-50/50 dark:bg-brand-500/10 rounded-lg p-4 border border-brand-200 dark:border-brand-800">
@@ -30,6 +31,11 @@ export function SelectionSummary({ type, data, onChange }: SelectionSummaryProps
             )}
             {!isPractice && d.careers && (
               <span className="text-xs text-text-tertiary">· {d.careers}</span>
+            )}
+            {!hasPractice && (
+              <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded">
+                Sin práctica
+              </span>
             )}
           </div>
           {isPractice && (

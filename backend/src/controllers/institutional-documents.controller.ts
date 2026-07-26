@@ -8,6 +8,19 @@ function getFullName(row: any): string {
   return parts.filter(Boolean).join(' ');
 }
 
+/** Resuelve abreviatura de título desde t_list/t_value_list */
+async function resolveTituloAbrev(conn: any, titulo: string): Promise<string> {
+  if (!titulo) return '';
+  const { data: titleList } = await conn
+    .from('t_list').select('LIST_ID').eq('NAME', 'TÍTULO').single();
+  if (!titleList) return '';
+  const { data: values } = await conn
+    .from('t_value_list').select('NAME, ABBREVIATION')
+    .eq('LIST_ID', titleList.LIST_ID).eq('STATUS', 1);
+  const match = values?.find((v: any) => v.NAME.toLowerCase() === titulo.toLowerCase());
+  return match?.ABBREVIATION || '';
+}
+
 async function getPracticeBase(supabase: any, practiceId: number) {
   const { data, error } = await supabase
     .from('t_professional_practices')
@@ -54,6 +67,14 @@ async function getPracticeTutors(supabase: any, practiceId: number) {
     .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
 
   if (!data) return [];
+
+  // Resolver abreviaturas de títulos batch (ponytail: una llamada por título único)
+  const uniqueTitulos = [...new Set(data.map((item: any) => item.t_tutors?.TITULO).filter(Boolean))] as string[];
+  const abrevMap = new Map<string, string>();
+  for (const t of uniqueTitulos) {
+    abrevMap.set(t, await resolveTituloAbrev(supabase, t));
+  }
+
   return data.map((item: any) => {
     const tutor = item.t_tutors;
     const persona = tutor?.t_persons;
@@ -61,6 +82,7 @@ async function getPracticeTutors(supabase: any, practiceId: number) {
       tutorType: item.TUTOR_TYPE,
       ci: tutor.TUTOR_CI || persona?.ci || '',
       titulo: tutor.TITULO,
+      tituloAbrev: tutor.TITULO ? abrevMap.get(tutor.TITULO) || '' : '',
       primerNombre: persona?.first_name || '',
       segundoNombre: persona?.middle_name || '',
       primerApellido: persona?.last_name || '',
@@ -158,6 +180,7 @@ export const getDataAceptacionTutor = async (req: Request, res: Response) => {
         tutor: tutorAcademico ? {
           ci: tutorAcademico.ci || '',
           titulo: tutorAcademico.titulo,
+          tituloAbrev: tutorAcademico.tituloAbrev || '',
           primerNombre: tutorAcademico.primerNombre || '',
           segundoNombre: tutorAcademico.segundoNombre || '',
           primerApellido: tutorAcademico.primerApellido || '',
@@ -270,6 +293,7 @@ export const getDataCartaPostulacion = async (req: Request, res: Response) => {
         tutorInstitucional: tutorInstitucional ? {
           ci: tutorInstitucional.ci || '',
           titulo: tutorInstitucional.titulo,
+          tituloAbrev: tutorInstitucional.tituloAbrev || '',
           primerNombre: tutorInstitucional.primerNombre || '',
           segundoNombre: tutorInstitucional.segundoNombre || '',
           primerApellido: tutorInstitucional.primerApellido || '',
@@ -402,6 +426,7 @@ export const getDataEvaluacionTutorInstitucional = async (req: Request, res: Res
         tutorInstitucional: tutorInst ? {
           ci: tutorInst.ci || '',
           titulo: tutorInst.titulo,
+          tituloAbrev: tutorInst.tituloAbrev || '',
           primerNombre: tutorInst.primerNombre || '',
           segundoNombre: tutorInst.segundoNombre || '',
           primerApellido: tutorInst.primerApellido || '',
@@ -448,6 +473,7 @@ export const getDataEvaluacionTutorAcademico = async (req: Request, res: Respons
         tutorAcademico: tutorAcad ? {
           ci: tutorAcad.ci || '',
           titulo: tutorAcad.titulo,
+          tituloAbrev: tutorAcad.tituloAbrev || '',
           primerNombre: tutorAcad.primerNombre || '',
           segundoNombre: tutorAcad.segundoNombre || '',
           primerApellido: tutorAcad.primerApellido || '',
@@ -531,6 +557,7 @@ export const getDataEvaluacionComite = async (req: Request, res: Response) => {
         tutorAcademico: tutorAcad ? {
           ci: tutorAcad.ci || '',
           titulo: tutorAcad.titulo,
+          tituloAbrev: tutorAcad.tituloAbrev || '',
           primerNombre: tutorAcad.primerNombre || '',
           segundoNombre: tutorAcad.segundoNombre || '',
           primerApellido: tutorAcad.primerApellido || '',
@@ -862,17 +889,25 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
 
 /**
  * Busca prácticas profesionales por CI o nombre del estudiante.
- * GET /api/institutional-documents/search-practices?q=termino
+ * GET /api/institutional-documents/search-practices?q=termino&documentType=aceptacion-tutor
  */
 export const searchPractices = async (req: Request, res: Response) => {
   try {
     const conn = dbManager.getConnection();
     const q = String(req.query.q || '').trim();
+    const documentType = String(req.query.documentType || '').trim();
     if (!q || q.length < 2) {
       return res.json({ success: true, data: [] });
     }
 
     const term = `%${q}%`;
+
+    // Para aceptacion-tutor: buscar en prácticas CON tutor + estudiantes SIN práctica
+    if (documentType === 'aceptacion-tutor') {
+      return await searchPracticesWithStudents(conn, term, res);
+    }
+
+    // Búsqueda original (solo prácticas)
     const { data, error } = await conn
       .from('t_professional_practices')
       .select(`
@@ -911,6 +946,7 @@ export const searchPractices = async (req: Request, res: Response) => {
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
         status: p.STATUS,
         period: p.t_internships_period?.DESCRIPTION || '',
+        hasPractice: true,
       };
     });
 
@@ -923,6 +959,117 @@ export const searchPractices = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: dbError });
   }
 };
+
+/**
+ * Busca prácticas y estudiantes para "Carta de Aceptación del Tutor Académico".
+ * Incluye: prácticas con tutor académico (hasPractice=true) + estudiantes sin práctica (hasPractice=false).
+ */
+async function searchPracticesWithStudents(conn: any, term: string, res: Response) {
+  // 1. Prácticas activas CON tutor académico
+  const { data: pptData } = await conn
+    .from('t_professional_practices_tutor')
+    .select('PROFESSIONAL_PRACTICE_ID')
+    .eq('TUTOR_TYPE', 'ACADEMICO');
+  const practiceIdsWithTutor = [...new Set((pptData || []).map((r: any) => Number(r.PROFESSIONAL_PRACTICE_ID)))] as number[];
+
+  let practicesQuery = conn
+    .from('t_professional_practices')
+    .select(`
+      PROFESSIONAL_PRACTICE_ID,
+      STUDENTS_ID,
+      STATUS,
+      t_students!inner(
+        STUDENTS_ID,
+        t_persons!fk_students_person(
+          ci, first_name, middle_name, last_name, second_last_name
+        )
+      ),
+      t_career!inner(CAREER_NAME),
+      t_institution(INSTITUTION_NAME),
+      t_internships_period(DESCRIPTION)
+    `)
+    .or(`ci.ilike.${term},first_name.ilike.${term},last_name.ilike.${term}`, { foreignTable: 't_students.t_persons' });
+
+  if (practiceIdsWithTutor.length > 0) {
+    practicesQuery = practicesQuery.in('PROFESSIONAL_PRACTICE_ID', practiceIdsWithTutor);
+  } else {
+    practicesQuery = practicesQuery.eq('PROFESSIONAL_PRACTICE_ID', -1);
+  }
+
+  const { data: practicesData, error: practicesError } = await practicesQuery.limit(10);
+
+  if (practicesError) {
+    console.error('[institutional-documents] searchPracticesWithStudents error:', practicesError);
+    return res.status(500).json({ success: false, message: 'Error al buscar prácticas' });
+  }
+
+  const practicesResults = (practicesData || []).map((p: any) => {
+    const person = p.t_students?.t_persons;
+    return {
+      practiceId: p.PROFESSIONAL_PRACTICE_ID,
+      studentCi: person?.ci ?? '',
+      studentName: [person?.first_name, person?.middle_name, person?.last_name, person?.second_last_name]
+        .filter(Boolean).join(' '),
+      careerName: p.t_career?.CAREER_NAME || '',
+      institutionName: p.t_institution?.INSTITUTION_NAME || '',
+      status: p.STATUS,
+      period: p.t_internships_period?.DESCRIPTION || '',
+      hasPractice: true,
+    };
+  });
+
+  // 2. Estudiantes SIN práctica con tutor académico
+  let studentsQuery = conn
+    .from('t_students')
+    .select(`
+      STUDENTS_ID,
+      t_persons!fk_students_person(
+        ci, first_name, middle_name, last_name, second_last_name
+      )
+    `)
+    .eq('STATUS', 1);
+
+  if (practiceIdsWithTutor.length > 0) {
+    const { data: studentsInPractices } = await conn
+      .from('t_professional_practices')
+      .select('STUDENTS_ID')
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIdsWithTutor);
+    const studentIdsInPractices = [...new Set((studentsInPractices || []).map((r: any) => Number(r.STUDENTS_ID)))] as number[];
+    if (studentIdsInPractices.length > 0) {
+      studentsQuery = studentsQuery.not('STUDENTS_ID', 'in', `(${studentIdsInPractices.join(',')})`);
+    }
+  }
+
+  studentsQuery = studentsQuery.or(`ci.ilike.${term},first_name.ilike.${term},last_name.ilike.${term}`, { foreignTable: 't_persons' });
+
+  const { data: studentsData, error: studentsError } = await studentsQuery.limit(10);
+
+  if (studentsError) {
+    console.error('[institutional-documents] searchPracticesWithStudents error (students):', studentsError);
+    return res.status(500).json({ success: false, message: 'Error al buscar estudiantes' });
+  }
+
+  const studentsResults = (studentsData || []).map((s: any) => {
+    const person = s.t_persons;
+    return {
+      practiceId: null,
+      studentCi: person?.ci ?? '',
+      studentName: [person?.first_name, person?.middle_name, person?.last_name, person?.second_last_name]
+        .filter(Boolean).join(' '),
+      careerName: '', // t_students no tiene CAREER_ID directo
+      institutionName: '',
+      status: null,
+      period: '',
+      hasPractice: false,
+    };
+  });
+
+  const combined = [...practicesResults, ...studentsResults]
+    .sort((a, b) => (b.practiceId || 0) - (a.practiceId || 0))
+    .slice(0, 20);
+
+  res.json({ success: true, data: combined });
+}
 
 /**
  * Busca tutores por CI o nombre del tutor.
@@ -1024,7 +1171,12 @@ export const listPractices = async (req: Request, res: Response) => {
     const from = page * limit;
     const to = from + limit - 1;
 
-    // Resolver IDs elegibles según el tipo de documento
+    // Para aceptacion-tutor: incluir estudiantes con Y sin práctica
+    if (documentType === 'aceptacion-tutor') {
+      return await listPracticesWithStudents(conn, page, limit, term, from, to, res);
+    }
+
+    // Resolver IDs elegibles según el tipo de documento (lógica original)
     let eligibleIds: number[] | null = null;
 
     if (documentType) {
@@ -1074,7 +1226,6 @@ export const listPractices = async (req: Request, res: Response) => {
 
     if (eligibleIds !== null && eligibleIds.length >= 0) {
       if (eligibleIds.length === 0) {
-        // Sin IDs elegibles → resultado vacío
         return res.json({ success: true, data: [], meta: { total: 0, page, limit } });
       }
       query = query.in('PROFESSIONAL_PRACTICE_ID', eligibleIds);
@@ -1107,6 +1258,7 @@ export const listPractices = async (req: Request, res: Response) => {
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
         status: p.STATUS,
         period: p.t_internships_period?.DESCRIPTION || '',
+        hasPractice: true,
       };
     });
 
@@ -1123,6 +1275,145 @@ export const listPractices = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: dbError });
   }
 };
+
+/**
+ * Lista prácticas y estudiantes para "Carta de Aceptación del Tutor Académico".
+ * Incluye: prácticas con tutor (hasPractice=true) + estudiantes sin práctica activa (hasPractice=false).
+ */
+async function listPracticesWithStudents(
+  conn: any,
+  page: number,
+  limit: number,
+  term: string | null,
+  from: number,
+  to: number,
+  res: Response
+) {
+  // 1. Prácticas activas CON tutor académico asignado (hasPractice=true)
+  const { data: pptData } = await conn
+    .from('t_professional_practices_tutor')
+    .select('PROFESSIONAL_PRACTICE_ID')
+    .eq('TUTOR_TYPE', 'ACADEMICO');
+  const practiceIdsWithTutor = [...new Set((pptData || []).map((r: any) => Number(r.PROFESSIONAL_PRACTICE_ID)))] as number[];
+
+  let query = conn
+    .from('t_professional_practices')
+    .select(`
+      PROFESSIONAL_PRACTICE_ID,
+      STUDENTS_ID,
+      STATUS,
+      t_students!inner(
+        STUDENTS_ID,
+        t_persons!fk_students_person(
+          ci, first_name, middle_name, last_name, second_last_name
+        )
+      ),
+      t_career!inner(CAREER_NAME),
+      t_institution(INSTITUTION_NAME),
+      t_internships_period(DESCRIPTION)
+    `, { count: 'exact' })
+    .eq('STATUS', 1);
+
+  if (practiceIdsWithTutor.length > 0) {
+    query = query.in('PROFESSIONAL_PRACTICE_ID', practiceIdsWithTutor);
+  } else {
+    query = query.eq('PROFESSIONAL_PRACTICE_ID', -1); // ninguno
+  }
+
+  if (term) {
+    query = (query as any).or(`ci.ilike.${term},first_name.ilike.${term},last_name.ilike.${term}`, { foreignTable: 't_students.t_persons' });
+  }
+
+  const { data: practicesData, error: practicesError, count: practicesCount } = await query
+    .range(from, to)
+    .order('PROFESSIONAL_PRACTICE_ID', { ascending: false });
+
+  if (practicesError) {
+    console.error('[institutional-documents] listPracticesWithStudents error:', practicesError);
+    return res.status(500).json({ success: false, message: 'Error al listar prácticas' });
+  }
+
+  const practicesResults = (practicesData || []).map((p: any) => {
+    const person = p.t_students?.t_persons;
+    return {
+      practiceId: p.PROFESSIONAL_PRACTICE_ID,
+      studentCi: person?.ci ?? '',
+      studentName: [person?.first_name, person?.middle_name, person?.last_name, person?.second_last_name]
+        .filter(Boolean).join(' '),
+      careerName: p.t_career?.CAREER_NAME || '',
+      institutionName: p.t_institution?.INSTITUTION_NAME || '',
+      status: p.STATUS,
+      period: p.t_internships_period?.DESCRIPTION || '',
+      hasPractice: true,
+    };
+  });
+
+  // 2. Estudiantes SIN práctica activa (o sin práctica con tutor académico)
+  // Buscar estudiantes que NO tengan práctica en practiceIdsWithTutor
+  let studentsQuery = conn
+    .from('t_students')
+    .select(`
+      STUDENTS_ID,
+      t_persons!fk_students_person(
+        ci, first_name, middle_name, last_name, second_last_name
+      )
+    `, { count: 'exact' })
+    .eq('STATUS', 1); // estudiantes activos
+
+  // Excluir los que ya aparecen en prácticas con tutor
+  if (practiceIdsWithTutor.length > 0) {
+    const { data: studentsInPractices } = await conn
+      .from('t_professional_practices')
+      .select('STUDENTS_ID')
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIdsWithTutor);
+    const studentIdsInPractices = [...new Set((studentsInPractices || []).map((r: any) => Number(r.STUDENTS_ID)))] as number[];
+    if (studentIdsInPractices.length > 0) {
+      studentsQuery = studentsQuery.not('STUDENTS_ID', 'in', `(${studentIdsInPractices.join(',')})`);
+    }
+  }
+
+  if (term) {
+    studentsQuery = studentsQuery.or(`ci.ilike.${term},first_name.ilike.${term},last_name.ilike.${term}`, { foreignTable: 't_persons' });
+  }
+
+  const { data: studentsData, error: studentsError, count: studentsCount } = await studentsQuery
+    .range(from, to)
+    .order('STUDENTS_ID', { ascending: false });
+
+  if (studentsError) {
+    console.error('[institutional-documents] listPracticesWithStudents error (students):', studentsError);
+    return res.status(500).json({ success: false, message: 'Error al listar estudiantes' });
+  }
+
+  const studentsResults = (studentsData || []).map((s: any) => {
+    const person = s.t_persons;
+    return {
+      practiceId: null,
+      studentCi: person?.ci ?? '',
+      studentName: [person?.first_name, person?.middle_name, person?.last_name, person?.second_last_name]
+        .filter(Boolean).join(' '),
+      careerName: '', // t_students no tiene CAREER_ID directo
+      institutionName: '',
+      status: null,
+      period: '',
+      hasPractice: false,
+    };
+  });
+
+  // Combinar y paginar en memoria (simplificación: union de ambas queries)
+  // NOTA: para paginación exacta harían falta UNION en SQL; aquí combinamos resultados
+  const combined = [...practicesResults, ...studentsResults]
+    .sort((a, b) => (b.practiceId || 0) - (a.practiceId || 0)); // prácticas primero
+
+  const total = (practicesCount || 0) + (studentsCount || 0);
+  const paginated = combined.slice(0, limit); // slice simple para la página actual
+
+  res.json({
+    success: true,
+    data: paginated,
+    meta: { total, page, limit },
+  });
+}
 
 /**
  * Lista tutores paginados con búsqueda opcional.
@@ -1342,6 +1633,7 @@ export const getDataEvaluacionConsolidada = async (req: Request, res: Response) 
         tutorInstitucional: tutorInst ? {
           ci: tutorInst.ci,
           titulo: tutorInst.titulo,
+          tituloAbrev: tutorInst.tituloAbrev || '',
           primerNombre: tutorInst.primerNombre,
           segundoNombre: tutorInst.segundoNombre,
           primerApellido: tutorInst.primerApellido,
@@ -1351,6 +1643,7 @@ export const getDataEvaluacionConsolidada = async (req: Request, res: Response) 
         tutorAcademico: tutorAcad ? {
           ci: tutorAcad.ci,
           titulo: tutorAcad.titulo,
+          tituloAbrev: tutorAcad.tituloAbrev || '',
           primerNombre: tutorAcad.primerNombre,
           segundoNombre: tutorAcad.segundoNombre,
           primerApellido: tutorAcad.primerApellido,

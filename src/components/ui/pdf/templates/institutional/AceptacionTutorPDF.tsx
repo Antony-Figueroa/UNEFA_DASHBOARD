@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   firmaLabel: { 
     marginBottom: 3, 
     fontSize: 11,
-    fontFamily: 'Times-Roman',
+    fontFamily: 'Times-Bold',
   },
   firmaData: {
     fontSize: 11,
@@ -60,7 +60,7 @@ interface Props {
 export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Props) {
   const fechaHoy = getFechaParts(null);
   
-  const tutorTitle = data.tutor ? getTutorTitle(data.tutor.titulo, data.tutor.tituloAbrev).toUpperCase() : 'MAESTR';
+  const tutorTitle = data.tutor ? getTutorTitle(data.tutor.titulo, data.tutor.tituloAbrev) : 'MAESTR';
   const tutorName = data.tutor ? formatNombreCompleto(data.tutor).toUpperCase() : '';
   const tutorCI = data.tutor ? formatCI(data.tutor.ci).toUpperCase() : '';
   const estudianteNombre = formatNombreCompleto(data.estudiante).toUpperCase();
@@ -78,7 +78,7 @@ export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Pr
       </Text>
       
       <Text style={styles.dateSection}>
-        En Araure a los {fechaHoy.dia} días del mes de {fechaHoy.mes} del {fechaHoy.anio}.
+        En Araure a los <Text style={styles.boldText}>{fechaHoy.dia}</Text> días del mes de <Text style={styles.boldText}>{fechaHoy.mes}</Text> del <Text style={styles.boldText}>{fechaHoy.anio}</Text>.
       </Text>
       
       <View style={styles.firmaContainer}>

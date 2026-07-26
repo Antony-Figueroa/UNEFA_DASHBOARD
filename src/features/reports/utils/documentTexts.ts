@@ -83,7 +83,7 @@ Constancia que se expide a petición de parte interesada, en Guanare, a los {{di
     firma: '___________________________________\nMSc. Marbelys del Valle Rivero\nDecana del Núcleo Portuguesa\nSegún Orden administrativa N° 0005 de fecha 18 de Marzo 2022',
   },
   constancia_tutor_institucional: {
-    destinatario: '{{institucionNombre}}',
+    destinatario: '',
     cuerpo: `Señor(a):
 {{institucionNombre}}
 Presente.

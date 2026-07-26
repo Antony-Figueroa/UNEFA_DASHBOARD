@@ -25,6 +25,15 @@ const styles = StyleSheet.create({
   labelText: {
     fontSize: 11,
   },
+  institucionBold: {
+    fontSize: 11,
+    fontFamily: 'Times-Bold',
+    marginBottom: 2,
+  },
+  emisorBold: {
+    fontSize: 11,
+    fontFamily: 'Times-Bold',
+  },
   firmaContainer: { 
     marginTop: 40, 
     alignItems: 'center',
@@ -48,6 +57,8 @@ const styles = StyleSheet.create({
   firmaNombre: {
     fontSize: 11,
     marginBottom: 2,
+    fontFamily: 'Times-Bold',
+    textAlign: 'center',
   },
 });
 
@@ -119,13 +130,13 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos, verificationHash
       <View style={styles.leftSection}>
         <Text style={styles.labelText}>Señor (a):</Text>
         <Text style={styles.labelText}>{destinatarioTexto}</Text>
-        <Text style={styles.labelText}>{institucionNombre}</Text>
+        <Text style={styles.institucionBold}>{institucionNombre}</Text>
         <Text style={styles.labelText}>Presente.</Text>
       </View>
 
-      {/* Sección derecha: Atnn. (editable desde textos) */}
+      {/* Sección derecha: Atnn. — datos del emisor en negrita */}
       <View style={styles.rightSection}>
-        <Text style={styles.labelText}>Atnn. {textos.atnn || `${tutorTitulo} ${tutorName}.`}</Text>
+        <Text style={styles.emisorBold}>Atnn. {textos.atnn || `${tutorTitulo} ${tutorName}.`}</Text>
       </View>
 
       {/* Cuerpo del texto — primer párrafo */}

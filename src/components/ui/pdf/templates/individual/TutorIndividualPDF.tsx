@@ -92,6 +92,7 @@ const styles = StyleSheet.create({
     color: "#000000",
     textTransform: "uppercase",
     marginBottom: 1,
+    textDecoration: "underline",
   },
   infoValue: {
     fontSize: 10,
@@ -115,7 +116,8 @@ const styles = StyleSheet.create({
   },
   periodoValue: {
     fontSize: 10,
-    color: "#000000",
+    fontFamily: "Times-Bold",
+    color: "#CC0000",
   },
 
   // ── Observaciones (caja amarilla) ──
@@ -220,7 +222,7 @@ export const TutorIndividualPDF: React.FC<TutorIndividualPDFProps> = ({
       subtitle="Prácticas Profesionales"
       verificationHash={verificationHash}
       logoLeftSrc="/pdfs-docs/logo.png"
-      logoRightSrc="/logo-tutores.jpeg"
+      logoRightSrc="/pdfs-docs/logo2.jpeg"
       headerNormalLines={[0, 2]}
     >
       {/* Periodo Académico (bold + red) */}
@@ -321,17 +323,19 @@ export const TutorIndividualPDF: React.FC<TutorIndividualPDFProps> = ({
       {tutorInstitucional && (tutorInstitucional.nombre || tutorInstitucional.cargo) && (
         <View style={styles.tutorInstSection}>
           <Text style={styles.tutorInstTitle}>Tutor(a) Institucional</Text>
-          <Text style={styles.tutorInstText}>
-            {[tutorInstitucional.cargo, tutorInstitucional.nombre, tutorInstitucional.apellido].filter(Boolean).join(" ").toUpperCase()}
+          <Text style={[styles.tutorInstText, { fontFamily: "Times-Bold" }]}>
+            {[tutorInstitucional.nombre, tutorInstitucional.apellido].filter(Boolean).join(" ").toUpperCase()}
           </Text>
-          {tutorInstitucional.ci && (
-            <Text style={styles.tutorInstText}>C.I.: {tutorInstitucional.ci}</Text>
+          {tutorInstitucional.cargo && (
+            <Text style={styles.tutorInstText}>
+              Cargo: {tutorInstitucional.cargo.toUpperCase()}
+            </Text>
           )}
           {tutorInstitucional.telefono && (
             <Text style={styles.tutorInstText}>TELÉFONO: {tutorInstitucional.telefono}</Text>
           )}
           {tutorInstitucional.correo && (
-            <Text style={styles.tutorInstText}>CORREO: {tutorInstitucional.correo}</Text>
+            <Text style={styles.tutorInstText}>CORREO: {tutorInstitucional.correo.toLowerCase()}</Text>
           )}
         </View>
       )}

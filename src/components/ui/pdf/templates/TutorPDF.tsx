@@ -8,6 +8,7 @@ import { Career } from "../../../../features/careers/types";
 interface TutorPDFProps {
   data: Tutor[] | TutorRowData[];
   careers?: Career[];
+  periodo?: string;
 }
 
 const getCareerName = (id: string, careers?: Career[]) => {
@@ -22,21 +23,31 @@ const formatCI = (prefix: string | undefined, number: string | undefined): strin
   return `${p}-${n}`.replace(/--/g, '-');
 };
 
-export const TutorPDF: React.FC<TutorPDFProps> = ({ data, careers }) => {
+export const TutorPDF: React.FC<TutorPDFProps> = ({ data, careers, periodo }) => {
   return (
     <PDFLayout
       title="Reporte de Tutores"
       subtitle="Listado de tutores académicos y metodológicos"
-      logoLeftSrc="/pdfs-docs/logo.png"
-      logoRightSrc="/logo-tutores.jpeg"
-      headerNormalLines={[0, 2]}
+      logoLeftSrc="/logo-tutores.jpeg"
+      logoRightSrc="/pdfs-docs/logo.png"
+      headerNormalLines={[0, 2, 3]}
     >
+      {/* Periodo — solo valor, sin label */}
+      {periodo && (
+        <Text style={{ fontSize: 10, fontFamily: "Times-Roman", marginBottom: 10, textAlign: "center" }}>
+          {periodo}
+        </Text>
+      )}
+
       <View style={pdfStyles.table}>
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]} wrap={false}>
-          <Text style={[pdfStyles.tableCell, { flex: 1.2, fontSize: 8 }]}>CÉDULA</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>NOMBRE COMPLETO</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>TÍTULO Y CARRERA</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 3, fontSize: 8 }]}>CONTACTO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 0.9, fontSize: 7.5 }]}>CÉDULA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.8, fontSize: 7.5 }]}>NOMBRE COMPLETO</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.6, fontSize: 7.5 }]}>TÍTULO Y CARRERA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 7.5 }]}>CONDICIÓN</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 7.5 }]}>DEDICACIÓN</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 7.5 }]}>CATEGORÍA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.8, fontSize: 7.5 }]}>CONTACTO</Text>
         </View>
 
         {data.map((tutor, index) => {
@@ -44,20 +55,29 @@ export const TutorPDF: React.FC<TutorPDFProps> = ({ data, careers }) => {
           const careersStr = (tutor.carreras || []).map(id => getCareerName(id, careers)).join(" - ");
           return (
           <View key={tutor.tutorId || index} style={pdfStyles.tableRow} wrap={false}>
-            <Text style={[pdfStyles.tableCell, { flex: 1.2, fontSize: 8 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 0.9, fontSize: 7.5 }]}>
               {formatCI(tutor.identificationPrefix, tutor.identificationNumber)}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 1.8, fontSize: 7.5 }]}>
               <Text>{fullName}</Text>
               {'\n'}
               <Text style={{ fontSize: 7, color: "#000000" }}>{tutor.sex}</Text>
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 2, fontSize: 8 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 1.6, fontSize: 7.5 }]}>
               <Text>{tutor.profession}</Text>
               {'\n'}
               <Text style={{ fontSize: 7, color: "#000000" }}>{careersStr}</Text>
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 3, fontSize: 8 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 7.5 }]}>
+              {tutor.condition}
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 7.5 }]}>
+              {tutor.dedication}
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 7.5 }]}>
+              {tutor.category}
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1.8, fontSize: 7.5 }]}>
               <Text>{tutor.email}</Text>
               {'\n'}
               <Text style={{ fontSize: 7, color: "#000000" }}>{tutor.phone}</Text>

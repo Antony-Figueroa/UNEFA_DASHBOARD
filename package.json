@@ -1,5 +1,6 @@
 {
   "name": "unefa-dashboard",
+  "description": "Sistema de gestión académica integral para universidades — administración de prácticas profesionales, estudiantes, tutores, instituciones, evaluaciones y documentación académica con soporte multi-rol (admin, tutor, estudiante) y app desktop offline-first.",
   "private": true,
   "version": "2.2.0",
   "type": "module",

@@ -1,6 +1,6 @@
-# UNEFA Dashboard
+# UNEFA Dashboard — Sistema de Gestión de Prácticas Profesionales
 
-Sistema de gestión académica para universidades — administración integral de prácticas profesionales, estudiantes, tutores, instituciones y evaluaciones.
+> **Plataforma académica completa** para universidades: gestión de estudiantes, tutores, instituciones receptoras, evaluaciones, documentación y reportes. Multi-rol (admin, tutor, estudiante), offline-first con Electron + PGlite, deploy en Vercel + Render + Supabase.
 
 [![Version](https://img.shields.io/badge/version-2.2.0-blue)](https://github.com/Antony-Figueroa/UNEFA_DASHBOARD)
 [![React 19](https://img.shields.io/badge/React-19-61dafb?logo=react)](https://react.dev)

@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   footerAfter: {
-    marginTop: 6,
+    marginTop: 30,
   },
 });
 
@@ -96,10 +96,10 @@ export function ActaValidacionPDF({ data, textos, verificationHash, qrCodeDataUr
 
       <View style={styles.table}>
         {/* Header */}
-        <View style={styles.row}>
-          <View style={styles.docCell}>
-            <Text style={styles.headerText}>DOCENTES</Text>
-          </View>
+<View style={styles.row}>
+           <View style={styles.docCell}>
+             <Text style={styles.headerText}>DOCENTE</Text>
+           </View>
           <View style={styles.firmaCell}>
             <Text style={styles.headerText}>FIRMA</Text>
           </View>

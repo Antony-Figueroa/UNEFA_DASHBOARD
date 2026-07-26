@@ -4,16 +4,18 @@ import PDFLayout from '../../PDFLayout';
 import { formatNombreCompleto, getFechaParts, getTutorTitle } from '@/features/reports/utils/reportFormatters';
 
 /**
- * Renderiza el cuerpo reemplazando {{variables}} y mostrando los valores en Times-Bold.
+ * Renderiza el cuerpo reemplazando {{variables}}.
+ * Los valores de 'noBoldFields' se muestran en Times-Roman (normal), el resto en Times-Bold.
  */
-function renderCuerpo(template: string, data: Record<string, string>): React.ReactNode[] {
+function renderCuerpo(template: string, data: Record<string, string>, noBoldFields: string[] = []): React.ReactNode[] {
   const parts = template.split(/(\{\{[^}]+\}\})/g);
   return parts.map((part, i) => {
     const m = part.match(/\{\{(\w+)\}\}/);
     if (m) {
       const value = data[m[1]];
       if (value !== undefined) {
-        return <Text key={i} style={{ fontFamily: 'Times-Bold' }}>{value}</Text>;
+        const isBold = !noBoldFields.includes(m[1]);
+        return <Text key={i} style={{ fontFamily: isBold ? 'Times-Bold' : 'Times-Roman' }}>{value}</Text>;
       }
       return `[${m[1]}]`;
     }
@@ -24,6 +26,12 @@ function renderCuerpo(template: string, data: Record<string, string>): React.Rea
 /** Extrae solo dígitos de una cédula, sin prefijo ni separadores */
 function ciRaw(ci: string): string {
   return ci.replace(/\D/g, '');
+}
+
+/** Formato día/mes/año */
+function formatDateDMY(dateStr: string): string {
+  const p = getFechaParts(dateStr);
+  return `${p.dia}/${p.mes}/${p.anio}`;
 }
 
 const styles = StyleSheet.create({
@@ -65,12 +73,12 @@ export function ConstanciaTutorAcademicoPDF({ data, textos, verificationHash, qr
     tutorDedicacion: data.tutor.dedicacion.toUpperCase(),
     totalHours: String(data.totalHours),
     periodo: data.periodo?.description || '',
-    inicioLapso: data.periodo ? (() => { const p = getFechaParts(data.periodo.startDate); return `${p.dia} de ${p.mes.toLowerCase()} del ${p.anio}`; })() : '',
-    finLapso: data.periodo ? (() => { const p = getFechaParts(data.periodo.endDate); return `${p.dia} de ${p.mes.toLowerCase()} del ${p.anio}`; })() : '',
-    dia: fechaHoy.dia,
-    mes: fechaHoy.mes,
-    anio: fechaHoy.anio,
-  });
+    inicioLapso: data.periodo ? formatDateDMY(data.periodo.startDate) : '',
+    finLapso: data.periodo ? formatDateDMY(data.periodo.endDate) : '',
+    dia: String(fechaHoy.dia),
+    mes: String(fechaHoy.mes),
+    anio: String(fechaHoy.anio),
+  }, ['dia', 'mes', 'anio']);
 
   const firmaNombre = textos.firmaNombre || 'MSc. Marbelys del Valle Rivero';
   const firmaCargo = textos.firmaCargo || 'Decana del Núcleo Portuguesa';
@@ -88,7 +96,7 @@ export function ConstanciaTutorAcademicoPDF({ data, textos, verificationHash, qr
         <Text style={styles.firmaLine}>___________________________________</Text>
         <Text style={styles.firmaNombre}>{firmaNombre.toUpperCase()}</Text>
         <Text style={styles.firmaRol}>{firmaCargo.toUpperCase()}</Text>
-        <Text style={styles.firmaRol}>{firmaOrden}</Text>
+        <Text style={{ fontSize: 10, color: '#000000', fontFamily: 'Times-Roman' }}>{firmaOrden}</Text>
       </View>
     </PDFLayout>
   );

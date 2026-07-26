@@ -1,6 +1,6 @@
 import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
-import { formatNombreCompleto, formatFecha, getFechaParts, formatCI } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, getFechaParts, formatCI } from '@/features/reports/utils/reportFormatters';
 
 const styles = StyleSheet.create({
 
@@ -21,13 +21,13 @@ const styles = StyleSheet.create({
   destinatario: { 
     marginBottom: 2, 
     fontSize: 11,
-    fontFamily: 'Times-Roman',
+    fontFamily: 'Times-Bold',
   },
   destinatarioRed: {
     marginBottom: 2, 
     fontSize: 11,
     color: '#000000',
-    fontFamily: 'Times-Roman',
+    fontFamily: 'Times-Bold',
   },
   paragraph: { 
     marginBottom: 10, 
@@ -53,9 +53,10 @@ const styles = StyleSheet.create({
   },
   leftParagraph: { 
     marginBottom: 10, 
-    textAlign: 'left', 
+    textAlign: 'justify', 
     fontSize: 11, 
     lineHeight: 1.4,
+    textIndent: 30,
     fontFamily: 'Times-Roman',
   },
   centeredAtentamente: {
@@ -68,13 +69,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginBottom: 2,
     textAlign: 'center',
-    fontFamily: 'Times-Roman',
+    fontFamily: 'Times-Bold',
   },
   centeredFirmaCargo: { 
     fontSize: 11,
     marginBottom: 2,
     textAlign: 'center',
-    fontFamily: 'Times-Roman',
+    fontFamily: 'Times-Bold',
   },
   centeredFirmaOrden: { 
     fontSize: 10, 
@@ -103,8 +104,8 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
   const estudianteNombre = formatNombreCompleto(data.estudiante).toUpperCase();
   const estudianteCI = formatCI(data.estudiante.ci).toUpperCase();
   const carreraNombre = data.carrera.nombre.toUpperCase();
-  const lapsoInicio = data.periodo ? formatFecha(data.periodo.startDate).toUpperCase() : '________________________';
-  const lapsoFin = data.periodo ? formatFecha(data.periodo.endDate).toUpperCase() : '________________________';
+  const lapsoInicio = data.periodo ? (() => { const p = getFechaParts(data.periodo.startDate); return `${p.dia} de ${p.mes.toLowerCase()} del ${p.anio}`; })() : '________________________';
+  const lapsoFin = data.periodo ? (() => { const p = getFechaParts(data.periodo.endDate); return `${p.dia} de ${p.mes.toLowerCase()} del ${p.anio}`; })() : '________________________';
 
   const firmaNombre = textos.firmaNombre || 'MSc. Marbelys del Valle Rivero';
   const firmaCargo = textos.firmaCargo || 'Decana del Núcleo Portuguesa';
@@ -156,7 +157,7 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
         
         {/* Despedida alineada a la derecha */}
         <Text style={styles.leftParagraph}>
-          Agradeciendo la atención sobre este particular, quedo de usted.
+          Agradeciendo la atención prestada sobre este particular, quedo de usted.
         </Text>
         
         <Text style={styles.centeredAtentamente}>Atentamente,</Text>

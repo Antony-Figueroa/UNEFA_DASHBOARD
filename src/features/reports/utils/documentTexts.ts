@@ -36,6 +36,9 @@ Por otra parte, el bachiller será supervisado durante dos (2) oportunidades por
 Agradeciendo la atención sobre este particular, quedo de usted.
 
 Atentamente,`,
+    senores: 'Señores:',
+    presente: 'Presente',
+    destinatarioNombre: '',
     destinatario: 'MSc. Marbelys del Valle Rivero',
     cargo: 'Decana del Núcleo Portuguesa',
     firmaNombre: 'MSc. Marbelys del Valle Rivero',

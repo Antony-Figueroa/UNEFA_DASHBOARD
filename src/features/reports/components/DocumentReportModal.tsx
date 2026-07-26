@@ -385,14 +385,35 @@ const renderTemplate = useCallback(
                   </div>
 
                   <CustomInput
-                    label="Destinatario (Atte:)"
+                    label="Señores"
+                    placeholder="Señores:"
+                    value={editableTextos.senores || textos.senores || ''}
+                    onChange={(e) => handleEditableTextChange('senores', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Nombre del Destinatario"
+                    placeholder="Nombre de la institución o persona"
+                    value={editableTextos.destinatarioNombre || textos.destinatarioNombre || ''}
+                    onChange={(e) => handleEditableTextChange('destinatarioNombre', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Presente"
+                    placeholder="Presente"
+                    value={editableTextos.presente || textos.presente || ''}
+                    onChange={(e) => handleEditableTextChange('presente', e.target.value)}
+                  />
+
+                  <CustomInput
+                    label="Atte: (Nombre y Título)"
                     placeholder="Nombre del destinatario"
                     value={editableTextos.destinatario || ''}
                     onChange={(e) => handleEditableTextChange('destinatario', e.target.value)}
                   />
 
                   <CustomInput
-                    label="Cargo Destinatario"
+                    label="Cargo del Destinatario"
                     placeholder="Cargo del destinatario"
                     value={editableTextos.cargo || ''}
                     onChange={(e) => handleEditableTextChange('cargo', e.target.value)}

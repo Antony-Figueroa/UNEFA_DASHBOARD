@@ -578,7 +578,7 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
           extension: sysLoc.extension,
           carrera: career.CAREER_NAME,
           empresa: institution.INSTITUTION_NAME,
-          tipoEmpresa: institution.INSTITUTION_TYPE,
+          tipo: institution.INSTITUTION_TYPE,
           estudiantes: new Set(),
           tutoresAcad: new Set<number>(),
           tutoresInst: new Set<number>(),
@@ -607,7 +607,7 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
       cantidadTutoresAcad: item.tutoresAcad.size,
       cantidadEstudiantes: item.estudiantes.size,
       empresa: item.empresa,
-      tipoEmpresa: item.tipoEmpresa,
+      tipo: item.tipo,
       cantidadTutoresInst: item.tutoresInst.size,
       observacion: item.observacion
     }));

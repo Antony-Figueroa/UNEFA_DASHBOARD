@@ -222,8 +222,8 @@ export const TutorIndividualPDF: React.FC<TutorIndividualPDFProps> = ({
       subtitle="Prácticas Profesionales"
       verificationHash={verificationHash}
       logoLeftSrc="/pdfs-docs/logo.png"
-      logoRightSrc="/pdfs-docs/logo2.jpeg"
-      headerNormalLines={[0, 2]}
+      logoRightSrc="/logo-tutores.jpeg"
+      headerNormalLines={[0, 2, 3, 4, 5, 6]}
     >
       {/* Periodo Académico (bold + red) */}
       {periodo && (

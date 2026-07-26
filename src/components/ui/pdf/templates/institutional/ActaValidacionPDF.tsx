@@ -2,16 +2,17 @@ import { Text, View, StyleSheet } from '@react-pdf/renderer';
 import PDFLayout from '../../PDFLayout';
 
 const styles = StyleSheet.create({
-  body: {
+  parrafo: {
     textAlign: 'justify',
     fontSize: 12,
     fontFamily: 'Times-Roman',
     color: '#000000',
     lineHeight: 1.6,
-    marginBottom: 24,
+    marginBottom: 12,
+    textIndent: 30,
   },
   table: {
-    marginTop: 18,
+    marginTop: 24,
     border: '1pt solid black',
     width: '100%',
   },
@@ -33,6 +34,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 11,
+    fontFamily: 'Times-Bold',
     color: '#000000',
     textAlign: 'center',
   },
@@ -48,7 +50,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   footerBefore: {
-    marginTop: 18,
+    marginTop: 40,
   },
   footerAfter: {
     marginTop: 6,
@@ -84,10 +86,13 @@ interface Props {
 
 export function ActaValidacionPDF({ data, textos, verificationHash, qrCodeDataUri }: Props) {
   const cuerpo = replaceWithUnderscores(textos.cuerpo || '');
+  const parrafos = cuerpo.split('\n\n').filter(Boolean);
 
   return (
     <PDFLayout title="ACTA DE VALIDACIÓN" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
-      <Text style={styles.body}>{cuerpo}</Text>
+      {parrafos.map((p, i) => (
+        <Text key={i} style={styles.parrafo}>{p}</Text>
+      ))}
 
       <View style={styles.table}>
         {/* Header */}

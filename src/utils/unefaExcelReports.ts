@@ -303,10 +303,10 @@ export async function generateResumenPasantiasExcel(data: any[], period: string,
 
   worksheet.columns = [
     { key: 'region', width: 15 }, { key: 'nucleo', width: 15 },
-    { key: 'extension', width: 15 }, { key: 'carrera', width: 35 },
+    { key: 'extension', width: 15 }, { key: 'carrera', width: 45 },
     { key: 'tutoresAcad', width: 15 }, { key: 'estudiantes', width: 15 },
-    { key: 'empresa', width: 40 }, { key: 'publica', width: 10 },
-    { key: 'privada', width: 10 }, { key: 'tutoresInst', width: 18 },
+    { key: 'empresa', width: 50 }, { key: 'publica', width: 10 },
+    { key: 'privada', width: 10 }, { key: 'tutoresInst', width: 22 },
     { key: 'observacion', width: 20 },
   ];
 
@@ -319,7 +319,7 @@ export async function generateResumenPasantiasExcel(data: any[], period: string,
   tRow.height = 30;
   tRow.getCell(1).value = {
     richText: [
-      { text: 'RESUMEN PASANTÍAS ', font: { ...DEFAULT_FONT, size: 11, bold: true } },
+      { text: 'Resumen Pasantías ', font: { ...DEFAULT_FONT, size: 11, bold: true } },
       { text: cleanPeriod, font: { ...DEFAULT_FONT, size: 11, bold: true, color: { argb: 'FFFF0000' } } },
     ],
   };
@@ -364,7 +364,7 @@ export async function generateResumenPasantiasExcel(data: any[], period: string,
   let currentRow = 11;
   data.forEach(item => {
     const row = worksheet.getRow(currentRow);
-    row.height = 45;
+    row.height = 55;
     // Usar item.tipo (lo devuelve el backend desde INSTITUTION_TYPE)
     const tipo = (item.tipo || '').toUpperCase();
     const isPublica = tipo === 'PÚBLICA' || tipo === 'PUBLICA';
@@ -647,7 +647,7 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
   const row8 = worksheet.getRow(8);
   const row9 = worksheet.getRow(9);
   row8.height = 25;
-  row9.height = 50;
+  row9.height = 60;
 
   // REGIÓN, NÚCLEO, EXTENSIÓN merged vertically (8-9)
   // NOMBRE DE LA EMPRESA merged vertically

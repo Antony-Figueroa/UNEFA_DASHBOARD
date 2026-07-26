@@ -152,7 +152,7 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
         </Text>
         
         <Text style={styles.paragraph}>
-          Por otra parte, el/la bachiller será supervisado/a durante dos (2) oportunidades por un docente, debidamente autorizado por la UNEFA. Anexo a esta carta, se facilita el perfil del egresado del estudiante.
+          Por otra parte, el bachiller será supervisado durante dos (2) oportunidades por un docente, debidamente autorizado por la UNEFA. Anexo a esta carta, se facilita el perfil del egresado del estudiante.
         </Text>
         
         {/* Despedida alineada a la derecha */}

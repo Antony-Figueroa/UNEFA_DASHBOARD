@@ -9,7 +9,10 @@ function renderTextoTemplate(texto: string, data: Record<string, string>) {
     if (m) {
       const value = data[m[1]];
       if (value !== undefined) {
-        return <Text key={i} style={styles.boldText}>{value.toUpperCase()}</Text>;
+        const field = m[1];
+        // Override boldText with overstrikeText except for regime and employment fields
+        const style = ['regime', 'empr', 'employment'].includes(field) ? styles.boldText : styles.overstrikeText;
+        return <Text key={i} style={style}>{value.toUpperCase()}</Text>;
       }
       return `[${m[1]}]`;
     }
@@ -43,6 +46,10 @@ const styles = StyleSheet.create({
   firmaRaya: { fontSize: 11, marginBottom: 2, fontFamily: 'Times-Roman' },
   firmaLabel: { fontSize: 8, textAlign: 'center', textTransform: 'uppercase', fontFamily: 'Times-Roman' },
   boldText: { fontFamily: 'Times-Bold' },
+  overstrikeText: {
+    fontFamily: 'Times-Bold',
+    textDecoration: 'underline',
+  },
 });
 
 interface Props {
@@ -67,24 +74,45 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
   const ci = formatCI(data.estudiante.ci);
   const esDiurno = (data.practica?.regime || '').toUpperCase() === 'DIURNO';
   const trabaja = !!data.estudiante.empleo;
+  const nombreCompleto = formatNombreCompleto(data.estudiante);
+  const ci = formatCI(data.estudiante.ci);
+  const esCiudadano = !esDiurno; // To determine if user is drafted – duelo entre ambos.
 
   return (
     <PDFLayout title="SOLICITUD DE CARTA DE POSTULACIÓN" subtitle="(PRÁCTICAS PROFESIONALES)" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
-          {/* Bloque de dirección alineado a la derecha */}
+          {/* Bloque de dirección alineado a la izquierda */}
       {textos.cuerpoAddress && (
-        <Text style={{ marginBottom: 10, textAlign: 'right', fontSize: 11, lineHeight: 1.5, fontFamily: 'Times-Roman' }}>
+        <Text style={{ marginBottom: 10, textAlign: 'left', fontSize: 11, lineHeight: 1.5, fontFamily: 'Times-Roman' }}>
           {textos.cuerpoAddress}
         </Text>
       )}
 
       <Text style={styles.paragraph}>
         {renderTextoTemplate(textos.cuerpo || '', {
-          estudianteNombreCompleto: nombreCompleto,
-          estudianteCi: ci,
+          nombre: nombreCompleto,
+          ci: ci,
           carrera: data.carrera.nombre,
           fechaValidacion,
         })}
       </Text>
+
+      {/* Ciudadano, Decana y Despacho alineados a la izquierda */}
+      <View style={{ ...styles.infoRow, justifyContent: 'flex-start', marginBottom: 6 }}>
+        <View style={styles.infoFields}>
+          {/* Ciudadano: Respuesta generada (overstrikeText) */}
+          <Text style={{ ...styles.fieldRow, marginBottom: 2, lineHeight: 1.3, fontFamily: 'Times-Roman' }}>
+            Ciudadano: <Text style={{ ...styles.boldText, fontWeight: 'bold' }}>{nombreCompleto.toUpperCase()}</Text>
+          </Text>
+          {/* Decana: Respuesta generada (overstrikeText) */}
+          <Text style={{ ...styles.fieldRow, marginBottom: 2, lineHeight: 1.3, fontFamily: 'Times-Roman' }}>
+            Decana: <Text style={{ ...styles.boldText, fontWeight: 'bold' }}>{(textos.gerenteTalentoHumano || (data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '________________________')).toUpperCase()}</Text>
+          </Text>
+          {/* Despacho: Respuesta generada (overstrikeText) */}
+          <Text style={{ ...styles.fieldRow, marginBottom: 2, lineHeight: 1.3, fontFamily: 'Times-Roman' }}>
+            Despacho: <Text style={{ ...styles.boldText, fontWeight: 'bold' }}>{textos.cargo || 'Decana del Núcleo Portuguesa'}</Text>
+          </Text>
+        </View>
+      </View>
 
       <View style={styles.infoRow}>
         <View style={styles.infoFields}>
@@ -107,10 +135,7 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
       </View>
 
       <Text style={styles.fieldRow}>
-        NOMBRE DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: <Text style={styles.boldText}>{(data.institucion?.nombre || '________________________').toUpperCase()}</Text>
-      </Text>
-      <Text style={styles.fieldRow}>
-        NOMBRE Y APELLIDOS DEL (DE LA) GERENTE DE TALENTO HUMANO DE LA INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS: <Text style={styles.boldText}>{(textos.gerenteTalentoHumano || (data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '________________________')).toUpperCase()}</Text>
+        INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: <Text style={styles.boldText}>{(data.institucion?.nombre || '________________________').toUpperCase()}</Text>
       </Text>
 
       <View style={styles.firmaContainer}>

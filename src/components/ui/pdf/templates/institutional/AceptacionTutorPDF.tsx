@@ -69,7 +69,7 @@ export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Pr
 
   return (
     <PDFLayout title="ACEPTACIÓN DEL TUTOR ACADÉMICO" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
-      <Text style={styles.paragraph}>
+      <Text style={[styles.paragraph, { marginTop: 15 }]}>
         Yo, <Text style={styles.boldText}>{tutorTitle}. {tutorName}</Text>, titular de la cedula de identidad <Text style={styles.boldText}>{tutorCI}</Text>, hago constar por medio de la presente que acepto la tutoría académica de la práctica profesional por parte de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana (UNEFA) del (la) bachiller <Text style={styles.boldText}>{estudianteNombre}</Text>, titular de la cedula de identidad <Text style={styles.boldText}>{estudianteCI}</Text> para optar al grado de <Text style={styles.boldText}>{carreraNombre}</Text>
       </Text>
       

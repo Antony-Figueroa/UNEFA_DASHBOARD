@@ -882,7 +882,7 @@ export const getRelacionInstitucionesSolicitan = async (req: Request, res: Respo
       .select(`
         PROFESSIONAL_PRACTICE_ID,
         t_institution (INSTITUTION_NAME, RIF, INSTITUTION_TYPE, INSTITUTION_CONTACT),
-        t_institution_manager!inner (MANAGER_ID, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, CONTACT_PHONE),
+        t_institution_manager!inner (MANAGER_ID, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, CONTACT_PHONE, TITLE),
         t_career (CAREER_NAME)
       `)
       .eq('STATUS', 1);
@@ -970,10 +970,18 @@ export const getRelacionInstitucionesSolicitan = async (req: Request, res: Respo
       entry.estudiantes++;
     }
 
+    const formatResponsable = (mgr: any): string => {
+      if (!mgr) return 'N/A';
+      const name = `${mgr.NAME || ''} ${mgr.SECOND_NAME || ''} ${mgr.SURNAME || ''} ${mgr.SECOND_SURNAME || ''}`.replace(/\s+/g, ' ').trim();
+      const title = mgr.TITLE ? mgr.TITLE.trim() : '';
+      return title ? `${name} - ${title}` : name;
+    };
+
     const result = Array.from(instMap.values()).map(e => ({
       empresa: e.empresa,
       rif: e.rif,
       tipoEmpresa: e.tipo,
+      responsableTitulo: formatResponsable(e.manager),
       carreras: Array.from(e.carreras).join(', '),
       cantidadEstudiantes: e.estudiantes,
     }));
@@ -1727,7 +1735,7 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             PERIOD_ID,
             CAREER_ID,
             t_institution (INSTITUTION_NAME, RIF, INSTITUTION_TYPE, INSTITUTION_CONTACT),
-            t_institution_manager!inner (MANAGER_ID, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, CONTACT_PHONE),
+            t_institution_manager!inner (MANAGER_ID, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, CONTACT_PHONE, TITLE),
             t_career (CAREER_NAME)
           `)
           .eq('STATUS', 1);
@@ -1763,80 +1771,64 @@ export const exportReportExcel = async (req: Request, res: Response) => {
 
         const periodDesc = await getPeriodDescription(supabase, periodId as string);
 
-        const instMap = new Map<string, {
+        const formatResponsable = (mgr: any): string => {
+          if (!mgr) return 'N/A';
+          const name = `${mgr.NAME || ''} ${mgr.SECOND_NAME || ''} ${mgr.SURNAME || ''} ${mgr.SECOND_SURNAME || ''}`.replace(/\s+/g, ' ').trim();
+          const title = mgr.TITLE ? mgr.TITLE.trim() : '';
+          return title ? `${name} - ${title}` : name;
+        };
+
+        // Expandir por (institución, manager, carrera): cada combinación única = una fila
+        const expandedMap = new Map<string, {
           empresa: string; rif: string; tipo: string; telefono: string;
-          manager: any; carreras: Set<string>; estudiantes: number;
+          responsable: string; carrera: string; estudiantes: number;
         }>();
 
-        // Process practices with managers (from inner join)
+        const addExpanded = (inst: any, mgr: any, carrera: string, phone: string) => {
+          if (!inst) return;
+          const key = `${inst.INSTITUTION_NAME || 'unknown'}|${mgr?.MANAGER_ID || '0'}|${carrera}`;
+          if (!expandedMap.has(key)) {
+            expandedMap.set(key, {
+              empresa: inst.INSTITUTION_NAME || '',
+              rif: inst.RIF || '',
+              tipo: inst.INSTITUTION_TYPE || '',
+              telefono: phone,
+              responsable: formatResponsable(mgr),
+              carrera,
+              estudiantes: 0,
+            });
+          }
+          expandedMap.get(key)!.estudiantes++;
+        };
+
+        // Process practices with managers
         (practicesWithManager || []).forEach((p: any) => {
           const inst: any = p.t_institution;
           const mgr: any = p.t_institution_manager;
-          if (!inst) return;
-          const key = inst.INSTITUTION_NAME || 'unknown';
           const carrera = (p.t_career as any)?.CAREER_NAME || '';
-
-          if (!instMap.has(key)) {
-            // Phone priority: INSTITUTION_CONTACT → manager CONTACT_PHONE → 'N/A'
-            const phone = inst.INSTITUTION_CONTACT || mgr?.CONTACT_PHONE || 'N/A';
-            instMap.set(key, {
-              empresa: inst.INSTITUTION_NAME || '',
-              rif: inst.RIF || '',
-              tipo: inst.INSTITUTION_TYPE || '',
-              telefono: phone,
-              manager: mgr,
-              carreras: new Set(),
-              estudiantes: 0,
-            });
-          }
-          const entry = instMap.get(key)!;
-          entry.carreras.add(carrera);
-          entry.estudiantes++;
+          const phone = inst?.INSTITUTION_CONTACT || mgr?.CONTACT_PHONE || 'N/A';
+          addExpanded(inst, mgr, carrera, phone);
         });
 
-        // Process practices without managers (from fallback query)
+        // Process practices without managers
         (practicesWithoutManager || []).forEach((p: any) => {
           const inst: any = p.t_institution;
-          if (!inst) return;
-          const key = inst.INSTITUTION_NAME || 'unknown';
           const carrera = (p.t_career as any)?.CAREER_NAME || '';
-
-          if (!instMap.has(key)) {
-            // No manager: use N/A for responsable, INSTITUTION_CONTACT for phone
-            const phone = inst.INSTITUTION_CONTACT || 'N/A';
-            instMap.set(key, {
-              empresa: inst.INSTITUTION_NAME || '',
-              rif: inst.RIF || '',
-              tipo: inst.INSTITUTION_TYPE || '',
-              telefono: phone,
-              manager: null,
-              carreras: new Set(),
-              estudiantes: 0,
-            });
-          }
-          const entry = instMap.get(key)!;
-          entry.carreras.add(carrera);
-          entry.estudiantes++;
+          const phone = inst?.INSTITUTION_CONTACT || 'N/A';
+          addExpanded(inst, null, carrera, phone);
         });
 
-        const rows = Array.from(instMap.values()).map((e) => {
-          const mgr = e.manager;
-          const responsable = mgr
-            ? `${mgr.NAME || ''} ${mgr.SECOND_NAME || ''} ${mgr.SURNAME || ''} ${mgr.SECOND_SURNAME || ''}`.replace(/\s+/g, ' ').trim()
-            : 'N/A';
-          const telefono = e.telefono || 'N/A';
-          return {
-            region: sysLoc.region,
-            nucleo: sysLoc.nucleus,
-            extension: sysLoc.extension,
-            empresa: e.empresa,
-            responsable,
-            telefonoContacto: telefono,
-            tipoEmpresa: e.tipo,
-            carreras: Array.from(e.carreras).join(', '),
-            cantidadEstudiantes: e.estudiantes,
-          };
-        });
+        const rows = Array.from(expandedMap.values()).map((e) => ({
+          region: sysLoc.region,
+          nucleo: sysLoc.nucleus,
+          extension: sysLoc.extension,
+          empresa: e.empresa,
+          responsable: e.responsable,
+          telefonoContacto: e.telefono,
+          tipoEmpresa: e.tipo,
+          carreras: e.carrera,
+          cantidadEstudiantes: e.estudiantes,
+        }));
 
         workbook = await generateRelacionInstitucionesSolicitanWorkbook(rows, periodDesc);
         break;

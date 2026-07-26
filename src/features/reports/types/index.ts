@@ -132,6 +132,7 @@ export interface RelacionInstitucionesSolicitanRow {
   tipoEmpresa: string;
   carreras: string;
   cantidadEstudiantes: number;
+  responsableTitulo?: string;
 }
 
 export interface DistribucionTutoresRow {

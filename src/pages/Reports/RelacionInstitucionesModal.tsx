@@ -46,7 +46,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
   const [selectedInstIds, setSelectedInstIds] = useState<string[]>([]);
   const [institutionCareers, setInstitutionCareers] = useState<Record<string, Career[]>>({});
   const [studentsMap, setStudentsMap] = useState<Record<string, number>>({});
-  const [responsibleMap, setResponsibleMap] = useState<Record<string, string>>({});
+  const [responsibleMap, setResponsibleMap] = useState<Record<string, string[]>>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -125,8 +125,8 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
     setStudentsMap(prev => ({ ...prev, [instId]: numValue }));
   }, []);
 
-  const handleResponsibleChange = useCallback((instId: string, value: string) => {
-    setResponsibleMap(prev => ({ ...prev, [instId]: value }));
+  const handleResponsibleChange = useCallback((instId: string, selected: string[]) => {
+    setResponsibleMap(prev => ({ ...prev, [instId]: selected }));
   }, []);
 
   // Filtered institution objects
@@ -170,21 +170,42 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
 
     selectedInstitutions.forEach(inst => {
       const careers = institutionCareers[inst.institutionId] || [];
-      const careerNames = careers.map(c => c.name).filter(Boolean).join(', ');
-      const responsibleId = responsibleMap[inst.institutionId] || '';
+      const responsibleIds = responsibleMap[inst.institutionId] || [];
       const responsables = getResponsablesForInstitution(inst.institutionId);
-      const responsable = responsables.find((r: any) => r.responsibleId === responsibleId);
-      const responsableName = responsable ? `${responsable.firstName} ${responsable.lastName}` : responsibleId;
-      rows.push({
-        region: sysLocation.region,
-        nucleo: sysLocation.nucleus,
-        extension: sysLocation.extension,
-        empresa: inst.name,
-        responsable: responsableName,
-        numeroContacto: inst.phone || 'N/A',
-        tipoEmpresa: inst.institutionType || '',
-        carreras: careerNames,
-        cantidadEstudiantes: studentsMap[inst.institutionId] || 0,
+      const selectedResponsables = responsables.filter((r: any) => responsibleIds.includes(r.responsibleId));
+      const responsablesToUse = selectedResponsables.length > 0 ? selectedResponsables : [null];
+
+      responsablesToUse.forEach((resp: any) => {
+        const responsableName = resp ? `${resp.firstName} ${resp.lastName}` : '';
+        const responsableTitulo = resp?.title || '';
+        const baseRow = {
+          region: sysLocation.region,
+          nucleo: sysLocation.nucleus,
+          extension: sysLocation.extension,
+          empresa: inst.name,
+          responsable: responsableName,
+          responsableTitulo,
+          numeroContacto: inst.phone || 'N/A',
+          tipoEmpresa: inst.institutionType || '',
+        };
+
+        // Expandir por carrera: una fila por carrera
+        const careerList = careers.filter((c: Career) => c.name);
+        if (careerList.length > 0) {
+          careerList.forEach((c: Career) => {
+            rows.push({
+              ...baseRow,
+              carreras: c.name,
+              cantidadEstudiantes: studentsMap[inst.institutionId] || 0,
+            });
+          });
+        } else {
+          rows.push({
+            ...baseRow,
+            carreras: '',
+            cantidadEstudiantes: studentsMap[inst.institutionId] || 0,
+          });
+        }
       });
     });
 
@@ -349,7 +370,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.nucleo}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.extension}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase font-medium">{row.empresa}</td>
-                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.responsable}</td>
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.responsableTitulo ? `${row.responsable} - ${row.responsableTitulo}` : row.responsable}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis">{row.numeroContacto}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.tipoEmpresa}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis max-w-[200px] truncate" title={row.carreras}>{row.carreras}</td>
@@ -440,7 +461,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                       // Inicializar responsable para las nuevas
                       ids.forEach(id => {
                         if (!(id in responsibleMap)) {
-                          setResponsibleMap(prev => ({ ...prev, [id]: '' }));
+                          setResponsibleMap(prev => ({ ...prev, [id]: [] }));
                         }
                       });
                       // Limpiar responsables de las removidas
@@ -502,47 +523,45 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                                 </label>
                                 {(() => {
                                   const responsables = getResponsablesForInstitution(inst.institutionId);
-                                  const currentResponsibleId = responsibleMap[inst.institutionId] || '';
+                                  const selectedIds: string[] = responsibleMap[inst.institutionId] || [];
                                   if (responsables.length === 0) {
                                     return (
                                       <input
                                         type="text"
                                         placeholder="Sin responsables registrados"
-                                        value={currentResponsibleId}
-                                        onChange={(e) => handleResponsibleChange(inst.institutionId, e.target.value)}
-                                        className="w-full rounded border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface px-1.5 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                        value={selectedIds.join(', ')}
+                                        readOnly
+                                        className="w-full rounded border border-border-default dark:border-border-dark bg-gray-50 dark:bg-gray-800 px-1.5 py-1 text-[10px] text-text-secondary"
                                       />
                                     );
                                   }
                                   if (responsables.length === 1) {
                                     const r = responsables[0];
                                     // Auto-select if not already set
-                                    if (!currentResponsibleId) {
-                                      setTimeout(() => handleResponsibleChange(inst.institutionId, r.responsibleId), 0);
+                                    if (selectedIds.length === 0) {
+                                      setTimeout(() => handleResponsibleChange(inst.institutionId, [r.responsibleId]), 0);
                                     }
                                     return (
                                       <input
                                         type="text"
                                         placeholder="Responsable asignado"
-                                        value={r.firstName + ' ' + r.lastName}
+                                        value={`${r.firstName} ${r.lastName}${r.title ? ` - ${r.title}` : ''}`}
                                         readOnly
                                         className="w-full rounded border border-border-default dark:border-border-dark bg-gray-50 dark:bg-gray-800 px-1.5 py-1 text-[10px] text-text-secondary"
                                       />
                                     );
                                   }
-                                  // Multiple responsables: show select
+                                  // Multiple responsables: show multi-select
                                   return (
-                                    <CustomSelect
-                                      options={[
-                                        { value: "", label: "Seleccionar responsable" },
-                                        ...responsables.map((r: any) => ({
-                                          value: r.responsibleId,
-                                          label: `${r.firstName} ${r.lastName} (${r.cargo || 'Sin cargo'})`
-                                        }))
-                                      ]}
-                                      value={currentResponsibleId}
-                                      onChange={(e) => handleResponsibleChange(inst.institutionId, e as unknown as string)}
-                                      className="w-full"
+                                    <MultiSelect
+                                      label=""
+                                      options={responsables.map((r: any) => ({
+                                        value: r.responsibleId,
+                                        text: `${r.firstName} ${r.lastName}${r.title ? ` - ${r.title}` : ''}${r.cargo ? ` (${r.cargo})` : ''}`
+                                      }))}
+                                      value={selectedIds}
+                                      onChange={(selected) => handleResponsibleChange(inst.institutionId, selected)}
+                                      placeholder="Seleccionar responsables..."
                                     />
                                   );
                                 })()}

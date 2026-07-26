@@ -90,6 +90,7 @@ export interface RelacionInstitucionesExcelRow {
   tipoEmpresa: string;
   carreras: string;
   cantidadEstudiantes: number;
+  responsableTitulo?: string;
 }
 
 // ============================================================
@@ -320,28 +321,31 @@ function addSheetContent(workbook: Workbook, ws: Worksheet, section: SheetSectio
 // Logos institucionales
 // ============================================================
 
-function addLogos(workbook: Workbook, ws: Worksheet, totalCols: number): void {
+function addLogos(workbook: Workbook, ws: Worksheet, totalCols: number, swap: boolean = false): void {
   const logoPaths = findLogoPaths();
 
   if (!logoPaths) return;
 
   try {
-    // Logo UNEFA (izquierda) — insertar en la primera columna
-    if (logoPaths.logo && fs.existsSync(logoPaths.logo)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const logoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.logo) as any, extension: 'png' });
-      ws.addImage(logoId, {
-        tl: { col: 0, row: ROW_MEMBRETE - 1 + 0.2 },
-        ext: { width: 85, height: 85 },
-      });
-    }
+    const logoCol = swap ? totalCols - 1.5 : 0;
+    const escudoCol = swap ? 0 : totalCols - 1.5;
 
-    // Escudo (derecha) — en la última columna
+    // Escudo
     if (logoPaths.escudo && fs.existsSync(logoPaths.escudo)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const escudoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.escudo) as any, extension: 'png' });
       ws.addImage(escudoId, {
-        tl: { col: totalCols - 1.5, row: ROW_MEMBRETE - 1 + 0.2 },
+        tl: { col: escudoCol, row: ROW_MEMBRETE - 1 + 0.2 },
+        ext: { width: 85, height: 85 },
+      });
+    }
+
+    // Logo UNEFA
+    if (logoPaths.logo && fs.existsSync(logoPaths.logo)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const logoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.logo) as any, extension: 'png' });
+      ws.addImage(logoId, {
+        tl: { col: logoCol, row: ROW_MEMBRETE - 1 + 0.2 },
         ext: { width: 85, height: 85 },
       });
     }
@@ -545,41 +549,46 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
 
   const ws = workbook.addWorksheet('RELACIÓN');
   const FONT = 'Arial';
-  const HDR_BG = 'FF8DB3E2';
-  const SUB_BG = 'FF76923C';
-  const TOTAL_BG = 'FFD6E3BC';
+  const HDR_BG = 'FF8DB3E2';        // azul claro (se mantiene)
+  const SUB_BG_BLUE = 'FF4472C4';    // azul medio (reemplaza verde)
+  const TOTAL_BG_BLUE = 'FFBDD7EE';  // azul muy claro (reemplaza verde claro)
 
-  // ── Fila 1: Membrete (120px) + logos ──
+  // Membrete filtrado: sin NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA
+  const instMembrete = INSTITUTIONAL_HEADER
+    .filter(l => l !== 'NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA')
+    .join('\n');
+
+  // ── Fila 1: Membrete (120px) + logos swapeados ──
   ws.getRow(1).height = 120;
   ws.mergeCells(1, 1, 1, TOTAL);
   const mem = ws.getCell(1, 1);
-  mem.value = MEMBRETE_TEXT;
+  mem.value = instMembrete;
   mem.font = { name: FONT, size: 9 };
   mem.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-  addLogos(workbook, ws, TOTAL);
+  addLogos(workbook, ws, TOTAL, true);
 
   // ── Fila 2: spacer ──
   ws.getRow(2).height = 6;
 
-  // ── Fila 3: Form code ──
+  // ── Fila 3: Form code bajo logo izquierdo ──
   ws.getRow(3).height = 18;
   ws.mergeCells(3, 1, 3, TOTAL);
   const code = ws.getCell(3, 1);
-  code.value = 'Form-002-2019 CPA-VAC_jp';
+  code.value = 'form-002-2019 CPA-VAC_jp';
   code.font = { name: FONT, size: 8, bold: true };
   code.alignment = { horizontal: 'left', vertical: 'middle' };
 
   // ── Fila 4: spacer ──
   ws.getRow(4).height = 6;
 
-  // ── Fila 5: Título (60px) ──
+  // ── Fila 5: Título (60px) — todo negro ──
   ws.getRow(5).height = 60;
   ws.mergeCells(5, 1, 5, TOTAL);
   const title = ws.getCell(5, 1);
   title.value = {
     richText: [
-      { text: 'RELACIÓN DE INSTITUCIONES QUE SOLICITAN ASIGNACIÓN DE PASANTES', font: { name: FONT, size: 11, bold: true } },
-      { text: `\nPARA EL PERÍODO ACADÉMICO ${periodLabel}`, font: { name: FONT, size: 11, bold: true, color: { argb: 'FFFF0000' } } },
+      { text: 'RELACIÓN DE EMPRESAS O INSTITUCIONES QUE DEMANDAN ASIGNACIONES DE PASANTES', font: { name: FONT, size: 11, bold: true } },
+      { text: `\nPARA EL PERIODO ACADÉMICO ${periodLabel}`, font: { name: FONT, size: 11, bold: true } },
     ],
   };
   title.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
@@ -614,7 +623,7 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
   ws.mergeCells(6, 7, 6, 8); // "TIPO DE EMPRESA" spans columns 7-8
 
   // ── Column widths ──
-  const empresaW = Math.min(Math.max(...rows.map(r => (r.empresa || '').length), 10) + 3, 55);
+  const empresaW = Math.min(Math.max(...rows.map(r => (r.empresa || '').length), 10) + 3, 65);
   const carrerasW = Math.min(Math.max(...rows.map(r => (r.carreras || '').length), 10) + 3, 35);
   [12, 16, 16, empresaW, 30, 16, 8, 8, carrerasW, 10].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
@@ -656,7 +665,12 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
     });
   });
 
-  // ── Subtotals ──
+  // ── Merge vertical de REGIÓN ──
+  if (rows.length > 1) {
+    ws.mergeCells(8, 1, 8 + rows.length - 1, 1);
+  }
+
+  // ── Subtotals (bold todo) ──
   const dataEnd = 8 + rows.length;
   const pub = rows.filter(r => r.tipoEmpresa.toUpperCase() === 'PÚBLICA').length;
   const priv = rows.filter(r => r.tipoEmpresa.toUpperCase() === 'PRIVADA').length;
@@ -664,7 +678,7 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
 
   const sub = (c: any) => {
     c.font = { name: FONT, size: 10, bold: true, color: { argb: 'FF000000' } };
-    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SUB_BG } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SUB_BG_BLUE } };
     c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
     c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
   };
@@ -677,25 +691,43 @@ export async function generateRelacionInstitucionesSolicitanWorkbook(
     ws.getCell(dataEnd, c).value = v;
   });
 
-  // ── Total instituciones ──
+  // ── Merge vertical REGIÓN hasta totales ──
+  if (rows.length > 1) {
+    ws.mergeCells(8, 1, dataEnd + 2, 1);
+  }
+
+  // ── Total instituciones (título normal, número bold) ──
   const r1 = dataEnd + 1;
   ws.getRow(r1).height = 28;
-  const tot = (c: any) => {
-    c.font = { name: FONT, size: 11, bold: true };
-    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TOTAL_BG } };
+  const totTitle = (c: any) => {
+    c.font = { name: FONT, size: 11, bold: false };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TOTAL_BG_BLUE } };
     c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
     c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
   };
-  ws.mergeCells(r1, 2, r1, 3); tot(ws.getCell(r1, 2)); ws.getCell(r1, 2).value = 'TOTAL INSTITUCIONES';
-  tot(ws.getCell(r1, 4)); ws.getCell(r1, 4).value = rows.length;
+  const totValue = (c: any) => {
+    c.font = { name: FONT, size: 11, bold: true };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TOTAL_BG_BLUE } };
+    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+  };
+  ws.mergeCells(r1, 2, r1, 3); totTitle(ws.getCell(r1, 2)); ws.getCell(r1, 2).value = 'TOTAL INSTITUCIONES';
+  totValue(ws.getCell(r1, 4)); ws.getCell(r1, 4).value = rows.length;
 
-  // ── Total estudiantes solicitados ──
+  // ── Total estudiantes solicitados (título normal, número bold) ──
   const r2 = r1 + 1;
   ws.getRow(r2).height = 36;
-  ws.mergeCells(r2, 2, r2, 3); tot(ws.getCell(r2, 2)); ws.getCell(r2, 2).value = `TOTAL ESTUDIANTES SOLICITADOS\nPARA EL ${periodLabel}`;
-  tot(ws.getCell(r2, 4)); ws.getCell(r2, 4).value = totalEst;
+  ws.mergeCells(r2, 2, r2, 3); totTitle(ws.getCell(r2, 2)); ws.getCell(r2, 2).value = 'TOTAL ESTUDIANTES SOLICITADOS';
+  totValue(ws.getCell(r2, 4)); ws.getCell(r2, 4).value = totalEst;
 
   return workbook;
+}
+
+function formatRifBackend(val: string): string {
+  if (!val) return '';
+  const cleaned = val.replace(/\D/g, '');
+  if (cleaned.length <= 8) return cleaned;
+  return `${cleaned.slice(0, 8)}-${cleaned.slice(8, 9)}`;
 }
 
 export async function generateRelacionEmpresasWorkbook(
@@ -717,14 +749,17 @@ export async function generateRelacionEmpresasWorkbook(
   const SUB_BG = 'FF76923C';
   const TOTAL_BG = 'FFD6E3BC';
 
-  // ── Fila 1: Membrete (120px) + logos ──
+  // Membrete filtrado: sin "NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA"
+  const empresaMembrete = INSTITUTIONAL_HEADER.filter(l => l !== 'NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA').join('\n');
+
+  // ── Fila 1: Membrete (120px) + logos (swapeados) ──
   ws.getRow(1).height = 120;
   ws.mergeCells(1, 1, 1, TOTAL);
   const mem = ws.getCell(1, 1);
-  mem.value = MEMBRETE_TEXT;
+  mem.value = empresaMembrete;
   mem.font = { name: FONT, size: 9 };
   mem.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-  addLogos(workbook, ws, TOTAL);
+  addLogos(workbook, ws, TOTAL, true);
 
   // ── Fila 2: spacer ──
   ws.getRow(2).height = 6;
@@ -740,14 +775,14 @@ export async function generateRelacionEmpresasWorkbook(
   // ── Fila 4: spacer ──
   ws.getRow(4).height = 6;
 
-  // ── Fila 5: Título (60px) ──
+  // ── Fila 5: Título (60px) — todo negro, sin "PARA EL PERÍODO ACADÉMICO" ──
   ws.getRow(5).height = 60;
   ws.mergeCells(5, 1, 5, TOTAL);
   const title = ws.getCell(5, 1);
   title.value = {
     richText: [
       { text: 'RELACIÓN DE EMPRESAS O INSTITUCIONES QUE DEMANDA ASIGNACIÓN DE PASANTES', font: { name: FONT, size: 11, bold: true } },
-      { text: `\nPARA EL PERÍODO ACADÉMICO ${periodLabel}`, font: { name: FONT, size: 11, bold: true, color: { argb: 'FFFF0000' } } },
+      { text: `\n${periodLabel}`, font: { name: FONT, size: 11, bold: true } },
     ],
   };
   title.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
@@ -790,7 +825,8 @@ export async function generateRelacionEmpresasWorkbook(
   rows.forEach((r, i) => {
     const er = ws.getRow(8 + i);
     er.height = 24;
-    const vals = [r.region, r.nucleo, r.extension, r.empresa, r.rif, r.publica || '', r.privada || '', r.carrera, r.cantidadEstudiantes];
+    const rifFmt = formatRifBackend(r.rif || '');
+    const vals: (string | number)[] = [r.region, r.nucleo, r.extension, r.empresa, rifFmt, r.publica || '', r.privada || '', r.carrera, r.cantidadEstudiantes];
     vals.forEach((v, ci) => {
       const cell = er.getCell(ci + 1);
       cell.value = v !== null && v !== undefined ? (typeof v === 'string' ? v.toUpperCase() : v) : '';
@@ -799,11 +835,6 @@ export async function generateRelacionEmpresasWorkbook(
       cell.border = dataStyle.border;
     });
   });
-
-  // ── Merge region across entire column A (rowspan=rows.length) ──
-  if (rows.length > 1) {
-    ws.mergeCells(8, 1, 8 + rows.length - 1, 1);
-  }
 
   // ── Subtotals ──
   const dataEnd = 8 + rows.length;
@@ -827,23 +858,34 @@ export async function generateRelacionEmpresasWorkbook(
     ws.getCell(dataEnd, c).value = v;
   });
 
-  // ── Total instituciones ──
+  // ── Merge vertical de REGIÓN desde primera fila datos hasta subtotal+totales ──
+  if (rows.length > 1) {
+    ws.mergeCells(8, 1, dataEnd + 2, 1);
+  }
+
+  // ── Total instituciones (título normal, número bold) ──
   const r1 = dataEnd + 1;
   ws.getRow(r1).height = 28;
-  const tot = (c: any) => {
+  const totTitle = (c: any) => {
+    c.font = { name: FONT, size: 11, bold: false };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TOTAL_BG } };
+    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+  };
+  const totValue = (c: any) => {
     c.font = { name: FONT, size: 11, bold: true };
     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TOTAL_BG } };
     c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
     c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
   };
-  ws.mergeCells(r1, 2, r1, 3); tot(ws.getCell(r1, 2)); ws.getCell(r1, 2).value = 'TOTAL INSTITUCIONES';
-  tot(ws.getCell(r1, 4)); ws.getCell(r1, 4).value = rows.length;
+  ws.mergeCells(r1, 2, r1, 3); totTitle(ws.getCell(r1, 2)); ws.getCell(r1, 2).value = 'TOTAL INSTITUCIONES';
+  totValue(ws.getCell(r1, 4)); ws.getCell(r1, 4).value = rows.length;
 
-  // ── Total estudiantes solicitados ──
+  // ── Total estudiantes solicitados (título normal, número bold) ──
   const r2 = r1 + 1;
   ws.getRow(r2).height = 36;
-  ws.mergeCells(r2, 2, r2, 3); tot(ws.getCell(r2, 2)); ws.getCell(r2, 2).value = `TOTAL ESTUDIANTES SOLICITADOS\nPARA EL ${periodLabel}`;
-  tot(ws.getCell(r2, 4)); ws.getCell(r2, 4).value = totalEst;
+  ws.mergeCells(r2, 2, r2, 3); totTitle(ws.getCell(r2, 2)); ws.getCell(r2, 2).value = 'TOTAL ESTUDIANTES SOLICITADOS';
+  totValue(ws.getCell(r2, 4)); ws.getCell(r2, 4).value = totalEst;
 
   return workbook;
 }

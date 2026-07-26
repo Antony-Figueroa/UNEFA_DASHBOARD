@@ -15,6 +15,8 @@ const DEFAULT_FONT = { name: 'Arial', size: 9 };
 const HEADER_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF92D050' } };
 const GREEN_DARK_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF76923C' } };
 const GREEN_LIGHT_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFC2D69B' } };
+const BLUE_MEDIUM_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF4472C4' } };
+const BLUE_LIGHT_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFBDD7EE' } };
 const THIN_BORDER = {
   top: { style: 'thin' as const },
   left: { style: 'thin' as const },
@@ -56,6 +58,30 @@ const TOTAL_CARRERAS_VALUE_STYLE = {
   fill: GREEN_LIGHT_FILL,
   border: THIN_BORDER,
 };
+const SUBTOTAL_BLUE_LABEL_STYLE = {
+  font: { ...DEFAULT_FONT, bold: true, size: 7, color: { argb: 'FFFFFFFF' } },
+  alignment: { horizontal: 'right' as const, vertical: 'middle' as const, wrapText: true },
+  fill: BLUE_MEDIUM_FILL,
+  border: THIN_BORDER,
+};
+const SUBTOTAL_BLUE_VALUE_STYLE = {
+  font: { ...DEFAULT_FONT, bold: true, size: 10, color: { argb: 'FFFFFFFF' } },
+  alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
+  fill: BLUE_MEDIUM_FILL,
+  border: THIN_BORDER,
+};
+const TOTAL_BLUE_LABEL_STYLE = {
+  font: { ...DEFAULT_FONT, bold: true, size: 7, color: { argb: 'FF000000' } },
+  alignment: { horizontal: 'right' as const, vertical: 'middle' as const, wrapText: true },
+  fill: BLUE_LIGHT_FILL,
+  border: THIN_BORDER,
+};
+const TOTAL_BLUE_VALUE_STYLE = {
+  font: { ...DEFAULT_FONT, bold: true, size: 10 },
+  alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
+  fill: BLUE_LIGHT_FILL,
+  border: THIN_BORDER,
+};
 
 function applyInstitutionalHeader(worksheet: ExcelJS.Worksheet, totalCols: number, headerLines?: string[]) {
   const lines = headerLines || INSTITUTIONAL_HEADER;
@@ -69,17 +95,21 @@ function applyInstitutionalHeader(worksheet: ExcelJS.Worksheet, totalCols: numbe
   });
 }
 
-async function addLogos(workbook: ExcelJS.Workbook, worksheet: ExcelJS.Worksheet) {
+async function addLogos(workbook: ExcelJS.Workbook, worksheet: ExcelJS.Worksheet, totalCols: number = 9, swap: boolean = false) {
   try {
-    const responseLogo = await fetch('/logo-nuevo.png');
-    const bufferLogo = await responseLogo.arrayBuffer();
-    const imageIdLogo = workbook.addImage({ buffer: bufferLogo, extension: 'png' });
-    worksheet.addImage(imageIdLogo, { tl: { col: 0.2, row: 0.2 }, ext: { width: 85, height: 85 } });
+    // Por defecto: logo (izquierda), escudo (derecha). Swap=true invierte.
+    const escudoCol = swap ? 0.2 : totalCols - 1.5;
+    const logoCol = swap ? totalCols - 1.5 : 0.2;
 
     const responseEscudo = await fetch('/unefa-img/Escudo.png');
     const bufferEscudo = await responseEscudo.arrayBuffer();
     const imageIdEscudo = workbook.addImage({ buffer: bufferEscudo, extension: 'png' });
-    worksheet.addImage(imageIdEscudo, { tl: { col: 8.5, row: 0.2 }, ext: { width: 85, height: 85 } });
+    worksheet.addImage(imageIdEscudo, { tl: { col: escudoCol, row: 0.2 }, ext: { width: 85, height: 85 } });
+
+    const responseLogo = await fetch('/logo-nuevo.png');
+    const bufferLogo = await responseLogo.arrayBuffer();
+    const imageIdLogo = workbook.addImage({ buffer: bufferLogo, extension: 'png' });
+    worksheet.addImage(imageIdLogo, { tl: { col: logoCol, row: 0.2 }, ext: { width: 85, height: 85 } });
   } catch {
     console.warn('No se pudo cargar las imágenes para el Excel');
   }
@@ -577,6 +607,13 @@ export async function generateRelacionGeneralTutoresExcel(data: any[], period: s
   }
 }
 
+function formatRif(val: string): string {
+  if (!val) return '';
+  const cleaned = val.replace(/\D/g, '');
+  if (cleaned.length <= 8) return cleaned;
+  return `${cleaned.slice(0, 8)}-${cleaned.slice(8, 9)}`;
+}
+
 export async function generateRelacionEmpresasExcel(data: any[], period: string, fileName: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Relacion Empresas');
@@ -589,19 +626,33 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
     { key: 'carrera', width: 30 }, { key: 'estudiantes', width: 14 },
   ];
 
-  applyInstitutionalHeader(worksheet, totalCols);
+  // Header sin "NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA"
+  const headerFiltrado = INSTITUTIONAL_HEADER.filter(l => l !== 'NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA');
+  applyInstitutionalHeader(worksheet, totalCols, headerFiltrado);
+  await addLogos(workbook, worksheet, totalCols, true);
 
-  applyTitleRow(worksheet, 7, `RELACIÓN DE EMPRESAS O INSTITUCIONES QUE DEMANDAN ASIGNACIÓN DE PASANTES - ${period}`, totalCols);
+  // Título: solo RELACIÓN DE EMPRESAS, periodo sin label, todo negro
+  const titleRowNum = 7;
+  worksheet.mergeCells(`A${titleRowNum}:${String.fromCharCode(64 + totalCols)}${titleRowNum}`);
+  const tRow = worksheet.getRow(titleRowNum);
+  tRow.height = 25;
+  tRow.getCell(1).value = {
+    richText: [
+      { text: 'RELACIÓN DE EMPRESAS O INSTITUCIONES QUE DEMANDAN ASIGNACIÓN DE PASANTES', font: { ...DEFAULT_FONT, size: 11, bold: true } },
+      { text: `\n${period}`, font: { ...DEFAULT_FONT, size: 11, bold: true } },
+    ],
+  };
+  tRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
 
+  const row8 = worksheet.getRow(8);
   const row9 = worksheet.getRow(9);
-  const row10 = worksheet.getRow(10);
-  row9.height = 20;
-  row10.height = 35;
+  row8.height = 25;
+  row9.height = 50;
 
-  // REGIÓN, NÚCLEO, EXTENSIÓN merged vertically (9-10) and will span full width visually
+  // REGIÓN, NÚCLEO, EXTENSIÓN merged vertically (8-9)
   // NOMBRE DE LA EMPRESA merged vertically
   // RIF merged vertically
-  // TIPO DE EMPRESA header split into PÚBLICA/PRIVADA in row 10
+  // TIPO DE EMPRESA header split into PÚBLICA/PRIVADA in row 9
   // CARRERA merged vertically
   // CANTIDAD DE ESTUDIANTES merged vertically
 
@@ -617,29 +668,55 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
 
   mergedCols.forEach(def => {
     if (def.merge) {
-      worksheet.mergeCells(`${def.col}9:${def.col}10`);
-      const cell = row9.getCell(def.col);
+      worksheet.mergeCells(`${def.col}8:${def.col}9`);
+      const cell = row8.getCell(def.col);
       cell.value = def.text;
       cell.style = HEADER_STYLE;
-      row10.getCell(def.col).style = HEADER_STYLE;
+      row9.getCell(def.col).style = HEADER_STYLE;
     }
   });
 
-  const pubCell = row10.getCell('F');
+  const pubCell = row9.getCell('F');
   pubCell.value = 'PÚBLICA';
   pubCell.style = HEADER_STYLE;
-  const privCell = row10.getCell('G');
+  const privCell = row9.getCell('G');
   privCell.value = 'PRIVADA';
   privCell.style = HEADER_STYLE;
-  const tipoCell = row9.getCell('F');
+  const tipoCell = row8.getCell('F');
   tipoCell.value = 'TIPO DE\nEMPRESA';
   tipoCell.style = HEADER_STYLE;
-  row9.getCell('G').style = HEADER_STYLE;
+  row8.getCell('G').style = HEADER_STYLE;
 
-  let currentRow = 11;
+  const SUBTOTAL_LABEL_STYLE_LOCAL = {
+    font: { ...DEFAULT_FONT, bold: true, size: 8 },
+    alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+    fill: GREEN_DARK_FILL,
+    border: THIN_BORDER,
+  };
+  const SUBTOTAL_VALUE_STYLE_LOCAL = {
+    font: { ...DEFAULT_FONT, bold: true, size: 10 },
+    alignment: { horizontal: 'center', vertical: 'middle' },
+    fill: GREEN_DARK_FILL,
+    border: THIN_BORDER,
+  };
+  const TOTAL_TITLE_STYLE = {
+    font: { ...DEFAULT_FONT, size: 10, bold: false },
+    alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+    fill: GREEN_LIGHT_FILL,
+    border: THIN_BORDER,
+  };
+  const TOTAL_VALUE_STYLE = {
+    font: { ...DEFAULT_FONT, size: 11, bold: true },
+    alignment: { horizontal: 'center', vertical: 'middle' },
+    fill: GREEN_LIGHT_FILL,
+    border: THIN_BORDER,
+  };
+
+  let currentRow = 10;
   data.forEach(item => {
     const isPublica = item.tipo?.toUpperCase() === 'PÚBLICA' || item.tipo?.toUpperCase() === 'PUBLICA' || item.tipo === 'X';
     const isPrivada = item.tipo?.toUpperCase() === 'PRIVADA';
+    const rifFormatted = formatRif(item.rif || '');
 
     const row = worksheet.getRow(currentRow);
     row.height = 25;
@@ -648,7 +725,7 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
     applyDataCell(worksheet, currentRow, 2, (item.nucleo || '').toUpperCase());
     applyDataCell(worksheet, currentRow, 3, (item.extension || '').toUpperCase());
     applyDataCell(worksheet, currentRow, 4, (item.empresa || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 5, (item.rif || '').toUpperCase());
+    applyDataCell(worksheet, currentRow, 5, rifFormatted);
     applyDataCell(worksheet, currentRow, 6, isPublica ? 'X' : '');
     applyDataCell(worksheet, currentRow, 7, isPrivada ? 'X' : '');
     applyDataCell(worksheet, currentRow, 8, (item.carrera || '').toUpperCase());
@@ -656,6 +733,79 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
 
     currentRow++;
   });
+
+  const dataStart = 10;
+  const dataEnd = currentRow - 1;
+  const dataLen = data.length;
+
+  // Merge vertical de REGIÓN desde primera fila datos hasta subtotal/totales
+  if (dataLen > 0) {
+    worksheet.mergeCells(`A${dataStart}:A${dataEnd + 3}`);
+  }
+
+  // ── SUBTOTALES ──
+  const pubCount = data.filter((d: any) => d.tipo?.toUpperCase() === 'PÚBLICA' || d.tipo?.toUpperCase() === 'PUBLICA' || d.tipo === 'X').length;
+  const privCount = data.filter((d: any) => d.tipo?.toUpperCase() === 'PRIVADA').length;
+  const careersSet = new Set(data.map((d: any) => d.carrera).filter(Boolean));
+  const totalEst = data.reduce((s: number, d: any) => s + (d.cantidadEstudiantes || 0), 0);
+
+  const subRow = worksheet.getRow(currentRow);
+  subRow.height = 24;
+  worksheet.mergeCells(`B${currentRow}:C${currentRow}`);
+  const subLabel = subRow.getCell(2);
+  subLabel.value = 'SUB-TOTALES';
+  subLabel.font = SUBTOTAL_LABEL_STYLE_LOCAL.font;
+  subLabel.fill = SUBTOTAL_LABEL_STYLE_LOCAL.fill;
+  subLabel.alignment = SUBTOTAL_LABEL_STYLE_LOCAL.alignment;
+  subLabel.border = SUBTOTAL_LABEL_STYLE_LOCAL.border;
+  [
+    { c: 4, v: dataLen }, { c: 5, v: dataLen },
+    { c: 6, v: pubCount }, { c: 7, v: privCount },
+    { c: 8, v: careersSet.size }, { c: 9, v: totalEst },
+  ].forEach(({ c, v }) => {
+    const cell = subRow.getCell(c);
+    cell.value = v;
+    cell.font = SUBTOTAL_VALUE_STYLE_LOCAL.font;
+    cell.fill = SUBTOTAL_VALUE_STYLE_LOCAL.fill;
+    cell.alignment = SUBTOTAL_VALUE_STYLE_LOCAL.alignment;
+    cell.border = SUBTOTAL_VALUE_STYLE_LOCAL.border;
+  });
+  currentRow++;
+
+  // ── TOTAL INSTITUCIONES (título normal, número bold) ──
+  const t1Row = worksheet.getRow(currentRow);
+  t1Row.height = 28;
+  worksheet.mergeCells(`B${currentRow}:C${currentRow}`);
+  const t1Label = t1Row.getCell(2);
+  t1Label.value = 'TOTAL INSTITUCIONES';
+  t1Label.font = TOTAL_TITLE_STYLE.font;
+  t1Label.fill = TOTAL_TITLE_STYLE.fill;
+  t1Label.alignment = TOTAL_TITLE_STYLE.alignment;
+  t1Label.border = TOTAL_TITLE_STYLE.border;
+  const t1Val = t1Row.getCell(4);
+  t1Val.value = dataLen;
+  t1Val.font = TOTAL_VALUE_STYLE.font;
+  t1Val.fill = TOTAL_VALUE_STYLE.fill;
+  t1Val.alignment = TOTAL_VALUE_STYLE.alignment;
+  t1Val.border = TOTAL_VALUE_STYLE.border;
+  currentRow++;
+
+  // ── TOTAL ESTUDIANTES SOLICITADOS (título normal, número bold) ──
+  const t2Row = worksheet.getRow(currentRow);
+  t2Row.height = 36;
+  worksheet.mergeCells(`B${currentRow}:C${currentRow}`);
+  const t2Label = t2Row.getCell(2);
+  t2Label.value = 'TOTAL ESTUDIANTES SOLICITADOS';
+  t2Label.font = TOTAL_TITLE_STYLE.font;
+  t2Label.fill = TOTAL_TITLE_STYLE.fill;
+  t2Label.alignment = TOTAL_TITLE_STYLE.alignment;
+  t2Label.border = TOTAL_TITLE_STYLE.border;
+  const t2Val = t2Row.getCell(4);
+  t2Val.value = totalEst;
+  t2Val.font = TOTAL_VALUE_STYLE.font;
+  t2Val.fill = TOTAL_VALUE_STYLE.fill;
+  t2Val.alignment = TOTAL_VALUE_STYLE.alignment;
+  t2Val.border = TOTAL_VALUE_STYLE.border;
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -670,25 +820,55 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
   const worksheet = workbook.addWorksheet('Relacion Instituciones');
   const totalCols = 9;
 
+  // Membrete filtrado: sin NÚCLEO, sin EQUIPO, con COORDINACIÓN DE PLANIFICACIÓN ACADÉMICA
+  const instHeader = INSTITUTIONAL_HEADER
+    .filter(l => l !== 'NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA' && l !== 'EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES')
+    .concat('COORDINACIÓN DE PLANIFICACIÓN ACADÉMICA');
+  const headerRows = instHeader.length; // 6
+
   worksheet.columns = [
     { key: 'region', width: 18 }, { key: 'nucleo', width: 18 },
-    { key: 'extension', width: 18 }, { key: 'empresa', width: 45 },
+    { key: 'extension', width: 18 }, { key: 'empresa', width: 65 },
     { key: 'responsable', width: 30 }, { key: 'numeroContacto', width: 20 },
     { key: 'tipoEmpresa', width: 18 },
     { key: 'carreras', width: 40 }, { key: 'estudiantes', width: 14 },
   ];
 
-  applyInstitutionalHeader(worksheet, totalCols);
-  await addLogos(workbook, worksheet);
+  applyInstitutionalHeader(worksheet, totalCols, instHeader);
+  await addLogos(workbook, worksheet, totalCols, true);
 
-  applyTitleRow(worksheet, 8, `RELACIÓN DE INSTITUCIONES QUE SOLICITAN ASIGNACIÓN DE PASANTES - ${period}`, totalCols);
+  // Form code under left logo (now escudo on the left after swap)
+  worksheet.getCell(headerRows, 1).value = {
+    richText: [
+      { text: (worksheet.getCell(headerRows, 1).value as string) || '' },
+      { text: '\nform-002-2019 CPA-VAC_jp', font: { ...DEFAULT_FONT, size: 7, italic: true } },
+    ],
+  };
 
-  const row9 = worksheet.getRow(9);
-  const row10 = worksheet.getRow(10);
-  row9.height = 20;
-  row10.height = 35;
+  const titleRow = headerRows + 1;       // 7
+  const hdrRow1 = titleRow + 1;          // 8
+  const hdrRow2 = hdrRow1 + 1;           // 9
+  const dataStart = hdrRow2 + 1;         // 10
 
-  // Merge all header columns vertically (9:10)
+  applyTitleRow(worksheet, titleRow,
+    `RELACIÓN DE EMPRESAS O INSTITUCIONES QUE DEMANDAN ASIGNACIONES DE PASANTES PARA EL PERIODO ACADÉMICO ${period}`,
+    totalCols);
+
+  const row1 = worksheet.getRow(hdrRow1);
+  const row2 = worksheet.getRow(hdrRow2);
+  row1.height = 20;
+  row2.height = 35;
+
+  // Blue header fill for this report
+  const BLUE_HDR_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF8DB3E2' } };
+  const HDR_STYLE_BLUE = {
+    font: { ...DEFAULT_FONT, bold: true, size: 8 },
+    alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
+    fill: BLUE_HDR_FILL,
+    border: THIN_BORDER,
+  };
+
+  // Merge all header columns vertically
   const mergedCols = [
     { col: 'A', text: 'REGIÓN' },
     { col: 'B', text: 'NÚCLEO' },
@@ -699,42 +879,82 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
     { col: 'H', text: 'CARRERAS' },
     { col: 'I', text: 'CANTIDAD DE\nESTUDIANTES' },
   ];
-
   mergedCols.forEach(def => {
-    worksheet.mergeCells(`${def.col}9:${def.col}10`);
-    const cell = row9.getCell(def.col);
+    worksheet.mergeCells(`${def.col}${hdrRow1}:${def.col}${hdrRow2}`);
+    const cell = row1.getCell(def.col);
     cell.value = def.text;
-    cell.style = HEADER_STYLE;
-    row10.getCell(def.col).style = HEADER_STYLE;
+    cell.style = HDR_STYLE_BLUE;
+    row2.getCell(def.col).style = HDR_STYLE_BLUE;
   });
 
-  // TIPO DE EMPRESA: parent in row 9, sub-header in row 10 (single cell)
-  const tipoCell = row9.getCell('G');
+  // TIPO DE EMPRESA: parent in row1, sub-header in row2
+  const tipoCell = row1.getCell('G');
   tipoCell.value = 'TIPO DE\nEMPRESA';
-  tipoCell.style = HEADER_STYLE;
-  const tipoSubCell = row10.getCell('G');
+  tipoCell.style = HDR_STYLE_BLUE;
+  const tipoSubCell = row2.getCell('G');
   tipoSubCell.value = 'PÚBLICA\nPRIVADA';
-  tipoSubCell.style = HEADER_STYLE;
+  tipoSubCell.style = HDR_STYLE_BLUE;
 
-  let currentRow = 11;
+  // ── Data rows with subtotals by REGIÓN + total ──
+  let currentRow = dataStart;
+
+  // Group by region
+  const groups = new Map<string, any[]>();
   data.forEach(item => {
-    const tipo = (item.tipoEmpresa || '').toUpperCase();
-
-    const row = worksheet.getRow(currentRow);
-    row.height = 25;
-
-    applyDataCell(worksheet, currentRow, 1, (item.region || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 2, (item.nucleo || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 3, (item.extension || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 4, (item.empresa || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 5, (item.responsable || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 6, (item.numeroContacto || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 7, tipo);
-    applyDataCell(worksheet, currentRow, 8, (item.carreras || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 9, item.cantidadEstudiantes || 0);
-
-    currentRow++;
+    const region = (item.region || 'SIN REGIÓN').toUpperCase();
+    if (!groups.has(region)) groups.set(region, []);
+    groups.get(region)!.push(item);
   });
+
+  for (const [region, regionRows] of groups) {
+    let subTotal = 0;
+
+    regionRows.forEach(item => {
+      const responsable = item.responsableTitulo
+        ? `${item.responsable || ''} - ${item.responsableTitulo}`.replace(/^ - /, '').replace(/ - $/, '')
+        : (item.responsable || '');
+      const row = worksheet.getRow(currentRow);
+      row.height = 25;
+
+      applyDataCell(worksheet, currentRow, 1, region);
+      applyDataCell(worksheet, currentRow, 2, (item.nucleo || '').toUpperCase());
+      applyDataCell(worksheet, currentRow, 3, (item.extension || '').toUpperCase());
+      applyDataCell(worksheet, currentRow, 4, (item.empresa || '').toUpperCase());
+      applyDataCell(worksheet, currentRow, 5, responsable.toUpperCase());
+      applyDataCell(worksheet, currentRow, 6, (item.numeroContacto || '').toUpperCase());
+      applyDataCell(worksheet, currentRow, 7, (item.tipoEmpresa || '').toUpperCase());
+      applyDataCell(worksheet, currentRow, 8, (item.carreras || '').toUpperCase());
+      applyDataCell(worksheet, currentRow, 9, item.cantidadEstudiantes || 0);
+
+      subTotal += Number(item.cantidadEstudiantes) || 0;
+      currentRow++;
+    });
+
+    // Subtotal row
+    if (regionRows.length > 1) {
+      worksheet.mergeCells(currentRow, 1, currentRow, 8);
+      const lbl = worksheet.getCell(currentRow, 1);
+      lbl.value = `SUBTOTAL ${region}`;
+      lbl.style = SUBTOTAL_BLUE_LABEL_STYLE;
+      const val = worksheet.getCell(currentRow, 9);
+      val.value = subTotal;
+      val.style = SUBTOTAL_BLUE_VALUE_STYLE;
+      // apply border to merged cells
+      for (let c = 2; c <= 8; c++) worksheet.getCell(currentRow, c).border = THIN_BORDER;
+      currentRow++;
+    }
+  }
+
+  // Grand total
+  const grandTotal = data.reduce((s, r) => s + (Number(r.cantidadEstudiantes) || 0), 0);
+  worksheet.mergeCells(currentRow, 1, currentRow, 8);
+  const totLbl = worksheet.getCell(currentRow, 1);
+  totLbl.value = 'TOTAL ESTUDIANTES SOLICITADOS';
+  totLbl.style = TOTAL_BLUE_LABEL_STYLE;
+  const totVal = worksheet.getCell(currentRow, 9);
+  totVal.value = grandTotal;
+  totVal.style = TOTAL_BLUE_VALUE_STYLE;
+  for (let c = 2; c <= 8; c++) worksheet.getCell(currentRow, c).border = THIN_BORDER;
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

@@ -93,3 +93,95 @@ backend-stdout.txt
 backend-stderr.txt
 backend/backend-log.txt
 backend/.env.cloud
+
+# ============================================================
+# INSTITUTIONAL DEPLOYMENT CLEANUP
+# ============================================================
+
+# Vite / Build logs
+vite-log.txt
+vite.log
+
+# E2E testing directory
+e2e/
+testsprite_tests/
+
+# Unit test directories
+src/__tests__/
+backend/tests/
+
+# Test runner configs
+playwright.config.ts
+vitest.config.ts
+
+# Root-level development / debugging scripts
+checkout.js
+check_schema.js
+check_schema2.js
+debug-gemini.js
+find_table.js
+list-models.js
+restore.js
+test-db.js
+test-institutions.js
+test_api.js
+tmp_read_excel.js
+test-env-readonly.sh
+
+# Temporary SQL scripts (root)
+fix_institution_manager.sql
+setup-db.sql
+DB-auth-updates.sql
+DB-chat-sessions.sql
+DB-notifications.sql
+DB-seed-clean.sql
+test-scenarios-enrollment-processes.sql
+
+# Test data files (Excel, PDF)
+test_import_*.xlsx
+estudiantes_carga.xlsx
+plantilla_estudiantes.xlsx
+plantilla_estudiantes_fixed.xlsx
+
+# Test React components
+test-constancia-simple.tsx
+test-constancia-tutor-institucional.tsx
+test-all-institutional-pdfs.tsx
+test-pdf-preview.tsx
+test-constancia-tutor-institucional.pdf
+
+# Backend development scripts (check/test/fix/debug)
+backend/check-*
+backend/test-*
+backend/fix-*
+backend/debug-*
+backend/create-user.*
+backend/list_all_db_data.ts
+backend/sync-via-psql.ts
+backend/verify_hash.*
+backend/start-and-test.*
+backend/prisma.config.ts
+
+# Supabase migration backups / temp dirs
+supabase/migrations_backup/
+supabase/.temp/
+supabase/.branches/
+supabase/seed.sql.bak
+
+# Empty / temporary directories
+ponytail/
+Admin/
+
+# Cleanup scripts (temporary, not for deployment)
+_check_tracked.js
+cleanup.bat
+cleanup.js
+
+# Migration artifacts (unnecessary for deployment)
+backend/tsconfig.tsbuildinfo
+
+# SDD planning artifacts (not for deployment)
+sdd/
+
+# Institutional documents (not code)
+docs/docs-unefa/

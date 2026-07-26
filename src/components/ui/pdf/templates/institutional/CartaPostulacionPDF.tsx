@@ -74,8 +74,6 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
   const ci = formatCI(data.estudiante.ci);
   const esDiurno = (data.practica?.regime || '').toUpperCase() === 'DIURNO';
   const trabaja = !!data.estudiante.empleo;
-  const nombreCompleto = formatNombreCompleto(data.estudiante);
-  const ci = formatCI(data.estudiante.ci);
   const esCiudadano = !esDiurno; // To determine if user is drafted – duelo entre ambos.
 
   return (

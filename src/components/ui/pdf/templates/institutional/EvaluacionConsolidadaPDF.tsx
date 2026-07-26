@@ -740,7 +740,7 @@ function PageEvaluacionFinal({ data, textos }: Props) {
    ─────────────────────────────────────────── */
 export function EvaluacionConsolidadaPDF({ data, textos }: Props) {
   // Generar una página por cada miembro del comité evaluador
-  const committeePages = data.evaluacionesComite.map((_, idx) => (
+  const committeePages = (data.evaluacionesComite || []).map((_, idx) => (
     <PageComite key={`comite-${idx}`} data={data} textos={textos} comiteIndex={idx} />
   ));
 

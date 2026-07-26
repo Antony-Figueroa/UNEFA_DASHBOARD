@@ -28,9 +28,9 @@ export const TutorPDF: React.FC<TutorPDFProps> = ({ data, careers, periodo }) =>
     <PDFLayout
       title="Reporte de Tutores"
       subtitle="Listado de tutores académicos y metodológicos"
-      logoLeftSrc="/logo-tutores.jpeg"
-      logoRightSrc="/pdfs-docs/logo.png"
-      headerNormalLines={[0, 2, 3]}
+      logoLeftSrc="/pdfs-docs/logo.png"
+      logoRightSrc="/logo-tutores.jpeg"
+      headerNormalLines={[0, 2]}
     >
       {/* Periodo — solo valor, sin label */}
       {periodo && (
@@ -45,8 +45,8 @@ export const TutorPDF: React.FC<TutorPDFProps> = ({ data, careers, periodo }) =>
           <Text style={[pdfStyles.tableCell, { flex: 1.8, fontSize: 7.5 }]}>NOMBRE COMPLETO</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1.6, fontSize: 7.5 }]}>TÍTULO Y CARRERA</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 7.5 }]}>CONDICIÓN</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 7.5 }]}>DEDICACIÓN</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.3, fontSize: 7.5 }]}>CATEGORÍA</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.8, fontSize: 7.5 }]}>DEDICACIÓN</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.8, fontSize: 7.5 }]}>CATEGORÍA</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1.8, fontSize: 7.5 }]}>CONTACTO</Text>
         </View>
 

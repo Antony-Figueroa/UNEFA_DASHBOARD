@@ -1100,6 +1100,33 @@ function addResumenLogos(workbook: Workbook, ws: Worksheet): void {
 // Hoja individual de tutor (formato RELACIÓN INDIVIDUAL)
 // ============================================================
 
+function addIndividualTutorLogos(workbook: Workbook, ws: Worksheet): void {
+  const logoPaths = findLogoPaths();
+  if (!logoPaths) return;
+
+  try {
+    // Escudo (izquierda)
+    if (logoPaths.escudo && fs.existsSync(logoPaths.escudo)) {
+      const escudoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.escudo) as any, extension: 'png' });
+      ws.addImage(escudoId, {
+        tl: { col: 0.2, row: 1.1 },
+        ext: { width: 70, height: 70 },
+      });
+    }
+
+    // Logo UNEFA (derecha)
+    if (logoPaths.logo && fs.existsSync(logoPaths.logo)) {
+      const logoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.logo) as any, extension: 'png' });
+      ws.addImage(logoId, {
+        tl: { col: 17.5, row: 1.1 },
+        ext: { width: 70, height: 70 },
+      });
+    }
+  } catch (err) {
+    console.warn('[excel-export] No se pudieron cargar las imágenes:', (err as Error).message);
+  }
+}
+
 function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: IndividualTutorSheetConfig): void {
   const totalCols = INDIVIDUAL_TOTAL_COLS; // 19
   const COL_FIRST = 2; // B
@@ -1127,6 +1154,8 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
   headerCell.font = { ...ANEXO4_FONT, bold: true };
   headerCell.alignment = { horizontal: 'center', vertical: 'top', wrapText: true };
 
+  addIndividualTutorLogos(workbook, ws);
+
   // ── Fila 3 (height 10.5): código SOA-PP-001-5 ──
   ws.getRow(3).height = 10.5;
   const codeCell = ws.getCell(3, 3); // C3
@@ -1141,8 +1170,12 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
   titleCell.value = {
     richText: [
       {
-        text: `FORMATO DE RELACIÓN INDIVIDUAL\nDE DOCENTES CONTRATADOS U ORDINARIOS CON DEDICACIÓN MEDIO TIEMPO (MT), TIEMPO COMPLETO (TC) Y DEDICACIÓN EXCLUSIVA (DE) QUE SE ENCUENTRAN TUTORANDO  ESTUDIANTES DE PRACTICAS PROFESIONALES ( PASANTIAS )\nPERIODO ACADÉMICO ${config.periodLabel}`,
+        text: `FORMATO DE RELACIÓN INDIVIDUAL\nDE DOCENTES CONTRATADOS U ORDINARIOS CON DEDICACIÓN MEDIO TIEMPO (MT), TIEMPO COMPLETO (TC) Y DEDICACIÓN EXCLUSIVA (DE) QUE SE ENCUENTRAN TUTORANDO  ESTUDIANTES DE PRACTICAS PROFESIONALES ( PASANTIAS )\nPERIODO ACADÉMICO `,
         font: { ...ANEXO4_FONT, bold: true },
+      },
+      {
+        text: config.periodLabel,
+        font: { ...ANEXO4_FONT, bold: true, color: { argb: 'FFFF0000' } },
       },
     ],
   };
@@ -1153,8 +1186,12 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
   ws.mergeCells(5, COL_FIRST, 5, 8); // B5:H5
   const tutorNameCell = ws.getCell(5, COL_FIRST);
   const tutorFullName = `${config.tutorName} ${config.tutorApellido}`.trim();
-  tutorNameCell.value = `NOMBRE DEL TUTOR (A) ACADÉMICO: ${tutorFullName.toUpperCase()}`;
-  tutorNameCell.font = { ...ANEXO4_FONT, bold: true };
+  tutorNameCell.value = {
+    richText: [
+      { text: 'NOMBRE DEL TUTOR (A) ACADÉMICO: ', font: { ...ANEXO4_FONT, bold: true, underline: true } },
+      { text: tutorFullName.toUpperCase(), font: { ...ANEXO4_FONT, bold: true } },
+    ],
+  };
   tutorNameCell.fill = ANEXO4_YELLOW_FILL;
   tutorNameCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
   tutorNameCell.border = ANEXO4_DATA_BORDER;
@@ -1214,7 +1251,13 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
   setH(h1.getCell(16), 'MARCAR CON UNA X SI ES EMPRESA DE CONVENIO');
   setH(h1.getCell(17), 'TUTOR INSTITUCIONAL');
   setH(h1.getCell(18), 'DIRECCIÓN DE UBICACIÓN DEL CENTRO DE PRACTICA PROFESIONAL');
-  setH(h1.getCell(19), 'OBSERVACIONES');
+  // OBSERVACIONES con fondo amarillo
+  const obsCell = h1.getCell(19);
+  obsCell.value = 'OBSERVACIONES';
+  obsCell.font = { ...ANEXO4_FONT, bold: true };
+  obsCell.fill = ANEXO4_YELLOW_FILL;
+  obsCell.alignment = g.alignment;
+  obsCell.border = g.border;
 
   // J7:K7 merged = "TIPO DE ESTUDIANTE"
   ws.mergeCells(7, 10, 7, 11); // J7:K7
@@ -1304,8 +1347,13 @@ function addGeneralTutorSheet(workbook: Workbook, ws: Worksheet, section: SheetS
   // Membrete institucional — D2:Q2 merged
   ws.mergeCells(2, 4, 2, 17); // D2:Q2
   const headerCell = ws.getCell(2, 4);
-  headerCell.value = ANEXO4_HEADER_TEXT;
-  headerCell.font = { ...ANEXO4_FONT, bold: true };
+  const NORMAL_LINES_GEN = [0, 1, 2]; // REPÚBLICA..., UNIVERSIDAD..., DE LA FUERZA...
+  const headerLinesGen = ANEXO4_HEADER_TEXT.split('\n');
+  const richHeaderGen = headerLinesGen.map((line, idx) => ({
+    text: line + (idx < headerLinesGen.length - 1 ? '\n' : ''),
+    font: { ...ANEXO4_FONT, bold: !NORMAL_LINES_GEN.includes(idx) },
+  }));
+  headerCell.value = { richText: richHeaderGen };
   headerCell.alignment = { horizontal: 'center', vertical: 'top', wrapText: true };
 
   addGeneralTutorLogos(workbook, ws);
@@ -1477,19 +1525,19 @@ function addGeneralTutorLogos(workbook: Workbook, ws: Worksheet): void {
   if (!logoPaths) return;
 
   try {
-    // Logo UNEFA (izquierda) — col A-B, row 2
-    if (logoPaths.logo && fs.existsSync(logoPaths.logo)) {
-      const logoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.logo) as any, extension: 'png' });
-      ws.addImage(logoId, {
+    // Escudo (izquierda) — col A-B, row 2
+    if (logoPaths.escudo && fs.existsSync(logoPaths.escudo)) {
+      const escudoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.escudo) as any, extension: 'png' });
+      ws.addImage(escudoId, {
         tl: { col: 0.2, row: 1.1 },
         ext: { width: 70, height: 70 },
       });
     }
 
-    // Escudo (derecha) — col Q-R row 2
-    if (logoPaths.escudo && fs.existsSync(logoPaths.escudo)) {
-      const escudoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.escudo) as any, extension: 'png' });
-      ws.addImage(escudoId, {
+    // Logo UNEFA (derecha) — col Q-R row 2
+    if (logoPaths.logo && fs.existsSync(logoPaths.logo)) {
+      const logoId = workbook.addImage({ buffer: fs.readFileSync(logoPaths.logo) as any, extension: 'png' });
+      ws.addImage(logoId, {
         tl: { col: 16.5, row: 1.1 },
         ext: { width: 70, height: 70 },
       });

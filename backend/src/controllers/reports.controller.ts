@@ -981,7 +981,7 @@ export const getRelacionInstitucionesSolicitan = async (req: Request, res: Respo
       empresa: e.empresa,
       rif: e.rif,
       tipoEmpresa: e.tipo,
-      responsableTitulo: formatResponsable(e.manager),
+      responsable: formatResponsable(e.manager),
       carreras: Array.from(e.carreras).join(', '),
       cantidadEstudiantes: e.estudiantes,
     }));

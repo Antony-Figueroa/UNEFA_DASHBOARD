@@ -29,6 +29,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Times-Bold',
     marginBottom: 2,
+    textDecorationLine: 'none',
   },
   emisorBold: {
     fontSize: 11,

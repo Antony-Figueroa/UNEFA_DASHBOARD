@@ -94,6 +94,7 @@ export interface PracticeSearchResult {
   institutionName?: string;
   status?: number;
   period?: string;
+  internshipTypeName?: string;
   hasPractice: boolean;
 }
 

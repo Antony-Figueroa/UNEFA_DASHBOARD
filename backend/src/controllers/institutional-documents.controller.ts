@@ -922,7 +922,8 @@ export const searchPractices = async (req: Request, res: Response) => {
         ),
         t_career!inner(CAREER_NAME),
         t_institution(INSTITUTION_NAME),
-        t_internships_period(DESCRIPTION)
+        t_internships_period(DESCRIPTION),
+        t_internship_type(NAME)
       `)
       .or(`ci.ilike.${term},first_name.ilike.${term},last_name.ilike.${term}`, { foreignTable: 't_students.t_persons' })
       .limit(20);
@@ -946,6 +947,7 @@ export const searchPractices = async (req: Request, res: Response) => {
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
         status: p.STATUS,
         period: p.t_internships_period?.DESCRIPTION || '',
+        internshipTypeName: p.t_internship_type?.NAME || '',
         hasPractice: true,
       };
     });
@@ -986,7 +988,8 @@ async function searchPracticesWithStudents(conn: any, term: string, res: Respons
       ),
       t_career!inner(CAREER_NAME),
       t_institution(INSTITUTION_NAME),
-      t_internships_period(DESCRIPTION)
+      t_internships_period(DESCRIPTION),
+      t_internship_type(NAME)
     `)
     .or(`ci.ilike.${term},first_name.ilike.${term},last_name.ilike.${term}`, { foreignTable: 't_students.t_persons' });
 
@@ -1014,6 +1017,7 @@ async function searchPracticesWithStudents(conn: any, term: string, res: Respons
       institutionName: p.t_institution?.INSTITUTION_NAME || '',
       status: p.STATUS,
       period: p.t_internships_period?.DESCRIPTION || '',
+      internshipTypeName: p.t_internship_type?.NAME || '',
       hasPractice: true,
     };
   });
@@ -1186,7 +1190,7 @@ export const listPractices = async (req: Request, res: Response) => {
           .from('t_professional_practices_tutor')
           .select('PROFESSIONAL_PRACTICE_ID');
         eligibleIds = [...new Set((ppt || []).map((r: any) => Number(r.PROFESSIONAL_PRACTICE_ID)))] as number[];
-      } else if (['evaluacion-final', 'evaluacion-tutor-institucional', 'evaluacion-tutor-academico', 'evaluacion-comite'].includes(documentType)) {
+      } else if (['evaluacion-tutor-institucional', 'evaluacion-tutor-academico', 'evaluacion-comite'].includes(documentType)) {
         const evalTypeMap: Record<string, string> = {
           'evaluacion-tutor-institucional': 'INSTITUCIONAL',
           'evaluacion-tutor-academico': 'ACADEMICO',
@@ -1218,7 +1222,8 @@ export const listPractices = async (req: Request, res: Response) => {
         ),
         t_career!inner(CAREER_NAME),
         t_institution(INSTITUTION_NAME),
-        t_internships_period(DESCRIPTION)
+        t_internships_period(DESCRIPTION),
+        t_internship_type(NAME)
       `, { count: 'exact' });
 
     // Filtrar por STATUS = 1 (activas) para todos los tipos de documento
@@ -1258,6 +1263,7 @@ export const listPractices = async (req: Request, res: Response) => {
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
         status: p.STATUS,
         period: p.t_internships_period?.DESCRIPTION || '',
+        internshipTypeName: p.t_internship_type?.NAME || '',
         hasPractice: true,
       };
     });
@@ -1310,7 +1316,8 @@ async function listPracticesWithStudents(
       ),
       t_career!inner(CAREER_NAME),
       t_institution(INSTITUTION_NAME),
-      t_internships_period(DESCRIPTION)
+      t_internships_period(DESCRIPTION),
+      t_internship_type(NAME)
     `, { count: 'exact' })
     .eq('STATUS', 1);
 
@@ -1344,6 +1351,7 @@ async function listPracticesWithStudents(
       institutionName: p.t_institution?.INSTITUTION_NAME || '',
       status: p.STATUS,
       period: p.t_internships_period?.DESCRIPTION || '',
+      internshipTypeName: p.t_internship_type?.NAME || '',
       hasPractice: true,
     };
   });

@@ -40,14 +40,17 @@ export function SelectionSummary({ type, data, onChange }: SelectionSummaryProps
           </div>
           {isPractice && (
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+              {d.internshipTypeName && (
+                <span className="text-xs font-medium text-brand-600 dark:text-brand-400">{d.internshipTypeName}</span>
+              )}
               {d.institutionName && (
-                <span className="text-xs text-text-tertiary">{d.institutionName}</span>
+                <span className="text-xs text-text-tertiary">· {d.institutionName}</span>
               )}
               {d.status !== undefined && (
                 <span className={`text-xs font-medium ${
                   d.status === 1 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
                 }`}>
-                  {d.status === 1 ? 'Activo' : 'Inactivo'}
+                  · {d.status === 1 ? 'Activo' : 'Inactivo'}
                 </span>
               )}
               {d.period && (

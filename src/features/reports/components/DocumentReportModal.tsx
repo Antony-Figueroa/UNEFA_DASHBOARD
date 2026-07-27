@@ -278,6 +278,19 @@ const renderTemplate = useCallback(
                       {isPracticeDoc && item.careerName && ` · ${item.careerName}`}
                       {!isPracticeDoc && item.careers && ` · ${item.careers}`}
                     </p>
+                    {isPracticeDoc && item.hasPractice !== false && (
+                      <p className="text-xs text-text-tertiary mt-0.5 flex flex-wrap gap-x-2">
+                        {item.internshipTypeName && (
+                          <span className="font-medium text-brand-600 dark:text-brand-400">{item.internshipTypeName}</span>
+                        )}
+                        {item.period && <span>· {item.period}</span>}
+                        {item.status !== undefined && (
+                          <span className={item.status === 1 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}>
+                            · {item.status === 1 ? 'Activo' : 'Inactivo'}
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
                 )}
                 onSelect={(item) => isPracticeDoc ? handleSelectPractice(item as any) : handleSelectTutor(item as any)}

@@ -112,6 +112,7 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, per
           <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Estudiante</th>
           <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">CI</th>
           <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Carrera</th>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Tipo</th>
           <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Institución</th>
           <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Periodo</th>
           <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Estado</th>
@@ -145,6 +146,7 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, per
           <td className="px-4 py-3 text-text-primary uppercase">{item.studentName}</td>
           <td className="px-4 py-3 text-text-secondary uppercase">{item.studentCi}</td>
           <td className="px-4 py-3 text-text-secondary uppercase">{item.careerName}</td>
+          <td className="px-4 py-3 text-text-secondary uppercase hidden md:table-cell">{item.internshipTypeName || '-'}</td>
           <td className="px-4 py-3 text-text-secondary uppercase hidden md:table-cell">{item.institutionName || '-'}</td>
           <td className="px-4 py-3 text-text-secondary uppercase hidden md:table-cell">{item.period || '-'}</td>
           <td className="px-4 py-3 text-text-secondary hidden md:table-cell">

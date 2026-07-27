@@ -1350,7 +1350,7 @@ export async function generateProyeccionExcel(data: any, period: string, fileNam
   await addLogos(workbook, worksheet);
 
   // Título
-  const titleRow = 7;
+  const titleRow = 8;
   worksheet.mergeCells(`A${titleRow}:${lastCol(totalCols)}${titleRow}`);
   const tRow = worksheet.getRow(titleRow);
   tRow.height = 30;
@@ -1365,7 +1365,7 @@ export async function generateProyeccionExcel(data: any, period: string, fileNam
   tRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
 
   // Código de formulario
-  const codeRow = 8;
+  const codeRow = 9;
   worksheet.mergeCells(`A${codeRow}:${lastCol(totalCols)}${codeRow}`);
   const cRow = worksheet.getRow(codeRow);
   cRow.height = 20;
@@ -1373,16 +1373,16 @@ export async function generateProyeccionExcel(data: any, period: string, fileNam
   cRow.getCell(1).font = { ...DEFAULT_FONT, size: 8, bold: true };
   cRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
 
-  // Header row 9 (CARRERAS colspan 4) + row 10 sub-headers
-  const row9 = worksheet.getRow(9);
-  const row10 = worksheet.getRow(10);
+  // Header row 10 (CARRERAS colspan 4) + row 11 sub-headers
+  const row9 = worksheet.getRow(10);
+  const row10 = worksheet.getRow(11);
   row9.height = 20;
   row10.height = 55;
 
-  worksheet.mergeCells('A9:A10');
-  worksheet.mergeCells('B9:B10');
-  worksheet.mergeCells('C9:C10');
-  worksheet.mergeCells('D9:G9');
+  worksheet.mergeCells('A10:A11');
+  worksheet.mergeCells('B10:B11');
+  worksheet.mergeCells('C10:C11');
+  worksheet.mergeCells('D10:G10');
 
   const headerCols = [
     { col: 'A', text: 'REGIÓN' }, { col: 'B', text: 'NÚCLEO' }, { col: 'C', text: 'EXTENSIÓN' },
@@ -1412,7 +1412,7 @@ export async function generateProyeccionExcel(data: any, period: string, fileNam
   });
 
   // Data rows — one career per row, nucleus+extension in every row
-  let currentRow = 11;
+  let currentRow = 12;
   const nuclei = data.nuclei || [];
 
   nuclei.forEach((nucleus: any, nIdx: number) => {

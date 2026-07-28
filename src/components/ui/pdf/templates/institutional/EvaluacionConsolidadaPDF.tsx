@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     paddingHorizontal: 45,
     fontFamily: 'Times-Roman',
-    fontSize: 10,
+    fontSize: 12,
     color: '#000000',
   },
   pageBody: {
@@ -174,6 +174,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderColor: '#000',
     fontSize: 8,
+    fontFamily: 'Times-Bold',
   },
   subtotalValue: {
     width: '16%',

@@ -737,6 +737,7 @@ export default function TutorModal({
   const [targetListName, setTargetListName] = useState<string>("");
   const [targetField, setTargetField] = useState<keyof TutorFormData | "">("");
   const [newValueInput, setNewValueInput] = useState<string>("");
+  const [newValueAbbreviation, setNewValueAbbreviation] = useState<string>("");
   const [savingNewValue, setSavingNewValue] = useState(false);
 
   // Fallbacks for when t_list data is not available
@@ -760,22 +761,9 @@ export default function TutorModal({
     { value: "TITULAR", label: "TITULAR" },
   ];
 
-  const TITULO_OPTIONS = options["Título"] || [];
+  const TITULO_OPTIONS = options["GRADO DE INSTRUCCIÓN"] || [];
 
-  const PROFESSION_OPTIONS = options["Profesión"] || [
-    { value: "INGENIERO/A EN SISTEMAS", label: "INGENIERO/A EN SISTEMAS" },
-    { value: "INGENIERO/A CIVIL", label: "INGENIERO/A CIVIL" },
-    { value: "INGENIERO/A INDUSTRIAL", label: "INGENIERO/A INDUSTRIAL" },
-    { value: "INGENIERO/A ELÉCTRICO", label: "INGENIERO/A ELÉCTRICO" },
-    { value: "CONTADOR/A PÚBLICO", label: "CONTADOR/A PÚBLICO" },
-    { value: "LICENCIADO/A EN ADMINISTRACIÓN", label: "LICENCIADO/A EN ADMINISTRACIÓN" },
-    { value: "LICENCIADO/A EN EDUCACIÓN", label: "LICENCIADO/A EN EDUCACIÓN" },
-    { value: "ABOGADO/A", label: "ABOGADO/A" },
-    { value: "MÉDICO/A", label: "MÉDICO/A" },
-    { value: "T.S.U.", label: "T.S.U." },
-  ];
-
-  const GRADO_INSTRUCCION_OPTIONS = options["GRADO DE INSTRUCCIÓN"] || [];
+  const PROFESSION_OPTIONS = options["PROFESION"] || [];
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -788,8 +776,7 @@ export default function TutorModal({
           "Condición",
           "Dedicación",
           "Categoría",
-          "Profesión",
-          "Título",
+          "PROFESION",
           "GRADO DE INSTRUCCIÓN",
           "Tipo de Practica"
         ];
@@ -841,6 +828,7 @@ export default function TutorModal({
     setTargetField(field as keyof TutorFormData | "");
     setValueModalTitle(title);
     setNewValueInput("");
+    setNewValueAbbreviation("");
     setIsValueModalOpen(true);
   };
 
@@ -886,7 +874,8 @@ export default function TutorModal({
         return;
       }
 
-      const abbr = (targetListName === "Nacionalidad") ? upper : undefined;
+      const abbrInput = newValueAbbreviation.trim().toUpperCase();
+      const abbr = abbrInput || undefined;
       const created = await listsService.createValue(list!.id, upper, abbr);
       const mapped = { 
         value: (targetListName === "Nacionalidad" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper, 
@@ -1489,7 +1478,7 @@ options={(options["Registro Civil"] || []).map(o => ({ value: String(o.value), l
                 />
               </div>
               <div>
-                <Label>Profesión / Título <span className="text-red-500">*</span></Label>
+                <Label>Profesión <span className="text-red-500">*</span></Label>
                 <Controller
                   name="profession"
                   control={control}
@@ -1501,13 +1490,13 @@ options={(options["Registro Civil"] || []).map(o => ({ value: String(o.value), l
                       options={PROFESSION_OPTIONS}
                       error={!!errors.profession}
                       disabled={viewOnlyMode}
-                      onAddNew={() => openAddValueModal("Profesión", "profession", "Agregar Profesión")}
+                      onAddNew={() => openAddValueModal("PROFESION", "profession", "Agregar Profesión")}
                     />
                   )}
                 />
               </div>
               <div>
-                <Label>Título <span className="text-red-500">*</span></Label>
+                <Label>Grado de Instrucción <span className="text-red-500">*</span></Label>
                 <Controller
                   name="titulo"
                   control={control}
@@ -1519,7 +1508,7 @@ options={(options["Registro Civil"] || []).map(o => ({ value: String(o.value), l
                       options={TITULO_OPTIONS}
                       error={!!errors.titulo}
                       disabled={viewOnlyMode}
-                      onAddNew={() => openAddValueModal("Título", "titulo", "Agregar Grado de Instrucción")}
+                      onAddNew={() => openAddValueModal("GRADO DE INSTRUCCIÓN", "titulo", "Agregar Grado de Instrucción")}
                     />
                   )}
                 />
@@ -1613,6 +1602,81 @@ options={(options["Registro Civil"] || []).map(o => ({ value: String(o.value), l
         cancelLabel={SYSTEM_DIALOGS.closeWithoutSaving.cancelLabel}
         variant="confirm"
       />
+      <Modal isOpen={isValueModalOpen} onClose={() => setIsValueModalOpen(false)} modalId={`${modalId}-value`}>
+        <ModalHeader>
+          <div className="w-full">
+            <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+              {valueModalTitle || "Agregar nuevo valor"}
+            </span>
+            <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
+              Este valor se guardará en la lista: {targetListName}.
+            </p>
+          </div>
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-4">
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">Nuevo valor</label>
+            <Input
+              value={newValueInput}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (targetField === "phoneAreaCode") {
+                  const digits = v.replace(/\D/g, "").slice(0, 4);
+                  setNewValueInput(digits);
+                } else {
+                  const up = v.toUpperCase();
+                  const sanitized = up.replace(/[^A-ZÁÉÍÓÚÑ\s\-]/g, "");
+                  setNewValueInput(sanitized);
+                }
+              }}
+              placeholder="Ingrese el nuevo valor"
+              autoComplete="off"
+              maxLength={targetField === "phoneAreaCode" ? 4 : 40}
+            />
+            {targetField === "phoneAreaCode" && (
+              <p className="text-xs text-text-tertiary">Solo dígitos (3-4). Ej: 0412, 0212</p>
+            )}
+            {targetField !== "phoneAreaCode" && (
+              <div>
+                <label className="text-sm font-medium text-text-primary dark:text-white/90">Abreviatura <span className="text-text-tertiary font-normal">(opcional)</span></label>
+                <Input
+                  value={newValueAbbreviation}
+                  onChange={(e) => {
+                    const up = e.target.value.toUpperCase();
+                    const sanitized = up.replace(/[^A-ZÁÉÍÓÚÑ0-9\/\s\-_.]/g, "");
+                    setNewValueAbbreviation(sanitized);
+                  }}
+                  placeholder="Ej: ING_SIST"
+                  autoComplete="off"
+                  maxLength={15}
+                />
+              </div>
+            )}
+          </div>
+        </ModalBody>
+        <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full">
+            <Button variant="outline" onClick={() => setIsValueModalOpen(false)} disabled={savingNewValue} className="w-full sm:w-auto min-h-12">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSaveNewValue} 
+              loading={savingNewValue} 
+              loadingText="Guardando..."
+              className="w-full sm:w-auto min-h-12"
+              disabled={
+                savingNewValue || (
+                  targetField === "phoneAreaCode" 
+                    ? !(newValueInput && /^\d{3,4}$/.test(newValueInput))
+                    : !(newValueInput && newValueInput.trim().length > 0)
+                )
+              }
+            >
+              Guardar
+            </Button>
+          </div>
+        </ModalFooter>
+      </Modal>
       <CareerModal
         isOpen={isCareerModalOpen}
         onClose={() => {

@@ -253,11 +253,10 @@ const findListByIdentifier = async (supabase: any, identifier: string): Promise<
   // Si no es numérico, buscar por nombre normalizando acentos
   const normalizedIdentifier = normalizeForSearch(identifier);
   
-  // Primero intentar búsqueda exacta normalizada
+  // Obtener todas las listas para buscar por nombre normalizado
   const { data, error } = await supabase
     .from(LISTS_TABLE)
-    .select('*')
-    .limit(50);
+    .select('*');
   
   if (error || !data) return null;
   

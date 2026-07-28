@@ -6,8 +6,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:offline": "tsx watch src/server-offline.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:offline": "node dist/server-offline.js",
     "test": "vitest --config tests/vitest.config.ts",
     "test:env": "tsx src/test-env-readonly.ts",
     "db:fix-sequences": "tsx fix-sequences.ts",

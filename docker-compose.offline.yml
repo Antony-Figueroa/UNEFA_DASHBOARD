@@ -1,0 +1,61 @@
+# docker-compose.offline.yml
+# Desarrollo local REAL sin depender de Supabase Cloud
+# Usa PGlite (PostgreSQL WASM) embebido en el contenedor backend
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.offline
+    container_name: unefa-backend-offline
+    command: npm run dev:offline
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - /app/dist
+      - unefa-pglite-data:/app/data  # Persiste la DB local entre reinicios
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - DB_MODE=offline
+      - JWT_SECRET=dev-secret-change-me
+      - ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
+      - FRONTEND_URL=http://localhost:5173
+      # Estas no se usan en modo offline, pero evitan warnings:
+      - SUPABASE_URL=http://localhost
+      - SUPABASE_SERVICE_ROLE_KEY=offline
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - unefa-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: unefa-frontend-offline
+    command: npm run dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3000
+      - PORT=5173
+    depends_on:
+      - backend
+    networks:
+      - unefa-network
+
+networks:
+  unefa-network:
+    driver: bridge
+
+volumes:
+  unefa-pglite-data:

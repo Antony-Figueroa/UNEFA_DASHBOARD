@@ -1,0 +1,30 @@
+# Stage 1: Build
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Stage 2: Runtime
+FROM node:20-alpine
+WORKDIR /app
+
+# NOTA DE SEGURIDAD: Los archivos .env se montan como solo lectura (read-only)
+# para prevenir modificaciones accidentales o maliciosas desde el contenedor.
+# La configuración se encuentra en docker-compose.offline.yml utilizando el flag :ro
+
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/src ./src  # Necesario para tsx watch en dev:offline
+
+# Directorio para datos de PGlite (persistido via volume en docker-compose)
+RUN mkdir -p /app/data
+
+# Exponer el puerto
+EXPOSE 3000
+
+# Comando para iniciar en modo desarrollo offline
+CMD ["npm", "run", "dev:offline"]

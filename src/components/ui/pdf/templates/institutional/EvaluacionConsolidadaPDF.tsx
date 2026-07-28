@@ -1,5 +1,37 @@
 import { Text, View, StyleSheet, Document, Page, Image } from '@react-pdf/renderer';
-import { formatNombreCompleto, formatCI, formatFecha } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatCI, formatFecha, parseCI } from '@/features/reports/utils/reportFormatters';
+
+/** Formato de fecha: "03 - 07 - 2026" (con espacios alrededor de guiones) */
+function formatFechaPDF(fecha: string | null): string {
+  if (!fecha) return '';
+  const date = new Date(fecha);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day} - ${month} - ${year}`;
+}
+
+/** CI sin prefijo: solo número con puntos (ej: "30.965.856") */
+function formatCINumero(ci: string | null | undefined): string {
+  if (!ci) return '';
+  const { number } = parseCI(ci);
+  const parts = [];
+  for (let i = number.length - 1, j = 0; i >= 0; i--, j++) {
+    if (j > 0 && j % 3 === 0) parts.unshift('.');
+    parts.unshift(number[i]);
+  }
+  return parts.join('');
+}
+
+/** Nombre con apellidos primero: "RODRÍGUEZ LÓPEZ ELEIDIMAR ANYELIZ" */
+function formatApellidoNombre(persona: { primerNombre?: string | null; segundoNombre?: string | null; primerApellido?: string | null; segundoApellido?: string | null } | null | undefined): string {
+  if (!persona) return '';
+  const primerNombre = persona.primerNombre || '';
+  const segundoNombre = persona.segundoNombre ? ` ${persona.segundoNombre}` : '';
+  const primerApellido = persona.primerApellido || '';
+  const segundoApellido = persona.segundoApellido ? ` ${persona.segundoApellido}` : '';
+  return `${primerApellido}${segundoApellido} ${primerNombre}${segundoNombre}`.trim();
+}
 
 /* ───────────────────────────────────────────
    Estilos Exactos del Documento
@@ -10,7 +42,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     paddingHorizontal: 45,
     fontFamily: 'Times-Roman',
-    fontSize: 9,
+    fontSize: 10,
     color: '#000000',
   },
   pageBody: {
@@ -36,6 +68,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textAlign: 'center',
     lineHeight: 1.3,
+    fontFamily: 'Times-Bold',
   },
   title: {
     fontSize: 10,
@@ -68,7 +101,7 @@ const styles = StyleSheet.create({
     padding: 3,
     borderRightWidth: 1,
     borderRightColor: '#000',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#D9D9D9',
     fontSize: 7.5,
   },
   infoCellData: {
@@ -81,6 +114,15 @@ const styles = StyleSheet.create({
     padding: 3,
     fontSize: 7.5,
   },
+  infoText: {
+    fontSize: 7.5,
+    textAlign: 'justify',
+  },
+  infoTextLabel: {
+    fontSize: 7.5,
+    fontFamily: 'Times-Bold',
+    textAlign: 'justify',
+  },
 
   // Criteria table
   table: {
@@ -92,8 +134,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#000',
-    backgroundColor: '#f2f2f2',
-    alignItems: 'center',
+    backgroundColor: '#D9D9D9',
   },
   tRow: {
     flexDirection: 'row',
@@ -103,14 +144,22 @@ const styles = StyleSheet.create({
   tRowLast: {
     flexDirection: 'row',
   },
-  colNum: { width: '6%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontSize: 7.5 },
-  colAspect: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, fontSize: 7.5 },
-  colRange: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontSize: 7.5 },
-  colScore: { width: '16%', padding: 3, textAlign: 'center', fontSize: 7.5 },
-  colNumH: { width: '6%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
-  colAspectH: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
-  colRangeH: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
-  colScoreH: { width: '16%', padding: 3, textAlign: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
+  tRowLastCriteria: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#000',
+  },
+  colNumCell: { width: '6%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
+  colNum: { textAlign: 'center', fontSize: 7.5, fontFamily: 'Times-Bold' },
+  colAspect: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, fontSize: 7.5, textAlign: 'justify' },
+  colRangeCell: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
+  colRange: { textAlign: 'center', fontSize: 7.5, fontFamily: 'Times-Bold' },
+  colScoreCell: { width: '16%', padding: 3, justifyContent: 'center' },
+  colScore: { textAlign: 'center', fontSize: 7.5, fontFamily: 'Times-Bold' },
+  colNumH: { width: '6%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
+  colAspectH: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
+  colRangeH: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
+  colScoreH: { width: '16%', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
 
   // Totals
   totalRow: {
@@ -284,12 +333,12 @@ function calcSubTotal(parciales: any, weights: any): string {
 function formatTutorCompleto(tutor: any): string {
   if (!tutor) return 'No asignado';
   const title = tutor.titulo ? `${tutor.titulo}. ` : '';
-  return `${title}${formatNombreCompleto(tutor)}`.toUpperCase();
+  return `${title}${formatApellidoNombre(tutor)}`.toUpperCase();
 }
 
 function formatTutorNombre(tutor: any): string {
   if (!tutor) return 'No asignado';
-  return formatNombreCompleto(tutor).toUpperCase();
+  return formatApellidoNombre(tutor).toUpperCase();
 }
 
 function getCarreraOrPasantiaLabel(data: Props['data']): string {
@@ -320,7 +369,7 @@ const PageNumberFooter = () => (
    ─────────────────────────────────────────── */
 const MembreteImagen = ({ isPracticas = false }) => (
   <View style={styles.headerRow}>
-    <Image src="/pdfs-docs/escudo.png" style={styles.headerImg} />
+    <Image src="/escudo-2.jpg" style={styles.headerImg} />
     <View style={styles.headerTextCol}>
       <Text style={styles.headerText}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
       <Text style={styles.headerText}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
@@ -339,15 +388,15 @@ const MembreteImagen = ({ isPracticas = false }) => (
    ─────────────────────────────────────────── */
 const HeaderFinal = () => (
   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
-    <Image src="/pdfs-docs/escudo.png" style={{ width: 60, height: 60, objectFit: 'contain' }} />
+    <Image src="/escudo-2.jpg" style={{ width: 60, height: 60, objectFit: 'contain' }} />
     <View style={{ flex: 1, textAlign: 'center', paddingHorizontal: 10 }}>
-      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>VICERRECTORADO DE LA REGIÓN LOS LLANOS</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2 }}>EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>VICERRECTORADO DE LA REGIÓN LOS LLANOS</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
+      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES</Text>
     </View>
     <Image src="/pdfs-docs/logo.png" style={{ width: 60, height: 60, objectFit: 'contain' }} />
   </View>
@@ -375,45 +424,45 @@ function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: n
           <View style={styles.infoBox}>
             <View style={styles.infoRowLast}>
               <View style={[styles.infoCellData, { width: '35%' }]}>
-                <Text style={{ fontSize: 7.5 }}>Apellidos y Nombres del Estudiante:</Text>
-                <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{formatNombreCompleto(data.estudiante).toUpperCase()}</Text>
+                <Text style={styles.infoTextLabel}>Apellidos y Nombres del Estudiante:</Text>
+                <Text style={styles.infoText}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
               </View>
               <View style={[styles.infoCellData, { width: '20%' }]}>
-                <Text style={{ fontSize: 7.5 }}>Cédula de identidad del Estudiante:</Text>
-                <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{formatCI(data.estudiante.ci)}</Text>
+                <Text style={styles.infoTextLabel}>Cédula de identidad del Estudiante:</Text>
+                <Text style={styles.infoText}>{formatCINumero(data.estudiante.ci)}</Text>
               </View>
               <View style={[styles.infoCellData, { width: '25%' }]}>
-                <Text style={{ fontSize: 7.5 }}>Carrera:</Text>
-                <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{getCarreraOrPasantiaLabel(data)}</Text>
+                <Text style={styles.infoTextLabel}>Carrera que cursa:</Text>
+                <Text style={styles.infoText}>{getCarreraOrPasantiaLabel(data)}</Text>
               </View>
               <View style={[styles.infoCellDataLast, { width: '20%' }]}>
-                <Text style={{ fontSize: 7.5 }}>Período Académico:</Text>
-                <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{data.periodo?.description}</Text>
+                <Text style={styles.infoTextLabel}>Período: </Text>
+                <Text style={styles.infoText}>{data.periodo?.description}</Text>
               </View>
             </View>
           </View>
 
           {/* Comité Evaluador */}
           <View style={styles.infoBox}>
-            <View style={[styles.infoRow, { backgroundColor: '#f2f2f2' }]}>
+            <View style={[styles.infoRow, { backgroundColor: '#D9D9D9' }]}>
               <Text style={[styles.infoCellHeader, { width: '36%', textAlign: 'center', borderRightWidth: 1 }]}>Comité Evaluador</Text>
               <Text style={[styles.infoCellHeader, { width: '44%', textAlign: 'center', borderRightWidth: 1 }]}>Apellidos y Nombres</Text>
-              <Text style={[styles.infoCellHeader, { width: '20%', textAlign: 'center', borderRightWidth: 0 }]}>Cédula de Identidad</Text>
+              <Text style={[styles.infoCellHeader, { width: '20%', textAlign: 'center' }]}>Cédula de Identidad</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={[styles.infoCellData, { width: '36%' }]}>Coordinador de Práctica Profesional</Text>
               <Text style={[styles.infoCellData, { width: '44%' }]}>{data.coordinadorPP?.nombreCompleto.toUpperCase() || ''}</Text>
-              <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.coordinadorPP ? formatCI(data.coordinadorPP.ci) : ''}</Text>
+              <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.coordinadorPP ? formatCINumero(data.coordinadorPP.ci) : ''}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={[styles.infoCellData, { width: '36%' }]}>Coordinador de Carrera</Text>
               <Text style={[styles.infoCellData, { width: '44%' }]}>{data.coordinadorCarrera?.nombreCompleto.toUpperCase() || ''}</Text>
-              <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.coordinadorCarrera ? formatCI(data.coordinadorCarrera.ci) : ''}</Text>
+              <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.coordinadorCarrera ? formatCINumero(data.coordinadorCarrera.ci) : ''}</Text>
             </View>
             <View style={styles.infoRowLast}>
               <Text style={[styles.infoCellData, { width: '36%' }]}>Tutor Académico</Text>
               <Text style={[styles.infoCellData, { width: '44%' }]}>{formatTutorNombre(data.tutorAcademico)}</Text>
-              <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.tutorAcademico ? formatCI(data.tutorAcademico.ci) : ''}</Text>
+              <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.tutorAcademico ? formatCINumero(data.tutorAcademico.ci) : ''}</Text>
             </View>
           </View>
 
@@ -426,37 +475,44 @@ function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: n
               <Text style={styles.colScoreH}>Calificación Parcial</Text>
             </View>
             {criterios.map((c, idx) => (
-              <View style={idx === criterios.length - 1 ? styles.tRowLast : styles.tRow} key={c.itemNumber}>
-                <Text style={styles.colNum}>{c.itemNumber}</Text>
+              <View style={idx === criterios.length - 1 ? styles.tRowLastCriteria : styles.tRow} key={c.itemNumber}>
+                <View style={styles.colNumCell}><Text style={styles.colNum}>{c.itemNumber}</Text></View>
                 <Text style={styles.colAspect}>{c.description}</Text>
-                <Text style={styles.colRange}>0 - 20</Text>
-                <Text style={styles.colScore}>{formatScore(c.score)}</Text>
+                <View style={styles.colRangeCell}><Text style={styles.colRange}>0-20</Text></View>
+                <View style={styles.colScoreCell}><Text style={styles.colScore}>{formatScore(c.score)}</Text></View>
               </View>
             ))}
             <View style={styles.tRowLast}>
-              <Text style={[styles.subtotalLabel]}>Subtotal ({TOTAL_COMITE})</Text>
-              <Text style={[styles.subtotalValue]}>{formatScore(subtotal)}</Text>
+              <Text style={[styles.subtotalLabel]}>Subtotal</Text>
+              <Text style={[styles.subtotalValue, { borderBottomWidth: 1, borderColor: '#000' }]}>{formatScore(subtotal)}</Text>
+            </View>
+            <View style={styles.tRowLast}>
+              <Text style={[styles.subtotalLabel]}>Calificación final = (Subtotal / {TOTAL_COMITE}):</Text>
+              <Text style={[styles.subtotalValue]}>{formatScore(subtotal / TOTAL_COMITE)}</Text>
             </View>
           </View>
-          <Text style={{ textAlign: 'center', marginTop: 6, fontSize: 9, fontFamily: 'Times-Bold' }}>Calificación final = (Subtotal/{TOTAL_COMITE}): {formatScore(subtotal / TOTAL_COMITE)}</Text>
         </View>
 
-        {/* Firmas al fondo — PP (izq), Tutor Académico (centro), Coordinador Carrera (der) */}
-        <View style={styles.firmaContainer3}>
-          <View style={styles.firmaBox}>
-            {textos.comiteFirma1Nombre ? <Text style={styles.firmaName}>{textos.comiteFirma1Nombre}</Text> : null}
-            <View style={styles.firmaLine} />
-            <Text style={styles.firmaRole}>Coordinador de Práctica Profesional</Text>
+        {/* Firmas al fondo — PP (izq), Coordinador de Carrera (der), Tutor Académico (centro abajo) */}
+        <View>
+          <View style={styles.firmaContainer3}>
+            <View style={styles.firmaBox}>
+              {textos.comiteFirma1Nombre ? <Text style={styles.firmaName}>{textos.comiteFirma1Nombre}</Text> : null}
+              <View style={styles.firmaLine} />
+              <Text style={styles.firmaRole}>Coordinador de Práctica Profesional</Text>
+            </View>
+            <View style={styles.firmaBox}>
+              {textos.comiteFirma2Nombre ? <Text style={styles.firmaName}>{textos.comiteFirma2Nombre}</Text> : null}
+              <View style={styles.firmaLine} />
+              <Text style={styles.firmaRole}>Coordinador de Carrera</Text>
+            </View>
           </View>
-          <View style={styles.firmaBox}>
-            {textos.comiteFirma3Nombre ? <Text style={styles.firmaName}>{textos.comiteFirma3Nombre}</Text> : null}
-            <View style={styles.firmaLine} />
-            <Text style={styles.firmaRole}>Tutor Académico</Text>
-          </View>
-          <View style={styles.firmaBox}>
-            {textos.comiteFirma2Nombre ? <Text style={styles.firmaName}>{textos.comiteFirma2Nombre}</Text> : null}
-            <View style={styles.firmaLine} />
-            <Text style={styles.firmaRole}>Coordinador de Carrera</Text>
+          <View style={[styles.firmaContainer1, { marginTop: 15 }]}>
+            <View style={styles.firmaBox}>
+              {textos.comiteFirma3Nombre ? <Text style={styles.firmaName}>{textos.comiteFirma3Nombre}</Text> : null}
+              <View style={styles.firmaLine} />
+              <Text style={styles.firmaRole}>Tutor Académico</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -485,34 +541,34 @@ function PageTutorAcademico({ data, textos }: Props) {
           <View style={styles.infoBox}>
             <View style={styles.infoRow}>
               <View style={[styles.infoCellData, { width: '40%' }]}>
-                <Text style={{ fontSize: 7.5 }}>Apellidos y Nombres del Estudiante:</Text>
-                <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{formatNombreCompleto(data.estudiante).toUpperCase()}</Text>
+                <Text style={styles.infoTextLabel}>Apellidos y Nombres del Estudiante:</Text>
+                <Text style={styles.infoText}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
               </View>
               <View style={[styles.infoCellData, { width: '25%' }]}>
-                <Text style={{ fontSize: 7.5 }}>Cédula de Identidad del Estudiante:</Text>
-                <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{formatCI(data.estudiante.ci)}</Text>
+                <Text style={styles.infoTextLabel}>Cédula de Identidad del Estudiante:</Text>
+                <Text style={styles.infoText}>{formatCINumero(data.estudiante.ci)}</Text>
               </View>
               <View style={[styles.infoCellDataLast, { width: '35%' }]}>
-                <Text style={{ fontSize: 7.5 }}>Carrera que cursa:</Text>
-                <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{getCarreraOrPasantiaLabel(data)}</Text>
+                <Text style={styles.infoTextLabel}>Carrera que cursa:</Text>
+                <Text style={styles.infoText}>{getCarreraOrPasantiaLabel(data)}</Text>
               </View>
             </View>
             <View style={styles.infoRowLast}>
               <View style={[styles.infoCellData, { width: '35%' }]}>
-                <Text style={{ fontSize: 7.5 }}>Apellidos y Nombres del Tutor Académico:</Text>
-                <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{formatTutorNombre(data.tutorAcademico)}</Text>
+                <Text style={styles.infoTextLabel}>Apellidos y Nombres del Tutor Académico:</Text>
+                <Text style={styles.infoText}>{formatTutorNombre(data.tutorAcademico)}</Text>
               </View>
               <View style={[styles.infoCellData, { width: '22%' }]}>
-                <Text style={{ fontSize: 7.5 }}>Cédula de identidad del Tutor Académico:</Text>
-                <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{data.tutorAcademico ? formatCI(data.tutorAcademico.ci) : ''}</Text>
+                <Text style={styles.infoTextLabel}>Cédula de identidad del Tutor Académico:</Text>
+                <Text style={styles.infoText}>{data.tutorAcademico ? formatCINumero(data.tutorAcademico.ci) : ''}</Text>
               </View>
               <View style={[styles.infoCellData, { width: '22%' }]}>
-                <Text style={{ fontSize: 7.5 }}>Fecha de Inicio de la PP:</Text>
-                <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{formatFecha(data.practica.startDate)}</Text>
+                <Text style={styles.infoTextLabel}>Fecha de Inicio de la PP:</Text>
+                <Text style={styles.infoText}>{formatFechaPDF(data.practica?.startDate)}</Text>
               </View>
               <View style={[styles.infoCellDataLast, { width: '21%' }]}>
-                <Text style={{ fontSize: 7.5 }}>Fecha de Culminación de la PP:</Text>
-                <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{formatFecha(data.practica.endDate)}</Text>
+                <Text style={styles.infoTextLabel}>Fecha de Culminación de la PP:</Text>
+                <Text style={styles.infoText}>{formatFechaPDF(data.practica?.endDate)}</Text>
               </View>
             </View>
           </View>
@@ -526,19 +582,22 @@ function PageTutorAcademico({ data, textos }: Props) {
               <Text style={styles.colScoreH}>Calificación Parcial</Text>
             </View>
             {criterios.map((c, idx) => (
-              <View style={idx === criterios.length - 1 ? styles.tRowLast : styles.tRow} key={c.itemNumber}>
-                <Text style={styles.colNum}>{c.itemNumber}</Text>
+              <View style={idx === criterios.length - 1 ? styles.tRowLastCriteria : styles.tRow} key={c.itemNumber}>
+                <View style={styles.colNumCell}><Text style={styles.colNum}>{c.itemNumber}</Text></View>
                 <Text style={styles.colAspect}>{c.description}</Text>
-                <Text style={styles.colRange}>0-20</Text>
-                <Text style={styles.colScore}>{formatScore(c.score)}</Text>
+                <View style={styles.colRangeCell}><Text style={styles.colRange}>0-20</Text></View>
+                <View style={styles.colScoreCell}><Text style={styles.colScore}>{formatScore(c.score)}</Text></View>
               </View>
             ))}
             <View style={styles.tRowLast}>
-              <Text style={styles.subtotalLabel}>Subtotal ({TOTAL_ACADEMICO})</Text>
-              <Text style={styles.subtotalValue}>{formatScore(subtotal)}</Text>
+              <Text style={styles.subtotalLabel}>Subtotal</Text>
+              <Text style={[styles.subtotalValue, { borderBottomWidth: 1, borderColor: '#000' }]}>{formatScore(subtotal)}</Text>
+            </View>
+            <View style={styles.tRowLast}>
+              <Text style={styles.subtotalLabel}>Calificación final = (Subtotal / {TOTAL_ACADEMICO}):</Text>
+              <Text style={[styles.subtotalValue]}>{formatScore(subtotal / TOTAL_ACADEMICO)}</Text>
             </View>
           </View>
-          <Text style={{ textAlign: 'center', marginTop: 6, fontSize: 9, fontFamily: 'Times-Bold' }}>Calificación final = (Subtotal / {TOTAL_ACADEMICO}): {formatScore(subtotal / TOTAL_ACADEMICO)}</Text>
         </View>
 
         <View style={styles.firmaContainer1}>
@@ -569,41 +628,49 @@ function PageTutorInstitucional({ data, textos }: Props) {
       <Text style={styles.title}>EVALUACIÓN DEL DESEMPEÑO DEL ESTUDIANTE</Text>
       <Text style={styles.subtitle}>TUTOR INSTITUCIONAL</Text>
 
-      {/* Info box — 2 filas */}
+      {/* Info box — estructura exacta del documento oficial */}
       <View style={styles.infoBox}>
+        {/* Fila 1: 4 celdas — Estudiante, CI, Período, Carrera */}
         <View style={styles.infoRow}>
-          <View style={[styles.infoCellData, { width: '30%' }]}>
-            <Text style={{ fontSize: 7.5 }}>Apellidos y Nombres del Estudiante:</Text>
-            <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{formatNombreCompleto(data.estudiante).toUpperCase()}</Text>
+          <View style={[styles.infoCellData, { width: '28%' }]}>
+            <Text style={styles.infoTextLabel}>Apellidos y Nombres del Estudiante:</Text>
+            <Text style={styles.infoText}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
           </View>
-          <View style={[styles.infoCellData, { width: '18%' }]}>
-            <Text style={{ fontSize: 7.5 }}>Cédula de Identidad del Estudiante:</Text>
-            <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{formatCI(data.estudiante.ci)}</Text>
+          <View style={[styles.infoCellData, { width: '22%' }]}>
+            <Text style={styles.infoTextLabel}>Cédula de Identidad del Estudiante:</Text>
+            <Text style={styles.infoText}>{formatCINumero(data.estudiante.ci)}</Text>
           </View>
-          <View style={[styles.infoCellData, { width: '32%' }]}>
-            <Text style={{ fontSize: 7.5 }}>Carrera que cursa:</Text>
-            <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{getCarreraOrPasantiaLabel(data)}</Text>
+          <View style={[styles.infoCellData, { width: '20%' }]}>
+            <Text style={styles.infoTextLabel}>Período: </Text>
+            <Text style={styles.infoText}>{data.periodo?.description}</Text>
           </View>
-          <View style={[styles.infoCellDataLast, { width: '20%' }]}>
-            <Text style={{ fontSize: 7.5 }}>Período:</Text>
-            <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{data.periodo?.description}</Text>
+          <View style={[styles.infoCellDataLast, { width: '30%' }]}>
+            <Text style={styles.infoTextLabel}>Carrera que cursa:</Text>
+            <Text style={styles.infoText}>{getCarreraOrPasantiaLabel(data)}</Text>
           </View>
         </View>
+        {/* Fila 2: 3 celdas — Institución | Departamento+Tutor | Fechas */}
         <View style={styles.infoRowLast}>
+          {/* Celda izquierda: Institución */}
+          <View style={[styles.infoCellData, { width: '33%' }]}>
+            <Text style={styles.infoTextLabel}>Nombre de la Institución:</Text>
+            <Text style={styles.infoText}>{data.institucion?.nombre?.toUpperCase()}</Text>
+          </View>
+          {/* Celda central: Departamento + Tutor (apilados) */}
           <View style={[styles.infoCellData, { width: '40%' }]}>
-            <Text style={{ fontSize: 7.5 }}>Nombre de la Institución:</Text>
-            <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>{data.institucion?.nombre?.toUpperCase()}</Text>
+            <Text style={styles.infoTextLabel}>Departamento donde se efectuó la Práctica Profesional:</Text>
+            <Text style={styles.infoText}>{data.department?.toUpperCase() || ''}</Text>
+            <Text style={[styles.infoTextLabel, { marginTop: 4 }]}>Apellidos y Nombres del Tutor(a) institucional:</Text>
+            <Text style={styles.infoText}>{formatTutorNombre(data.tutorInstitucional)}</Text>
+            <Text style={[styles.infoTextLabel, { marginTop: 4 }]}>C.I. del Tutor(a) Institucional: </Text>
+            <Text style={styles.infoText}>{data.tutorInstitucional ? formatCINumero(data.tutorInstitucional.ci) : ''}</Text>
           </View>
-          <View style={[styles.infoCellData, { width: '35%' }]}>
-            <Text style={{ fontSize: 7.5 }}>Cédula, Apellidos y Nombres del Tutor(a) Institucional:</Text>
-            <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>
-              {data.tutorInstitucional ? `${formatNombreCompleto(data.tutorInstitucional).toUpperCase()} / ${formatCI(data.tutorInstitucional.ci)}` : 'No asignado'}
-            </Text>
-          </View>
-          <View style={[styles.infoCellDataLast, { width: '25%' }]}>
-            <Text style={{ fontSize: 7.5 }}>Fechas de la PP:</Text>
-            <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>Inicio: {formatFecha(data.practica.startDate)}</Text>
-            <Text style={{ fontSize: 7.5, fontFamily: 'Times-Bold' }}>Culminación: {formatFecha(data.practica.endDate)}</Text>
+          {/* Celda derecha: Fechas (apiladas) */}
+          <View style={[styles.infoCellDataLast, { width: '27%' }]}>
+            <Text style={styles.infoTextLabel}>Fecha de Inicio de la PP:</Text>
+            <Text style={styles.infoText}>{formatFechaPDF(data.practica?.startDate)}</Text>
+            <Text style={[styles.infoTextLabel, { marginTop: 4 }]}>Fecha de Culminación de la PP:</Text>
+            <Text style={styles.infoText}>{formatFechaPDF(data.practica?.endDate)}</Text>
           </View>
         </View>
       </View>
@@ -616,22 +683,25 @@ function PageTutorInstitucional({ data, textos }: Props) {
           <Text style={[styles.colScoreH, { width: '16%' }]}>Calificación Parcial</Text>
         </View>
         {criterios.map((c, idx) => (
-          <View style={idx === criterios.length - 1 ? styles.tRowLast : styles.tRow} key={c.itemNumber}>
-            <Text style={[styles.colNum, { width: '12%' }]}>{c.itemNumber}</Text>
+          <View style={idx === criterios.length - 1 ? styles.tRowLastCriteria : styles.tRow} key={c.itemNumber}>
+            <View style={[styles.colNumCell, { width: '12%' }]}><Text style={styles.colNum}>{c.itemNumber}</Text></View>
             <Text style={[styles.colAspect, { width: '56%' }]}>{c.description}</Text>
-            <Text style={[styles.colRange, { width: '16%' }]}>0-20</Text>
-            <Text style={[styles.colScore, { width: '16%' }]}>{formatScore(c.score)}</Text>
+            <View style={[styles.colRangeCell, { width: '16%' }]}><Text style={styles.colRange}>0-20</Text></View>
+            <View style={[styles.colScoreCell, { width: '16%' }]}><Text style={styles.colScore}>{formatScore(c.score)}</Text></View>
           </View>
         ))}
         <View style={styles.tRowLast}>
-          <Text style={[styles.subtotalLabel, { width: '84%' }]}>Subtotal ({TOTAL_INSTITUCIONAL})</Text>
-          <Text style={[styles.subtotalValue, { width: '16%' }]}>{formatScore(subtotal)}</Text>
+          <Text style={[styles.subtotalLabel, { width: '84%' }]}>Subtotal</Text>
+          <Text style={[styles.subtotalValue, { width: '16%', borderBottomWidth: 1, borderColor: '#000' }]}>{formatScore(subtotal)}</Text>
+        </View>
+        <View style={styles.tRowLast}>
+          <Text style={[styles.subtotalLabel, { width: '84%' }]}>Calificación final = (Subtotal / {TOTAL_INSTITUCIONAL}):</Text>
+          <Text style={[styles.subtotalValue, { width: '16%' }]}>{formatScore(subtotal / TOTAL_INSTITUCIONAL)}</Text>
         </View>
       </View>
-      <Text style={{ textAlign: 'center', marginTop: 6, fontSize: 9, fontFamily: 'Times-Bold' }}>Calificación final = (Subtotal / {TOTAL_INSTITUCIONAL}): {formatScore(subtotal / TOTAL_INSTITUCIONAL)}</Text>
 
       {/* Firma del Tutor(a) Institucional con espacio superior */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 20 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 25 }}>
         <View style={{ alignItems: 'center', width: '40%' }}>
           {textos.institucionalFirmaNombre ? <Text style={styles.firmaName}>{textos.institucionalFirmaNombre}</Text> : null}
           <View style={styles.firmaLine} />
@@ -652,12 +722,10 @@ function PageTutorInstitucional({ data, textos }: Props) {
    ─────────────────────────────────────────── */
 function PageEvaluacionFinal({ data, textos }: Props) {
   const { evaluacionFinal } = data;
-  const subtitleLabel = data.hasMultiplePracticeTypes && data.practiceTypeName
-    ? data.practiceTypeName.toUpperCase()
-    : getCarreraOrPasantiaLabel(data);
+  const subtitleLabel = data.carrera.nombre.toUpperCase();
 
   return (
-    <Page size="A4" style={styles.page}>
+    <Page size="A4" style={[styles.page, { fontFamily: 'Times-Bold' }]}>
       <HeaderFinal />
       <Text style={[styles.title, { marginBottom: 2 }]}>EVALUACIÓN FINAL DE LA PRÁCTICA PROFESIONAL:</Text>
       <Text style={[styles.subtitle, { marginBottom: 15 }]}>{subtitleLabel}</Text>
@@ -666,32 +734,32 @@ function PageEvaluacionFinal({ data, textos }: Props) {
       <View style={styles.gridContainer}>
         <View style={styles.gridRow}>
           <View style={[styles.gridCell, { width: '60%', borderRightWidth: 1, borderColor: '#000' }]}>
-            <Text style={styles.cellHeader}>Apellidos y nombres del estudiante:</Text>
-            <Text style={styles.cellData}>{formatNombreCompleto(data.estudiante).toUpperCase()}</Text>
+            <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Apellidos y nombres del estudiante:</Text>
+            <Text style={styles.cellData}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
           </View>
           <View style={[styles.gridCell, { width: '40%' }]}>
-            <Text style={styles.cellHeader}>Cédula de identidad del estudiante:</Text>
-            <Text style={styles.cellData}>{formatCI(data.estudiante.ci)}</Text>
+            <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Cédula de identidad del estudiante:</Text>
+            <Text style={styles.cellData}>{formatCINumero(data.estudiante.ci)}</Text>
           </View>
         </View>
         <View style={styles.gridRow}>
           <View style={[styles.gridCell, { width: '100%' }]}>
-            <Text style={styles.cellHeader}>Carrera que cursa:</Text>
+            <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Carrera que cursa:</Text>
             <Text style={styles.cellData}>{getCarreraOrPasantiaLabel(data)}</Text>
           </View>
         </View>
         <View style={[styles.gridRow, { borderBottomWidth: 0 }]}>
           <View style={[styles.gridCell, { width: '50%', borderRightWidth: 1, borderColor: '#000' }]}>
-            <Text style={styles.cellHeader}>Nombre de la Institución donde realizó la Práctica Profesional:</Text>
+            <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Nombre de la Institución donde realizó la Práctica Profesional:</Text>
             <Text style={styles.cellData}>{data.institucion?.nombre?.toUpperCase()}</Text>
           </View>
           <View style={[styles.gridCell, { width: '25%', borderRightWidth: 1, borderColor: '#000' }]}>
-            <Text style={styles.cellHeader}>Fecha de inicio de la PP:</Text>
-            <Text style={styles.cellData}>{formatFecha(data.practica.startDate)}</Text>
+            <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Fecha de inicio de la PP:</Text>
+            <Text style={styles.cellData}>{formatFechaPDF(data.practica?.startDate)}</Text>
           </View>
           <View style={[styles.gridCell, { width: '25%' }]}>
-            <Text style={styles.cellHeader}>Fecha de culminación de la PP:</Text>
-            <Text style={styles.cellData}>{formatFecha(data.practica.endDate)}</Text>
+            <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Fecha de culminación de la PP:</Text>
+            <Text style={styles.cellData}>{formatFechaPDF(data.practica?.endDate)}</Text>
           </View>
         </View>
       </View>
@@ -798,9 +866,9 @@ export function EvaluacionConsolidadaPDF({ data, textos }: Props) {
 
   return (
     <Document title="EVALUACIÓN CONSOLIDADA DE LA PRÁCTICA PROFESIONAL">
-      {committeePages}
-      <PageTutorAcademico data={data} textos={textos} />
       <PageTutorInstitucional data={data} textos={textos} />
+      <PageTutorAcademico data={data} textos={textos} />
+      {committeePages}
       <PageEvaluacionFinal data={data} textos={textos} />
     </Document>
   );

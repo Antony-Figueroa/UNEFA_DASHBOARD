@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     paddingBottom: 1,
     paddingHorizontal: 30,
     fontFamily: 'Times-Roman',
-    fontSize: 10,
+    fontSize: 9,
     color: '#000000',
   },
   pageBody: {
@@ -67,19 +67,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   headerText: {
-    fontSize: 10,
+    fontSize: 9,
     textAlign: 'center',
     lineHeight: 1.3,
     fontFamily: 'Times-Bold',
   },
   title: {
-    fontSize: 10,
+    fontSize: 9,
     textAlign: 'center',
     marginBottom: 4,
     fontFamily: 'Times-Bold',
   },
   subtitle: {
-    fontSize: 10,
+    fontSize: 9,
     textAlign: 'center',
     marginBottom: 10,
     fontFamily: 'Times-Bold',
@@ -104,24 +104,24 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#000',
     backgroundColor: '#D9D9D9',
-    fontSize: 10,
+    fontSize: 9,
   },
   infoCellData: {
     padding: 3,
     borderRightWidth: 1,
     borderRightColor: '#000',
-    fontSize: 10,
+    fontSize: 9,
   },
   infoCellDataLast: {
     padding: 3,
-    fontSize: 10,
+    fontSize: 9,
   },
   infoText: {
-    fontSize: 10,
+    fontSize: 9,
     textAlign: 'justify',
   },
   infoTextLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Times-Bold',
     textAlign: 'justify',
   },
@@ -152,16 +152,16 @@ const styles = StyleSheet.create({
     borderBottomColor: '#000',
   },
   colNumCell: { width: '5%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
-  colNum: { textAlign: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
-  colAspect: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, fontSize: 10, textAlign: 'justify' },
+  colNum: { textAlign: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
+  colAspect: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, fontSize: 9, textAlign: 'justify' },
   colRangeCell: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
-  colRange: { textAlign: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
+  colRange: { textAlign: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
   colScoreCell: { width: '18%', padding: 3, justifyContent: 'center' },
-  colScore: { textAlign: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
-  colNumH: { width: '5%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
-  colAspectH: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
-  colRangeH: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
-  colScoreH: { width: '18%', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
+  colScore: { textAlign: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
+  colNumH: { width: '5%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
+  colAspectH: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
+  colRangeH: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
+  colScoreH: { width: '18%', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
 
   // Totals
   totalRow: {
@@ -175,14 +175,14 @@ const styles = StyleSheet.create({
     padding: 3,
     borderRightWidth: 1,
     borderColor: '#000',
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Times-Bold',
   },
   subtotalValue: {
     width: '18%',
     textAlign: 'center',
     padding: 3,
-    fontSize: 10,
+    fontSize: 9,
   },
   totalCalcRow: {
     flexDirection: 'row',
@@ -195,20 +195,20 @@ const styles = StyleSheet.create({
     padding: 3,
     borderRightWidth: 1,
     borderColor: '#000',
-    fontSize: 10,
+    fontSize: 9,
     paddingRight: 6,
   },
   totalCalcValue: {
     width: '18%',
     textAlign: 'center',
     padding: 3,
-    fontSize: 10,
+    fontSize: 9,
   },
   pageNumber: {
     position: 'absolute',
     bottom: 15,
     right: 45,
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Times-Roman',
   },
 
@@ -218,15 +218,15 @@ const styles = StyleSheet.create({
   firmaBox: { alignItems: 'center', width: '30%' },
   firmaBoxWide: { alignItems: 'center', width: '40%' },
   firmaLine: { width: '100%', borderBottomWidth: 1, borderColor: '#000', marginBottom: 3 },
-  firmaName: { fontSize: 10, textAlign: 'center', marginBottom: 1 },
-  firmaRole: { fontSize: 10, textAlign: 'center' },
+  firmaName: { fontSize: 9, textAlign: 'center', marginBottom: 1 },
+  firmaRole: { fontSize: 9, textAlign: 'center' },
 
   // Final signature grid
   firmaFinalContainer: { marginTop: 14 },
   firmaFinalCol: { alignItems: 'center', width: '48%' },
   firmaFinalSingle: { alignItems: 'center', width: '48%', alignSelf: 'center', marginTop: 12 },
-  firmaFinalName: { fontSize: 10, textAlign: 'center' },
-  firmaFinalRole: { fontSize: 10, textAlign: 'center' },
+  firmaFinalName: { fontSize: 9, textAlign: 'center' },
+  firmaFinalRole: { fontSize: 9, textAlign: 'center' },
   firmaFinalLine: { width: '100%', borderBottomWidth: 1, borderColor: '#000', marginBottom: 3 },
 
   // Grid de Información (Página 4)
@@ -245,11 +245,11 @@ const styles = StyleSheet.create({
     minHeight: 45,
   },
   cellHeader: {
-    fontSize: 10,
+    fontSize: 9,
     marginBottom: 5,
   },
   cellData: {
-    fontSize: 10,
+    fontSize: 9,
   },
 
   // Tabla Final (Página 4)
@@ -263,10 +263,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#000',
   },
-  colA: { width: '45%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 10, justifyContent: 'center' },
-  colB: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 10, textAlign: 'center', justifyContent: 'center' },
-  colC: { width: '20%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 10, textAlign: 'center', justifyContent: 'center' },
-  colD: { width: '20%', padding: 5, fontSize: 10, textAlign: 'center', justifyContent: 'center' },
+  colA: { width: '45%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 9, justifyContent: 'center' },
+  colB: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
+  colC: { width: '20%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
+  colD: { width: '20%', padding: 5, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
 
   colMergedLeft: { width: '60%', borderRightWidth: 1, borderColor: '#000', padding: 5 },
 
@@ -275,8 +275,8 @@ const styles = StyleSheet.create({
   firmaRowSplit: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 40 },
   firmaBoxFinal: { alignItems: 'center', width: '45%' },
   firmaLineFinal: { width: 220, borderBottomWidth: 1, borderColor: '#000', marginBottom: 4 },
-  firmaNameFinal: { fontSize: 10, textAlign: 'center' },
-  firmaRoleFinal: { fontSize: 10, textAlign: 'center' },
+  firmaNameFinal: { fontSize: 9, textAlign: 'center' },
+  firmaRoleFinal: { fontSize: 9, textAlign: 'center' },
 });
 
 /* ───────────────────────────────────────────
@@ -393,13 +393,13 @@ const HeaderFinal = () => (
   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
     <Image src="/escudo-2.jpg" style={{ width: 60, height: 60, objectFit: 'contain' }} />
     <View style={{ flex: 1, textAlign: 'center', paddingHorizontal: 20 }}>
-      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>VICERRECTORADO DE LA REGIÓN LOS LLANOS</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
-      <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES</Text>
+      <Text style={{ fontSize: 9, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
+      <Text style={{ fontSize: 9, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
+      <Text style={{ fontSize: 9, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
+      <Text style={{ fontSize: 9, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>DE LA FUERZA ARMADA NACIONAL BOLIVARIANA</Text>
+      <Text style={{ fontSize: 9, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>VICERRECTORADO DE LA REGIÓN LOS LLANOS</Text>
+      <Text style={{ fontSize: 9, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
+      <Text style={{ fontSize: 9, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES</Text>
     </View>
     <Image src="/pdfs-docs/logo.png" style={{ width: 60, height: 60, objectFit: 'contain' }} />
   </View>
@@ -416,7 +416,7 @@ function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: n
   const subtotal = criterios.reduce((acc, c) => acc + (c.score || 0), 0);
 
   return (
-    <Page size="A4" style={styles.page}>
+    <Page size="LETTER" style={styles.page}>
       <View style={styles.pageBody}>
         <View>
           <MembreteImagen />
@@ -534,7 +534,7 @@ function PageTutorAcademico({ data, textos }: Props) {
   const subtotal = criterios.reduce((acc, c) => acc + (c.score || 0), 0);
 
   return (
-    <Page size="A4" style={styles.page}>
+    <Page size="LETTER" style={styles.page}>
       <View style={styles.pageBody}>
         <View>
           <MembreteImagen />
@@ -626,7 +626,7 @@ function PageTutorInstitucional({ data, textos }: Props) {
   const subtotal = criterios.reduce((acc, c) => acc + (c.score || 0), 0);
 
   return (
-    <Page size="A4" style={styles.page}>
+    <Page size="LETTER" style={styles.page}>
       <MembreteImagen />
       <Text style={styles.title}>EVALUACIÓN DEL DESEMPEÑO DEL ESTUDIANTE</Text>
       <Text style={styles.subtitle}>TUTOR INSTITUCIONAL</Text>
@@ -711,7 +711,7 @@ function PageTutorInstitucional({ data, textos }: Props) {
           <Text style={styles.firmaRole}>Tutor(a) Institucional</Text>
         </View>
         <View style={{ alignItems: 'center', width: '30%' }}>
-          <Text style={{ fontSize: 10, marginBottom: 4 }}>Sello de la Empresa:</Text>
+          <Text style={{ fontSize: 9, marginBottom: 4 }}>Sello de la Empresa:</Text>
           <View style={{ width: 90, height: 50 }} />
         </View>
       </View>
@@ -728,7 +728,7 @@ function PageEvaluacionFinal({ data, textos }: Props) {
   const subtitleLabel = data.carrera.nombre.toUpperCase();
 
   return (
-    <Page size="A4" style={[styles.page, { fontFamily: 'Times-Bold' }]}>
+    <Page size="LETTER" style={[styles.page, { fontFamily: 'Times-Bold' }]}>
       <HeaderFinal />
       <Text style={[styles.title, { marginBottom: 2 }]}>EVALUACIÓN FINAL DE LA PRÁCTICA PROFESIONAL:</Text>
       <Text style={[styles.subtitle, { marginBottom: 15 }]}>{subtitleLabel}</Text>

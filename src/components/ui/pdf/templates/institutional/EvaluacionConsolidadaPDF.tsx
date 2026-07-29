@@ -151,16 +151,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#000',
   },
-  colNumCell: { width: '4%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
+  colNumCell: { width: '5%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
   colNum: { textAlign: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
   colAspect: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, fontSize: 10, textAlign: 'justify' },
-  colRangeCell: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
+  colRangeCell: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
   colRange: { textAlign: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
   colScoreCell: { width: '18%', padding: 3, justifyContent: 'center' },
   colScore: { textAlign: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
-  colNumH: { width: '4%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
+  colNumH: { width: '5%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
   colAspectH: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
-  colRangeH: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
+  colRangeH: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
   colScoreH: { width: '18%', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
 
   // Totals
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     borderColor: '#000',
   },
   subtotalLabel: {
-    width: '84%',
+    width: '82%',
     textAlign: 'right',
     padding: 3,
     borderRightWidth: 1,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Times-Bold',
   },
   subtotalValue: {
-    width: '16%',
+    width: '18%',
     textAlign: 'center',
     padding: 3,
     fontSize: 10,
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     borderColor: '#000',
   },
   totalCalcLabel: {
-    width: '84%',
+    width: '82%',
     textAlign: 'right',
     padding: 3,
     borderRightWidth: 1,
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     paddingRight: 6,
   },
   totalCalcValue: {
-    width: '16%',
+    width: '18%',
     textAlign: 'center',
     padding: 3,
     fontSize: 10,
@@ -635,11 +635,11 @@ function PageTutorInstitucional({ data, textos }: Props) {
       <View style={styles.infoBox}>
         {/* Fila 1: 4 celdas — Estudiante, CI, Período, Carrera */}
         <View style={styles.infoRow}>
-          <View style={[styles.infoCellData, { width: '28%' }]}>
+          <View style={[styles.infoCellData, { width: '36%' }]}>
             <Text style={styles.infoTextLabel}>Apellidos y Nombres del Estudiante:</Text>
             <Text style={styles.infoText}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
           </View>
-          <View style={[styles.infoCellData, { width: '22%' }]}>
+          <View style={[styles.infoCellData, { width: '30%' }]}>
             <Text style={styles.infoTextLabel}>Cédula de Identidad del Estudiante:</Text>
             <Text style={styles.infoText}>{formatCINumero(data.estudiante.ci)}</Text>
           </View>
@@ -647,7 +647,7 @@ function PageTutorInstitucional({ data, textos }: Props) {
             <Text style={styles.infoTextLabel}>Período: </Text>
             <Text style={styles.infoText}>{data.periodo?.description}</Text>
           </View>
-          <View style={[styles.infoCellDataLast, { width: '33%' }]}>
+          <View style={[styles.infoCellDataLast, { width: '17%' }]}>
             <Text style={styles.infoTextLabel}>Carrera que cursa:</Text>
             <Text style={styles.infoText}>{getCarreraOrPasantiaLabel(data)}</Text>
           </View>
@@ -680,26 +680,26 @@ function PageTutorInstitucional({ data, textos }: Props) {
 
       <View style={styles.table}>
         <View style={styles.tHeader}>
-          <Text style={[styles.colNumH, { width: '4%' }]}>Nº Ítems</Text>
+          <Text style={[styles.colNumH, { width: '5%' }]}>Nº Ítems</Text>
           <Text style={[styles.colAspectH, { width: '62%' }]}>Aspecto evaluado</Text>
-          <Text style={[styles.colRangeH, { width: '16%' }]}>Intervalo de Ponderación</Text>
+          <Text style={[styles.colRangeH, { width: '15%' }]}>Intervalo de Ponderación</Text>
           <Text style={[styles.colScoreH, { width: '18%' }]}>Calificación Parcial</Text>
         </View>
         {criterios.map((c, idx) => (
           <View style={idx === criterios.length - 1 ? styles.tRowLastCriteria : styles.tRow} key={c.itemNumber}>
-            <View style={[styles.colNumCell, { width: '4%' }]}><Text style={styles.colNum}>{c.itemNumber}</Text></View>
+            <View style={[styles.colNumCell, { width: '5%' }]}><Text style={styles.colNum}>{c.itemNumber}</Text></View>
             <Text style={[styles.colAspect, { width: '62%' }]}>{c.description}</Text>
-            <View style={[styles.colRangeCell, { width: '16%' }]}><Text style={styles.colRange}>0-20</Text></View>
+            <View style={[styles.colRangeCell, { width: '15%' }]}><Text style={styles.colRange}>0-20</Text></View>
             <View style={[styles.colScoreCell, { width: '18%' }]}><Text style={styles.colScore}>{formatScore(c.score)}</Text></View>
           </View>
         ))}
         <View style={styles.tRowLast}>
-          <Text style={[styles.subtotalLabel, { width: '84%' }]}>Subtotal</Text>
-          <Text style={[styles.subtotalValue, { width: '16%', borderBottomWidth: 1, borderColor: '#000' }]}>{formatScore(subtotal)}</Text>
+          <Text style={[styles.subtotalLabel, { width: '82%' }]}>Subtotal</Text>
+          <Text style={[styles.subtotalValue, { width: '18%', borderBottomWidth: 1, borderColor: '#000' }]}>{formatScore(subtotal)}</Text>
         </View>
         <View style={styles.tRowLast}>
-          <Text style={[styles.subtotalLabel, { width: '84%' }]}>Calificación final = (Subtotal / {TOTAL_INSTITUCIONAL}):</Text>
-          <Text style={[styles.subtotalValue, { width: '16%' }]}>{formatScore(subtotal / TOTAL_INSTITUCIONAL)}</Text>
+          <Text style={[styles.subtotalLabel, { width: '82%' }]}>Calificación final = (Subtotal / {TOTAL_INSTITUCIONAL}):</Text>
+          <Text style={[styles.subtotalValue, { width: '18%' }]}>{formatScore(subtotal / TOTAL_INSTITUCIONAL)}</Text>
         </View>
       </View>
 

@@ -433,22 +433,22 @@ function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: n
         {/* Comité Evaluador */}
         <View style={styles.infoBox}>
           <View style={[styles.infoRow, { backgroundColor: '#D9D9D9' }]}>
-            <Text style={[styles.infoCellHeader, { width: '36%', textAlign: 'center', borderRightWidth: 1 }]}>Comité Evaluador</Text>
-            <Text style={[styles.infoCellHeader, { width: '44%', textAlign: 'center', borderRightWidth: 1 }]}>Apellidos y Nombres</Text>
-            <Text style={[styles.infoCellHeader, { width: '20%', textAlign: 'center' }]}>Cédula de Identidad</Text>
+            <Text style={[styles.infoCellHeader, { width: '36%', textAlign: 'center', borderRightWidth: 1, fontFamily: 'Times-Bold' }]}>Comité Evaluador</Text>
+            <Text style={[styles.infoCellHeader, { width: '44%', textAlign: 'center', borderRightWidth: 1, fontFamily: 'Times-Bold' }]}>Apellidos y Nombres</Text>
+            <Text style={[styles.infoCellHeader, { width: '20%', textAlign: 'center', fontFamily: 'Times-Bold' }]}>Cédula de Identidad</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={[styles.infoCellData, { width: '36%' }]}>Coordinador de Práctica Profesional</Text>
+            <Text style={[styles.infoCellData, { width: '36%', fontFamily: 'Times-Bold' }]}>Coordinador de Práctica Profesional</Text>
             <Text style={[styles.infoCellData, { width: '44%' }]}>{data.coordinadorPP?.nombreCompleto.toUpperCase() || ''}</Text>
             <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.coordinadorPP ? formatCINumero(data.coordinadorPP.ci) : ''}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={[styles.infoCellData, { width: '36%' }]}>Coordinador de Carrera</Text>
+            <Text style={[styles.infoCellData, { width: '36%', fontFamily: 'Times-Bold' }]}>Coordinador de Carrera</Text>
             <Text style={[styles.infoCellData, { width: '44%' }]}>{data.coordinadorCarrera?.nombreCompleto.toUpperCase() || ''}</Text>
             <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.coordinadorCarrera ? formatCINumero(data.coordinadorCarrera.ci) : ''}</Text>
           </View>
           <View style={styles.infoRowLast}>
-            <Text style={[styles.infoCellData, { width: '36%' }]}>Tutor Académico</Text>
+            <Text style={[styles.infoCellData, { width: '36%', fontFamily: 'Times-Bold' }]}>Tutor Académico</Text>
             <Text style={[styles.infoCellData, { width: '44%' }]}>{formatTutorNombre(data.tutorAcademico)}</Text>
             <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.tutorAcademico ? formatCINumero(data.tutorAcademico.ci) : ''}</Text>
           </View>
@@ -456,7 +456,7 @@ function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: n
 
         {/* Tabla de criterios */}
         <View style={styles.table} wrap={false}>
-          <View style={styles.tHeader}>
+          <View style={[styles.tHeader, { backgroundColor: '#fff' }]}>
             <Text style={styles.colNumH}>Nº Ítems</Text>
             <Text style={styles.colAspectH}>Aspecto a evaluar</Text>
             <Text style={styles.colRangeH}>Intervalo de Ponderación</Text>

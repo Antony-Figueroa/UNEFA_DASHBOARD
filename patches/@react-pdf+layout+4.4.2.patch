@@ -1,0 +1,13 @@
+diff --git a/node_modules/@react-pdf/layout/lib/index.js b/node_modules/@react-pdf/layout/lib/index.js
+index c64bdf2..d680f08 100644
+--- a/node_modules/@react-pdf/layout/lib/index.js
++++ b/node_modules/@react-pdf/layout/lib/index.js
+@@ -1492,6 +1492,8 @@ const getContainer = (width, height, node) => {
+ const getLayoutOptions = (fontStore, node) => ({
+     hyphenationPenalty: node.props.hyphenationPenalty,
+     shrinkWhitespaceFactor: { before: -0.5, after: -0.5 },
++    expandCharFactor: { before: 0, after: 0 },
++    shrinkCharFactor: { before: 0, after: 0 },
+     hyphenationCallback: node.props.hyphenationCallback ||
+         fontStore?.getHyphenationCallback() ||
+         null,

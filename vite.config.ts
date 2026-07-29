@@ -43,7 +43,7 @@ export default defineConfig(() => {
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,pdf,doc}"],
           globIgnores: ["docs/**"],
-          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB (react-pdf.browser.js is ~2.2 MB)
+          maximumFileSizeToCacheInBytes: 7 * 1024 * 1024, // 7 MB (cubre PDFs grandes ~6 MB)
         },
       }),
     ],

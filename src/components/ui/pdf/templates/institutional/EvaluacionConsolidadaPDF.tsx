@@ -403,87 +403,85 @@ function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: n
 
   return (
     <Page size="LETTER" style={styles.page}>
-      <View style={styles.pageBody}>
-        <View>
-          <MembreteImagen />
-          <Text style={styles.title}>EVALUACIÓN DEL DESEMPEÑO DEL ESTUDIANTE</Text>
-          <Text style={styles.subtitle}>COMITÉ EVALUADOR</Text>
+      <View wrap={false}>
+        <MembreteImagen />
+        <Text style={styles.title}>EVALUACIÓN DEL DESEMPEÑO DEL ESTUDIANTE</Text>
+        <Text style={styles.subtitle}>COMITÉ EVALUADOR</Text>
 
-          {/* Datos del estudiante — 1 fila con 4 celdas */}
-          <View style={styles.infoBox}>
-            <View style={styles.infoRowLast}>
-              <View style={[styles.infoCellData, { width: '35%' }]}>
-                <Text style={styles.infoTextLabel}>Apellidos y Nombres del Estudiante:</Text>
-                <Text style={styles.infoText}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
-              </View>
-              <View style={[styles.infoCellData, { width: '20%' }]}>
-                <Text style={styles.infoTextLabel}>Cédula de identidad del Estudiante:</Text>
-                <Text style={styles.infoText}>{formatCINumero(data.estudiante.ci)}</Text>
-              </View>
-              <View style={[styles.infoCellData, { width: '25%' }]}>
-                <Text style={styles.infoTextLabel}>Carrera que cursa:</Text>
-                <Text style={styles.infoText}>{getCarreraOrPasantiaLabel(data)}</Text>
-              </View>
-              <View style={[styles.infoCellDataLast, { width: '20%' }]}>
-                <Text style={styles.infoTextLabel}>Período: </Text>
-                <Text style={styles.infoText}>{data.periodo?.description}</Text>
-              </View>
+        {/* Datos del estudiante — 1 fila con 4 celdas */}
+        <View style={styles.infoBox}>
+          <View style={styles.infoRowLast}>
+            <View style={[styles.infoCellData, { width: '35%' }]}>
+              <Text style={styles.infoTextLabel}>Apellidos y Nombres del Estudiante:</Text>
+              <Text style={styles.infoText}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
             </View>
-          </View>
-
-          {/* Comité Evaluador */}
-          <View style={styles.infoBox}>
-            <View style={[styles.infoRow, { backgroundColor: '#D9D9D9' }]}>
-              <Text style={[styles.infoCellHeader, { width: '36%', textAlign: 'center', borderRightWidth: 1 }]}>Comité Evaluador</Text>
-              <Text style={[styles.infoCellHeader, { width: '44%', textAlign: 'center', borderRightWidth: 1 }]}>Apellidos y Nombres</Text>
-              <Text style={[styles.infoCellHeader, { width: '20%', textAlign: 'center' }]}>Cédula de Identidad</Text>
+            <View style={[styles.infoCellData, { width: '20%' }]}>
+              <Text style={styles.infoTextLabel}>Cédula de identidad del Estudiante:</Text>
+              <Text style={styles.infoText}>{formatCINumero(data.estudiante.ci)}</Text>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={[styles.infoCellData, { width: '36%' }]}>Coordinador de Práctica Profesional</Text>
-              <Text style={[styles.infoCellData, { width: '44%' }]}>{data.coordinadorPP?.nombreCompleto.toUpperCase() || ''}</Text>
-              <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.coordinadorPP ? formatCINumero(data.coordinadorPP.ci) : ''}</Text>
+            <View style={[styles.infoCellData, { width: '25%' }]}>
+              <Text style={styles.infoTextLabel}>Carrera que cursa:</Text>
+              <Text style={styles.infoText}>{getCarreraOrPasantiaLabel(data)}</Text>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={[styles.infoCellData, { width: '36%' }]}>Coordinador de Carrera</Text>
-              <Text style={[styles.infoCellData, { width: '44%' }]}>{data.coordinadorCarrera?.nombreCompleto.toUpperCase() || ''}</Text>
-              <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.coordinadorCarrera ? formatCINumero(data.coordinadorCarrera.ci) : ''}</Text>
-            </View>
-            <View style={styles.infoRowLast}>
-              <Text style={[styles.infoCellData, { width: '36%' }]}>Tutor Académico</Text>
-              <Text style={[styles.infoCellData, { width: '44%' }]}>{formatTutorNombre(data.tutorAcademico)}</Text>
-              <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.tutorAcademico ? formatCINumero(data.tutorAcademico.ci) : ''}</Text>
-            </View>
-          </View>
-
-          {/* Tabla de criterios */}
-          <View style={styles.table}>
-            <View style={styles.tHeader}>
-              <Text style={styles.colNumH}>Nº Ítems</Text>
-              <Text style={styles.colAspectH}>Aspecto a evaluar</Text>
-              <Text style={styles.colRangeH}>Intervalo de Ponderación</Text>
-              <Text style={styles.colScoreH}>Calificación Parcial</Text>
-            </View>
-            {criterios.map((c, idx) => (
-              <View style={idx === criterios.length - 1 ? styles.tRowLastCriteria : styles.tRow} key={c.itemNumber}>
-                <View style={styles.colNumCell}><Text style={styles.colNum}>{c.itemNumber}</Text></View>
-                <Text style={styles.colAspect}>{c.description}</Text>
-                <View style={styles.colRangeCell}><Text style={styles.colRange}>0-20</Text></View>
-                <View style={styles.colScoreCell}><Text style={styles.colScore}>{formatScore(c.score)}</Text></View>
-              </View>
-            ))}
-            <View style={styles.tRowLast}>
-              <Text style={[styles.subtotalLabel]}>Subtotal</Text>
-              <Text style={[styles.subtotalValue, { borderBottomWidth: 1, borderColor: '#000' }]}>{formatScore(subtotal)}</Text>
-            </View>
-            <View style={styles.tRowLast}>
-              <Text style={[styles.subtotalLabel]}>Calificación final = (Subtotal / {TOTAL_COMITE}):</Text>
-              <Text style={[styles.subtotalValue]}>{formatScore(subtotal / TOTAL_COMITE)}</Text>
+            <View style={[styles.infoCellDataLast, { width: '20%' }]}>
+              <Text style={styles.infoTextLabel}>Período: </Text>
+              <Text style={styles.infoText}>{data.periodo?.description}</Text>
             </View>
           </View>
         </View>
 
+        {/* Comité Evaluador */}
+        <View style={styles.infoBox}>
+          <View style={[styles.infoRow, { backgroundColor: '#D9D9D9' }]}>
+            <Text style={[styles.infoCellHeader, { width: '36%', textAlign: 'center', borderRightWidth: 1 }]}>Comité Evaluador</Text>
+            <Text style={[styles.infoCellHeader, { width: '44%', textAlign: 'center', borderRightWidth: 1 }]}>Apellidos y Nombres</Text>
+            <Text style={[styles.infoCellHeader, { width: '20%', textAlign: 'center' }]}>Cédula de Identidad</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={[styles.infoCellData, { width: '36%' }]}>Coordinador de Práctica Profesional</Text>
+            <Text style={[styles.infoCellData, { width: '44%' }]}>{data.coordinadorPP?.nombreCompleto.toUpperCase() || ''}</Text>
+            <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.coordinadorPP ? formatCINumero(data.coordinadorPP.ci) : ''}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={[styles.infoCellData, { width: '36%' }]}>Coordinador de Carrera</Text>
+            <Text style={[styles.infoCellData, { width: '44%' }]}>{data.coordinadorCarrera?.nombreCompleto.toUpperCase() || ''}</Text>
+            <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.coordinadorCarrera ? formatCINumero(data.coordinadorCarrera.ci) : ''}</Text>
+          </View>
+          <View style={styles.infoRowLast}>
+            <Text style={[styles.infoCellData, { width: '36%' }]}>Tutor Académico</Text>
+            <Text style={[styles.infoCellData, { width: '44%' }]}>{formatTutorNombre(data.tutorAcademico)}</Text>
+            <Text style={[styles.infoCellDataLast, { width: '20%', textAlign: 'center' }]}>{data.tutorAcademico ? formatCINumero(data.tutorAcademico.ci) : ''}</Text>
+          </View>
+        </View>
+
+        {/* Tabla de criterios */}
+        <View style={styles.table} wrap={false}>
+          <View style={styles.tHeader}>
+            <Text style={styles.colNumH}>Nº Ítems</Text>
+            <Text style={styles.colAspectH}>Aspecto a evaluar</Text>
+            <Text style={styles.colRangeH}>Intervalo de Ponderación</Text>
+            <Text style={styles.colScoreH}>Calificación Parcial</Text>
+          </View>
+          {criterios.map((c, idx) => (
+            <View style={idx === criterios.length - 1 ? styles.tRowLastCriteria : styles.tRow} key={c.itemNumber}>
+              <View style={styles.colNumCell}><Text style={styles.colNum}>{c.itemNumber}</Text></View>
+              <Text style={styles.colAspect}>{c.description}</Text>
+              <View style={styles.colRangeCell}><Text style={styles.colRange}>0-20</Text></View>
+              <View style={styles.colScoreCell}><Text style={styles.colScore}>{formatScore(c.score)}</Text></View>
+            </View>
+          ))}
+          <View style={styles.tRowLast}>
+            <Text style={[styles.subtotalLabel]}>Subtotal</Text>
+            <Text style={[styles.subtotalValue, { borderBottomWidth: 1, borderColor: '#000' }]}>{formatScore(subtotal)}</Text>
+          </View>
+          <View style={styles.tRowLast}>
+            <Text style={[styles.subtotalLabel]}>Calificación final = (Subtotal / {TOTAL_COMITE}):</Text>
+            <Text style={[styles.subtotalValue]}>{formatScore(subtotal / TOTAL_COMITE)}</Text>
+          </View>
+        </View>
+
         {/* Firmas al fondo — PP (izq), Coordinador de Carrera (der), Tutor Académico (centro abajo) */}
-        <View>
+        <View wrap={false}>
           <View style={styles.firmaContainer3}>
             <View style={styles.firmaBox}>
               {textos.comiteFirma1Nombre ? <Text style={styles.firmaName}>{textos.comiteFirma1Nombre}</Text> : null}
@@ -521,75 +519,73 @@ function PageTutorAcademico({ data, textos }: Props) {
 
   return (
     <Page size="LETTER" style={styles.page}>
-      <View style={styles.pageBody}>
-        <View>
-          <MembreteImagen />
-          <Text style={[styles.title, { marginBottom: 10 }]}>EVALUACIÓN DEL TUTOR ACADÉMICO</Text>
+      <View wrap={false}>
+        <MembreteImagen />
+        <Text style={[styles.title, { marginBottom: 10 }]}>EVALUACIÓN DEL TUTOR ACADÉMICO</Text>
 
-          {/* Info box — 2 filas */}
-          <View style={styles.infoBox}>
-            <View style={styles.infoRow}>
-              <View style={[styles.infoCellData, { width: '40%' }]}>
-                <Text style={styles.infoTextLabel}>Apellidos y Nombres del Estudiante:</Text>
-                <Text style={styles.infoText}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
-              </View>
-              <View style={[styles.infoCellData, { width: '25%' }]}>
-                <Text style={styles.infoTextLabel}>Cédula de Identidad del Estudiante:</Text>
-                <Text style={styles.infoText}>{formatCINumero(data.estudiante.ci)}</Text>
-              </View>
-              <View style={[styles.infoCellDataLast, { width: '35%' }]}>
-                <Text style={styles.infoTextLabel}>Carrera que cursa:</Text>
-                <Text style={styles.infoText}>{getCarreraOrPasantiaLabel(data)}</Text>
-              </View>
+        {/* Info box — 2 filas */}
+        <View style={styles.infoBox}>
+          <View style={styles.infoRow}>
+            <View style={[styles.infoCellData, { width: '40%' }]}>
+              <Text style={styles.infoTextLabel}>Apellidos y Nombres del Estudiante:</Text>
+              <Text style={styles.infoText}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
             </View>
-            <View style={styles.infoRowLast}>
-              <View style={[styles.infoCellData, { width: '35%' }]}>
-                <Text style={styles.infoTextLabel}>Apellidos y Nombres del Tutor Académico:</Text>
-                <Text style={styles.infoText}>{formatTutorNombre(data.tutorAcademico)}</Text>
-              </View>
-              <View style={[styles.infoCellData, { width: '22%' }]}>
-                <Text style={styles.infoTextLabel}>Cédula de identidad del Tutor Académico:</Text>
-                <Text style={styles.infoText}>{data.tutorAcademico ? formatCINumero(data.tutorAcademico.ci) : ''}</Text>
-              </View>
-              <View style={[styles.infoCellData, { width: '22%' }]}>
-                <Text style={styles.infoTextLabel}>Fecha de Inicio de la PP:</Text>
-                <Text style={styles.infoText}>{formatFechaPDF(data.practica?.startDate)}</Text>
-              </View>
-              <View style={[styles.infoCellDataLast, { width: '21%' }]}>
-                <Text style={styles.infoTextLabel}>Fecha de Culminación de la PP:</Text>
-                <Text style={styles.infoText}>{formatFechaPDF(data.practica?.endDate)}</Text>
-              </View>
+            <View style={[styles.infoCellData, { width: '25%' }]}>
+              <Text style={styles.infoTextLabel}>Cédula de Identidad del Estudiante:</Text>
+              <Text style={styles.infoText}>{formatCINumero(data.estudiante.ci)}</Text>
+            </View>
+            <View style={[styles.infoCellDataLast, { width: '35%' }]}>
+              <Text style={styles.infoTextLabel}>Carrera que cursa:</Text>
+              <Text style={styles.infoText}>{getCarreraOrPasantiaLabel(data)}</Text>
             </View>
           </View>
-
-          {/* Tabla de criterios */}
-          <View style={styles.table}>
-            <View style={styles.tHeader}>
-              <Text style={styles.colNumH}>Nº Ítems</Text>
-              <Text style={styles.colAspectH}>Aspecto Evaluado</Text>
-              <Text style={styles.colRangeH}>Intervalo de Ponderación</Text>
-              <Text style={styles.colScoreH}>Calificación Parcial</Text>
+          <View style={styles.infoRowLast}>
+            <View style={[styles.infoCellData, { width: '35%' }]}>
+              <Text style={styles.infoTextLabel}>Apellidos y Nombres del Tutor Académico:</Text>
+              <Text style={styles.infoText}>{formatTutorNombre(data.tutorAcademico)}</Text>
             </View>
-            {criterios.map((c, idx) => (
-              <View style={idx === criterios.length - 1 ? styles.tRowLastCriteria : styles.tRow} key={c.itemNumber}>
-                <View style={styles.colNumCell}><Text style={styles.colNum}>{c.itemNumber}</Text></View>
-                <Text style={styles.colAspect}>{c.description}</Text>
-                <View style={styles.colRangeCell}><Text style={styles.colRange}>0-20</Text></View>
-                <View style={styles.colScoreCell}><Text style={styles.colScore}>{formatScore(c.score)}</Text></View>
-              </View>
-            ))}
-            <View style={styles.tRowLast}>
-              <Text style={styles.subtotalLabel}>Subtotal</Text>
-              <Text style={[styles.subtotalValue, { borderBottomWidth: 1, borderColor: '#000' }]}>{formatScore(subtotal)}</Text>
+            <View style={[styles.infoCellData, { width: '22%' }]}>
+              <Text style={styles.infoTextLabel}>Cédula de identidad del Tutor Académico:</Text>
+              <Text style={styles.infoText}>{data.tutorAcademico ? formatCINumero(data.tutorAcademico.ci) : ''}</Text>
             </View>
-            <View style={styles.tRowLast}>
-              <Text style={styles.subtotalLabel}>Calificación final = (Subtotal / {TOTAL_ACADEMICO}):</Text>
-              <Text style={[styles.subtotalValue]}>{formatScore(subtotal / TOTAL_ACADEMICO)}</Text>
+            <View style={[styles.infoCellData, { width: '22%' }]}>
+              <Text style={styles.infoTextLabel}>Fecha de Inicio de la PP:</Text>
+              <Text style={styles.infoText}>{formatFechaPDF(data.practica?.startDate)}</Text>
+            </View>
+            <View style={[styles.infoCellDataLast, { width: '21%' }]}>
+              <Text style={styles.infoTextLabel}>Fecha de Culminación de la PP:</Text>
+              <Text style={styles.infoText}>{formatFechaPDF(data.practica?.endDate)}</Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.firmaContainer1}>
+        {/* Tabla de criterios */}
+        <View style={styles.table} wrap={false}>
+          <View style={styles.tHeader}>
+            <Text style={styles.colNumH}>Nº Ítems</Text>
+            <Text style={styles.colAspectH}>Aspecto Evaluado</Text>
+            <Text style={styles.colRangeH}>Intervalo de Ponderación</Text>
+            <Text style={styles.colScoreH}>Calificación Parcial</Text>
+          </View>
+          {criterios.map((c, idx) => (
+            <View style={idx === criterios.length - 1 ? styles.tRowLastCriteria : styles.tRow} key={c.itemNumber}>
+              <View style={styles.colNumCell}><Text style={styles.colNum}>{c.itemNumber}</Text></View>
+              <Text style={styles.colAspect}>{c.description}</Text>
+              <View style={styles.colRangeCell}><Text style={styles.colRange}>0-20</Text></View>
+              <View style={styles.colScoreCell}><Text style={styles.colScore}>{formatScore(c.score)}</Text></View>
+            </View>
+          ))}
+          <View style={styles.tRowLast}>
+            <Text style={styles.subtotalLabel}>Subtotal</Text>
+            <Text style={[styles.subtotalValue, { borderBottomWidth: 1, borderColor: '#000' }]}>{formatScore(subtotal)}</Text>
+          </View>
+          <View style={styles.tRowLast}>
+            <Text style={styles.subtotalLabel}>Calificación final = (Subtotal / {TOTAL_ACADEMICO}):</Text>
+            <Text style={[styles.subtotalValue]}>{formatScore(subtotal / TOTAL_ACADEMICO)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.firmaContainer1} wrap={false}>
           {textos.academicoFirmaNombre ? <Text style={styles.firmaName}>{textos.academicoFirmaNombre}</Text> : null}
           <View style={{ alignItems: 'center', width: '40%' }}>
             <View style={styles.firmaLine} />
@@ -613,12 +609,13 @@ function PageTutorInstitucional({ data, textos }: Props) {
 
   return (
     <Page size="LETTER" style={styles.page}>
-      <MembreteImagen />
-      <Text style={styles.title}>EVALUACIÓN DEL DESEMPEÑO DEL ESTUDIANTE</Text>
-      <Text style={styles.subtitle}>TUTOR INSTITUCIONAL</Text>
+      <View wrap={false}>
+        <MembreteImagen />
+        <Text style={styles.title}>EVALUACIÓN DEL DESEMPEÑO DEL ESTUDIANTE</Text>
+        <Text style={styles.subtitle}>TUTOR INSTITUCIONAL</Text>
 
-      {/* Info box — estructura exacta del documento oficial */}
-      <View style={styles.infoBox}>
+        {/* Info box — estructura exacta del documento oficial */}
+        <View style={styles.infoBox}>
         {/* Fila 1: 4 celdas — Estudiante, CI, Período, Carrera */}
         <View style={styles.infoRow}>
           <View style={[styles.infoCellData, { width: '36%' }]}>
@@ -701,6 +698,8 @@ function PageTutorInstitucional({ data, textos }: Props) {
           <View style={{ width: 90, height: 50 }} />
         </View>
       </View>
+      
+    </View>
       
     </Page>
   );

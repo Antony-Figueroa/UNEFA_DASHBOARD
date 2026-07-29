@@ -21,7 +21,8 @@
     "electron:dev:backend": "concurrently -k \"vite --host --port 5173\" \"cd backend && npx tsx src/server-offline.ts\" \"tsx electron/main.mjs\"",
     "electron:build": "npm run build && electron-builder",
     "db:local": "node scripts/switch-env.mjs local",
-    "db:cloud": "node scripts/switch-env.mjs cloud"
+    "db:cloud": "node scripts/switch-env.mjs cloud",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.4.6",
@@ -108,6 +109,7 @@
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
     "jsdom": "^27.4.0",
+    "patch-package": "^8.0.1",
     "postcss": "^8.5.2",
     "storybook": "^8.0.0",
     "tailwindcss": "^4.1.18",

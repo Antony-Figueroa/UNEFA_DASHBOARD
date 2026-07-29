@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase.js';
 import { evaluationConfig } from '../config/evaluation.config.js';
 
 function getFullName(row: any): string {
-  const parts = [row.NAME || '', row.SECOND_NAME || '', row.SURNAME || '', row.SECOND_SURNAME || ''];
+  const parts = [row.SURNAME || '', row.SECOND_SURNAME || '', row.NAME || '', row.SECOND_NAME || ''];
   return parts.filter(Boolean).join(' ');
 }
 
@@ -1646,7 +1646,18 @@ export const getDataEvaluacionConsolidada = async (req: Request, res: Response) 
           segundoNombre: tutorInst.segundoNombre,
           primerApellido: tutorInst.primerApellido,
           segundoApellido: tutorInst.segundoApellido,
-        } : null,
+        } : (evalInst?.evaluatorName ? {
+          // ponytail: fallback cuando el tutor no está en t_professional_practices_tutor
+          // pero la evaluación existe con EVALUATOR_NAME
+          ci: (evalInst.evaluatorCi || '').replace(/^V-/, ''),
+          titulo: null,
+          tituloAbrev: '',
+          nombreCompleto: evalInst.evaluatorName,
+          primerNombre: '',
+          segundoNombre: '',
+          primerApellido: '',
+          segundoApellido: '',
+        } : null),
         department: practice.DEPARTMENT || null,
         tutorAcademico: tutorAcad ? {
           ci: tutorAcad.ci,

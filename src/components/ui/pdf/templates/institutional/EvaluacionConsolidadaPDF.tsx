@@ -24,8 +24,10 @@ function formatCINumero(ci: string | null | undefined): string {
 }
 
 /** Nombre con apellidos primero: "RODRÍGUEZ LÓPEZ ELEIDIMAR ANYELIZ" */
-function formatApellidoNombre(persona: { primerNombre?: string | null; segundoNombre?: string | null; primerApellido?: string | null; segundoApellido?: string | null } | null | undefined): string {
+function formatApellidoNombre(persona: { primerNombre?: string | null; segundoNombre?: string | null; primerApellido?: string | null; segundoApellido?: string | null; nombreCompleto?: string } | null | undefined): string {
   if (!persona) return '';
+  // ponytail: fallback cuando el tutor no está en t_professional_practices_tutor
+  if (persona.nombreCompleto) return persona.nombreCompleto;
   const primerNombre = persona.primerNombre || '';
   const segundoNombre = persona.segundoNombre ? ` ${persona.segundoNombre}` : '';
   const primerApellido = persona.primerApellido || '';
@@ -38,11 +40,11 @@ function formatApellidoNombre(persona: { primerNombre?: string | null; segundoNo
    ─────────────────────────────────────────── */
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 30,
-    paddingBottom: 40,
-    paddingHorizontal: 45,
+    paddingTop: 16,
+    paddingBottom: 1,
+    paddingHorizontal: 30,
     fontFamily: 'Times-Roman',
-    fontSize: 12,
+    fontSize: 10,
     color: '#000000',
   },
   pageBody: {
@@ -65,7 +67,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   headerText: {
-    fontSize: 8,
+    fontSize: 10,
     textAlign: 'center',
     lineHeight: 1.3,
     fontFamily: 'Times-Bold',
@@ -102,24 +104,24 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#000',
     backgroundColor: '#D9D9D9',
-    fontSize: 7.5,
+    fontSize: 10,
   },
   infoCellData: {
     padding: 3,
     borderRightWidth: 1,
     borderRightColor: '#000',
-    fontSize: 7.5,
+    fontSize: 10,
   },
   infoCellDataLast: {
     padding: 3,
-    fontSize: 7.5,
+    fontSize: 10,
   },
   infoText: {
-    fontSize: 7.5,
+    fontSize: 10,
     textAlign: 'justify',
   },
   infoTextLabel: {
-    fontSize: 7.5,
+    fontSize: 10,
     fontFamily: 'Times-Bold',
     textAlign: 'justify',
   },
@@ -149,17 +151,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#000',
   },
-  colNumCell: { width: '6%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
-  colNum: { textAlign: 'center', fontSize: 7.5, fontFamily: 'Times-Bold' },
-  colAspect: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, fontSize: 7.5, textAlign: 'justify' },
+  colNumCell: { width: '4%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
+  colNum: { textAlign: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
+  colAspect: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, fontSize: 10, textAlign: 'justify' },
   colRangeCell: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
-  colRange: { textAlign: 'center', fontSize: 7.5, fontFamily: 'Times-Bold' },
-  colScoreCell: { width: '16%', padding: 3, justifyContent: 'center' },
-  colScore: { textAlign: 'center', fontSize: 7.5, fontFamily: 'Times-Bold' },
-  colNumH: { width: '6%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
-  colAspectH: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
-  colRangeH: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
-  colScoreH: { width: '16%', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'Times-Bold' },
+  colRange: { textAlign: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
+  colScoreCell: { width: '18%', padding: 3, justifyContent: 'center' },
+  colScore: { textAlign: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
+  colNumH: { width: '4%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
+  colAspectH: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
+  colRangeH: { width: '16%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
+  colScoreH: { width: '18%', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'Times-Bold' },
 
   // Totals
   totalRow: {
@@ -173,14 +175,14 @@ const styles = StyleSheet.create({
     padding: 3,
     borderRightWidth: 1,
     borderColor: '#000',
-    fontSize: 8,
+    fontSize: 10,
     fontFamily: 'Times-Bold',
   },
   subtotalValue: {
     width: '16%',
     textAlign: 'center',
     padding: 3,
-    fontSize: 8,
+    fontSize: 10,
   },
   totalCalcRow: {
     flexDirection: 'row',
@@ -193,20 +195,20 @@ const styles = StyleSheet.create({
     padding: 3,
     borderRightWidth: 1,
     borderColor: '#000',
-    fontSize: 8,
+    fontSize: 10,
     paddingRight: 6,
   },
   totalCalcValue: {
     width: '16%',
     textAlign: 'center',
     padding: 3,
-    fontSize: 8,
+    fontSize: 10,
   },
   pageNumber: {
     position: 'absolute',
     bottom: 15,
     right: 45,
-    fontSize: 8,
+    fontSize: 10,
     fontFamily: 'Times-Roman',
   },
 
@@ -216,15 +218,15 @@ const styles = StyleSheet.create({
   firmaBox: { alignItems: 'center', width: '30%' },
   firmaBoxWide: { alignItems: 'center', width: '40%' },
   firmaLine: { width: '100%', borderBottomWidth: 1, borderColor: '#000', marginBottom: 3 },
-  firmaName: { fontSize: 8, textAlign: 'center', marginBottom: 1 },
-  firmaRole: { fontSize: 7.5, textAlign: 'center' },
+  firmaName: { fontSize: 10, textAlign: 'center', marginBottom: 1 },
+  firmaRole: { fontSize: 10, textAlign: 'center' },
 
   // Final signature grid
   firmaFinalContainer: { marginTop: 14 },
   firmaFinalCol: { alignItems: 'center', width: '48%' },
   firmaFinalSingle: { alignItems: 'center', width: '48%', alignSelf: 'center', marginTop: 12 },
-  firmaFinalName: { fontSize: 8, textAlign: 'center' },
-  firmaFinalRole: { fontSize: 7, textAlign: 'center' },
+  firmaFinalName: { fontSize: 10, textAlign: 'center' },
+  firmaFinalRole: { fontSize: 10, textAlign: 'center' },
   firmaFinalLine: { width: '100%', borderBottomWidth: 1, borderColor: '#000', marginBottom: 3 },
 
   // Grid de Información (Página 4)
@@ -243,7 +245,7 @@ const styles = StyleSheet.create({
     minHeight: 45,
   },
   cellHeader: {
-    fontSize: 9,
+    fontSize: 10,
     marginBottom: 5,
   },
   cellData: {
@@ -261,10 +263,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#000',
   },
-  colA: { width: '45%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 9, justifyContent: 'center' },
-  colB: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
-  colC: { width: '20%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
-  colD: { width: '20%', padding: 5, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
+  colA: { width: '45%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 10, justifyContent: 'center' },
+  colB: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 10, textAlign: 'center', justifyContent: 'center' },
+  colC: { width: '20%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 10, textAlign: 'center', justifyContent: 'center' },
+  colD: { width: '20%', padding: 5, fontSize: 10, textAlign: 'center', justifyContent: 'center' },
 
   colMergedLeft: { width: '60%', borderRightWidth: 1, borderColor: '#000', padding: 5 },
 
@@ -273,8 +275,8 @@ const styles = StyleSheet.create({
   firmaRowSplit: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 40 },
   firmaBoxFinal: { alignItems: 'center', width: '45%' },
   firmaLineFinal: { width: 220, borderBottomWidth: 1, borderColor: '#000', marginBottom: 4 },
-  firmaNameFinal: { fontSize: 9, textAlign: 'center' },
-  firmaRoleFinal: { fontSize: 9, textAlign: 'center' },
+  firmaNameFinal: { fontSize: 10, textAlign: 'center' },
+  firmaRoleFinal: { fontSize: 10, textAlign: 'center' },
 });
 
 /* ───────────────────────────────────────────
@@ -390,7 +392,7 @@ const MembreteImagen = ({ isPracticas = false }) => (
 const HeaderFinal = () => (
   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
     <Image src="/escudo-2.jpg" style={{ width: 60, height: 60, objectFit: 'contain' }} />
-    <View style={{ flex: 1, textAlign: 'center', paddingHorizontal: 10 }}>
+    <View style={{ flex: 1, textAlign: 'center', paddingHorizontal: 20 }}>
       <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
       <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
       <Text style={{ fontSize: 10, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>UNIVERSIDAD NACIONAL EXPERIMENTAL POLITÉCNICA</Text>
@@ -641,11 +643,11 @@ function PageTutorInstitucional({ data, textos }: Props) {
             <Text style={styles.infoTextLabel}>Cédula de Identidad del Estudiante:</Text>
             <Text style={styles.infoText}>{formatCINumero(data.estudiante.ci)}</Text>
           </View>
-          <View style={[styles.infoCellData, { width: '20%' }]}>
+          <View style={[styles.infoCellData, { width: '17%' }]}>
             <Text style={styles.infoTextLabel}>Período: </Text>
             <Text style={styles.infoText}>{data.periodo?.description}</Text>
           </View>
-          <View style={[styles.infoCellDataLast, { width: '30%' }]}>
+          <View style={[styles.infoCellDataLast, { width: '33%' }]}>
             <Text style={styles.infoTextLabel}>Carrera que cursa:</Text>
             <Text style={styles.infoText}>{getCarreraOrPasantiaLabel(data)}</Text>
           </View>
@@ -653,12 +655,12 @@ function PageTutorInstitucional({ data, textos }: Props) {
         {/* Fila 2: 3 celdas — Institución | Departamento+Tutor | Fechas */}
         <View style={styles.infoRowLast}>
           {/* Celda izquierda: Institución */}
-          <View style={[styles.infoCellData, { width: '33%' }]}>
+          <View style={[styles.infoCellData, { width: '28%' }]}>
             <Text style={styles.infoTextLabel}>Nombre de la Institución:</Text>
             <Text style={styles.infoText}>{data.institucion?.nombre?.toUpperCase()}</Text>
           </View>
           {/* Celda central: Departamento + Tutor (apilados) */}
-          <View style={[styles.infoCellData, { width: '40%' }]}>
+          <View style={[styles.infoCellData, { width: '43%' }]}>
             <Text style={styles.infoTextLabel}>Departamento donde se efectuó la Práctica Profesional:</Text>
             <Text style={styles.infoText}>{data.department?.toUpperCase() || ''}</Text>
             <Text style={[styles.infoTextLabel, { marginTop: 4 }]}>Apellidos y Nombres del Tutor(a) institucional:</Text>
@@ -667,7 +669,7 @@ function PageTutorInstitucional({ data, textos }: Props) {
             <Text style={styles.infoText}>{data.tutorInstitucional ? formatCINumero(data.tutorInstitucional.ci) : ''}</Text>
           </View>
           {/* Celda derecha: Fechas (apiladas) */}
-          <View style={[styles.infoCellDataLast, { width: '27%' }]}>
+          <View style={[styles.infoCellDataLast, { width: '29%' }]}>
             <Text style={styles.infoTextLabel}>Fecha de Inicio de la PP:</Text>
             <Text style={styles.infoText}>{formatFechaPDF(data.practica?.startDate)}</Text>
             <Text style={[styles.infoTextLabel, { marginTop: 4 }]}>Fecha de Culminación de la PP:</Text>
@@ -678,17 +680,17 @@ function PageTutorInstitucional({ data, textos }: Props) {
 
       <View style={styles.table}>
         <View style={styles.tHeader}>
-          <Text style={[styles.colNumH, { width: '12%' }]}>Nº Ítems</Text>
-          <Text style={[styles.colAspectH, { width: '56%' }]}>Aspecto evaluado</Text>
+          <Text style={[styles.colNumH, { width: '4%' }]}>Nº Ítems</Text>
+          <Text style={[styles.colAspectH, { width: '62%' }]}>Aspecto evaluado</Text>
           <Text style={[styles.colRangeH, { width: '16%' }]}>Intervalo de Ponderación</Text>
-          <Text style={[styles.colScoreH, { width: '16%' }]}>Calificación Parcial</Text>
+          <Text style={[styles.colScoreH, { width: '18%' }]}>Calificación Parcial</Text>
         </View>
         {criterios.map((c, idx) => (
           <View style={idx === criterios.length - 1 ? styles.tRowLastCriteria : styles.tRow} key={c.itemNumber}>
-            <View style={[styles.colNumCell, { width: '12%' }]}><Text style={styles.colNum}>{c.itemNumber}</Text></View>
-            <Text style={[styles.colAspect, { width: '56%' }]}>{c.description}</Text>
+            <View style={[styles.colNumCell, { width: '4%' }]}><Text style={styles.colNum}>{c.itemNumber}</Text></View>
+            <Text style={[styles.colAspect, { width: '62%' }]}>{c.description}</Text>
             <View style={[styles.colRangeCell, { width: '16%' }]}><Text style={styles.colRange}>0-20</Text></View>
-            <View style={[styles.colScoreCell, { width: '16%' }]}><Text style={styles.colScore}>{formatScore(c.score)}</Text></View>
+            <View style={[styles.colScoreCell, { width: '18%' }]}><Text style={styles.colScore}>{formatScore(c.score)}</Text></View>
           </View>
         ))}
         <View style={styles.tRowLast}>
@@ -709,7 +711,7 @@ function PageTutorInstitucional({ data, textos }: Props) {
           <Text style={styles.firmaRole}>Tutor(a) Institucional</Text>
         </View>
         <View style={{ alignItems: 'center', width: '30%' }}>
-          <Text style={{ fontSize: 8, marginBottom: 4 }}>Sello de la Empresa:</Text>
+          <Text style={{ fontSize: 10, marginBottom: 4 }}>Sello de la Empresa:</Text>
           <View style={{ width: 90, height: 50 }} />
         </View>
       </View>

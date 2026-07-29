@@ -102,7 +102,7 @@ export const useUsers = (filters: any = {}, activeTab: "Activos" | "Inactivos" =
                                     labels={USER_LABELS} 
                                     fields={['userCi', 'email', 'roleName']} 
                                 />
-                            <p className="mt-2 text-xs">Se ha enviado una notificación por correo con sus credenciales de acceso.</p>
+                            <p className="mt-2 text-xs">El usuario accederá usando su <strong>cédula como contraseña</strong> en el primer ingreso. Deberá cambiarla inmediatamente.</p>
                         </>
                     )
                 });

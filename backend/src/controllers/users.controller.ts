@@ -101,9 +101,9 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       surname: sanitizeText(userData.surname) ?? '',
     };
     
-    // Generar clave temporal aleatoria (8 caracteres)
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-    const tempPass = Array.from({ length: 8 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+    // Usar la cédula como clave temporal en el primer ingreso
+    // El usuario debe cambiarla inmediatamente al iniciar sesión
+    const tempPass = userData.userCi;
     
     const newUser = await usersService.createUser(normalizedData, tempPass);
     
@@ -118,10 +118,14 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       });
     });
     
-    // Enviar email con credenciales (no bloqueante)
-    const fullName = `${userData.name} ${userData.surname}`.trim();
-    sendUserCreationEmail(userData.email, fullName, userData.userCi, tempPass)
-      .catch(err => console.error('[UserController] Error sending welcome email:', err));
+    // ─────────────────────────────────────────────────────────────────
+    // NOTA: El envío de email está desactivado — el usuario ingresa con
+    // su cédula como clave en el primer acceso (FORCE_PASSWORD_CHANGE).
+    // Si en el futuro se necesita reactivar, descomentar las líneas de abajo.
+    // ─────────────────────────────────────────────────────────────────
+    // const fullName = `${userData.name} ${userData.surname}`.trim();
+    // sendUserCreationEmail(userData.email, fullName, userData.userCi, tempPass)
+    //   .catch(err => console.error('[UserController] Error sending welcome email:', err));
 
     res.status(201).json(newUser);
   } catch (error: unknown) {

@@ -390,6 +390,27 @@ const UserModal: React.FC<UserModalProps> = ({
                 />
               </div>
             </div>
+
+            {/* Aviso de primer ingreso — solo al crear */}
+            {!user && (
+              <div className="mt-4 rounded-lg border border-blue-300 bg-blue-50 p-4 dark:border-blue-600 dark:bg-blue-900/20">
+                <div className="flex items-start gap-3">
+                  <svg className="size-5 mt-0.5 shrink-0 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                      Primer ingreso con cédula
+                    </p>
+                    <p className="mt-1 text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                      Este usuario accederá al sistema usando su <strong>cédula como contraseña</strong> en el primer inicio de sesión. 
+                      El sistema le exigirá cambiarla inmediatamente por una contraseña personal.{" "}
+                      <strong className="text-blue-800 dark:text-blue-100">No podrá acceder sin antes completar ese cambio.</strong>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Consentimiento GDPR - Solo para nuevos usuarios */}

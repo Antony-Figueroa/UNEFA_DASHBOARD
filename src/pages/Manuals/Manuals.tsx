@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Button from "../../components/ui/button/Button";
-import Badge from "../../components/ui/badge/Badge";
 import { Modal, ModalBody, ModalHeader } from "../../components/ui/modal";
 import { manualsService, Manual } from "../../features/manuals/services/manualsService";
 import { useToast } from "../../context/toast";
@@ -229,15 +228,7 @@ export default function ManualsPage() {
                         {manual.title}
                       </h3>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        <Badge
-                          color={getCategoryColor(manual.category)}
-                          variant="light"
-                          shape="rounded"
-                          className="text-[10px]"
-                        >
-                          {manual.category}
-                        </Badge>
-                        <span className="text-xs text-text-tertiary">
+                      <span className="text-xs text-text-tertiary">
                           v{manual.version}
                         </span>
                         {manual.fileSize && (

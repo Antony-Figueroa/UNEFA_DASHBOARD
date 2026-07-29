@@ -481,7 +481,7 @@ function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: n
         </View>
 
         {/* Firmas al fondo — PP (izq), Coordinador de Carrera (der), Tutor Académico (centro abajo) */}
-        <View wrap={false}>
+        <View wrap={false} style={{ marginTop: 25 }}>
           <View style={styles.firmaContainer3}>
             <View style={styles.firmaBox}>
               {textos.comiteFirma1Nombre ? <Text style={styles.firmaName}>{textos.comiteFirma1Nombre}</Text> : null}
@@ -585,7 +585,7 @@ function PageTutorAcademico({ data, textos }: Props) {
           </View>
         </View>
 
-        <View style={styles.firmaContainer1} wrap={false}>
+        <View style={[styles.firmaContainer1, { marginTop: 25 }]} wrap={false}>
           {textos.academicoFirmaNombre ? <Text style={styles.firmaName}>{textos.academicoFirmaNombre}</Text> : null}
           <View style={{ alignItems: 'center', width: '40%' }}>
             <View style={styles.firmaLine} />

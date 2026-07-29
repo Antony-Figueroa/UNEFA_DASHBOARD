@@ -40,8 +40,8 @@ function formatApellidoNombre(persona: { primerNombre?: string | null; segundoNo
    ─────────────────────────────────────────── */
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 16,
-    paddingBottom: 15,
+    paddingTop: 12,
+    paddingBottom: 12,
     paddingHorizontal: 30,
     fontFamily: 'Times-Roman',
     fontSize: 9,
@@ -640,16 +640,16 @@ function PageTutorInstitucional({ data, textos }: Props) {
           <View style={[styles.infoCellData, { width: '43%' }]}>
             <Text style={styles.infoTextLabel}>Departamento donde se efectuó la Práctica Profesional:</Text>
             <Text style={styles.infoText}>{data.department?.toUpperCase() || ''}</Text>
-            <Text style={[styles.infoTextLabel, { marginTop: 4 }]}>Apellidos y Nombres del Tutor(a) institucional:</Text>
+            <Text style={[styles.infoTextLabel, { marginTop: 2 }]}>Apellidos y Nombres del Tutor(a) institucional:</Text>
             <Text style={styles.infoText}>{formatTutorNombre(data.tutorInstitucional)}</Text>
-            <Text style={[styles.infoTextLabel, { marginTop: 4 }]}>C.I. del Tutor(a) Institucional: </Text>
+            <Text style={[styles.infoTextLabel, { marginTop: 2 }]}>C.I. del Tutor(a) Institucional: </Text>
             <Text style={styles.infoText}>{data.tutorInstitucional ? formatCINumero(data.tutorInstitucional.ci) : ''}</Text>
           </View>
           {/* Celda derecha: Fechas (apiladas) */}
           <View style={[styles.infoCellDataLast, { width: '29%' }]}>
             <Text style={styles.infoTextLabel}>Fecha de Inicio de la PP:</Text>
             <Text style={styles.infoText}>{formatFechaPDF(data.practica?.startDate)}</Text>
-            <Text style={[styles.infoTextLabel, { marginTop: 4 }]}>Fecha de Culminación de la PP:</Text>
+            <Text style={[styles.infoTextLabel, { marginTop: 2 }]}>Fecha de Culminación de la PP:</Text>
             <Text style={styles.infoText}>{formatFechaPDF(data.practica?.endDate)}</Text>
           </View>
         </View>

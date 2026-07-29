@@ -287,8 +287,7 @@ export default function InstitutionalResponsibleModal({
   const handleNameChange = useCallback(
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value
-        .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, "")
-        .toUpperCase();
+        .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, "");
       setValue(field as any, val, { shouldValidate: true, shouldDirty: true });
     },
     [setValue]
@@ -636,7 +635,8 @@ export default function InstitutionalResponsibleModal({
           const normalizedKey = key.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           mappedOptions[key] = values.map(v => ({
             // Para Nacionalidad usamos la abreviación (V, E, P)
-            value: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name,
+            value: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
+            // ponytail: value uppercase para backend, label usa name normalizado (Title Case via interceptor apiClient)
             label: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name
           }));
         });
@@ -1118,8 +1118,7 @@ export default function InstitutionalResponsibleModal({
                         : (errors.email?.message as string)
                     }
                     onChange={(e) => {
-                      const upper = e.target.value.toUpperCase();
-                      setValue("email", upper, { shouldValidate: true, shouldDirty: true });
+                      setValue("email", e.target.value, { shouldValidate: true, shouldDirty: true });
                     }}
                     onBlur={(e) => {
                       register("email").onBlur(e);
@@ -1184,7 +1183,7 @@ export default function InstitutionalResponsibleModal({
                             onChange={(e) => {
                               const newValue = (value || []).map((i: any) => 
                                 String(i.institutionId) === String(preselectedInstitutionId)
-                                  ? { ...i, cargo: e.target.value.toUpperCase() }
+                                  ? { ...i, cargo: e.target.value }
                                   : i
                               );
                               onChange(newValue);
@@ -1213,7 +1212,7 @@ export default function InstitutionalResponsibleModal({
                     const handleCargoChange = (institutionId: string, cargo: string) => {
                       onChange(selectedInstitutions.map((i: any) => 
                         i.institutionId === institutionId 
-                          ? { ...i, cargo: cargo.toUpperCase() }
+                          ? { ...i, cargo }
                           : i
                       ));
                     };

@@ -697,12 +697,11 @@ export default function TutorModal({
     [editingTutor, setError, clearErrors],
   );
 
-  // Factory de handler para campos de nombre (uppercase + regex)
+  // Factory de handler para campos de nombre (solo filtra caracteres, backend normaliza casing)
   const handleNameChange = useCallback(
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value
-        .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, "")
-        .toUpperCase();
+        .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, "");
       setValue(field as any, val, { shouldValidate: true, shouldDirty: true });
     },
     [setValue]
@@ -742,23 +741,23 @@ export default function TutorModal({
 
   // Fallbacks for when t_list data is not available
   const CONDITION_OPTIONS = options["Condición"] || [
-    { value: "ORDINARIO", label: "ORDINARIO" },
-    { value: "CONTRATADO", label: "CONTRATADO" },
+    { value: "ORDINARIO", label: "Ordinario" },
+    { value: "CONTRATADO", label: "Contratado" },
   ];
 
   const DEDICATION_OPTIONS = options["Dedicación"] || [
-    { value: "TIEMPO COMPLETO", label: "TIEMPO COMPLETO" },
-    { value: "MEDIO TIEMPO", label: "MEDIO TIEMPO" },
-    { value: "TIEMPO CONVENCIONAL", label: "TIEMPO CONVENCIONAL" },
-    { value: "DEDICACIÓN EXCLUSIVA", label: "DEDICACIÓN EXCLUSIVA" },
+    { value: "TIEMPO COMPLETO", label: "Tiempo Completo" },
+    { value: "MEDIO TIEMPO", label: "Medio Tiempo" },
+    { value: "TIEMPO CONVENCIONAL", label: "Tiempo Convencional" },
+    { value: "DEDICACIÓN EXCLUSIVA", label: "Dedicación Exclusiva" },
   ];
 
   const CATEGORY_OPTIONS = options["Categoría"] || [
-    { value: "INSTRUCTOR", label: "INSTRUCTOR" },
-    { value: "ASISTENTE", label: "ASISTENTE" },
-    { value: "AGREGADO", label: "AGREGADO" },
-    { value: "ASOCIADO", label: "ASOCIADO" },
-    { value: "TITULAR", label: "TITULAR" },
+    { value: "INSTRUCTOR", label: "Instructor" },
+    { value: "ASISTENTE", label: "Asistente" },
+    { value: "AGREGADO", label: "Agregado" },
+    { value: "ASOCIADO", label: "Asociado" },
+    { value: "TITULAR", label: "Titular" },
   ];
 
   const TITULO_OPTIONS = options["GRADO DE INSTRUCCIÓN"] || [];
@@ -787,7 +786,8 @@ export default function TutorModal({
           const normalizedKey = key.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           mappedOptions[key] = values.map(v => ({
             // Para Nacionalidad usamos la abreviación (V, E, P) como valor y etiqueta
-            value: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name,
+            value: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
+            // ponytail: value uppercase para backend, label usa name normalizado (Title Case via interceptor apiClient)
             label: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name
           }));
         });

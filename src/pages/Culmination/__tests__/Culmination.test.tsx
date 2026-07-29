@@ -10,6 +10,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { MemoryRouter } from 'react-router';
+import { AuthContext, AuthContextType } from '../../../context/auth';
 
 // --- Mocks ---
 
@@ -137,9 +138,19 @@ vi.mock('../../../features/culmination/services/culminationService', () => ({
   },
 }));
 
+// --- Mock auth context ---
+const mockAuth: AuthContextType = {
+  user: { id: 1, userCi: 'V-123', name: 'Admin', surname: 'User', email: 'admin@test.com', role: 1 },
+  loading: false,
+  signOut: vi.fn(),
+  checkAuth: vi.fn(),
+};
+
 // --- Test wrapper ---
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <MemoryRouter>{children}</MemoryRouter>
+  <AuthContext.Provider value={mockAuth}>
+    <MemoryRouter>{children}</MemoryRouter>
+  </AuthContext.Provider>
 );
 
 import CulminationPage from '../Culmination';

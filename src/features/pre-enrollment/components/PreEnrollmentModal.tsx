@@ -350,7 +350,8 @@ export default function PreEnrollmentModal({
         Object.entries(data).forEach(([key, values]) => {
           const normalizedKey = key.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           mappedOptions[key] = (values as any[]).map((v: any) => ({
-            value: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name,
+            // ponytail: value uppercase para backend, label usa name normalizado (Title Case via interceptor apiClient)
+            value: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
             label: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name
           }));
         });

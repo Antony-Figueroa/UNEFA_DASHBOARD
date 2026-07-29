@@ -227,7 +227,8 @@ export default function EnrollmentModal({
           const normalizedKey = key.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           mappedOptions[key] = values.map(v => ({
             // Para Nacionalidad usamos la abreviación (V, E, P)
-            value: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name,
+            value: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
+            // ponytail: value uppercase para backend, label usa name normalizado (Title Case via interceptor apiClient)
             label: (normalizedKey === "NACIONALIDAD" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name
           }));
         });

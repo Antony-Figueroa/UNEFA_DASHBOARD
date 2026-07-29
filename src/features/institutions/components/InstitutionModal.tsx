@@ -443,11 +443,11 @@ export default function InstitutionModal({
         mappedOptions[key] = values.map(v => {
           // Para Rif y Nacionalidad usamos la abreviación (siempre mayúsculas)
           const useAbbr = ["Rif", "Nacionalidad"].includes(key) && v.abbreviation;
-          const displayValue = useAbbr ? v.abbreviation : v.name;
           
           return {
-            value: useAbbr ? displayValue.toUpperCase() : displayValue,
-            label: useAbbr ? displayValue.toUpperCase() : displayValue
+            // ponytail: value uppercase para backend, label usa name normalizado (Title Case via interceptor)
+            value: useAbbr ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
+            label: useAbbr ? v.abbreviation.toUpperCase() : v.name
           };
         });
       });
@@ -482,10 +482,10 @@ export default function InstitutionModal({
       // Lookup dinámico: encontrar el tipo por nombre desde los datos fetcheados
       const match = fallbackTypes.find(t => t.name.toUpperCase() === normalizedValue);
       if (match) {
-        return { value: String(match.id), label: match.name.toUpperCase() };
+        return { value: String(match.id), label: match.name };
       }
       // Si no se encuentra en la API, pasar el valor crudo (el backend lo resolverá)
-      return { value: opt.value, label: opt.label.toUpperCase() };
+      return { value: opt.value, label: opt.label };
     }).filter(Boolean) as { value: string; label: string }[];
   }, [internshipTypeOptions, optionsTipoPractica, fallbackTypes]);
 

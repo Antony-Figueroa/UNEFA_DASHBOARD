@@ -128,7 +128,8 @@ export default function BatchPreEnrollModal({
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         Object.entries(listData).forEach(([key, values]) => {
           mappedOptions[key] = (values as any[]).map((v: any) => ({
-            value: v.name,
+            // ponytail: value uppercase para backend, label usa name normalizado (Title Case via interceptor apiClient)
+            value: v.name.toUpperCase(),
             label: v.name,
           }));
         });

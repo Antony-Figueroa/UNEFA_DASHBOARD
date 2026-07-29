@@ -394,13 +394,12 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     setValue("phoneNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
   };
 
-  // Handler factory for name fields: toUpperCase + character filtering
+  // Handler factory for name fields: character filtering (backend normaliza casing)
   const createNameHandler = useCallback(
     (field: string) =>
       (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value
-          .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, "")
-          .toUpperCase();
+          .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, "");
         setValue(field as any, val, { shouldValidate: true, shouldDirty: true });
       },
     [setValue],
@@ -640,7 +639,8 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           mappedOptions[key] = values.map(v => {
             const useAbbreviation = (normalizedKey === "NACIONALIDAD" || normalizedKey === "PREFIJO") && v.abbreviation;
             const value = useAbbreviation ? v.abbreviation.toUpperCase() : v.name.toUpperCase();
-            return { value, label: value };
+            // ponytail: value uppercase para backend, label usa name normalizado (Title Case via interceptor apiClient)
+            return { value, label: useAbbreviation ? v.abbreviation : v.name };
           });
         });
         
@@ -666,15 +666,15 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   }, [isOpen, fetchMultipleLists, dynamicLists]);
 
   const STUDENT_TYPE_OPTIONS = options["Tipo de estudiante"] || [
-    { value: "CIVIL", label: "CIVIL" },
-    { value: "MILITAR", label: "MILITAR" },
+    { value: "CIVIL", label: "Civil" },
+    { value: "MILITAR", label: "Militar" },
   ];
 
   const MILITARY_RANKS = options["Rango Militar"] || [];
 
   const WORKS_OPTIONS = options["Trabajo"] || [
-    { value: "SI", label: "SI" },
-    { value: "NO", label: "NO" },
+    { value: "SI", label: "Sí" },
+    { value: "NO", label: "No" },
   ];
 
   const {

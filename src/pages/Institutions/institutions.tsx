@@ -87,7 +87,7 @@ export default function InstitutionsPage() {
 
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = values.map(v => ({
-            value: v.abbreviation || v.name,
+            value: (v.abbreviation || v.name).toUpperCase(),
             label: v.abbreviation || v.name
           }));
         });

@@ -77,8 +77,8 @@ export default function TutorsPage() {
                 // Fallbacks for critical lists
                 const fallbacks: Record<string, { value: string; label: string }[]> = {
                     "Condición": [
-                        { value: "ORDINARIO", label: "ORDINARIO" },
-                        { value: "CONTRATADO", label: "CONTRATADO" },
+                        { value: "ORDINARIO", label: "Ordinario" },
+                        { value: "CONTRATADO", label: "Contratado" },
                     ]
                 };
 

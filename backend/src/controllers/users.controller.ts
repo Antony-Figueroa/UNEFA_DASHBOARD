@@ -170,7 +170,11 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
   try {
     const adminId = req.user?.userId;
     const { id } = req.params;
-    const userData = req.body;
+    const userData = { ...req.body };
+    // Normalizar status si viene como booleano (desde toggleStatus)
+    if (typeof userData.status === 'boolean') {
+      userData.status = userData.status ? 1 : 0;
+    }
     const updatedUser = await usersService.updateUser(Number(id), userData);
     
     // Registrar auditoría de actualización

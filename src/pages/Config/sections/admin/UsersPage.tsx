@@ -132,17 +132,10 @@ const UserManagementPage = () => {
   const handleToggleStatus = (user: User) => {
     const isDeactivating = user.status === 1;
     const isCurrentUser = currentUser?.id === user.id;
-    const isTargetUserAdmin = user.role === 1;
 
     // Validación: No puede desactivarse a sí mismo
     if (isCurrentUser && isDeactivating) {
       addToast({ variant: "error", title: "Error", message: "No puedes desactivarte a ti mismo." });
-      return;
-    }
-
-    // Validación: No se puede desactivar a un administrador
-    if (isTargetUserAdmin && isDeactivating) {
-      addToast({ variant: "error", title: "Error", message: "No se puede desactivar a un administrador." });
       return;
     }
 

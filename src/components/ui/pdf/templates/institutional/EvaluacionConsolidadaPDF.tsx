@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   gridContainer: {
     borderWidth: 1,
     borderColor: '#000',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   gridRow: {
     flexDirection: 'row',
@@ -235,11 +235,11 @@ const styles = StyleSheet.create({
   },
   gridCell: {
     padding: 4,
-    minHeight: 45,
+    minHeight: 30,
   },
   cellHeader: {
     fontSize: 9,
-    marginBottom: 5,
+    marginBottom: 2,
   },
   cellData: {
     fontSize: 9,
@@ -249,23 +249,23 @@ const styles = StyleSheet.create({
   tableFinal: {
     borderWidth: 1,
     borderColor: '#000',
-    marginBottom: 30,
+    marginBottom: 15,
   },
   tRowFinal: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#000',
   },
-  colA: { width: '45%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 9, justifyContent: 'center' },
-  colB: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
-  colC: { width: '20%', borderRightWidth: 1, borderColor: '#000', padding: 5, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
-  colD: { width: '20%', padding: 5, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
+  colA: { width: '45%', borderRightWidth: 1, borderColor: '#000', padding: 4, fontSize: 9, justifyContent: 'center' },
+  colB: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 4, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
+  colC: { width: '20%', borderRightWidth: 1, borderColor: '#000', padding: 4, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
+  colD: { width: '20%', padding: 4, fontSize: 9, textAlign: 'center', justifyContent: 'center' },
 
-  colMergedLeft: { width: '60%', borderRightWidth: 1, borderColor: '#000', padding: 5 },
+  colMergedLeft: { width: '60%', borderRightWidth: 1, borderColor: '#000', padding: 4 },
 
   // Firmas Página 4
-  firmaRowCenter: { alignItems: 'center', marginBottom: 40 },
-  firmaRowSplit: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 40 },
+  firmaRowCenter: { alignItems: 'center', marginBottom: 25 },
+  firmaRowSplit: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
   firmaBoxFinal: { alignItems: 'center', width: '45%' },
   firmaLineFinal: { width: 220, borderBottomWidth: 1, borderColor: '#000', marginBottom: 4 },
   firmaNameFinal: { fontSize: 9, textAlign: 'center' },
@@ -707,7 +707,7 @@ function PageEvaluacionFinal({ data, textos }: Props) {
     <Page size="LETTER" style={[styles.page, { fontFamily: 'Times-Bold', paddingTop: 57, paddingBottom: 57, paddingHorizontal: 85 }]}>
       <HeaderFinal />
       <Text style={[styles.title, { marginBottom: 2 }]}>EVALUACIÓN FINAL DE LA PRÁCTICA PROFESIONAL:</Text>
-      <Text style={[styles.subtitle, { marginBottom: 15 }]}>{getCarreraOrPasantiaLabel(data)}</Text>
+      <Text style={[styles.subtitle, { marginBottom: 8 }]}>{getCarreraOrPasantiaLabel(data)}</Text>
 
       {/* Cuadrícula de Información */}
       <View style={styles.gridContainer}>
@@ -797,7 +797,7 @@ function PageEvaluacionFinal({ data, textos }: Props) {
       </View>
 
       {/* Bloque de Firmas (Patrón 1-2-1-1) */}
-      <View style={{ marginTop: 20 }}>
+      <View style={{ marginTop: 10 }}>
         <View style={styles.firmaRowCenter}>
           <View style={styles.firmaLineFinal} />
           <Text style={styles.firmaNameFinal}>{textos.firma1Nombre || ''}</Text>

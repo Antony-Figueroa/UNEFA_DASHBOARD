@@ -403,13 +403,12 @@ function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: n
 
   return (
     <Page size="LETTER" style={styles.page}>
-      <View wrap={false}>
-        <MembreteImagen />
-        <Text style={styles.title}>EVALUACIÓN DEL DESEMPEÑO DEL ESTUDIANTE</Text>
-        <Text style={styles.subtitle}>COMITÉ EVALUADOR</Text>
+      <MembreteImagen />
+      <Text style={styles.title}>EVALUACIÓN DEL DESEMPEÑO DEL ESTUDIANTE</Text>
+      <Text style={styles.subtitle}>COMITÉ EVALUADOR</Text>
 
-        {/* Datos del estudiante — 1 fila con 4 celdas */}
-        <View style={styles.infoBox}>
+      {/* Datos del estudiante — 1 fila con 4 celdas */}
+      <View style={styles.infoBox}>
           <View style={styles.infoRowLast}>
             <View style={[styles.infoCellData, { width: '35%' }]}>
               <Text style={styles.infoTextLabel}>Apellidos y Nombres del Estudiante:</Text>
@@ -500,8 +499,7 @@ function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: n
               <View style={styles.firmaLine} />
               <Text style={styles.firmaRole}>Tutor Académico</Text>
             </View>
-          </View>
-        </View>
+</View>
       </View>
       
     </Page>
@@ -519,9 +517,8 @@ function PageTutorAcademico({ data, textos }: Props) {
 
   return (
     <Page size="LETTER" style={styles.page}>
-      <View wrap={false}>
-        <MembreteImagen />
-        <Text style={[styles.title, { marginBottom: 10 }]}>EVALUACIÓN DEL TUTOR ACADÉMICO</Text>
+      <MembreteImagen />
+      <Text style={[styles.title, { marginBottom: 10 }]}>EVALUACIÓN DEL TUTOR ACADÉMICO</Text>
 
         {/* Info box — 2 filas */}
         <View style={styles.infoBox}>
@@ -592,8 +589,6 @@ function PageTutorAcademico({ data, textos }: Props) {
             <Text style={styles.firmaRole}>Tutor Académico</Text>
           </View>
         </View>
-      </View>
-      
     </Page>
   );
 }
@@ -609,8 +604,7 @@ function PageTutorInstitucional({ data, textos }: Props) {
 
   return (
     <Page size="LETTER" style={styles.page}>
-      <View wrap={false}>
-        <MembreteImagen />
+      <MembreteImagen />
         <Text style={styles.title}>EVALUACIÓN DEL DESEMPEÑO DEL ESTUDIANTE</Text>
         <Text style={styles.subtitle}>TUTOR INSTITUCIONAL</Text>
 
@@ -698,8 +692,6 @@ function PageTutorInstitucional({ data, textos }: Props) {
           <View style={{ width: 90, height: 50 }} />
         </View>
       </View>
-      
-    </View>
       
     </Page>
   );

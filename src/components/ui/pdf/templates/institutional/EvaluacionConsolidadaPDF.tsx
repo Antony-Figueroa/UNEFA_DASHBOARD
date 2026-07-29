@@ -41,7 +41,7 @@ function formatApellidoNombre(persona: { primerNombre?: string | null; segundoNo
 const styles = StyleSheet.create({
   page: {
     paddingTop: 16,
-    paddingBottom: 1,
+    paddingBottom: 15,
     paddingHorizontal: 30,
     fontFamily: 'Times-Roman',
     fontSize: 9,
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   },
   headerImg: {
     width: 60,
-    height: 60,
+    height: 70,
   },
   headerTextCol: {
     flex: 1,
@@ -203,13 +203,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     padding: 3,
     fontSize: 9,
-  },
-  pageNumber: {
-    position: 'absolute',
-    bottom: 15,
-    right: 45,
-    fontSize: 9,
-    fontFamily: 'Times-Roman',
   },
 
   // Signatures
@@ -361,13 +354,6 @@ function formatScore(value: number | null | undefined): string {
 
 
 /* ───────────────────────────────────────────
-   Footer de página (número de página)
-   ─────────────────────────────────────────── */
-const PageNumberFooter = () => (
-  <Text style={styles.pageNumber} render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) => `Página ${pageNumber} de ${totalPages}`} fixed />
-);
-
-/* ───────────────────────────────────────────
    Encabezado reusable con Escudo + Logo
    ─────────────────────────────────────────── */
 const MembreteImagen = ({ isPracticas = false }) => (
@@ -391,7 +377,7 @@ const MembreteImagen = ({ isPracticas = false }) => (
    ─────────────────────────────────────────── */
 const HeaderFinal = () => (
   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
-    <Image src="/escudo-2.jpg" style={{ width: 60, height: 60, objectFit: 'contain' }} />
+<Image src="/escudo-2.jpg" style={{ width: 60, height: 70, objectFit: 'contain' }} />
     <View style={{ flex: 1, textAlign: 'center', paddingHorizontal: 20 }}>
       <Text style={{ fontSize: 9, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
       <Text style={{ fontSize: 9, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</Text>
@@ -401,7 +387,7 @@ const HeaderFinal = () => (
       <Text style={{ fontSize: 9, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>NÚCLEO PORTUGUESA EXTENSIÓN ACARIGUA</Text>
       <Text style={{ fontSize: 9, lineHeight: 1.2, fontFamily: 'Times-Bold' }}>EQUIPO DE TRABAJO DE PRÁCTICAS PROFESIONALES</Text>
     </View>
-    <Image src="/pdfs-docs/logo.png" style={{ width: 60, height: 60, objectFit: 'contain' }} />
+    <Image src="/pdfs-docs/logo.png" style={{ width: 60, height: 70, objectFit: 'contain' }} />
   </View>
 );
 
@@ -519,7 +505,7 @@ function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: n
           </View>
         </View>
       </View>
-      <PageNumberFooter />
+      
     </Page>
   );
 }
@@ -611,7 +597,7 @@ function PageTutorAcademico({ data, textos }: Props) {
           </View>
         </View>
       </View>
-      <PageNumberFooter />
+      
     </Page>
   );
 }
@@ -715,7 +701,7 @@ function PageTutorInstitucional({ data, textos }: Props) {
           <View style={{ width: 90, height: 50 }} />
         </View>
       </View>
-      <PageNumberFooter />
+      
     </Page>
   );
 }
@@ -853,7 +839,7 @@ function PageEvaluacionFinal({ data, textos }: Props) {
           <Text style={[styles.firmaRoleFinal, { fontFamily: 'Times-Bold' }]}>{textos.firma5Cargo || 'DECANA DEL NÚCLEO'}</Text>
         </View>
       </View>
-      <PageNumberFooter />
+      
     </Page>
   );
 }

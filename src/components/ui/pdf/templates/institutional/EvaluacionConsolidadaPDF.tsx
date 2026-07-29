@@ -107,13 +107,13 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   infoCellData: {
-    padding: 3,
+    padding: 2,
     borderRightWidth: 1,
     borderRightColor: '#000',
     fontSize: 9,
   },
   infoCellDataLast: {
-    padding: 3,
+    padding: 2,
     fontSize: 9,
   },
   infoText: {
@@ -151,17 +151,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#000',
   },
-  colNumCell: { width: '5%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
+  colNumCell: { width: '5%', borderRightWidth: 1, borderColor: '#000', padding: 2, justifyContent: 'center' },
   colNum: { textAlign: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
-  colAspect: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, fontSize: 9, textAlign: 'justify' },
-  colRangeCell: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 3, justifyContent: 'center' },
-  colRange: { textAlign: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
-  colScoreCell: { width: '18%', padding: 3, justifyContent: 'center' },
+colAspect: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 2, fontSize: 9, textAlign: 'justify' },
+  colRangeCell: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 2, justifyContent: 'center' },
+  colScoreCell: { width: '18%', padding: 2, justifyContent: 'center' },
   colScore: { textAlign: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
-  colNumH: { width: '5%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
-  colAspectH: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
-  colRangeH: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
-  colScoreH: { width: '18%', padding: 3, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
+  colNumH: { width: '5%', borderRightWidth: 1, borderColor: '#000', padding: 2, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
+  colAspectH: { width: '62%', borderRightWidth: 1, borderColor: '#000', padding: 2, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
+  colRangeH: { width: '15%', borderRightWidth: 1, borderColor: '#000', padding: 2, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
+  colScoreH: { width: '18%', padding: 2, textAlign: 'center', justifyContent: 'center', fontSize: 9, fontFamily: 'Times-Bold' },
 
   // Totals
   totalRow: {

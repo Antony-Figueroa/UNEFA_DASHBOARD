@@ -710,13 +710,12 @@ function PageTutorInstitucional({ data, textos }: Props) {
    ─────────────────────────────────────────── */
 function PageEvaluacionFinal({ data, textos }: Props) {
   const { evaluacionFinal } = data;
-  const subtitleLabel = data.carrera.nombre.toUpperCase();
 
   return (
-    <Page size="LETTER" style={[styles.page, { fontFamily: 'Times-Bold' }]}>
+    <Page size="LETTER" style={[styles.page, { fontFamily: 'Times-Bold', paddingTop: 57, paddingBottom: 57, paddingHorizontal: 85 }]}>
       <HeaderFinal />
       <Text style={[styles.title, { marginBottom: 2 }]}>EVALUACIÓN FINAL DE LA PRÁCTICA PROFESIONAL:</Text>
-      <Text style={[styles.subtitle, { marginBottom: 15 }]}>{subtitleLabel}</Text>
+      <Text style={[styles.subtitle, { marginBottom: 15 }]}>{getCarreraOrPasantiaLabel(data)}</Text>
 
       {/* Cuadrícula de Información */}
       <View style={styles.gridContainer}>

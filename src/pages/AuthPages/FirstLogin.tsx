@@ -159,17 +159,40 @@ export default function FirstLogin() {
 
     const fetchData = async () => {
       try {
+        // ponyTail: pre-fill existing user data from DB so they don't retype everything
+        const userRes = await apiClient.get(`/users/${location.state.userId}`);
+        const userData = userRes.data as any;
+        if (userData) {
+          // ponytail: API returns firstName/lastName, not name/surname
+          if (userData.firstName) setValue('firstName', userData.firstName);
+          if (userData.secondName) setValue('middleName', userData.secondName);
+          if (userData.lastName) setValue('lastName', userData.lastName);
+          if (userData.secondSurname) setValue('secondLastName', userData.secondSurname);
+          if (userData.email) setValue('email', userData.email);
+          if (userData.phoneNumber) {
+            const phone = userData.phoneNumber.replace(/\D/g, '');
+            if (phone.length >= 7) {
+              setValue('phonePrefix', phone.substring(0, 4));
+              setValue('phoneNumber', phone.substring(4));
+            }
+          }
+        }
+      } catch (err) {
+        // Silently — form stays empty, user types manually
+        console.warn('[FirstLogin] Could not pre-fill user data:', err);
+      }
+
+      try {
         const questionsData = await authService.getPresetQuestions();
-        
         if (questionsData.success) {
           setPresetQuestions(questionsData.questions);
         }
       } catch (err) {
-        console.error("[FirstLogin] Error fetching questions:", err);
+        console.error('[FirstLogin] Error fetching questions:', err);
       }
     };
     fetchData();
-  }, [location, navigate]);
+  }, [location, navigate, setValue]);
 
   const getQuestionOptions = (currentIndex: number) => {
     const selectedIds = securityQuestions

@@ -10,7 +10,7 @@ router.get('/login-history', authenticateToken, authController.getLoginHistory);
 router.get('/all-logs', authenticateToken, authorizeRole([ROLES.ADMIN]), authController.getAllAuthLogs);
 router.post('/verify-master', authenticateToken, authController.verifyMaster);
 router.get('/me', authenticateToken, authController.getMe);
-router.post('/refresh', rateLimit(5, 60 * 1000), refreshAuth, authController.refreshSession);
+router.post('/refresh', rateLimit(20, 60 * 1000), refreshAuth, authController.refreshSession);
 router.put('/profile', authenticateToken, authController.updateProfile);
 router.post('/change-password', authenticateToken, authController.changePassword);
 router.get('/security-questions/:userCi', rateLimit(10, 60 * 1000), authController.getSecurityQuestions);

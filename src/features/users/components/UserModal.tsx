@@ -229,13 +229,6 @@ const UserModal: React.FC<UserModalProps> = ({
       return;
     }
 
-    // Validación: No se puede desactivar a un administrador
-    const isTargetUserAdmin = user?.role === 1;
-    if (isTargetUserAdmin && validatedData.status === 0) {
-      addToast({ variant: "error", title: "Error", message: "No se puede desactivar a un administrador." });
-      return;
-    }
-
     try {
       if (user) {
         const payload: UpdateUserPayload = {

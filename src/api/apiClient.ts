@@ -15,26 +15,35 @@ import { isProtectedAppRoute } from "../utils/routeUtils";
 const NAME_FIELDS = new Set([
   // Persona (español)
   'firstName', 'middleName', 'lastName', 'secondLastName',
+  'secondName', 'secondSurname',
   'fullName', 'fullNames', 'studentName',
   'nombre', 'apellido', 'fullname',
   // Entidades relacionadas
   'careerName', 'tutorName', 'institutionName',
   'tutorAcademicoNombre', 'tutorMetodologicoNombre', 'evaluadorNombre',
   'region', 'nucleo', 'extension', 'empresa',
+  // Combos / listas - name se usa para valores de select (e.g. "CEDULA DE IDENTIDAD")
+  'name',
 ]);
 
-/** Recorre recursivamente el response y aplica normalizeForDisplay a campos de nombre */
-function normalizeNameFields(data: unknown): void {
+const EMAIL_FIELDS = new Set(['email']);
+
+/** Recorre recursivamente el response y normaliza campos para display */
+function normalizeResponseFields(data: unknown): void {
   if (Array.isArray(data)) {
     for (const item of data) {
-      if (item && typeof item === 'object') normalizeNameFields(item);
+      if (item && typeof item === 'object') normalizeResponseFields(item);
     }
   } else if (data && typeof data === 'object') {
     for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
-      if (NAME_FIELDS.has(key) && typeof value === 'string' && value.length > 0) {
-        (data as Record<string, unknown>)[key] = normalizeForDisplay(value);
+      if (typeof value === 'string' && value.length > 0) {
+        if (NAME_FIELDS.has(key)) {
+          (data as Record<string, unknown>)[key] = normalizeForDisplay(value);
+        } else if (EMAIL_FIELDS.has(key)) {
+          (data as Record<string, unknown>)[key] = value.toLowerCase();
+        }
       } else if (value && typeof value === 'object') {
-        normalizeNameFields(value);
+        normalizeResponseFields(value);
       }
     }
   }
@@ -131,8 +140,8 @@ apiClient.interceptors.request.use(
  */
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Ponytail: normalizar campos de nombres de personas en todas las respuestas
-    if (response.data) normalizeNameFields(response.data);
+    // Ponytail: normalizar nombres (Title Case) y emails (lowercase) en todas las respuestas
+    if (response.data) normalizeResponseFields(response.data);
     return response;
   },
   async (error: AxiosError) => {

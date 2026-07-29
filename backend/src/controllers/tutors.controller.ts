@@ -147,7 +147,7 @@ function extractPersonData(body: any) {
     gender: body.sex || null,
     maritalStatus: body.civilStatus ? (maritalToDb[body.civilStatus.toUpperCase()] || null) : null,
     phone: body.phone || null,
-    email: body.email,
+    email: sanitizeText(body.email),
   };
 
   // Solo incluir birthDate y address cuando tienen valor real

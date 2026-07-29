@@ -146,7 +146,7 @@ function extractPersonData(body: any) {
     birthDate: body.birthDate || null,
     maritalStatus: maritalToDb[body.civilStatus?.toUpperCase()] || 'S',
     phone: body.phone || null,
-    email: body.email,
+    email: sanitizeText(body.email),
     address: sanitizeText(body.address),
   };
 }

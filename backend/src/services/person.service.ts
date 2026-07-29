@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { dbManager } from '../lib/db-manager.js';
 import { Response } from 'express';
+import { sanitizeText } from '../utils/text-utils.js';
 
 // ============================================================
 // TYPES
@@ -265,11 +266,11 @@ export const getPersonByCi = async (ci: string): Promise<PersonDTO | null> => {
 export const createPerson = async (personData: CreatePersonDTO, supabaseClient?: SupabaseClient): Promise<PersonDTO> => {
   const buildDbData = () => ({
     ci: personData.ci,
-    first_name: personData.firstName,
-    middle_name: personData.middleName || null,
-    last_name: personData.lastName,
-    second_last_name: personData.secondLastName || null,
-    email: personData.email,
+    first_name: sanitizeText(personData.firstName),
+    middle_name: personData.middleName ? sanitizeText(personData.middleName) : null,
+    last_name: sanitizeText(personData.lastName),
+    second_last_name: personData.secondLastName ? sanitizeText(personData.secondLastName) : null,
+    email: sanitizeText(personData.email),
     phone: personData.phone || null,
     gender: personData.gender || null,
     birthdate: personData.birthDate || null,
@@ -309,11 +310,11 @@ export const createPerson = async (personData: CreatePersonDTO, supabaseClient?:
 export const updatePerson = async (personId: number, personData: UpdatePersonDTO, supabaseClient?: SupabaseClient): Promise<PersonDTO | null> => {
   const buildDbData = () => {
     const dbData: Record<string, unknown> = {};
-    if (personData.firstName !== undefined) dbData.first_name = personData.firstName;
-    if (personData.middleName !== undefined) dbData.middle_name = personData.middleName;
-    if (personData.lastName !== undefined) dbData.last_name = personData.lastName;
-    if (personData.secondLastName !== undefined) dbData.second_last_name = personData.secondLastName;
-    if (personData.email !== undefined) dbData.email = personData.email;
+    if (personData.firstName !== undefined) dbData.first_name = sanitizeText(personData.firstName);
+    if (personData.middleName !== undefined) dbData.middle_name = personData.middleName ? sanitizeText(personData.middleName) : null;
+    if (personData.lastName !== undefined) dbData.last_name = sanitizeText(personData.lastName);
+    if (personData.secondLastName !== undefined) dbData.second_last_name = personData.secondLastName ? sanitizeText(personData.secondLastName) : null;
+    if (personData.email !== undefined) dbData.email = sanitizeText(personData.email);
     if (personData.phone !== undefined) dbData.phone = personData.phone;
     if (personData.gender !== undefined) dbData.gender = personData.gender;
     if (personData.birthDate !== undefined) dbData.birthdate = personData.birthDate;

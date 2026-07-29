@@ -258,7 +258,7 @@ export default function FirstLogin() {
           const qid = typeof q.questionId === 'string' ? parseInt(q.questionId) : (q.questionId as number);
           return {
             questionId: qid,
-            answer: q.answer.toUpperCase(),
+            answer: q.answer,
           };
         });
 

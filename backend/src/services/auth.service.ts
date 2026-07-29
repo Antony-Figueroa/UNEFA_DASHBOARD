@@ -3,6 +3,7 @@ import { comparePassword, hashPassword, generateToken, verifyToken as verifyJWT 
 import { sendLoginNotification, sendSecurityAlert, sendPasswordRecoveryEmail, sendPasswordChangedNotification, sendCredentialNotification } from '../utils/email.utils.js';
 import { nowStringVenezuela, nowInVenezuela } from '../utils/date.utils.js';
 import { getConfig } from '../services/config.service.js';
+import { sanitizeText } from '../utils/text-utils.js';
 import crypto from 'crypto';
 
 const tokenBlacklist = new Map<string, { userId: number; userCi: string; expiresAt: number }>();
@@ -560,12 +561,12 @@ export const changePassword = async (
     };
     
     if (profileData) {
-        if (profileData.name) profileUpdateData.NAME = profileData.name.toUpperCase();
-        if (profileData.secondName) profileUpdateData.SECOND_NAME = profileData.secondName.toUpperCase();
-        if (profileData.surname) profileUpdateData.SURNAME = profileData.surname.toUpperCase();
-        if (profileData.secondSurname) profileUpdateData.SECOND_SURNAME = profileData.secondSurname.toUpperCase();
+        if (profileData.name) profileUpdateData.NAME = sanitizeText(profileData.name);
+        if (profileData.secondName) profileUpdateData.SECOND_NAME = sanitizeText(profileData.secondName);
+        if (profileData.surname) profileUpdateData.SURNAME = sanitizeText(profileData.surname);
+        if (profileData.secondSurname) profileUpdateData.SECOND_SURNAME = sanitizeText(profileData.secondSurname);
         if (profileData.phoneNumber) profileUpdateData.PHONE_NUMBER = profileData.phoneNumber;
-        if (profileData.email) profileUpdateData.EMAIL = profileData.email.toUpperCase();
+        if (profileData.email) profileUpdateData.EMAIL = sanitizeText(profileData.email);
     }
     
     // Segundo, nos aseguramos de desactivar los flags de seguridad

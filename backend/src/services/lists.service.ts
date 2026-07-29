@@ -1,6 +1,7 @@
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
 import { AppList, ListValueResponse, ValueListDB, ListDB } from '../models/list.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 const LISTS_TABLE = 't_list';
 const VALUES_TABLE = 't_value_list';
@@ -376,7 +377,7 @@ export const createList = async (name: string): Promise<AppList> => {
     const { data, error } = await supabase
       .from(LISTS_TABLE)
       .insert([{ 
-        NAME: name.toUpperCase(), 
+        NAME: sanitizeText(name) ?? '', 
         STATUS: 1,
         CREATION_DATE: now,
         MODIF_USER_ID: 0,
@@ -412,7 +413,7 @@ export const updateList = async (id: string, name: string): Promise<AppList> => 
     const { data, error } = await supabase
       .from(LISTS_TABLE)
       .update({ 
-        NAME: name.toUpperCase(),
+        NAME: sanitizeText(name) ?? '',
         MODIF_USER_ID: 0,
         MODIF_USER_DATE: now
       })
@@ -602,8 +603,8 @@ export const createValue = async (listIdOrName: string, name: string, abbreviati
       .from(VALUES_TABLE)
       .insert([{ 
         LIST_ID: list.LIST_ID, 
-        NAME: name.toUpperCase(), 
-        ABBREVIATION: abbreviation?.toUpperCase(), 
+        NAME: sanitizeText(name) ?? '', 
+        ABBREVIATION: sanitizeText(abbreviation) ?? undefined, 
         STATUS: 1,
         CREATION_DATE: now,
         MODIF_USER_ID: 0,
@@ -685,8 +686,8 @@ export const updateValue = async (valueId: string, name: string, abbreviation?: 
     const { data, error } = await supabase
       .from(VALUES_TABLE)
       .update({ 
-        NAME: name.toUpperCase(), 
-        ABBREVIATION: abbreviation?.toUpperCase(),
+        NAME: sanitizeText(name) ?? '', 
+        ABBREVIATION: sanitizeText(abbreviation) ?? undefined,
         MODIF_USER_ID: 0,
         MODIF_USER_DATE: now
       })

@@ -152,7 +152,7 @@ function extractPersonData(body: any) {
     middleName: sanitizeText(body.middleName),
     lastName: sanitizeText(body.lastName) ?? '',
     secondLastName: sanitizeText(body.secondLastName),
-    email: body.email || '',
+    email: sanitizeText(body.email) ?? '',
     phone: body.phone || null,
     gender: body.sex || null,
     birthDate: body.birthDate || null,

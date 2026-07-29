@@ -100,6 +100,9 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       ...userData,
       name: sanitizeText(userData.name) ?? '',
       surname: sanitizeText(userData.surname) ?? '',
+      secondName: userData.secondName ? sanitizeText(userData.secondName) : undefined,
+      secondSurname: userData.secondSurname ? sanitizeText(userData.secondSurname) : undefined,
+      email: sanitizeText(userData.email),
     };
     
     // Usar la cédula como clave temporal en el primer ingreso
@@ -176,6 +179,12 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
     if (typeof userData.status === 'boolean') {
       userData.status = userData.status ? 1 : 0;
     }
+    // Normalizar texto antes de actualizar
+    if (userData.name) userData.name = sanitizeText(userData.name) ?? '';
+    if (userData.surname) userData.surname = sanitizeText(userData.surname) ?? '';
+    if (userData.secondName) userData.secondName = sanitizeText(userData.secondName);
+    if (userData.secondSurname) userData.secondSurname = sanitizeText(userData.secondSurname);
+    if (userData.email) userData.email = sanitizeText(userData.email);
     const updatedUser = await usersService.updateUser(Number(id), userData);
     
     // Registrar auditoría de actualización

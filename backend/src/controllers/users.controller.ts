@@ -5,7 +5,8 @@ import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { sanitizeText } from '../utils/text-utils.js';
 import { dbManager } from '../lib/db-manager.js';
 import * as authService from '../services/auth.service.js';
-import { sendUserCreationEmail, sendPasswordResetEmail } from '../utils/email.utils.js';
+// Email utils disponibles si se reactiva el envío en createUser / resetUserPassword
+// import { sendUserCreationEmail, sendPasswordResetEmail } from '../utils/email.utils.js';
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -230,17 +231,6 @@ export const resetUserPassword = async (req: AuthRequest, res: Response) => {
 
     const result = await usersService.resetUserPassword(Number(id));
 
-    // Enviar email con la nueva clave temporal (no bloqueante)
-    if (result.isFirstLogin) {
-      // Primera vez → email de bienvenida con setup completo
-      sendUserCreationEmail(result.email, result.name, result.userCi, result.tempPassword)
-        .catch(err => console.error('[UserController] Error sending welcome email:', err));
-    } else {
-      // Usuario existente → email de notificación de reseteo
-      sendPasswordResetEmail(result.email, result.name, result.userCi, result.tempPassword)
-        .catch(err => console.error('[UserController] Error sending reset email:', err));
-    }
-
     // Registrar auditoría
     await dbManager.withRetry(async (supabase) => {
       await supabase.from('t_auth_log').insert({
@@ -252,7 +242,7 @@ export const resetUserPassword = async (req: AuthRequest, res: Response) => {
       });
     });
 
-    res.json({ success: true, message: 'Clave reseteada exitosamente. El usuario recibirá un correo con la nueva clave temporal.' });
+    res.json({ success: true, message: `Clave reseteada a la cédula del usuario. Deberá cambiarla en el próximo inicio de sesión.` });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     

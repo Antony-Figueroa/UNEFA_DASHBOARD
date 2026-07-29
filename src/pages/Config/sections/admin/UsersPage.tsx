@@ -163,15 +163,14 @@ const UserManagementPage = () => {
   const handleResetPassword = (user: User) => {
     showConfirm({
       title: "Resetear Clave",
-      // ponytail: string message avoids type gymnastics with useConfirmDialog
-      message: `Se va a resetear la clave de ${user.name} ${user.surname} (${user.email}). Se generará una clave temporal y se enviará por correo.`,
+      message: `Se va a resetear la clave de ${user.name} ${user.surname}. La nueva clave temporal será su cédula y deberá cambiarla en el próximo inicio de sesión.`,
       onConfirm: async () => {
         try {
           await resetUserPassword(user.id);
           addToast({
             variant: "success",
             title: "Clave Reseteada",
-            message: `La clave de ${user.name} ${user.surname} ha sido reseteada. Revisá su correo para la nueva clave temporal.`
+            message: `La clave de ${user.name} ${user.surname} se reseteó a su cédula. Deberá cambiarla al iniciar sesión.`
           });
         } catch (error: any) {
           const msg = error?.response?.data?.message || "Error al resetear la clave";

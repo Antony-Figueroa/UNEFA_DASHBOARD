@@ -505,15 +505,8 @@ export const resetUserPassword = async (userId: number): Promise<{ tempPassword:
     }
 
     const person = (user as any).t_persons;
-    const email = person?.email;
+    const email = person?.email || '';
     const name = `${person?.first_name || ''} ${person?.last_name || ''}`.trim();
-
-    if (!email) {
-      const error = new Error('El usuario no tiene un correo electrónico registrado') as ServiceError;
-      error.code = 'USER_NO_EMAIL';
-      error.status = 400;
-      throw error;
-    }
 
     // 2. Desactivar claves activas actuales
     await supabase
@@ -522,12 +515,8 @@ export const resetUserPassword = async (userId: number): Promise<{ tempPassword:
       .eq('USER_ID', userId)
       .eq('STATUS', 1);
 
-    // 3. Generar clave temporal aleatoria (8 caracteres)
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-    let tempPassword = '';
-    for (let i = 0; i < 8; i++) {
-      tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    // 3. Usar la CI como clave temporal (mismo patrón que creación)
+    const tempPassword = user.USER_CI;
 
     const hashedPassword = await hashPassword(tempPassword);
 

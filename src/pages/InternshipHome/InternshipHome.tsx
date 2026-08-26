@@ -13,7 +13,8 @@ const MissionVisionSection = lazy(() => import("../../features/internship-home/s
 const WorkspaceImageGallery = lazy(() => import("../../features/internship-home/sections/WorkspaceImageGallery"));
 const UnefaInfoSection = lazy(() => import("../../features/internship-home/sections/UnefaInfoSection"));
 const UnefaMapSection = lazy(() => import("../../features/internship-home/sections/UnefaMapSection"));
-const UnefaCarousel = lazy(() => import("../../features/internship-home/sections/UnefaCarousel"));
+// ponytail: carousel deshabilitado — el scraping no funciona en cloud, se usa imagen estática
+// const UnefaCarousel = lazy(() => import("../../features/internship-home/sections/UnefaCarousel"));
 const FAQSection = lazy(() => import("../../features/internship-home/sections/FAQSection"));
 
 const SectionSkeleton: React.FC<{ height?: string }> = ({ height = "h-64" }) => (
@@ -22,7 +23,8 @@ const SectionSkeleton: React.FC<{ height?: string }> = ({ height = "h-64" }) => 
 
 const sections = [
   { Component: HeroSection, key: 'hero', height: 'h-[600px]' },
-  { Component: UnefaCarousel, key: 'carousel', height: 'h-96' },
+  // ponytail: carousel scraping deshabilitado en cloud
+  // { Component: UnefaCarousel, key: 'carousel', height: 'h-96' },
   { Component: MissionVisionSection, key: 'mission', height: 'h-96' },
   { Component: PartnerLogosSection, key: 'partners', height: 'h-32' },
   { Component: CommunityInfoSection, key: 'community', height: 'h-80' },

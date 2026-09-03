@@ -52,7 +52,7 @@ export interface IndividualTutorRow {
   tipoInstitucion: string;
   /** Marcar con X si es empresa de convenio */
   convenioX?: boolean;
-  /** Tutor institucional concatenado: "APELLIDO, NOMBRE, C.I: V-.../TLFNO: .../CORREO: ..." */
+  /** Tutor institucional concatenado: "TITULO NOMBRE APELLIDO. TELÉFONO: 0000 - 0000000" */
   tutorInst: string;
   direccion: string;
   observaciones: string;
@@ -1135,8 +1135,8 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
 
   // ── Anchos de columna ──
   const COL_WIDTHS: Record<number, number> = {
-    1: 3.71, 2: 3.86, 3: 17.71, 4: 14, 5: 14,
-    6: 16.71, 7: 32.71, 8: 15.86, 9: 15.43,
+    1: 3.71, 2: 3.86, 3: 17.71, 4: 18, 5: 14,
+    6: 22, 7: 32.71, 8: 15.86, 9: 15.43,
     10: 10.71, 11: 16.57, 12: 19.86, 13: 22.29,
     14: 14, 15: 29.29, 16: 22.29, 17: 14,
     18: 41.86, 19: 40.57,
@@ -1164,17 +1164,25 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
   codeCell.alignment = { horizontal: 'left', vertical: 'middle' };
 
   // ── Fila 4 (height 48): Título ──
+  // stripPeriodPrefix: elimina el 'Período:' redundante del periodLabel.
+  const stripPeriodPrefix = (label: string): string => label.replace(/^Período:\s*/i, '');
   ws.getRow(4).height = 48;
   ws.mergeCells(4, COL_FIRST, 4, COL_LAST); // B4:S4
   const titleCell = ws.getCell(4, COL_FIRST);
   titleCell.value = {
     richText: [
       {
-        text: `FORMATO DE RELACIÓN INDIVIDUAL\nDE DOCENTES CONTRATADOS U ORDINARIOS CON DEDICACIÓN MEDIO TIEMPO (MT), TIEMPO COMPLETO (TC) Y DEDICACIÓN EXCLUSIVA (DE) QUE SE ENCUENTRAN TUTORANDO  ESTUDIANTES DE PRACTICAS PROFESIONALES ( PASANTIAS )\nPERIODO ACADÉMICO `,
+        text: `FORMATO DE RELACIÓN INDIVIDUAL\nDE DOCENTES CONTRATADOS U ORDINARIOS CON DEDICACIÓN MEDIO TIEMPO (MT), TIEMPO COMPLETO (TC) Y DEDICACIÓN EXCLUSIVA (DE) QUE SE ENCUENTRAN TUTORANDO  ESTUDIANTES DE PRACTICAS PROFESIONALES ( PASANTIAS )\n`,
         font: { ...ANEXO4_FONT, bold: true },
       },
       {
-        text: config.periodLabel,
+        // Etiqueta 'PERIODO ACADÉMICO' en rojo
+        text: 'PERIODO ACADÉMICO ',
+        font: { ...ANEXO4_FONT, bold: true, color: { argb: 'FFFF0000' } },
+      },
+      {
+        // Valor del período en rojo, SIN el prefijo 'Período:' redundante
+        text: stripPeriodPrefix(config.periodLabel || ''),
         font: { ...ANEXO4_FONT, bold: true, color: { argb: 'FFFF0000' } },
       },
     ],
@@ -1298,9 +1306,24 @@ function addIndividualTutorSheet(workbook: Workbook, ws: Worksheet, config: Indi
 
     data.forEach((val, colIdx) => {
       const cell = excelRow.getCell(colIdx + 2); // colIdx 0 → col B (2)
-      cell.value = val !== null && val !== undefined
-        ? (typeof val === 'string' ? val.toUpperCase() : val)
-        : '';
+      if (colIdx === 13) {
+        // Tipo de institución: richText con la opción aplicable marcada (A-7)
+        const tipo = String(row.tipoInstitucion || '');
+        const esPublica = /p[uú]blica/i.test(tipo);
+        const esPrivada = /privada/i.test(tipo);
+        cell.value = {
+          richText: [
+            { text: 'Tipo de institución\n', font: { ...ANEXO4_FONT } },
+            { text: 'Pública', font: { ...ANEXO4_FONT, bold: esPublica, color: esPublica ? { argb: 'FF0000' } : undefined } },
+            { text: ' / ', font: { ...ANEXO4_FONT } },
+            { text: 'Privada', font: { ...ANEXO4_FONT, bold: esPrivada, color: esPrivada ? { argb: 'FF0000' } : undefined } },
+          ],
+        };
+      } else {
+        cell.value = val !== null && val !== undefined
+          ? (typeof val === 'string' ? val.toUpperCase() : val)
+          : '';
+      }
       cell.font = ANEXO4_FONT;
       cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       cell.border = ANEXO4_DATA_BORDER;

@@ -837,21 +837,23 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
   applyInstitutionalHeader(worksheet, totalCols, instHeader);
   await addLogos(workbook, worksheet, totalCols, true);
 
-  // Form code under left logo (now escudo on the left after swap)
-  worksheet.getCell(headerRows, 1).value = {
+  // Form code: its OWN standalone row directly below the left escudo (col A),
+  // size-7 italic — NOT crammed onto the last membrete text line.
+  const formCodeRow = headerRows + 1; // 7
+  worksheet.getCell(formCodeRow, 1).value = {
     richText: [
-      { text: (worksheet.getCell(headerRows, 1).value as string) || '' },
-      { text: '\nform-002-2019 CPA-VAC_jp', font: { ...DEFAULT_FONT, size: 7, italic: true } },
+      { text: 'form-002-2019 CPA-VAC_jp', font: { ...DEFAULT_FONT, size: 7, italic: true } },
     ],
   };
 
-  const titleRow = headerRows + 1;       // 7
-  const hdrRow1 = titleRow + 1;          // 8
-  const hdrRow2 = hdrRow1 + 1;           // 9
-  const dataStart = hdrRow2 + 1;         // 10
+  // One empty row of vertical spacing between the membrete and the title.
+  const titleRow = headerRows + 3;       // 9  (row 8 stays empty)
+  const hdrRow1 = titleRow + 1;          // 10
+  const hdrRow2 = hdrRow1 + 1;           // 11
+  const dataStart = hdrRow2 + 1;         // 12
 
   applyTitleRow(worksheet, titleRow,
-    `RELACIÓN DE EMPRESAS O INSTITUCIONES QUE DEMANDAN ASIGNACIONES DE PASANTES PARA EL PERIODO ACADÉMICO ${period}`,
+    `RELACIÓN DE INSTITUCIONES QUE SOLICITAN ASIGNACIÓN DE PASANTES PARA EL PERÍODO ${period}`,
     totalCols);
 
   const row1 = worksheet.getRow(hdrRow1);
@@ -860,7 +862,7 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
   row2.height = 35;
 
   // Blue header fill for this report
-  const BLUE_HDR_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF8DB3E2' } };
+  const BLUE_HDR_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF9CC3E5' } };
   const HDR_STYLE_BLUE = {
     font: { ...DEFAULT_FONT, bold: true, size: 8 },
     alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
@@ -911,7 +913,7 @@ export async function generateRelacionInstitucionesSolicitanExcel(data: any[], p
 
     regionRows.forEach(item => {
       const responsable = item.responsableTitulo
-        ? `${item.responsable || ''} - ${item.responsableTitulo}`.replace(/^ - /, '').replace(/ - $/, '')
+        ? `${item.responsableTitulo} ${(item.responsable || '')}`.trim()
         : (item.responsable || '');
       const row = worksheet.getRow(currentRow);
       row.height = 25;

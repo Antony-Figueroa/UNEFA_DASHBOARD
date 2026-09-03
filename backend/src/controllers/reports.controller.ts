@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
-import { generateWorkbook, generateTutoresAcademicosWorkbook, generateResumenPasantiasWorkbook, generateRelacionEmpresasWorkbook, generateRelacionInstitucionesSolicitanWorkbook } from '../services/excel-export.service.js';
+import { generateWorkbook, generateTutoresAcademicosWorkbook, generateResumenPasantiasWorkbook, generateRelacionEmpresasWorkbook } from '../services/excel-export.service.js';
 import type { IndividualTutorSheetConfig, IndividualTutorRow, ResumenPasantiaRow } from '../services/excel-export.service.js';
 
 interface PeriodInfo {
@@ -1724,113 +1724,6 @@ export const exportReportExcel = async (req: Request, res: Response) => {
         }));
 
         workbook = await generateRelacionEmpresasWorkbook(rows, periodDesc);
-        break;
-      }
-
-      case 'relacion-instituciones-solicitan': {
-        let query = supabase
-          .from('t_professional_practices')
-          .select(`
-            PROFESSIONAL_PRACTICE_ID,
-            PERIOD_ID,
-            CAREER_ID,
-            t_institution (INSTITUTION_NAME, RIF, INSTITUTION_TYPE, INSTITUTION_CONTACT),
-            t_institution_manager!inner (MANAGER_ID, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, CONTACT_PHONE, TITLE),
-            t_career (CAREER_NAME)
-          `)
-          .eq('STATUS', 1);
-
-        if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
-        if (careerIds.length > 0) query = query.in('CAREER_ID', careerIds);
-
-        const { data: practices } = await query;
-
-        // If no practices with managers found, try without manager join
-        let practicesWithManager = practices || [];
-        let practicesWithoutManager: any[] = [];
-
-        if (practicesWithManager.length === 0) {
-          // Try query without inner join to get institutions without managers
-          let fallbackQuery = supabase
-            .from('t_professional_practices')
-            .select(`
-              PROFESSIONAL_PRACTICE_ID,
-              PERIOD_ID,
-              CAREER_ID,
-              t_institution (INSTITUTION_NAME, RIF, INSTITUTION_TYPE, INSTITUTION_CONTACT),
-              t_career (CAREER_NAME)
-            `)
-            .eq('STATUS', 1);
-
-          if (periodId) fallbackQuery = fallbackQuery.eq('PERIOD_ID', Number(periodId));
-          if (careerIds.length > 0) fallbackQuery = fallbackQuery.in('CAREER_ID', careerIds);
-
-          const { data: fallbackPractices } = await fallbackQuery;
-          practicesWithoutManager = fallbackPractices || [];
-        }
-
-        const periodDesc = await getPeriodDescription(supabase, periodId as string);
-
-        const formatResponsable = (mgr: any): string => {
-          if (!mgr) return 'N/A';
-          const name = `${mgr.NAME || ''} ${mgr.SECOND_NAME || ''} ${mgr.SURNAME || ''} ${mgr.SECOND_SURNAME || ''}`.replace(/\s+/g, ' ').trim();
-          const title = mgr.TITLE ? mgr.TITLE.trim() : '';
-          return title ? `${name} - ${title}` : name;
-        };
-
-        // Expandir por (institución, manager, carrera): cada combinación única = una fila
-        const expandedMap = new Map<string, {
-          empresa: string; rif: string; tipo: string; telefono: string;
-          responsable: string; carrera: string; estudiantes: number;
-        }>();
-
-        const addExpanded = (inst: any, mgr: any, carrera: string, phone: string) => {
-          if (!inst) return;
-          const key = `${inst.INSTITUTION_NAME || 'unknown'}|${mgr?.MANAGER_ID || '0'}|${carrera}`;
-          if (!expandedMap.has(key)) {
-            expandedMap.set(key, {
-              empresa: inst.INSTITUTION_NAME || '',
-              rif: inst.RIF || '',
-              tipo: inst.INSTITUTION_TYPE || '',
-              telefono: phone,
-              responsable: formatResponsable(mgr),
-              carrera,
-              estudiantes: 0,
-            });
-          }
-          expandedMap.get(key)!.estudiantes++;
-        };
-
-        // Process practices with managers
-        (practicesWithManager || []).forEach((p: any) => {
-          const inst: any = p.t_institution;
-          const mgr: any = p.t_institution_manager;
-          const carrera = (p.t_career as any)?.CAREER_NAME || '';
-          const phone = inst?.INSTITUTION_CONTACT || mgr?.CONTACT_PHONE || 'N/A';
-          addExpanded(inst, mgr, carrera, phone);
-        });
-
-        // Process practices without managers
-        (practicesWithoutManager || []).forEach((p: any) => {
-          const inst: any = p.t_institution;
-          const carrera = (p.t_career as any)?.CAREER_NAME || '';
-          const phone = inst?.INSTITUTION_CONTACT || 'N/A';
-          addExpanded(inst, null, carrera, phone);
-        });
-
-        const rows = Array.from(expandedMap.values()).map((e) => ({
-          region: sysLoc.region,
-          nucleo: sysLoc.nucleus,
-          extension: sysLoc.extension,
-          empresa: e.empresa,
-          responsable: e.responsable,
-          telefonoContacto: e.telefono,
-          tipoEmpresa: e.tipo,
-          carreras: e.carrera,
-          cantidadEstudiantes: e.estudiantes,
-        }));
-
-        workbook = await generateRelacionInstitucionesSolicitanWorkbook(rows, periodDesc);
         break;
       }
 

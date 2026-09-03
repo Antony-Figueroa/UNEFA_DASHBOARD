@@ -1099,35 +1099,27 @@ export const exportReportExcel = async (req: Request, res: Response) => {
           return phone;
         };
 
-        // Helper: formatea RIF como X-XXXXXXXX-X
+        // Helper: formatea RIF como 'G - 20008795 - 1' (espacios alrededor de los guiones)
         const formatRif = (rif: string): string => {
           if (!rif) return '';
-          const clean = rif.replace(/[\s\-]/g, '');
-          if (rif.includes('-')) return rif;
-          if (clean.length >= 2) {
+          const clean = String(rif).replace(/[\s\-]/g, '');
+          if (clean.length >= 10) {
             const letter = clean.charAt(0).toUpperCase();
             const numbers = clean.slice(1);
-            if (numbers.length >= 9) {
-              return `${letter}-${numbers.slice(0, 8)}-${numbers.slice(8, 9)}`;
-            }
+            return `${letter} - ${numbers.slice(0, 8)} - ${numbers.slice(8, 9)}`;
           }
           return rif;
         };
 
-        // Helper: formatea cédula solo con números y puntos: 12.345.678
+        // Helper: formatea cédula como 'V-12345678' (E- si es extranjero, sin puntos)
         const formatCI = (ci: string | null | undefined): string => {
           if (!ci) return '';
-          const raw = ci.trim();
-          // Extraer solo dígitos (ignorar prefijo V-, E-, etc.)
+          const raw = String(ci).trim();
+          // Preservar prefijo E- (extranjero); venezolano usa V-. Sin puntos.
+          const prefix = /^E-?/i.test(raw) ? 'E' : 'V';
           const digits = raw.replace(/\D/g, '');
           if (!digits) return raw;
-          // Formatear con separadores de puntos cada 3 dígitos desde la derecha
-          const parts: string[] = [];
-          for (let i = digits.length - 1, j = 0; i >= 0; i--, j++) {
-            if (j > 0 && j % 3 === 0) parts.unshift('.');
-            parts.unshift(digits[i]);
-          }
-          return parts.join('');
+          return `${prefix}-${digits}`;
         };
 
         // Helper: normaliza STUDENT_TYPE a texto completo
@@ -1304,8 +1296,13 @@ export const exportReportExcel = async (req: Request, res: Response) => {
             : '';
           const instPhone = cleanVal(instTutorPerson?.phone || '');
           const instTitulo = instTutor?.TITULO || '';
-          const tutorInstConcat = instTutorPerson
-            ? `${instTitulo} ${instName} ${instSurname}.TELEFONO:  ${formatPhone(instPhone)}`
+          // TITULO NOMBRE APELLIDO. TELÉFONO: 0000 - 0000000 (espacio tras punto y colon)
+          const tutorInstName = [instTitulo, instName, instSurname]
+            .map((s) => (s || '').trim())
+            .filter(Boolean)
+            .join(' ');
+          const tutorInstConcat = instTutorPerson && tutorInstName
+            ? `${tutorInstName}. TELÉFONO: ${formatPhone(instPhone)}`
             : '';
 
           individualMap.get(tutorKey)!.rows.push({

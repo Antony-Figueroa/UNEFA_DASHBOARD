@@ -10,11 +10,11 @@ const styles = StyleSheet.create({
   section: { marginBottom: 20 },
   sectionTitle: { marginBottom: 8, fontSize: 12 },
   evaluatorName: { fontSize: 11, marginBottom: 8, color: '#000000' },
-  row: { flexDirection: 'row', marginBottom: 4 },
+  row: { flexDirection: 'row', marginBottom: 0 },
   label: { width: 180, fontSize: 10 },
   value: { flex: 1, fontSize: 10 },
 
-  committeeTable: { marginTop: 5, marginBottom: 15 },
+  committeeTable: { marginTop: 2, marginBottom: 8 },
   committeeHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderTopWidth: 1, borderTopColor: '#000', backgroundColor: '#f5f5f5', paddingVertical: 4 },
   committeeRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#ccc', paddingVertical: 3 },
   commRol: { flex: 1.5, fontSize: 9, paddingLeft: 4 },
@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
   commHeaderName: { flex: 2, fontSize: 9, textAlign: 'center' },
   commHeaderCi: { flex: 1, fontSize: 9, textAlign: 'center' },
 
-  criteriaTable: { marginTop: 8, marginBottom: 12 },
+  criteriaTable: { marginTop: 4, marginBottom: 6 },
   criteriaHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderTopWidth: 1, borderTopColor: '#000', backgroundColor: '#f5f5f5', paddingVertical: 4 },
   criteriaRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#eee', paddingVertical: 3, alignItems: 'flex-start' },
   crNum: { width: 25, fontSize: 9, textAlign: 'center' },
@@ -138,7 +138,7 @@ export function EvaluacionComitePDF({ data, textos }: Props) {
           <Text style={styles.value}>{data.carrera.nombre}</Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.label}>Periodo Académico:</Text>
+          <Text style={styles.label}>Período académico:</Text>
           <Text style={styles.value}>{data.periodo?.description || ''}</Text>
         </View>
       </View>

@@ -8,11 +8,13 @@ function renderTextoTemplate(texto: string, data: Record<string, string>) {
     const m = part.match(/\{\{(\w+)\}\}/);
     if (m) {
       const value = data[m[1]];
-      if (value !== undefined) {
+      if (value !== undefined && value !== '') {
         const field = m[1];
-        // Override boldText with overstrikeText except for regime and employment fields
-        const style = ['regime', 'empr', 'employment'].includes(field) ? styles.boldText : styles.overstrikeText;
+        const style = ['regime', 'empr', 'employment'].includes(field) ? styles.boldText : styles.dynamicBold;
         return <Text key={i} style={style}>{value.toUpperCase()}</Text>;
+      }
+      if (value !== undefined) {
+        return <Text key={i} style={styles.dynamicBold}>—</Text>;
       }
       return `[${m[1]}]`;
     }
@@ -21,10 +23,10 @@ function renderTextoTemplate(texto: string, data: Record<string, string>) {
 }
 
 const styles = StyleSheet.create({
-  paragraph: { marginBottom: 8, textAlign: 'justify', textIndent: 36, lineHeight: 1.3, fontFamily: 'Times-Roman' },
+  paragraph: { marginBottom: 8, textAlign: 'justify', textIndent: 36, lineHeight: 1.3, fontFamily: 'Times-Bold' },
   infoRow: { flexDirection: 'row', marginBottom: 6 },
   infoFields: { flex: 1 },
-  fieldRow: { marginBottom: 2, lineHeight: 1.3, fontFamily: 'Times-Roman' },
+  fieldRow: { marginBottom: 2, lineHeight: 1.3, fontFamily: 'Times-Bold' },
   photoBox: {
     width: 100,
     height: 120,
@@ -47,6 +49,10 @@ const styles = StyleSheet.create({
   firmaLabel: { fontSize: 8, textAlign: 'center', textTransform: 'uppercase', fontFamily: 'Times-Roman' },
   boldText: { fontFamily: 'Times-Bold' },
   overstrikeText: {
+    fontFamily: 'Times-Bold',
+    textDecoration: 'underline',
+  },
+  dynamicBold: {
     fontFamily: 'Times-Bold',
     textDecoration: 'underline',
   },
@@ -78,12 +84,6 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
 
   return (
     <PDFLayout title="SOLICITUD DE CARTA DE POSTULACIÓN" subtitle="(PRÁCTICAS PROFESIONALES)" verificationHash={verificationHash} qrCodeDataUri={qrCodeDataUri} hideEquipoTrabajo>
-          {/* Bloque de dirección alineado a la izquierda */}
-      {textos.cuerpoAddress && (
-        <Text style={{ marginBottom: 10, textAlign: 'left', fontSize: 11, lineHeight: 1.5, fontFamily: 'Times-Roman' }}>
-          {textos.cuerpoAddress}
-        </Text>
-      )}
 
       <Text style={styles.paragraph}>
         {renderTextoTemplate(textos.cuerpo || '', {
@@ -97,32 +97,29 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
       {/* Ciudadano, Decana y Despacho alineados a la izquierda */}
       <View style={{ ...styles.infoRow, justifyContent: 'flex-start', marginBottom: 6 }}>
         <View style={styles.infoFields}>
-          {/* Ciudadano: Respuesta generada (overstrikeText) */}
-          <Text style={{ ...styles.fieldRow, marginBottom: 2, lineHeight: 1.3, fontFamily: 'Times-Roman' }}>
-            Ciudadano: <Text style={{ ...styles.boldText, fontWeight: 'bold' }}>{nombreCompleto.toUpperCase()}</Text>
+          <Text style={{ ...styles.fieldRow, marginBottom: 2, lineHeight: 1.3 }}>
+            Ciudadano: <Text style={styles.dynamicBold}>{nombreCompleto ? nombreCompleto.toUpperCase() : '—'}</Text>
           </Text>
-          {/* Decana: Respuesta generada (overstrikeText) */}
-          <Text style={{ ...styles.fieldRow, marginBottom: 2, lineHeight: 1.3, fontFamily: 'Times-Roman' }}>
-            Decana: <Text style={{ ...styles.boldText, fontWeight: 'bold' }}>{(textos.gerenteTalentoHumano || (data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '________________________')).toUpperCase()}</Text>
+          <Text style={{ ...styles.fieldRow, marginBottom: 2, lineHeight: 1.3 }}>
+            Decana: <Text style={styles.dynamicBold}>{(textos.gerenteTalentoHumano || (data.tutorInstitucional ? formatNombreCompleto(data.tutorInstitucional) : '')).toUpperCase() || '—'}</Text>
           </Text>
-          {/* Despacho: Respuesta generada (overstrikeText) */}
-          <Text style={{ ...styles.fieldRow, marginBottom: 2, lineHeight: 1.3, fontFamily: 'Times-Roman' }}>
-            Despacho: <Text style={{ ...styles.boldText, fontWeight: 'bold' }}>{textos.cargo || 'Decana del Núcleo Portuguesa'}</Text>
+          <Text style={{ ...styles.fieldRow, marginBottom: 2, lineHeight: 1.3 }}>
+            Despacho: <Text style={styles.dynamicBold}>{textos.cargo?.toUpperCase() || '—'}</Text>
           </Text>
         </View>
       </View>
 
       <View style={styles.infoRow}>
         <View style={styles.infoFields}>
-          <Text style={styles.fieldRow}>NOMBRES Y APELLIDOS:    <Text style={styles.boldText}>{nombreCompleto.toUpperCase()}</Text></Text>
-          <Text style={styles.fieldRow}>CÉDULA DE IDENTIDAD:     <Text style={styles.boldText}>{ci.toUpperCase()}</Text></Text>
-          <Text style={styles.fieldRow}>NÚMEROS DE CONTACTO:  <Text style={styles.boldText}>{(data.estudiante.telefono || '').toUpperCase()}</Text></Text>
-          <Text style={styles.fieldRow}>CORREO ELECTRÓNICO:   <Text style={styles.boldText}>{(data.estudiante.email || '').toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>NOMBRES Y APELLIDOS:    <Text style={styles.dynamicBold}>{nombreCompleto ? nombreCompleto.toUpperCase() : '—'}</Text></Text>
+          <Text style={styles.fieldRow}>CÉDULA DE IDENTIDAD:     <Text style={styles.dynamicBold}>{ci ? ci.toUpperCase() : '—'}</Text></Text>
+          <Text style={styles.fieldRow}>NÚMEROS DE CONTACTO:  <Text style={styles.dynamicBold}>{(data.estudiante.telefono || '').toUpperCase() || '—'}</Text></Text>
+          <Text style={styles.fieldRow}>CORREO ELECTRÓNICO:   <Text style={styles.dynamicBold}>{(data.estudiante.email || '').toUpperCase() || '—'}</Text></Text>
           <Text style={styles.fieldRow}>
             RÉGIMEN: {esDiurno ? 'DIURNO (X)    NOCTURNO (  )' : 'DIURNO (  )    NOCTURNO (X)'}
           </Text>
-          <Text style={styles.fieldRow}>CARRERA:    <Text style={styles.boldText}>{data.carrera.nombre.toUpperCase()}</Text></Text>
-          <Text style={styles.fieldRow}>SEMESTRE:  <Text style={styles.boldText}>{(data.practica?.semester || '').toUpperCase()}</Text></Text>
+          <Text style={styles.fieldRow}>CARRERA:    <Text style={styles.dynamicBold}>{data.carrera.nombre ? data.carrera.nombre.toUpperCase() : '—'}</Text></Text>
+          <Text style={styles.fieldRow}>SEMESTRE:  <Text style={styles.dynamicBold}>{(data.practica?.semester || '').toUpperCase() || '—'}</Text></Text>
           <Text style={styles.fieldRow}>
             TRABAJO:  {trabaja ? 'SI (X)  NO (  )' : 'SI (  )  NO (X)'}
           </Text>
@@ -133,7 +130,7 @@ export function CartaPostulacionPDF({ data, textos, verificationHash, qrCodeData
       </View>
 
       <Text style={styles.fieldRow}>
-        INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: <Text style={styles.boldText}>{(data.institucion?.nombre || '________________________').toUpperCase()}</Text>
+        INSTITUCIÓN DONDE REALIZARÉ LAS PRÁCTICAS PROFESIONALES: <Text style={styles.dynamicBold}>{(data.institucion?.nombre || '').toUpperCase() || '—'}</Text>
       </Text>
 
       <View style={styles.firmaContainer}>

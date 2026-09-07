@@ -30,8 +30,11 @@ function ciRaw(ci: string): string {
 
 /** Formato día/mes/año */
 function formatDateDMY(dateStr: string): string {
-  const p = getFechaParts(dateStr);
-  return `${p.dia}/${p.mes}/${p.anio}`;
+  const d = new Date(dateStr);
+  const dia = String(d.getDate()).padStart(2, '0');
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const anio = String(d.getFullYear());
+  return `${dia}/${mes}/${anio}`;
 }
 
 const styles = StyleSheet.create({

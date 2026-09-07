@@ -78,7 +78,7 @@ export function AceptacionTutorPDF({ data, verificationHash, qrCodeDataUri }: Pr
       </Text>
       
       <Text style={styles.dateSection}>
-        En Araure a los <Text style={styles.boldText}>{fechaHoy.dia}</Text> días del mes de <Text style={styles.boldText}>{fechaHoy.mes}</Text> del <Text style={styles.boldText}>{fechaHoy.anio}</Text>.
+        En Araure a los {fechaHoy.dia} días del mes de {fechaHoy.mes} del {fechaHoy.anio}.
       </Text>
       
       <View style={styles.firmaContainer}>

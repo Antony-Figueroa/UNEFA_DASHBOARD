@@ -17,6 +17,10 @@ const styles = StyleSheet.create({
   tableDesc: { flex: 1 },
   tableScore: { width: 40, textAlign: 'center' },
   totalRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 },
+  infoRow: { flexDirection: 'row', marginBottom: 8 },
+  infoField: { flex: 1, marginBottom: 4 },
+  infoLabel: { fontFamily: 'Times-Bold', fontSize: 11 },
+  infoValue: { fontFamily: 'Times-Roman', fontSize: 11 },
 });
 
 interface Criterio {
@@ -66,6 +70,22 @@ export function EvaluacionTutorInstitucionalPDF({ data, textos }: Props) {
     <PDFLayout title="EVALUACIÓN DEL TUTOR INSTITUCIONAL">
       <Text style={styles.title}>EVALUACIÓN DEL TUTOR INSTITUCIONAL</Text>
       <Text style={styles.paragraph}>{cuerpo}</Text>
+      <View style={styles.infoRow}>
+        <View style={styles.infoField}>
+          <Text style={styles.infoLabel}>Nombre y apellidos:</Text>
+          <Text style={styles.infoValue}>{tutorInstName}</Text>
+        </View>
+        <View style={styles.infoField}>
+          <Text style={styles.infoLabel}>Nombre de la institución:</Text>
+          <Text style={styles.infoValue}>{data.institucion?.nombre || 'No asignada'}</Text>
+        </View>
+      </View>
+      <View style={styles.infoRow}>
+        <View style={styles.infoField}>
+          <Text style={styles.infoLabel}>Departamento:</Text>
+          <Text style={styles.infoValue}>{data.department || 'No especificado'}</Text>
+        </View>
+      </View>
       {data.evaluacion && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Criterios Evaluados</Text>

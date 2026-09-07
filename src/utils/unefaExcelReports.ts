@@ -430,9 +430,9 @@ export async function generateRelacionGeneralTutoresExcel(data: any[], period: s
 
   // ── Anchos de columna (A-R) ──
   const COL_WIDTHS: Record<number, number> = {
-    1: 3.71, 2: 3.86, 3: 13.43, 4: 17.71, 5: 14.71, 6: 16.71,
+    1: 3.71, 2: 3.86, 3: 13.43, 4: 22, 5: 14.71, 6: 20,
     7: 15.86, 8: 14.86, 9: 11.43, 10: 15.71, 11: 15.57,
-    12: 14, 13: 14, 14: 14, 15: 21.29, 16: 3.71, 17: 26.57, 18: 17.43,
+    12: 18, 13: 18, 14: 14, 15: 21.29, 16: 3.71, 17: 26.57, 18: 17.43,
   };
   Object.entries(COL_WIDTHS).forEach(([col, w]) => { worksheet.getColumn(Number(col)).width = w; });
 
@@ -461,10 +461,11 @@ export async function generateRelacionGeneralTutoresExcel(data: any[], period: s
   worksheet.getRow(4).height = 56.25;
   worksheet.mergeCells(4, COL_FIRST, 4, COL_LAST);
   const titleCell = worksheet.getCell(4, COL_FIRST);
+  const periodLabel = period.replace(/^Per[ií]odo\s*:?\s*/i, '');
   titleCell.value = {
     richText: [
       { text: 'RELACIÓN GENERAL\nDE TUTORES ACADÉMICOS CONTRATADOS U ORDINARIOS CON DEDICACIÓN MT, TC Y DE QUE SE ENCUENTRAN TUTORANDO  ESTUDIANTES DE PRACTICAS PROFESIONALES ( PASANTIAS )', font: { ...ANEXO4_FONT, bold: true } },
-      { text: `\n${period}`, font: { ...ANEXO4_FONT, bold: true } },
+      { text: `\n${periodLabel}`, font: { ...ANEXO4_FONT, bold: true } },
     ],
   };
   (titleCell.alignment as any) = { horizontal: 'center', vertical: 'center', wrapText: true };

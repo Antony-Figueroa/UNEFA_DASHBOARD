@@ -104,10 +104,10 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
   const estudianteNombre = formatNombreCompleto(data.estudiante).toUpperCase();
   const estudianteCI = formatCI(data.estudiante.ci).toUpperCase();
   const carreraNombre = data.carrera.nombre.toUpperCase();
-  const lapsoInicio = data.periodo ? (() => { const p = getFechaParts(data.periodo.startDate); return `${p.dia} de ${p.mes.toLowerCase()} del ${p.anio}`; })() : '________________________';
-  const lapsoFin = data.periodo ? (() => { const p = getFechaParts(data.periodo.endDate); return `${p.dia} de ${p.mes.toLowerCase()} del ${p.anio}`; })() : '________________________';
+  const lapsoInicio = data.periodo ? (() => { const p = getFechaParts(data.periodo.startDate); return `${p.dia} de ${p.mes.toUpperCase()} del ${p.anio}`; })() : '________________________';
+  const lapsoFin = data.periodo ? (() => { const p = getFechaParts(data.periodo.endDate); return `${p.dia} de ${p.mes.toUpperCase()} del ${p.anio}`; })() : '________________________';
 
-  const firmaNombre = textos.firmaNombre || 'MSc. Marbelys del Valle Rivero';
+  const firmaNombre = textos.firmaNombre || 'DRA. MARBELYS DEL VALLE RIVERO';
   const firmaCargo = textos.firmaCargo || 'Decana del Núcleo Portuguesa';
   const firmaOrden = textos.firmaOrden || textos.orden || 'Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022';
 
@@ -115,7 +115,7 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
   const senoresTexto = textos.senores || 'Señores:';
   const presenteTexto = textos.presente || 'Presente';
   const destinatarioNombre = textos.destinatarioNombre || data.institucion?.nombre?.toUpperCase() || '________________________';
-  const destinatarioAtte = textos.destinatario || 'MSc. Marbelys del Valle Rivero';
+  const destinatarioAtte = textos.destinatario || 'DRA. MARBELYS DEL VALLE RIVERO';
   const destinatarioCargo = textos.cargo || 'Decana del Núcleo Portuguesa';
 
   return (
@@ -127,7 +127,7 @@ export function SolicitudInstitucionPDF({ data, textos, verificationHash, qrCode
       hideEquipoTrabajo
     >
       {/* Fecha inmediatamente debajo del membrete */}
-        <Text style={styles.placeDate}>Guanare, {fechaHoy.dia} de {fechaHoy.mes} del {fechaHoy.anio}</Text>
+        <Text style={styles.placeDate}>Guanare, {fechaHoy.dia} de {fechaHoy.mes.toUpperCase()} del {fechaHoy.anio}</Text>
         
         {/* Sección izquierda: Señores, Institución, Presente (editables) */}
         <View style={styles.leftSection}>

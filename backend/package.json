@@ -17,7 +17,8 @@
     "db:seed:empty": "tsx scripts/seed-empty.ts",
     "db:seed:full": "tsx scripts/seed-full.ts",
     "db:seed:empty:cloud": "tsx scripts/seed-empty.ts --cloud",
-    "db:seed:full:cloud": "tsx scripts/seed-full.ts --cloud"
+    "db:seed:full:cloud": "tsx scripts/seed-full.ts --cloud",
+    "verify:bug11": "tsx scripts/verify-bug11-formats.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.15",

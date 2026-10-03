@@ -511,6 +511,12 @@ function PageComite({ data, textos, comiteIndex = 0 }: Props & { comiteIndex?: n
    ─────────────────────────────────────────── */
 const TOTAL_ACADEMICO = 20;
 
+// BUG-06: cajas de nombre del estudiante y del tutor con el MISMO ancho,
+// con cédulas proporcionales que mantienen cada fila en 100%.
+// Parámetro de ajuste fino vs. el modelo (open A-4): ROW1_CEDULA / ROW2_CEDULA.
+const ROW1_CEDULA = '30%';
+const ROW2_CEDULA = '22%';
+
 function PageTutorAcademico({ data, textos }: Props) {
   const criterios = data.evaluacionTutorAcademico?.criterios || [];
   const subtotal = criterios.reduce((acc, c) => acc + (c.score || 0), 0);
@@ -523,11 +529,11 @@ function PageTutorAcademico({ data, textos }: Props) {
         {/* Info box — 2 filas */}
         <View style={styles.infoBox}>
           <View style={styles.infoRow}>
-            <View style={[styles.infoCellData, { width: '40%' }]}>
+            <View style={[styles.infoCellData, { width: '35%' }]}>
               <Text style={styles.infoTextLabel}>Apellidos y Nombres del Estudiante:</Text>
               <Text style={styles.infoText}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
             </View>
-            <View style={[styles.infoCellData, { width: '25%' }]}>
+            <View style={[styles.infoCellData, { width: ROW1_CEDULA }]}>
               <Text style={styles.infoTextLabel}>Cédula de Identidad del Estudiante:</Text>
               <Text style={styles.infoText}>{formatCINumero(data.estudiante.ci)}</Text>
             </View>
@@ -541,7 +547,7 @@ function PageTutorAcademico({ data, textos }: Props) {
               <Text style={styles.infoTextLabel}>Apellidos y Nombres del Tutor Académico:</Text>
               <Text style={styles.infoText}>{formatTutorNombre(data.tutorAcademico)}</Text>
             </View>
-            <View style={[styles.infoCellData, { width: '22%' }]}>
+            <View style={[styles.infoCellData, { width: ROW2_CEDULA }]}>
               <Text style={styles.infoTextLabel}>Cédula de identidad del Tutor Académico:</Text>
               <Text style={styles.infoText}>{data.tutorAcademico ? formatCINumero(data.tutorAcademico.ci) : ''}</Text>
             </View>
@@ -714,31 +720,31 @@ function PageEvaluacionFinal({ data, textos }: Props) {
         <View style={styles.gridRow}>
           <View style={[styles.gridCell, { width: '60%', borderRightWidth: 1, borderColor: '#000' }]}>
             <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Apellidos y nombres del estudiante:</Text>
-            <Text style={styles.cellData}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
+            <Text style={[styles.cellData, { textAlign: 'center' }]}>{formatApellidoNombre(data.estudiante).toUpperCase()}</Text>
           </View>
           <View style={[styles.gridCell, { width: '40%' }]}>
             <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Cédula de identidad del estudiante:</Text>
-            <Text style={styles.cellData}>{formatCINumero(data.estudiante.ci)}</Text>
+            <Text style={[styles.cellData, { textAlign: 'center' }]}>{formatCINumero(data.estudiante.ci)}</Text>
           </View>
         </View>
         <View style={styles.gridRow}>
           <View style={[styles.gridCell, { width: '100%' }]}>
             <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Carrera que cursa:</Text>
-            <Text style={styles.cellData}>{getCarreraOrPasantiaLabel(data)}</Text>
+            <Text style={[styles.cellData, { textAlign: 'center' }]}>{getCarreraOrPasantiaLabel(data)}</Text>
           </View>
         </View>
         <View style={[styles.gridRow, { borderBottomWidth: 0 }]}>
           <View style={[styles.gridCell, { width: '50%', borderRightWidth: 1, borderColor: '#000' }]}>
             <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Nombre de la Institución donde realizó la Práctica Profesional:</Text>
-            <Text style={styles.cellData}>{data.institucion?.nombre?.toUpperCase()}</Text>
+            <Text style={[styles.cellData, { textAlign: 'center' }]}>{data.institucion?.nombre?.toUpperCase()}</Text>
           </View>
           <View style={[styles.gridCell, { width: '25%', borderRightWidth: 1, borderColor: '#000' }]}>
             <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Fecha de inicio de la PP:</Text>
-            <Text style={styles.cellData}>{formatFechaPDF(data.practica?.startDate)}</Text>
+            <Text style={[styles.cellData, { textAlign: 'center' }]}>{formatFechaPDF(data.practica?.startDate)}</Text>
           </View>
           <View style={[styles.gridCell, { width: '25%' }]}>
             <Text style={[styles.cellHeader, { fontFamily: 'Times-Bold' }]}>Fecha de culminación de la PP:</Text>
-            <Text style={styles.cellData}>{formatFechaPDF(data.practica?.endDate)}</Text>
+            <Text style={[styles.cellData, { textAlign: 'center' }]}>{formatFechaPDF(data.practica?.endDate)}</Text>
           </View>
         </View>
       </View>

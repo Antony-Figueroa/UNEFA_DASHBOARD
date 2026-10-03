@@ -45,8 +45,9 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
   const [allInstitutions, setAllInstitutions] = useState<Institution[]>([]);
   const [selectedInstIds, setSelectedInstIds] = useState<string[]>([]);
   const [institutionCareers, setInstitutionCareers] = useState<Record<string, Career[]>>({});
-  const [studentsMap, setStudentsMap] = useState<Record<string, number>>({});
-  const [responsibleMap, setResponsibleMap] = useState<Record<string, string[]>>({});
+  const [careerSelectionMap, setCareerSelectionMap] = useState<Record<string, string[]>>({});
+  const [selectedResponsibles, setSelectedResponsibles] = useState<Record<string, string[]>>({});
+  const [cuotaPerResponsable, setCuotaPerResponsable] = useState<Record<string, Record<string, number>>>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -120,13 +121,28 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
     if (selectedInstIds.length > 0) loadCareers();
   }, [selectedInstIds]);
 
-  const handleStudentsChange = useCallback((instId: string, value: string) => {
-    const numValue = Math.max(0, parseInt(value) || 0);
-    setStudentsMap(prev => ({ ...prev, [instId]: numValue }));
+  const handleCareerSelectionChange = useCallback((instId: string, selected: string[]) => {
+    setCareerSelectionMap(prev => ({ ...prev, [instId]: selected }));
   }, []);
 
   const handleResponsibleChange = useCallback((instId: string, selected: string[]) => {
-    setResponsibleMap(prev => ({ ...prev, [instId]: selected }));
+    setSelectedResponsibles(prev => ({ ...prev, [instId]: selected }));
+  }, []);
+
+  const handleCuotaChange = useCallback((instId: string, respId: string, value: string) => {
+    const numValue = Math.max(0, parseInt(value) || 0);
+    setCuotaPerResponsable(prev => ({
+      ...prev,
+      [instId]: { ...(prev[instId] || {}), [respId]: numValue },
+    }));
+  }, []);
+
+  // Formatea teléfono como 0000 - 0000000
+  const formatPhoneSpaced = useCallback((phone: string): string => {
+    if (!phone) return '';
+    const digits = phone.replace(/[\s\-\(\)]/g, '');
+    if (digits.length === 11) return `${digits.slice(0, 4)} - ${digits.slice(4)}`;
+    return phone;
   }, []);
 
   // Filtered institution objects
@@ -169,48 +185,39 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
     const rows: any[] = [];
 
     selectedInstitutions.forEach(inst => {
-      const careers = institutionCareers[inst.institutionId] || [];
-      const responsibleIds = responsibleMap[inst.institutionId] || [];
-      const responsables = getResponsablesForInstitution(inst.institutionId);
-      const selectedResponsables = responsables.filter((r: any) => responsibleIds.includes(r.responsibleId));
-      const responsablesToUse = selectedResponsables.length > 0 ? selectedResponsables : [null];
+      // Carreras seleccionadas manualmente (ninguna se auto-selecciona)
+      const selectedCareerIds = careerSelectionMap[inst.institutionId] || [];
+      const selectedCareers = (institutionCareers[inst.institutionId] || [])
+        .filter((c: Career) => selectedCareerIds.includes(c.careerId) && c.name);
 
-      responsablesToUse.forEach((resp: any) => {
-        const responsableName = resp ? `${resp.firstName} ${resp.lastName}` : '';
-        const responsableTitulo = resp?.title || '';
-        const baseRow = {
-          region: sysLocation.region,
-          nucleo: sysLocation.nucleus,
-          extension: sysLocation.extension,
-          empresa: inst.name,
-          responsable: responsableName,
-          responsableTitulo,
-          numeroContacto: inst.phone || 'N/A',
-          tipoEmpresa: inst.institutionType || '',
-        };
+      // Responsables seleccionados (se excluye la institución si no hay ninguno)
+      const responsibleIds = selectedResponsibles[inst.institutionId] || [];
+      const selectedResponsablesArr = getResponsablesForInstitution(inst.institutionId)
+        .filter((r: any) => responsibleIds.includes(r.responsibleId));
 
-        // Expandir por carrera: una fila por carrera
-        const careerList = careers.filter((c: Career) => c.name);
-        if (careerList.length > 0) {
-          careerList.forEach((c: Career) => {
-            rows.push({
-              ...baseRow,
-              carreras: c.name,
-              cantidadEstudiantes: studentsMap[inst.institutionId] || 0,
-            });
-          });
-        } else {
+      if (selectedCareers.length === 0 || selectedResponsablesArr.length === 0) return;
+
+      // Una fila por institución × carrera seleccionada × responsable seleccionado
+      selectedCareers.forEach((career: Career) => {
+        selectedResponsablesArr.forEach((resp: any) => {
           rows.push({
-            ...baseRow,
-            carreras: '',
-            cantidadEstudiantes: studentsMap[inst.institutionId] || 0,
+            region: sysLocation.region,
+            nucleo: sysLocation.nucleus,
+            extension: sysLocation.extension,
+            empresa: inst.name,
+            responsable: `${resp.firstName || ''} ${resp.lastName || ''}`.trim(),
+            responsableTitulo: resp?.title || '',
+            numeroContacto: formatPhoneSpaced(inst.phone || ''),
+            tipoEmpresa: inst.institutionType || '',
+            carreras: career.name,
+            cantidadEstudiantes: cuotaPerResponsable[inst.institutionId]?.[resp.responsibleId] || 0,
           });
-        }
+        });
       });
     });
 
     return { periodDescription: periodLabel, rows };
-  }, [selectedInstitutions, institutionCareers, responsibleMap, studentsMap, periods, selectedPeriodId, getResponsablesForInstitution, sysLocation]);
+  }, [selectedInstitutions, institutionCareers, careerSelectionMap, selectedResponsibles, cuotaPerResponsable, periods, selectedPeriodId, getResponsablesForInstitution, sysLocation, formatPhoneSpaced]);
 
   // Preview table rows
   const previewTableData = useMemo(() => {
@@ -248,8 +255,9 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
   const handleClose = useCallback(() => {
     setSelectedPeriodId("");
     setSelectedInstIds([]);
-    setStudentsMap({});
-    setResponsibleMap({});
+    setCareerSelectionMap({});
+    setSelectedResponsibles({});
+    setCuotaPerResponsable({});
     setInstitutionCareers({});
     setSearchTerm("");
     setActiveTab("preview");
@@ -257,7 +265,8 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
   }, [onClose]);
 
   const selectedPeriod = periods.find(p => p.periodId === selectedPeriodId);
-  const totalStudents = selectedInstitutions.reduce((sum, inst) => sum + (studentsMap[inst.institutionId] || 0), 0);
+  const totalStudents = selectedInstitutions.reduce((sum, inst) =>
+    sum + Object.values(cuotaPerResponsable[inst.institutionId] || {}).reduce((s, v) => s + (v || 0), 0), 0);
 
   return (
     <Modal
@@ -370,7 +379,7 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.nucleo}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.extension}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase font-medium">{row.empresa}</td>
-                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.responsableTitulo ? `${row.responsable} - ${row.responsableTitulo}` : row.responsable}</td>
+                            <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.responsableTitulo ? `${row.responsableTitulo} ${row.responsable}` : row.responsable}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis">{row.numeroContacto}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase">{row.tipoEmpresa}</td>
                             <td className="px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis max-w-[200px] truncate" title={row.carreras}>{row.carreras}</td>
@@ -460,16 +469,27 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                       setSelectedInstIds(ids);
                       // Inicializar responsable para las nuevas
                       ids.forEach(id => {
-                        if (!(id in responsibleMap)) {
-                          setResponsibleMap(prev => ({ ...prev, [id]: [] }));
+                        if (!(id in selectedResponsibles)) {
+                          setSelectedResponsibles(prev => ({ ...prev, [id]: [] }));
+                        }
+                        if (!(id in careerSelectionMap)) {
+                          setCareerSelectionMap(prev => ({ ...prev, [id]: [] }));
                         }
                       });
-                      // Limpiar responsables de las removidas
-                      setResponsibleMap(prev => {
+                      // Limpiar responsables/selecciones/cuotas de las removidas
+                      setSelectedResponsibles(prev => {
                         const next = { ...prev };
-                        Object.keys(next).forEach(k => {
-                          if (!ids.includes(k)) delete next[k];
-                        });
+                        Object.keys(next).forEach(k => { if (!ids.includes(k)) delete next[k]; });
+                        return next;
+                      });
+                      setCareerSelectionMap(prev => {
+                        const next = { ...prev };
+                        Object.keys(next).forEach(k => { if (!ids.includes(k)) delete next[k]; });
+                        return next;
+                      });
+                      setCuotaPerResponsable(prev => {
+                        const next = { ...prev };
+                        Object.keys(next).forEach(k => { if (!ids.includes(k)) delete next[k]; });
                         return next;
                       });
                     }}
@@ -491,6 +511,9 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                     <div className="divide-y divide-border-light dark:divide-white/5 border border-border-light dark:border-white/10 rounded-lg overflow-hidden">
                       {selectedInstitutions.map(inst => {
                         const careers = institutionCareers[inst.institutionId] || [];
+                        const responsables = getResponsablesForInstitution(inst.institutionId);
+                        const selectedCareerIds: string[] = careerSelectionMap[inst.institutionId] || [];
+                        const selectedRespIds: string[] = selectedResponsibles[inst.institutionId] || [];
                         return (
                           <div key={inst.institutionId} className="p-3 space-y-2 hover:bg-gray-50/50 dark:hover:bg-white/5">
                             <div className="flex items-start justify-between gap-2">
@@ -501,11 +524,6 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                                 <p className="text-[10px] text-text-tertiary">
                                   RIF: {inst.rif || 'N/A'} · {inst.institutionType || 'N/A'} · {inst.phone || 'N/A'}
                                 </p>
-                                {careers.length > 0 && (
-                                  <p className="text-[10px] text-text-tertiary mt-0.5">
-                                    Carreras: {careers.map(c => c.name).join(', ')}
-                                  </p>
-                                )}
                               </div>
                               <button
                                 onClick={() => setSelectedInstIds(prev => prev.filter(id => id !== inst.institutionId))}
@@ -516,69 +534,88 @@ export function RelacionInstitucionesModal({ isOpen, onClose }: RelacionInstituc
                               </button>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest block mb-0.5">
-                                  Responsable
-                                </label>
-                                {(() => {
-                                  const responsables = getResponsablesForInstitution(inst.institutionId);
-                                  const selectedIds: string[] = responsibleMap[inst.institutionId] || [];
-                                  if (responsables.length === 0) {
-                                    return (
-                                      <input
-                                        type="text"
-                                        placeholder="Sin responsables registrados"
-                                        value={selectedIds.join(', ')}
-                                        readOnly
-                                        className="w-full rounded border border-border-default dark:border-border-dark bg-gray-50 dark:bg-gray-800 px-1.5 py-1 text-[10px] text-text-secondary"
-                                      />
-                                    );
+                            {/* Carreras: selección manual (ninguna pre-seleccionada) */}
+                            <div>
+                              <label className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest block mb-0.5">
+                                Carreras
+                              </label>
+                              <MultiSelect
+                                label=""
+                                options={careers.map(c => ({ value: c.careerId, text: c.name }))}
+                                value={selectedCareerIds}
+                                onChange={(sel) => handleCareerSelectionChange(inst.institutionId, sel)}
+                                placeholder="Seleccionar carreras..."
+                              />
+                            </div>
+
+                            {/* Responsables + cuota por responsable */}
+                            <div className="space-y-1.5">
+                              <label className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest block">
+                                Responsables
+                              </label>
+                              {responsables.length === 0 ? (
+                                <p className="text-[10px] text-text-tertiary">Sin responsables registrados</p>
+                              ) : responsables.length === 1 ? (
+                                (() => {
+                                  const r = responsables[0];
+                                  if (selectedRespIds.length === 0) {
+                                    setTimeout(() => handleResponsibleChange(inst.institutionId, [r.responsibleId]), 0);
                                   }
-                                  if (responsables.length === 1) {
-                                    const r = responsables[0];
-                                    // Auto-select if not already set
-                                    if (selectedIds.length === 0) {
-                                      setTimeout(() => handleResponsibleChange(inst.institutionId, [r.responsibleId]), 0);
-                                    }
-                                    return (
-                                      <input
-                                        type="text"
-                                        placeholder="Responsable asignado"
-                                        value={`${r.firstName} ${r.lastName}${r.title ? ` - ${r.title}` : ''}`}
-                                        readOnly
-                                        className="w-full rounded border border-border-default dark:border-border-dark bg-gray-50 dark:bg-gray-800 px-1.5 py-1 text-[10px] text-text-secondary"
-                                      />
-                                    );
-                                  }
-                                  // Multiple responsables: show multi-select
                                   return (
-                                    <MultiSelect
-                                      label=""
-                                      options={responsables.map((r: any) => ({
-                                        value: r.responsibleId,
-                                        text: `${r.firstName} ${r.lastName}${r.title ? ` - ${r.title}` : ''}${r.cargo ? ` (${r.cargo})` : ''}`
-                                      }))}
-                                      value={selectedIds}
-                                      onChange={(selected) => handleResponsibleChange(inst.institutionId, selected)}
-                                      placeholder="Seleccionar responsables..."
-                                    />
+                                    <div className="space-y-1.5">
+                                      <input
+                                        type="text"
+                                        readOnly
+                                        value={`${r.firstName} ${r.lastName}${r.title ? ` (${r.title})` : ''}`}
+                                        className="w-full rounded border border-border-default dark:border-border-dark bg-gray-50 dark:bg-gray-800 px-1.5 py-1 text-[10px] text-text-secondary"
+                                      />
+                                      <div className="flex items-center gap-2">
+                                        <label className="text-[10px] text-text-secondary">Cuota:</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          placeholder="0"
+                                          value={cuotaPerResponsable[inst.institutionId]?.[r.responsibleId] || ''}
+                                          onChange={(e) => handleCuotaChange(inst.institutionId, r.responsibleId, e.target.value)}
+                                          className="w-20 text-center rounded border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface px-1.5 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                        />
+                                      </div>
+                                    </div>
                                   );
-                                })()}
-                              </div>
-                              <div>
-                                <label className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest block mb-0.5">
-                                  Cant. Estudiantes
-                                </label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  placeholder="0"
-                                  value={studentsMap[inst.institutionId] || ''}
-                                  onChange={(e) => handleStudentsChange(inst.institutionId, e.target.value)}
-                                  className="w-full text-center rounded border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface px-1.5 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-brand-500"
-                                />
-                              </div>
+                                })()
+                              ) : (
+                                <>
+                                  <MultiSelect
+                                    label=""
+                                    options={responsables.map((r: any) => ({
+                                      value: r.responsibleId,
+                                      text: `${r.firstName} ${r.lastName}${r.title ? ` - ${r.title}` : ''}${r.cargo ? ` (${r.cargo})` : ''}`
+                                    }))}
+                                    value={selectedRespIds}
+                                    onChange={(sel) => handleResponsibleChange(inst.institutionId, sel)}
+                                    placeholder="Seleccionar responsables..."
+                                  />
+                                  {selectedRespIds.map(respId => {
+                                    const r = responsables.find((x: any) => x.responsibleId === respId);
+                                    if (!r) return null;
+                                    return (
+                                      <div key={respId} className="flex items-center gap-2">
+                                        <span className="flex-1 text-[10px] text-text-secondary truncate">
+                                          {r.firstName} {r.lastName}{r.title ? ` (${r.title})` : ''}
+                                        </span>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          placeholder="Cuota"
+                                          value={cuotaPerResponsable[inst.institutionId]?.[respId] || ''}
+                                          onChange={(e) => handleCuotaChange(inst.institutionId, respId, e.target.value)}
+                                          className="w-20 text-center rounded border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface px-1.5 py-1 text-[10px] focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                        />
+                                      </div>
+                                    );
+                                  })}
+                                </>
+                              )}
                             </div>
                           </div>
                         );
